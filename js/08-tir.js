@@ -56,10 +56,12 @@ function fire(){
       const hits = ray.intersectObjects(hitMeshes, false);
       let pierced = 0; const seen = new Set();
       for (const h of hits){
+        if (h.object.userData.onHit){ h.object.userData.onHit(h.point, dmg); anyHit = true; if (++pierced >= pierce) break; continue; } // baril, caisse, civil (23-rue.js)
         const z = h.object.userData.z; if (!z || z.dead || seen.has(z)) continue;
         seen.add(z);
         const head = h.object.userData.head;
-        damage(z, dmg * (head ? headMult() : 1), head, h.point);
+        if (h.object.userData.weak && typeof weakHit === 'function') weakHit(z, h.object, dmg, h.point); // point faible (07-zombies.js)
+        else damage(z, dmg * (head ? headMult() : 1), head, h.point);
         anyHit = true;
         if (++pierced >= pierce) break;
       }

@@ -220,3 +220,61 @@ body.touch .pw .pwi{ font-size:24px; }
 #pwShop .pw-card > .ds{ font-size:15px; color:var(--muted); line-height:1.2; margin-bottom:6px; }
 #pwShop .pw-card.locked{ opacity:.7; padding-bottom:8px; }
 #pwShop .pw-lock{ color:var(--amber) !important; }
+/* Points faibles et combos (07-zombies.js, 26-combos.js) */
+.fl.weak{ color:#9dff5a; font-size:22px; text-shadow:0 0 6px rgba(80,200,30,.7),0 2px 3px #000; }
+#hitm.weak{ border-color:#9dff5a; box-shadow:0 0 8px rgba(157,255,90,.7); }
+#combo{ position:absolute; right:calc(14px + env(safe-area-inset-right,0px)); top:calc(64px + env(safe-area-inset-top,0px)); text-align:right; text-shadow:0 2px 3px rgba(0,0,0,.85); transform-origin:100% 50%; transition:opacity .35s; line-height:1; }
+#combo.cb-off{ opacity:0; }
+#combo.cb-on{ opacity:.8; }
+#combo .cb-row{ display:flex; align-items:baseline; justify-content:flex-end; gap:6px; }
+#combo .cb-n{ font-family:"Saira Stencil One",Impact,sans-serif; font-size:28px; color:var(--ink); }
+#combo .cb-l{ font-size:15px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+#combo .cb-m{ font-family:"Saira Stencil One",Impact,sans-serif; font-size:24px; color:var(--amber); }
+#combo .cb-m:empty{ display:none; }
+#combo .cb-t{ height:4px; width:96px; margin:4px 0 0 auto; background:rgba(0,0,0,.5); overflow:hidden; }
+#combo .cb-t i{ display:block; height:100%; background:var(--amber); transform-origin:0 50%; }
+#combo.cb-k1,#combo.cb-k2,#combo.cb-k3,#combo.cb-k4,#combo.cb-k5{ opacity:1; }
+#combo.cb-k2 .cb-m{ color:#ff9a2a; font-size:27px; }
+#combo.cb-k3 .cb-m{ color:#ff6a2a; font-size:30px; }
+#combo.cb-k4 .cb-m,#combo.cb-k5 .cb-m{ color:#ff4a3a; font-size:33px; text-shadow:0 0 10px rgba(255,74,58,.7),0 2px 3px #000; }
+#combo.cb-k4 .cb-n,#combo.cb-k5 .cb-n{ color:#ffdf8a; }
+#combo.cb-k3 .cb-t i,#combo.cb-k4 .cb-t i,#combo.cb-k5 .cb-t i{ background:#ff6a2a; }
+#combo.cb-pop{ animation:cbpop .22s ease-out; }
+#combo.cb-up{ animation:cbup .45s ease-out; }
+@keyframes cbpop{ from{ transform:scale(1.22) } to{ transform:scale(1) } }
+@keyframes cbup{ 0%{ transform:scale(1.7) } 60%{ transform:scale(.94) } 100%{ transform:scale(1) } }
+@media (orientation: portrait){
+  body.touch #combo{ top:calc(108px + env(safe-area-inset-top,0px)); }
+  body.touch #combo .cb-n{ font-size:24px; }
+  body.touch #combo .cb-l{ font-size:13px; }
+}
+@media (orientation: landscape) and (max-height:480px){
+  #combo{ top:calc(60px + env(safe-area-inset-top,0px)); }
+  #combo .cb-n{ font-size:22px; }
+  #combo .cb-m{ font-size:20px; }
+  #combo.cb-k2 .cb-m{ font-size:22px; } #combo.cb-k3 .cb-m{ font-size:24px; } #combo.cb-k4 .cb-m,#combo.cb-k5 .cb-m{ font-size:26px; }
+}
+/* Défi du jour (25-defi.js) */
+.defi-btn{ border-color:rgba(242,192,96,.7); color:#f2c060; }
+.defi-date{ font-size:19px; color:var(--muted); margin:4px 0 10px; }
+.defi-city{ margin:6px 0 2px; }
+.defi-mods{ list-style:none; margin:6px 0 4px; padding:0; display:grid; gap:8px; }
+.defi-mods li{ background:rgba(242,163,58,.1); border-left:4px solid var(--amber); border-radius:5px; padding:8px 10px; line-height:1.2; }
+.defi-mods b{ display:block; font-size:20px; color:var(--amber); }
+.defi-mods span{ font-size:16px; color:var(--muted); }
+.defi-info{ display:grid; grid-template-columns:auto 1fr; gap:6px 14px; font-size:18px; margin:12px 0 6px; line-height:1.25; }
+.defi-info b{ color:var(--amber); font-weight:700; }
+.defi-done{ color:#9ad07a; }
+.defi-note{ font-size:15px; color:var(--muted); line-height:1.25; margin-top:6px; }
+.defi-tag strong{ color:#f2c060 !important; }
+@media (max-width:420px){ .defi-info{ grid-template-columns:1fr; gap:2px; } .defi-info b{ margin-top:6px; } }
+/* Compagnon (24-compagnon.js) : section de l'atelier */
+#cpnShop .cpn-card{ background:var(--panel2); border:1px solid rgba(255,255,255,.08); border-radius:6px; padding:10px 12px 2px; margin:8px 0; }
+#cpnShop .cpn-card.on{ border-color:var(--amber); }
+#cpnShop .cpn-card > .nm{ font-size:20px; font-weight:700; }
+#cpnShop .cpn-card > .ds{ font-size:15px; color:var(--muted); line-height:1.2; margin-bottom:6px; }
+#cpnShop .cpn-card > .btns{ margin-bottom:6px; }
+#cpnShop .cpn-card .btns button{ padding:9px 12px; border:0; border-radius:5px; background:var(--amber); color:var(--amber-ink); font-size:17px; font-weight:700; }
+#cpnShop .cpn-card .btns button:disabled{ background:rgba(255,255,255,.12); color:var(--muted); cursor:default; }
+#cpnShop .cpn-card.locked{ opacity:.7; padding-bottom:8px; }
+#cpnShop .cpn-lock{ color:var(--amber) !important; }

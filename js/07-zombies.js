@@ -56,12 +56,46 @@ function damage(z, amt, head, point){
 }
 function kill(z, head, point){
   z.dead = true; z.deadT = 0; removeZombieMeshes(z);
-  const pay = Math.round(z.reward * (1 + .08 * T('scavenger')) * (head ? 1.5 : 1));
+  if (typeof comboKill === 'function') comboKill(z); // combo de tes tirs (26-combos.js)
+  const cm = typeof comboMult === 'function' ? comboMult() : 1; // tout l'argent des abattus est multiplié pendant un combo
+  const pay = Math.round(z.reward * (1 + .08 * T('scavenger')) * (head ? 1.5 : 1) * cm);
   if (typeof defOnKill === 'function') defOnKill(z); // ferraille (16-atelier.js)
   addXP(z.xp);
   S.money += pay; S.earned += pay; S.kills++; S.waveKills++;
   if (head && z.head){ z.head.visible = false; z.headGone = true; burst(point, 'blood', 14, 4); }
   floatText((head ? 'Tête ! +' : '+') + fmt(pay), point, head);
+}
+/* ---------- Points faibles ---------- */
+// Un maillage peut porter userData.weak = { mult, effet } (posé par ZKINDS[type].build, 18-zombies-types.js).
+// Tous les impacts directs (balles, plombs, carreaux) passent par weakHit : dégâts multipliés, texte « Point faible ! »,
+// puis l'effet propre au type (ZKINDS[type].onWeak(z, maillage, dégâts, point, weak) ; true = l'effet a déjà infligé les dégâts).
+let weakT = 0; // marqueur d'impact vert quelques instants (26-combos.js l'affiche)
+function weakText(txt, pos){
+  const box = $('floats'); if (!box || box.childElementCount > 18 || typeof camera === 'undefined') return;
+  tmpV.copy(pos).project(camera); if (tmpV.z > 1) return;
+  const el = document.createElement('div'); el.className = 'fl weak'; el.textContent = txt;
+  el.style.left = ((tmpV.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - tmpV.y) / 2 * innerHeight - 44) + 'px';
+  box.appendChild(el); setTimeout(() => el.remove(), 950);
+}
+// Retire un maillage des cibles (poche d'acide éclatée) : le rayon de Three.js touche aussi les maillages cachés
+function dropZombieMesh(z, m){
+  m.visible = false;
+  let i = hitMeshes.indexOf(m); if (i >= 0) hitMeshes.splice(i, 1);
+  i = z.meshes.indexOf(m); if (i >= 0) z.meshes.splice(i, 1);
+}
+function weakHit(z, m, amt, point){
+  const wk = m && m.userData && m.userData.weak;
+  if (!wk || !z || z.dead){ if (z) damage(z, amt, false, point); return false; }
+  amt *= wk.mult || 1;
+  z.wkHits = (z.wkHits || 0) + 1; weakT = .18;
+  if (typeof CB !== 'undefined' && CB.ctx > 0) z.cbBy = true; // ce que l'effet abat plus tard (chute) compte pour ton combo
+  const K = zkind(z.type);
+  const r = K && K.onWeak ? K.onWeak(z, m, amt, point, wk) : null;
+  const now = typeof time === 'number' ? time : 0;
+  if (r && r.txt) weakText('Point faible ! ' + r.txt, point);
+  else if (!(z.wkTxtT > now - .25)){ z.wkTxtT = now; weakText('Point faible !', point); }
+  if (!(r && r.done)) damage(z, amt, false, point);
+  return true;
 }
 // Coup porté à la barricade (utilisé aussi par les types spéciaux)
 function hitBarricade(z, dmg, shk, chips){

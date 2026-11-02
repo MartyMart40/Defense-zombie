@@ -8,12 +8,16 @@
 //     mats = matériaux propres au zombie (mats[0] au minimum ; flash rouge et libérés à la mort),
 //     aimY = hauteur du centre du corps au-dessus de g (ciblage des défenses). Facultatif : geos = géométries propres à libérer.
 //   init(z) : juste après la création de z. update(z, dt) : chaque image pour un zombie vivant ; true = saute le code par défaut.
+//   Points faibles (facultatif) : un maillage de parts porte userData.weak = { mult, effet } ; un tir dessus passe par
+//   weakHit (07-zombies.js) qui multiplie les dégâts et appelle onWeak(z, maillage, dégâts, point, weak).
+//   onWeak retourne { done, txt } : done = les dégâts sont déjà infligés, txt = texte ajouté à « Point faible ! ».
 // Géométries et matériaux partagés créés une seule fois ici : aucun n'est libéré, aucun n'est recréé.
 const ZKINDS = {};
 const ZKG = { box:new THREE.BoxGeometry(1, 1, 1), top:new THREE.BoxGeometry(1, 1, 1), sph:new THREE.SphereGeometry(1, 10, 8), spit:new THREE.SphereGeometry(.24, 8, 6) };
 ZKG.top.translate(0, -.5, 0); // pivot en haut : membres qui tournent à l'épaule, à la hanche, au genou
 const ZKM = {
-  acid:new THREE.MeshLambertMaterial({ color:0x8fdc2a, emissive:0x2e6a08 }),
+  acid:new THREE.MeshLambertMaterial({ color:0x8fdc2a, emissive:0x3e8a0c }),
+  core:new THREE.MeshBasicMaterial({ color:0xffa02a, fog:false }), // point lumineux du colosse, visible dans le brouillard
   mouth:new THREE.MeshBasicMaterial({ color:0x140806 }),
   spit:new THREE.MeshBasicMaterial({ color:0x9cff3a, fog:false })
 };
@@ -22,6 +26,15 @@ function zkMesh(parent, geo, mat, sx, sy, sz, x, y, z, list){
   const m = new THREE.Mesh(geo, mat); m.scale.set(sx, sy, sz); m.position.set(x, y, z); parent.add(m); if (list) list.push(m); return m;
 }
 function zkGroup(parent, x, y, z){ const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g); return g; }
+// Points faibles (objets partagés, jamais modifiés)
+const WEAK = {
+  acide: { mult:2,   effet:'acide' },  // cracheur : poches d'acide qui éclatent
+  aile:  { mult:1.5, effet:'aile' },   // volant : ailes, il tombe au sol
+  plaque:{ mult:3,   effet:'plaque' }, // colosse : point lumineux sur la poitrine
+  jambe: { mult:1.3, effet:'jambe' }   // sauteur : jambes, il ne saute plus
+};
+const zkWeak = (m, w) => { m.userData.weak = w; return m; };
+const zkV = new THREE.Vector3();
 function zkEyes(parent, y, z, dx, s){ s = s || 1; zkMesh(parent, ZKG.box, eyeMat, .08 * s, .05 * s, .02, -dx, y, z); zkMesh(parent, ZKG.box, eyeMat, .08 * s, .05 * s, .02, dx, y, z); }
 
 /* ---------- Sauteur : maigre, longues jambes repliées, avance par bonds ---------- */
@@ -38,8 +51,8 @@ ZKINDS.jumper = {
     zkMesh(armL, ZKG.top, skin, .09, .95, .09, 0, 0, 0, P); zkMesh(armR, ZKG.top, skin, .09, .95, .09, 0, 0, 0, P);
     const rig = { hip:[], knee:[] };
     [-.13, .13].forEach(x => {
-      const hip = zkGroup(body, x, 1.02, 0); zkMesh(hip, ZKG.top, rag, .14, .72, .15, 0, 0, 0, P);
-      const knee = zkGroup(hip, 0, -.72, 0); zkMesh(knee, ZKG.top, skin, .1, .82, .1, 0, 0, 0, P);
+      const hip = zkGroup(body, x, 1.02, 0); zkWeak(zkMesh(hip, ZKG.top, rag, .14, .72, .15, 0, 0, 0, P), WEAK.jambe);
+      const knee = zkGroup(hip, 0, -.72, 0); zkWeak(zkMesh(knee, ZKG.top, skin, .1, .82, .1, 0, 0, 0, P), WEAK.jambe);
       zkMesh(knee, ZKG.box, skin, .14, .06, .3, 0, -.82, .1);                 // pied griffu
       rig.hip.push(hip); rig.knee.push(knee);
     });
@@ -47,10 +60,25 @@ ZKINDS.jumper = {
     return { g, body, head, armL, armR, parts:P, mats:[skin, rag], aimY:1.25 * T.scale };
   },
   init(z){ z.rig = z.g.userData.rig; z.jst = 'crouch'; z.jt = rand(.1, .4); z.ju = 0; },
+  // Jambe touchée : il ne peut plus sauter (le bond en cours se termine) et avance en boitant
+  onWeak(z, m, amt){
+    if (z.lame) return null;
+    z.lame = true; z.limpSpd = Math.min(z.speed * .22, 1.1);
+    return { txt:'Boiteux' };
+  },
   update(z, dt){
     const R = z.rig, gp = z.g.position;
     const legs = (th, kn) => { for (let i = 0; i < 2; i++){ R.hip[i].rotation.x = th; R.knee[i].rotation.x = kn; } };
     if (z.st === 'attack'){ gp.y = 0; z.body.position.y = -.2; z.body.rotation.x = .3; legs(-1.25, 2.3); return false; } // griffes : code par défaut
+    if (z.lame && z.jst !== 'air'){ // boite lentement vers la barricade
+      gp.y = 0; gp.z += z.limpSpd * dt; z.phase += dt * 4;
+      const s = Math.sin(z.phase);
+      R.hip[0].rotation.x = -.5 + s * .35; R.knee[0].rotation.x = .9; R.hip[1].rotation.x = -.2; R.knee[1].rotation.x = .3 + Math.max(0, s) * .3; // une jambe traîne
+      z.body.position.y = -.28 + Math.abs(s) * .04; z.body.rotation.x = .45; z.body.rotation.z = .18 + s * .06;
+      if (z.armL){ z.armL.rotation.x = -.9 + s * .2; z.armR.rotation.x = -.6 - s * .2; }
+      if (gp.z >= z.stopZ){ gp.z = z.stopZ; z.st = 'attack'; }
+      return true;
+    }
     if (z.jst === 'crouch'){
       z.jt -= dt; const k = clamp(1 - z.jt / .32, 0, 1);
       legs(-1.1 - .35 * k, 2 + .5 * k); z.body.position.y = -.38 * k; z.body.rotation.x = .35 + .2 * k;
@@ -93,9 +121,9 @@ ZKINDS.flyer = {
     [-1, 1].forEach(s => {
       const w = zkGroup(body, .18 * s, .52, .05);
       zkMesh(w, ZKG.box, wingM, .95, .07, .08, .47 * s, 0, .02);              // os de l'aile
-      zkMesh(w, ZKG.box, wingM, .95, .025, .62, .47 * s, 0, -.3, P);          // membrane
+      zkWeak(zkMesh(w, ZKG.box, wingM, .95, .06, .62, .47 * s, 0, -.3, P), WEAK.aile);    // membrane (assez épaisse pour être touchée de profil)
       const t = zkGroup(w, .94 * s, 0, 0);
-      zkMesh(t, ZKG.box, wingM, .8, .02, .48, .4 * s, 0, -.22, P);            // bout de l'aile
+      zkWeak(zkMesh(t, ZKG.box, wingM, .8, .05, .48, .4 * s, 0, -.22, P), WEAK.aile);     // bout de l’aile
       zkMesh(t, ZKG.box, wingM, .06, .06, .18, .8 * s, 0, .05);               // griffe
       rig.wing.push(w); rig.tip.push(t);
     });
@@ -106,8 +134,43 @@ ZKINDS.flyer = {
     z.rig = z.g.userData.rig; z.alt = rand(5.5, 9); z.g.position.y = z.alt; z.fl = rand(0, 6); z.hits = 0; z.lunge = 0;
     z.stopZ = BAR_Z - 1.3 - rand(0, .6); z.diveZ = z.stopZ - rand(9, 14);
   },
+  // Aile touchée 2 fois (ou un gros coup) : il tombe, la chute le blesse gravement, puis il rampe
+  onWeak(z, m, amt){
+    z.wingHits = (z.wingHits || 0) + 1;
+    if (z.downed || (z.wingHits < 2 && amt < .4 * z.maxHp)) return null;
+    z.downed = 'fall'; z.fallV = 0; z.lunge = 0; z.body.position.z = 0;
+    return { txt:'Au sol' };
+  },
+  downUpdate(z, dt){
+    const R = z.rig, gp = z.g.position;
+    if (z.downed === 'fall'){
+      z.fallV += 20 * dt; gp.y = Math.max(0, gp.y - z.fallV * dt);
+      z.body.rotation.x = Math.min(1.2, z.body.rotation.x + dt * 3); z.body.rotation.z += dt * 4;
+      R.wing[0].rotation.z = 1.1; R.wing[1].rotation.z = -1.1;
+      if (gp.y <= 0){
+        z.downed = 'crawl'; z.fallV = 0; z.body.rotation.set(0, 0, 0); z.st = 'walk';
+        z.crawlZ = BAR_Z - .9 - rand(0, .6); z.atkT = rand(.6, 1);
+        zkV.set(gp.x, .3, gp.z); burst(zkV, 'dust', 8, 2.5);
+        if (Math.random() < .6) Snd.burst(260, .25, .25);
+        damage(z, z.maxHp * .45, false, zkV); // la chute fait très mal
+      }
+      return true;
+    }
+    // Rampe au sol, ailes traînantes ; à la barricade, petits coups de gueule
+    z.fl += dt * 4; const a = Math.sin(z.fl);
+    R.wing[0].rotation.z = .25 + a * .12; R.wing[1].rotation.z = -.25 - a * .12;
+    R.tip[0].rotation.z = .3; R.tip[1].rotation.z = -.3;
+    gp.y = 0; z.body.position.y = -.12; z.body.rotation.x = .12 + a * .04; z.body.rotation.z = a * .08;
+    if (gp.z < z.crawlZ){ gp.z = Math.min(z.crawlZ, gp.z + z.speed * .2 * dt); gp.x += Math.sin(z.fl * .5) * .3 * dt; }
+    else {
+      z.atkT -= dt;
+      if (z.atkT <= 0){ z.atkT = rand(1.2, 1.6); hitBarricade(z, z.dmg * .6, .1, 2); }
+    }
+    return true;
+  },
   update(z, dt){
     const R = z.rig, gp = z.g.position;
+    if (z.downed) return ZKINDS.flyer.downUpdate(z, dt);
     z.fl += dt * (z.st === 'attack' ? 15 : 10);
     const a = Math.sin(z.fl), b = Math.sin(z.fl - .7);
     R.wing[0].rotation.z = -a * .75; R.wing[1].rotation.z = a * .75;
@@ -151,10 +214,10 @@ ZKINDS.spitter = {
     const g = new THREE.Group(), body = zkGroup(g, 0, 0, 0), P = [];
     zkMesh(body, ZKG.sph, skin, .5, .55, .46, 0, 1.12, .05, P);                // ventre gonflé
     zkMesh(body, ZKG.sph, skin, .38, .3, .34, 0, 1.52, -.08, P);               // bosse du dos
-    zkMesh(body, ZKG.sph, ZKM.acid, .2, .2, .2, -.4, 1.2, .16, P);              // poches d'acide
-    zkMesh(body, ZKG.sph, ZKM.acid, .16, .16, .16, .38, 1.05, .22, P);
-    zkMesh(body, ZKG.sph, ZKM.acid, .14, .12, .12, .08, .9, .46, P);
-    const sac = zkMesh(body, ZKG.sph, ZKM.acid, .25, .22, .25, 0, 1.63, .2, P); // gorge déformée
+    zkWeak(zkMesh(body, ZKG.sph, ZKM.acid, .21, .21, .21, -.36, 1.22, .3, P), WEAK.acide);   // poches d'acide (points faibles)
+    zkWeak(zkMesh(body, ZKG.sph, ZKM.acid, .17, .17, .17, .35, 1.04, .34, P), WEAK.acide);
+    zkWeak(zkMesh(body, ZKG.sph, ZKM.acid, .15, .13, .13, .08, .9, .48, P), WEAK.acide);
+    const sac = zkWeak(zkMesh(body, ZKG.sph, ZKM.acid, .25, .22, .25, 0, 1.63, .2, P), WEAK.acide); // gorge déformée
     const head = zkMesh(body, ZKG.box, skin, .3, .26, .3, 0, 1.86, .1, P);
     zkEyes(body, 1.9, .26, .08);
     zkMesh(body, ZKG.box, ZKM.mouth, .2, .1, .04, 0, 1.77, .26);
@@ -166,6 +229,23 @@ ZKINDS.spitter = {
     return { g, body, head, armL, armR, legL, legR, parts:P, mats:[skin, rag], aimY:1.15 * T.scale };
   },
   init(z){ z.rig = z.g.userData.rig; z.stopZ = BAR_Z - rand(25, 40); z.spitT = rand(.5, 1.2); },
+  // Poche d'acide touchée : elle éclate, éclabousse les zombies autour et blesse gravement le cracheur
+  onWeak(z, m, amt, point){
+    dropZombieMesh(z, m);
+    burst(point, 'acid', 18, 3.4);
+    Snd.burst(1200, .25, .35); Snd.tone(180, .25, 'sawtooth', .08, 60);
+    const gp = z.g.position, r = SPIT_POP.radius, hurt = SPIT_POP.splash * z.maxHp;
+    for (const o of zombies){
+      if (o === z || o.dead) continue;
+      const dx = o.g.position.x - gp.x, dz = o.g.position.z - gp.z, d = Math.sqrt(dx * dx + dz * dz);
+      if (d >= r) continue;
+      zkV.set(o.g.position.x, o.g.position.y + (o.aimY != null ? o.aimY : 1.1), o.g.position.z);
+      burst(zkV, 'acid', 3, 1.5);
+      damage(o, hurt * (1 - .5 * d / r), false, zkV);
+    }
+    damage(z, amt + SPIT_POP.self * z.maxHp, false, point);
+    return { done:true, txt:'Acide' };
+  },
   update(z, dt){
     const sac = z.rig.sac;
     if (z.st === 'walk'){ sac.scale.setScalar(.24 + Math.sin(z.phase * 1.3) * .015); return false; } // marche par défaut, s'arrête à mi-distance
@@ -186,6 +266,8 @@ ZKINDS.spitter = {
     return true;
   }
 };
+// Éclatement d'une poche : rayon (m), dégâts aux voisins et au cracheur (en part de sa vie maximale)
+const SPIT_POP = { radius:4, splash:.6, self:.5 };
 // Crachats : pool fixe de maillages, géométrie et matériau partagés
 const zkRoot = new THREE.Group(); scene.add(zkRoot);
 const spits = [];
@@ -243,6 +325,8 @@ ZKINDS.colossus = {
     zkMesh(body, ZKG.box, dark, .62, .26, .4, 0, .74, 0, P);                   // bassin
     [-1, 1].forEach(s => { const sh = zkMesh(body, ZKG.box, skin, .48, .44, .54, .62 * s, 1.62, .04, P); sh.rotation.z = -.3 * s; }); // épaules
     [[0, 1.78, -.24], [-.26, 1.72, -.22], [.26, 1.72, -.22]].forEach(p => zkMesh(body, ZKG.box, bone, .16, .24, .3, p[0], p[1], p[2], P)); // plaques d'os
+    const core = zkWeak(zkMesh(body, ZKG.box, ZKM.core, .3, .26, .06, -.2, 1.4, .41, P), WEAK.plaque); // plaie lumineuse sur la poitrine (point faible)
+    zkMesh(body, ZKG.box, dark, .4, .05, .07, -.2, 1.56, .4); zkMesh(body, ZKG.box, dark, .4, .05, .07, -.2, 1.24, .4); // bords de la plaie
     const head = zkMesh(body, ZKG.box, skin, .3, .28, .32, 0, 1.66, .44, P);   // petite tête enfoncée
     zkMesh(body, ZKG.box, bone, .34, .1, .28, 0, 1.52, .47, P);                // mâchoire
     zkEyes(body, 1.7, .605, .08, .8);
@@ -255,12 +339,20 @@ ZKINDS.colossus = {
     });
     const legL = zkGroup(body, -.22, .7, 0), legR = zkGroup(body, .22, .7, 0);
     zkMesh(legL, ZKG.top, dark, .32, .64, .34, 0, 0, 0, P); zkMesh(legR, ZKG.top, dark, .32, .64, .34, 0, 0, 0, P);
-    g.scale.setScalar(T.scale); g.userData.rig = { arm, elbow, legL, legR };
+    g.scale.setScalar(T.scale); g.userData.rig = { arm, elbow, legL, legR, core };
     return { g, body, head, parts:P, mats:[skin, dark, bone], aimY:1.2 * T.scale };
   },
-  init(z){ z.rig = z.g.userData.rig; z.lastS = 0; z.slamT = 0; },
+  init(z){ z.rig = z.g.userData.rig; z.lastS = 0; z.slamT = 0; z.stunT = 0; },
+  // Point lumineux touché : dégâts ×3 et il recule d'un pas, sonné
+  onWeak(z, m, amt, point){
+    burst(point, 'dust', 6, 3); Snd.tone(900, .12, 'square', .05, 300);
+    if (z.st === 'walk') z.stunT = .35;
+    return null;
+  },
   update(z, dt){
     const R = z.rig, gp = z.g.position;
+    if (R.core){ const k = 1 + Math.sin(z.phase * 2.3) * .12; R.core.scale.set(.3 * k, .26 * k, .06); }
+    if (z.stunT > 0 && z.st === 'walk'){ z.stunT -= dt; gp.z -= dt * .4; z.body.rotation.x = -.12; return true; }
     const arms = (x, el) => { R.arm[0].rotation.x = x; R.arm[1].rotation.x = x; R.elbow[0].rotation.x = el; R.elbow[1].rotation.x = el; };
     if (z.st === 'walk'){
       gp.z += z.speed * dt;
@@ -301,4 +393,4 @@ ZKINDS.colossus = {
 };
 
 // Accès pour les tests automatiques
-window.__types = { ZKINDS, ZKG, ZKM, spits, spitLaunch, zkFrame, zkClear, get spitsActifs(){ return spits.filter(o => o.m.visible).length; } };
+window.__types = { ZKINDS, ZKG, ZKM, WEAK, SPIT_POP, spits, spitLaunch, zkFrame, zkClear, get spitsActifs(){ return spits.filter(o => o.m.visible).length; } };

@@ -54,7 +54,7 @@ function armAim(out){
   fwd.set(0, 0, -1).applyQuaternion(camera.quaternion);
   ray.set(camera.position, fwd); ray.far = 260;
   const hits = ray.intersectObjects(hitMeshes, false);
-  for (const h of hits){ const z = h.object.userData.z; if (z && !z.dead){ return out.copy(h.point); } }
+  for (const h of hits){ const z = h.object.userData.z; if ((z && !z.dead) || h.object.userData.onHit){ return out.copy(h.point); } }
   if (fwd.y < -.01) return out.copy(camera.position).addScaledVector(fwd, Math.min(260, -camera.position.y / fwd.y));
   return out.copy(camera.position).addScaledVector(fwd, 200);
 }
@@ -164,10 +164,12 @@ function armStep(dt){
     const hits = armRay.intersectObjects(hitMeshes, false);
     let stop = false;
     for (const h of hits){
+      if (h.object.userData.onHit){ if (o.seen.indexOf(h.object) < 0){ o.seen.push(h.object); h.object.userData.onHit(h.point, wDmg(o.id)); } continue; } // 23-rue.js
       const z = h.object.userData.z; if (!z || z.dead || o.seen.indexOf(z) >= 0) continue;
       o.seen.push(z);
       const head = h.object.userData.head, W = WEAPONS[o.id];
-      damage(z, wDmg(o.id) * (head ? headMult() * (W.headX || 1) : 1), head, h.point);
+      if (h.object.userData.weak && typeof weakHit === 'function') weakHit(z, h.object, wDmg(o.id), h.point); // point faible (07-zombies.js)
+      else damage(z, wDmg(o.id) * (head ? headMult() * (W.headX || 1) : 1), head, h.point);
       hitmT = .12; Snd.hit();
       if (--o.left <= 0){ p.copy(h.point); stop = true; break; }
     }
@@ -185,7 +187,7 @@ function armStep(dt){
     armRay.set(p, armDir); armRay.far = step;
     const hits = armRay.intersectObjects(hitMeshes, false);
     let at = null;
-    for (const h of hits){ const z = h.object.userData.z; if (z && !z.dead){ at = h.point; break; } }
+    for (const h of hits){ const z = h.object.userData.z; if ((z && !z.dead) || h.object.userData.onHit){ at = h.point; break; } }
     if (!at){
       p.addScaledVector(o.v, dt);
       // Fusée de proximité : explose en frôlant un zombie (volants qui louvoient, sauteurs en l'air)

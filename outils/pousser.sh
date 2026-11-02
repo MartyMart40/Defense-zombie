@@ -17,7 +17,7 @@ git add -A
 if git diff --cached --quiet; then echo "Rien à pousser."; exit 0; fi
 # Numéro de version sur les scripts pour forcer les navigateurs à recharger
 V="$(date +%Y%m%d%H%M%S)"
-sed -i -E "s#(src/[a-z]+\.js)(\?v=[0-9]+)?\"#\1?v=$V\"#g" index.html
+for f in $(git ls-files -m -o --exclude-standard '*.html'; git ls-files '*.html'); do [ -f "$f" ] && sed -i -E "s#((js|css|src)/[A-Za-z0-9_-]+\.(js|css))(\?v=[0-9]+)?\"#\1?v=$V\"#g" "$f"; done
 git add -A
 git commit -q -m "$MSG"
 git push -q origin main

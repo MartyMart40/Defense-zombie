@@ -22,6 +22,7 @@ Statuts : À faire, En cours (agent), Fait, Bloqué.
 | # | Tâche | Date |
 |---|-------|------|
 | 0 | Structure du projet et prototype de base | 2026-11-02 |
+| 0b | Visuel : zombies humanoïdes, décor, arme visible, traçantes, viseur, barre de vie, menu pause | 2026-11-02 |
 
 ## Idées en vrac
 

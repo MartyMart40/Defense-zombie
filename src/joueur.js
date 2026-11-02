@@ -1,6 +1,7 @@
-// Joueur stationnaire : visée à la souris (pointer lock) et points de vie.
+// Joueur stationnaire : visée à la souris (pointer lock), points de vie, flash rouge quand blessé.
 Jeu.joueur = (function () {
   const { camera, renderer } = Jeu.scene;
+  const flash = document.getElementById('blessure');
   let lacet = 0, tangage = 0;
   const etat = { vie: 100, vieMax: 100, verrouille: false };
 
@@ -16,8 +17,12 @@ Jeu.joueur = (function () {
   });
 
   function verrouiller() { renderer.domElement.requestPointerLock(); }
-  function blesser(degats) { etat.vie = Math.max(0, etat.vie - degats); }
-  function reinitialiser() { etat.vie = etat.vieMax; }
+  function blesser(degats) {
+    etat.vie = Math.max(0, etat.vie - degats);
+    flash.style.opacity = 0.6;
+    setTimeout(() => (flash.style.opacity = 0), 150);
+  }
+  function reinitialiser() { etat.vie = etat.vieMax; lacet = 0; tangage = 0; camera.rotation.set(0, 0, 0); }
 
   return { etat, verrouiller, blesser, reinitialiser };
 })();

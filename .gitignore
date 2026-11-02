@@ -1,0 +1,16 @@
+# Systeme
+.DS_Store
+Thumbs.db
+desktop.ini
+# Editeurs
+.vscode/
+.idea/
+# Dependances / builds
+node_modules/
+dist/
+# Temporaires
+*.tmp
+*.log
+
+# Cle d acces GitHub (ne jamais publier)
+.github-token

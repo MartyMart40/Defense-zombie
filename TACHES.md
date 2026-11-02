@@ -22,6 +22,7 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 | # | Tâche | Date |
 |---|-------|------|
 | 0 | Récupération de Dernier toit (5 villes, talents) depuis l'artifact claude.ai | 2026-11-02 |
+| 15 | Arbres détaillés : sapins à étages et feuillus en grappes, nuances, ombres, tous fusionnés (03-scene.js) | 2026-11-02 |
 | 7 | Nouvelles armes : arbalète, lance-flammes, minigun, lance-roquettes + améliorations par arme (js/20-armes.js) | 2026-11-02 |
 | 8 | Synergies de défenses (même type et combinaisons) | 2026-11-02 |
 | 9 | Pouvoirs : grenade (G), molotov (F), frappe aérienne (Q) (js/21-pouvoirs.js) | 2026-11-02 |

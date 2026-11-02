@@ -10,7 +10,7 @@ function updateHUD(){
   const pct = clamp(S.bar / S.barMax, 0, 1);
   const w = Math.round(pct * 100) + '%'; if (hudCache.bar !== w){ hudCache.bar = w; $('barFill').style.width = w; $('barFill').classList.toggle('low', pct < .3); $('vignette').classList.toggle('on', pct < .3 && state === 'playing'); }
   setTxt('wname', cur().name);
-  setTxt('ammo', reloadT > 0 ? 'Recharge' : S.ammo[S.cur] + ' / ' + magSize(S.cur));
+  setTxt('ammo', reloadT > 0 ? 'Recharge' : (WEAPONS[S.cur].spin && firing && spin < 1 && S.ammo[S.cur] > 0) ? 'Lancement ' + Math.round(spin * 100) + ' %' : S.ammo[S.cur] + ' / ' + magSize(S.cur));
   $('rl').classList.toggle('on', reloadT > 0);
   if (reloadT > 0) $('rlFill').style.width = Math.round((1 - reloadT / reloadDur) * 100) + '%';
   $('cross').classList.toggle('hit', hitmT > 0);

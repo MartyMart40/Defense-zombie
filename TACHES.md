@@ -9,9 +9,19 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 ## À faire
 
-| # | Tâche | Priorité | Note |
-|---|-------|----------|------|
-| 3 | Mode infini (sans choix de difficulté) | Haute | Dépend de 2 pour l'équilibre |
+| # | Tâche | Ronde | Fichiers principaux |
+|---|-------|-------|---------------------|
+| 7 | Nouvelles armes (minigun, lance-roquettes, arbalète, lance-flammes) + améliorations par arme | 1 | 04, 06, 08, 10 |
+| 8 | Synergies de défenses | 1 | 16, 17 |
+| 9 | Pouvoirs à recharge (grenade, frappe aérienne, molotov) | 1 | 21-pouvoirs.js |
+| 10 | Ambiance : météo, nuit, orage + musique dynamique | 1 | 22-ambiance.js, 01 |
+| 11 | Rue : barils explosifs, caisses larguées, civils à sauver | 2 | 20-rue.js |
+| 12 | Points faibles des zombies + combos | 2 | 18, 07 |
+| 13 | Compagnon + défi du jour | 2 | 23-compagnon.js, 24-defi.js |
+| 3 | Mode infini (sans choix de difficulté) | plus tard | |
+| - | Missions et succès | à confirmer | |
+
+Écarté par Martin : choisir 1 bonus parmi 3.
 
 ## Fait
 

@@ -24,8 +24,8 @@ $('btnStart').addEventListener('click', () => { Snd.init(); startLocation(campai
 $('btnNext').addEventListener('click', () => { Snd.init(); startWave(); });
 $('btnAgain').addEventListener('click', () => { const i = LOCS.indexOf(curLoc); startLocation(againNext && i + 1 < LOCS.length ? i + 1 : i); });
 $('ctrlHelp').innerHTML = isTouch
-  ? '<b>Glisser le doigt</b><span>viser, n’importe où sur l’écran</span><b>Feu</b><span>garde le doigt dessus pour tirer</span><b>Viser</b><span>amène l’arme à l’œil, aligne la pointe orange sur ta cible</span><b>Arme, Recharger</b><span>boutons à droite</span>'
-  : '<b>Souris</b><span>viser</span><b>Clic gauche</b><span>tirer (garde enfoncé)</span><b>Clic droit</b><span>viser avec l’arme à l’œil (garde enfoncé)</span><b>R</b><span>recharger</span><b>1 à 4 ou molette</b><span>changer d’arme</span><b>Échap</b><span>pause</span>';
+  ? '<b>Glisser le doigt</b><span>viser, n’importe où sur l’écran</span><b>Feu</b><span>garde le doigt dessus pour tirer</span><b>Viser</b><span>amène l’arme à l’œil, aligne la pointe orange sur ta cible</span><b>Arme</b><span>passe à l’arme suivante que tu possèdes</span><b>Recharger</b><span>bouton à droite</span>'
+  : '<b>Souris</b><span>viser</span><b>Clic gauche</b><span>tirer (garde enfoncé)</span><b>Clic droit</b><span>viser avec l’arme à l’œil (garde enfoncé)</span><b>R</b><span>recharger</span><b>1 à ' + WORDER.length + ' ou molette</b><span>changer d’arme</span><b>Échap</b><span>pause</span>';
 $('btnStart').textContent = 'Jouer : ' + LOCS[campaignIdx()].name;
 $('bestTxt').textContent = P.level > 1 || P.unlocked > 1 ? 'Niveau ' + P.level + ' · ' + P.unlocked + ' ville' + (P.unlocked > 1 ? 's' : '') + ' débloquée' + (P.unlocked > 1 ? 's' : '') : '';
 document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });

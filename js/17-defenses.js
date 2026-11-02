@@ -23,7 +23,7 @@ function buildTower(i, slot){
   dpart(g, 2.3, .35, .4, DMAT.bag, 0, h + .3, -1); dpart(g, .4, .35, 1.6, DMAT.bag, P0.x < 0 ? -1 : 1, h + .3, -.1);
   const rt = { i, type:slot ? slot.type : null, g, h, x:P0.x, z:P0.z, head:null, mz:new THREE.Vector3(), cd:rand(.2, .8), st:null };
   if (!slot) return rt;
-  rt.st = defStats(slot.type, slot.lv);
+  rt.st = defStatsSyn(slot.type, slot.lv, P.slots);
   const head = new THREE.Group(); head.position.set(0, h + .15, 0); head.rotation.y = Math.PI; g.add(head); rt.head = head;
   let my = .6, mf = 1.5;
   if (slot.type === 'turret'){
@@ -56,7 +56,41 @@ function buildTower(i, slot){
 function defRebuild(){
   while (defRoot.children.length) defRoot.remove(defRoot.children[0]);
   RT = P.slots.map((s, i) => buildTower(i, s));
+  buildSynFx();
   defS = null; // les minuteries repartent au prochain update
+}
+/* ---------- Synergies : halo sur les tours et lien lumineux au sol ---------- */
+// Matériaux partagés par couleur (créés une fois), maillages dans defRoot (vidés par defRebuild).
+const SYNMAT = {};
+function synMat(c){
+  if (!SYNMAT[c]) SYNMAT[c] = { line:addGlow(c, .3), spr:new THREE.SpriteMaterial({ map:glowTex, color:c, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, opacity:.4, fog:false }) };
+  return SYNMAT[c];
+}
+let synT = 0, synLinks = 0;
+function synLink(a, b, c){
+  const m = new THREE.Mesh(DGEO, synMat(c).line);
+  segA.set(a.x, .07, a.z); segB.set(b.x, .07, b.z);
+  m.position.copy(segA).add(segB).multiplyScalar(.5); m.scale.set(.16, .02, Math.max(.01, segA.distanceTo(segB)));
+  m.lookAt(segB); defRoot.add(m); synLinks++;
+}
+function buildSynFx(){
+  synLinks = 0;
+  const sy = defSynergies(), col = {};
+  const byType = t => RT.filter(rt => rt.type === t);
+  sy.same.forEach(s => { const g = byType(s.type); g.forEach(rt => { col[rt.i] = col[rt.i] || SYN_SAME_COLOR; }); for (let k = 1; k < g.length; k++) synLink(g[k - 1], g[k], SYN_SAME_COLOR); });
+  sy.combos.forEach(c => {
+    const a = byType(c.need[0]), b = byType(c.need[1]);
+    a.concat(b).forEach(rt => { col[rt.i] = c.color; });
+    // la paire la plus proche porte le lien
+    let best = null, bd = 1e9;
+    a.forEach(p => b.forEach(q => { const d = (p.x - q.x) * (p.x - q.x) + (p.z - q.z) * (p.z - q.z); if (d < bd){ bd = d; best = [p, q]; } }));
+    if (best) synLink(best[0], best[1], c.color);
+  });
+  RT.forEach(rt => {
+    if (!col[rt.i]) return;
+    const sp = new THREE.Sprite(synMat(col[rt.i]).spr);
+    sp.position.set(0, rt.h + .6, 0); sp.scale.set(3.4, 3.4, 1); rt.g.add(sp); rt.synGlow = sp;
+  });
 }
 // Position de la bouche du canon, selon l'orientation de la tête
 function muzzle(rt){
@@ -122,11 +156,16 @@ function defHit(z, amt, blood){
   if (blood) burst(zc(z), 'blood', 3, 2);
   if (z.hp <= 0) kill(z, false, zc(z).clone());
 }
-function splash(x, z0, r, dmg){
+// Brûlure : on garde la plus forte et la plus longue (laser, obus au napalm)
+function setBurn(z, dps, t){
+  z.dBurn = z.dBurnT > 0 ? Math.max(z.dBurn || 0, dps) : dps;
+  z.dBurnT = Math.max(z.dBurnT || 0, t);
+}
+function splash(x, z0, r, dmg, burn, burnT){
   for (const z of zombies){
     if (z.dead) continue;
     const dx = z.g.position.x - x, dz = z.g.position.z - z0, d = Math.sqrt(dx * dx + dz * dz);
-    if (d < r) defHit(z, dmg * (1 - .5 * d / r), true);
+    if (d < r){ defHit(z, dmg * (1 - .5 * d / r), true); if (burn > 0 && !z.dead) setBurn(z, burn, burnT); }
   }
   boom(x, 1.2, z0, r * 2.4); tmpV.set(x, .3, z0); burst(tmpV, 'dust', 6, 3);
 }
@@ -155,8 +194,9 @@ function defUpdate(dt){
   if (S !== defS){ defS = S; defReset(); }
   fxActive = true; sndT -= dt;
   for (const rt of RT) if (rt.type) TICK[rt.type](rt, dt);
-  // Brûlures du laser
+  // Brûlures du laser (et du napalm), marques de la tourelle
   for (const z of zombies){
+    if (z.dMarkT > 0) z.dMarkT -= dt;
     if (z.dead || !(z.dBurnT > 0)) continue;
     z.dBurnT -= dt; defHit(z, z.dBurn * dt, false);
     if (Math.random() < dt * 4) burst(zc(z), 'ember', 1, 1);
@@ -195,7 +235,7 @@ const TICK = {
     }
     const lastZ = hits[hits.length - 1];
     segB.copy(zc(lastZ));
-    hits.forEach(z => defHit(z, st.dmg, true));
+    hits.forEach(z => { defHit(z, st.dmg, true); if (st.syn.mark) z.dMarkT = SYN.markT; });
     tracer(o, segB);
     defSnd(() => Snd.burst(3200, .06, .12));
   },
@@ -207,7 +247,7 @@ const TICK = {
     rt.cd = 1 / st.rate; aimHead(rt, t);
     const T = 1.4, pz = t.st === 'walk' ? Math.min(t.stopZ, t.g.position.z + t.speed * T) : t.g.position.z;
     sh.a.copy(muzzle(rt)); sh.b.set(t.g.position.x, .2, pz); sh.t = 0; sh.T = T; sh.hgt = 10 + sh.a.distanceTo(sh.b) * .15;
-    sh.dmg = st.dmg; sh.r = st.radius; sh.m.scale.set(.35, .35, .5); sh.m.position.copy(sh.a); sh.m.visible = true; sh.life = 1;
+    sh.dmg = st.dmg; sh.r = st.radius; sh.burn = st.syn.napalm ? st.dmg * SYN.napalmDps : 0; sh.burnT = st.burnT; sh.m.scale.set(.35, .35, .5); sh.m.position.copy(sh.a); sh.m.visible = true; sh.life = 1;
     boom(sh.a.x, sh.a.y, sh.a.z, 1.6);
     Snd.tone(220, .18, 'sine', .2, 70);
   },
@@ -231,7 +271,7 @@ const TICK = {
       if (z.dead) continue;
       const px = z.g.position.x - o.x, pz = z.g.position.z - o.z, s = px * dx + pz * dz;
       if (s < 0 || s > len) continue;
-      if (Math.abs(px * dz - pz * dx) < .9){ defHit(z, st.dps * dt, Math.random() < dt * 3); z.dBurn = st.burn; z.dBurnT = BURN_T; }
+      if (Math.abs(px * dz - pz * dx) < .9){ defHit(z, st.dps * dt, Math.random() < dt * 3); setBurn(z, st.burn, st.burnT); }
     }
     const ty = zc(rt.tgt).y; segA.copy(o); segB.set(o.x + dx * len, Math.max(.3, o.y + (ty - o.y) * len / L), o.z + dz * len); // le rayon passe par la cible, même en l'air
     const fl = .8 + Math.random() * .4;
@@ -244,11 +284,14 @@ const TICK = {
       rt.salvoT -= dt;
       if (rt.salvoT <= 0){
         rt.salvoT = .14; rt.salvo--;
-        const t = pick(zombies.filter(z => !z.dead && inRange(rt, z, st.range))) || null;
+        const cand = zombies.filter(z => !z.dead && inRange(rt, z, st.range));
+        // Marquage : les zombies marqués par la tourelle passent en premier
+        const marked = st.syn.hunt ? cand.filter(z => z.dMarkT > 0) : [];
+        const t = pick(marked.length ? marked : cand) || null;
         const m = getFree(missiles);
         if (t && m){
           if (rt.head) aimHead(rt, t);
-          m.m.position.copy(muzzle(rt)); m.v.set(rand(-3, 3), 14, rand(-3, 3)); m.tgt = t; m.dmg = st.dmg; m.r = st.radius; m.age = 0; m.life = 1; m.smk = 0; m.m.visible = true;
+          m.m.position.copy(muzzle(rt)); m.v.set(rand(-3, 3), 14, rand(-3, 3)); m.tgt = t; m.dmg = st.dmg * (marked.length ? SYN.markDmg : 1); m.r = st.radius; m.age = 0; m.life = 1; m.smk = 0; m.m.visible = true;
           Snd.burst(1600, .25, .14);
         }
       }
@@ -281,7 +324,7 @@ function updateFx(dt){
     s.t += dt; const u = Math.min(1, s.t / s.T);
     s.m.position.lerpVectors(s.a, s.b, u); s.m.position.y += s.hgt * 4 * u * (1 - u);
     s.m.rotation.x += dt * 4;
-    if (u >= 1){ s.m.visible = false; splash(s.b.x, s.b.z, s.r, s.dmg); Snd.burst(700, .45, .35); }
+    if (u >= 1){ s.m.visible = false; splash(s.b.x, s.b.z, s.r, s.dmg, s.burn, s.burnT); Snd.burst(700, .45, .35); }
   }
   for (const m of missiles){
     if (!m.m.visible) continue;
@@ -338,6 +381,9 @@ function updateFx(dt){
 // Appelée à chaque image par visuals() : on range les effets quand la vague est finie
 function defFrame(dt){
   if (state !== 'playing' && state !== 'paused' && fxActive) clearFx();
+  // Pulsation lente et discrète des halos de synergie (quelques matériaux partagés seulement)
+  synT += dt || 0; const k = .75 + .25 * Math.sin(synT * 2.4);
+  for (const c in SYNMAT){ SYNMAT[c].line.opacity = .3 * k; SYNMAT[c].spr.opacity = .4 * k; }
 }
 // Crochet appelé par updateHUD() : ferraille et compte à rebours de l'ogive
 let nukeShown = false;
@@ -353,4 +399,6 @@ defRebuild();
 
 // Accès pour les tests automatiques
 window.__atelier = { DEF_TYPES, DEF_SLOTS, DEF_ORDER, DEF_LINES, defStats, defSoft, defGrow, defUpgCost, defSellValue, defBuy, defUpgrade, defSell, scrapFor, SCRAP_Z,
-  openAtelier, renderAtelier, defRebuild, defUpdate, get RT(){ return RT; }, defRoot, fxRoot, clearFx };
+  openAtelier, renderAtelier, defRebuild, defUpdate, get RT(){ return RT; }, defRoot, fxRoot, clearFx,
+  SYN_SAME, SYN_SAME_NUKE, SYN_COMBOS, SYN, defSynergies, defSynMods, defStatsSyn, defSynText, TICK, splash, get synLinks(){ return synLinks; } };
+window.__syn = { SYN_SAME, SYN_SAME_NUKE, SYN_COMBOS, SYN, defSynergies, defSynMods, defStatsSyn, defSynText, defSynGain, renderSynergies, TICK, updateFx, get RT(){ return RT; }, get synLinks(){ return synLinks; } };

@@ -44,6 +44,81 @@ function defStats(type, lv){
   }
   return null;
 }
+/* ---------- Synergies (calculées à partir de P.slots, rien de plus dans la sauvegarde) ---------- */
+// Même type : 2, 3 ou 4 défenses pareilles. L'ogive n'a que des dégâts en plus (pas de recharge plus courte).
+const SYN_SAME = { 2:{ dmg:1.15, rate:1.10 }, 3:{ dmg:1.25, rate:1.15 }, 4:{ dmg:1.40, rate:1.25 } };
+const SYN_SAME_NUKE = { 2:{ dmg:1.10, rate:1 }, 3:{ dmg:1.20, rate:1 }, 4:{ dmg:1.30, rate:1 } };
+const SYN = { burnT:1.5, napalmDps:.12, markT:3, markDmg:1.25, radius:1.3 };
+const SYN_COMBOS = [
+  { id:'napalm', name:'Napalm', need:['laser', 'mortar'], color:0xff7a2a,
+    desc:'Les obus du mortier mettent le feu aux zombies et toutes les brûlures durent 50 % plus longtemps.' },
+  { id:'mark', name:'Marquage', need:['turret', 'missile'], color:0x5ad0ff,
+    desc:'La tourelle marque les zombies touchés : les missiles les visent en premier et leur font +25 % de dégâts.' },
+  { id:'firerain', name:'Pluie de feu', need:['mortar', 'missile'], color:0xff4a3a,
+    desc:'Les explosions du mortier et des missiles sont 30 % plus larges.' }
+];
+const SYN_SAME_COLOR = 0xf2c060;
+const pct = m => Math.round((m - 1) * 100);
+function defSynergies(slots){
+  slots = slots || P.slots;
+  const count = {};
+  slots.forEach(s => { if (s && DEF_TYPES[s.type]) count[s.type] = (count[s.type] || 0) + 1; });
+  const same = [];
+  DEF_ORDER.forEach(t => { const n = Math.min(4, count[t] || 0); if (n >= 2) same.push({ type:t, n, m:(t === 'nuke' ? SYN_SAME_NUKE : SYN_SAME)[n] }); });
+  const combos = SYN_COMBOS.filter(c => c.need.every(t => count[t]));
+  return { count, same, combos };
+}
+// Ce que les synergies changent pour une défense de ce type
+function defSynMods(type, slots){
+  const sy = defSynergies(slots), m = { dmg:1, rate:1, radius:1, burnT:1, napalm:false, mark:false, hunt:false, n:1, names:[] };
+  const s = sy.same.find(x => x.type === type);
+  if (s){ m.dmg = s.m.dmg; m.rate = s.m.rate; m.n = s.n; m.names.push(DEF_TYPES[type].name + ' ×' + s.n); }
+  sy.combos.forEach(c => {
+    if (c.need.indexOf(type) < 0) return;
+    m.names.push(c.name);
+    if (c.id === 'napalm'){ m.burnT = SYN.burnT; if (type === 'mortar') m.napalm = true; }
+    if (c.id === 'mark'){ if (type === 'turret') m.mark = true; else m.hunt = true; }
+    if (c.id === 'firerain') m.radius = SYN.radius;
+  });
+  return m;
+}
+// Stats finales d'une défense installée : defStats (améliorations) × synergies
+function defStatsSyn(type, lv, slots){
+  const st = defStats(type, lv); if (!st) return st;
+  const m = defSynMods(type, slots);
+  if (st.dmg != null) st.dmg *= m.dmg;
+  if (st.dps != null) st.dps *= m.dmg;
+  if (st.burn != null) st.burn *= m.dmg;
+  if (st.fallout != null) st.fallout *= m.dmg;
+  if (st.rate != null) st.rate *= m.rate;
+  if (st.off != null) st.off /= m.rate;
+  if (st.reload != null) st.reload /= m.rate;
+  if (st.radius != null && type !== 'nuke') st.radius *= m.radius;
+  st.burnT = BURN_T * m.burnT; st.syn = m;
+  return st;
+}
+// Texte du bonus d'une défense, pour l'atelier
+function defSynText(type, slots){
+  const m = defSynMods(type, slots), p = [];
+  if (m.dmg > 1) p.push('dégâts +' + pct(m.dmg) + ' %');
+  if (m.rate > 1) p.push((type === 'laser' ? 'pauses ' : 'cadence +') + (type === 'laser' ? '-' + Math.round((1 - 1 / m.rate) * 100) : pct(m.rate)) + ' %');
+  if (m.radius > 1) p.push('explosions +' + pct(m.radius) + ' %');
+  if (m.burnT > 1) p.push('brûlures +' + pct(m.burnT) + ' %');
+  if (m.napalm) p.push('obus incendiaires');
+  if (m.mark) p.push('marque les zombies');
+  if (m.hunt) p.push('vise les marqués, +' + pct(SYN.markDmg) + ' %');
+  return m.names.length ? m.names.join(', ') + ' : ' + p.join(', ') : '';
+}
+const synSameTxt = (t, n) => { const m = (t === 'nuke' ? SYN_SAME_NUKE : SYN_SAME)[n]; return 'dégâts +' + pct(m.dmg) + ' %' + (m.rate > 1 ? ', cadence +' + pct(m.rate) + ' %' : ''); };
+// Synergies nouvelles ou plus fortes si on installe "type" à l'emplacement i
+function defSynGain(i, type){
+  const a = defSynergies(), nx = P.slots.slice(); nx[i] = { type, lv:{} };
+  const b = defSynergies(nx), out = [];
+  b.same.forEach(s => { const o = a.same.find(x => x.type === s.type); if (!o || o.n < s.n) out.push(DEF_TYPES[s.type].name + ' ×' + s.n); });
+  b.combos.forEach(c => { if (a.combos.indexOf(c) < 0) out.push(c.name); });
+  return out;
+}
+
 // Chaque niveau coûte 15 % de plus que le précédent. Premier niveau : 40 % du prix de la défense.
 function defUpgCost(type, l){ return Math.round(DEF_TYPES[type].price * .4 * Math.pow(1.15, l)); }
 const defSellValue = slot => slot ? Math.floor(slot.paid / 2) : 0;
@@ -86,7 +161,7 @@ const r0 = v => Math.round(v).toLocaleString('fr-CA');
 const DEF_FMT = {
   turret:  { dmg:s => r0(s.dmg) + ' dégâts par balle', rate:s => f1(s.rate) + ' tirs par seconde', range:s => r0(s.range) + ' m', spec:s => f1(s.pierce) + ' zombie' + (s.pierce >= 2 ? 's' : '') + ' par balle' },
   mortar:  { dmg:s => r0(s.dmg) + ' dégâts', rate:s => 'un obus toutes les ' + f1(1 / s.rate) + ' s', range:s => r0(s.range) + ' m', spec:s => 'rayon de ' + f1(s.radius) + ' m' },
-  laser:   { dmg:s => r0(s.dps) + ' dégâts par seconde', rate:s => 'pause de ' + f1(s.off) + ' s entre deux rayons', range:s => r0(s.range) + ' m', spec:s => r0(s.burn) + ' dégâts par seconde pendant ' + BURN_T + ' s' },
+  laser:   { dmg:s => r0(s.dps) + ' dégâts par seconde', rate:s => 'pause de ' + f1(s.off) + ' s entre deux rayons', range:s => r0(s.range) + ' m', spec:s => r0(s.burn) + ' dégâts par seconde pendant ' + f1(s.burnT || BURN_T) + ' s' },
   missile: { dmg:s => r0(s.dmg) + ' dégâts par missile', rate:s => 'une salve toutes les ' + f1(1 / s.rate) + ' s', range:s => 'explosion de ' + f1(s.radius) + ' m', spec:s => f1(s.count) + ' missiles par salve' },
   nuke:    { dmg:s => r0(s.dmg) + ' dégâts', rate:s => r0(s.fallout) + ' dégâts par seconde pendant ' + FALLOUT_T + ' s', range:s => 'souffle de ' + r0(s.radius) + ' m', spec:s => 'une ogive toutes les ' + f1(s.reload) + ' s' }
 };
@@ -117,24 +192,53 @@ function renderAtelier(){
     h += '</div>';
   });
   $('atSlots').innerHTML = h;
+  renderSynergies();
   const s = P.slots[atSel];
   h = '<h3>' + DEF_SLOTS[atSel].name + (s ? ' : ' + DEF_TYPES[s.type].name : ' : installer une défense') + '</h3>';
   if (!s){
     DEF_ORDER.forEach(k => {
       const D = DEF_TYPES[k];
-      h += '<div class="row"><div class="info"><div class="nm">' + D.name + '</div><div class="ds">' + D.desc + '</div></div><button data-at="buy" data-t="' + k + '"' + (P.scrap < D.price ? ' disabled' : '') + '>' + fmtS(D.price) + '</button></div>';
+      const gain = defSynGain(atSel, k);
+      h += '<div class="row"><div class="info"><div class="nm">' + D.name + '</div><div class="ds">' + D.desc + '</div>'
+        + (gain.length ? '<div class="at-syn">Active la synergie : ' + gain.join(', ') + '</div>' : '') + '</div><button data-at="buy" data-t="' + k + '"' + (P.scrap < D.price ? ' disabled' : '') + '>' + fmtS(D.price) + '</button></div>';
     });
   } else {
     const F = DEF_FMT[s.type], D = DEF_TYPES[s.type];
     h += '<div class="ds at-note">Chaque amélioration donne environ +10 % et coûte 15 % de plus que la précédente. Les dégâts montent sans limite ; le reste plafonne doucement.</div>';
+    const sx = defSynText(s.type);
+    if (sx) h += '<div class="at-syn">Bonus de synergie, ' + sx + '. Les valeurs ci-dessous en tiennent compte.</div>';
     DEF_LINES.forEach(k => {
       const l = s.lv[k], c = defUpgCost(s.type, l), nxt = Object.assign({}, s.lv); nxt[k] = l + 1;
-      const cur = F[k](defStats(s.type, s.lv)), aft = F[k](defStats(s.type, nxt));
+      const cur = F[k](defStatsSyn(s.type, s.lv)), aft = F[k](defStatsSyn(s.type, nxt));
       h += '<div class="row"><div class="info"><div class="nm">' + D.lines[k] + ' <span class="at-lv">niv. ' + l + '</span></div><div class="ds">' + cur + (aft !== cur ? ' → ' + aft : ' (presque au maximum)') + '</div></div>'
         + '<button data-at="upg" data-k="' + k + '"' + (P.scrap < c ? ' disabled' : '') + '>' + fmtS(c) + '</button></div>';
     });
   }
   $('atDetail').innerHTML = h;
+}
+// Section « Synergies actives » : en cours, puis celles possibles (grisées, avec ce qu'il manque)
+function renderSynergies(){
+  let box = $('atSyn');
+  if (!box){
+    const d = $('atDetail'); if (!d || !d.parentNode) return;
+    box = document.createElement('div'); box.id = 'atSyn'; d.parentNode.insertBefore(box, d);
+  }
+  const sy = defSynergies(), on = [], off = [];
+  sy.same.forEach(s => {
+    const D = DEF_TYPES[s.type];
+    on.push('<b>' + D.name + ' ×' + s.n + '</b> : ' + synSameTxt(s.type, s.n) + ' pour ces ' + s.n + ' défenses.'
+      + (s.n < 4 ? ' <span class="at-next">Une de plus : ' + synSameTxt(s.type, s.n + 1) + '.</span>' : ''));
+  });
+  sy.combos.forEach(c => on.push('<b>' + c.name + '</b> (' + c.need.map(t => DEF_TYPES[t].name).join(' + ') + ') : ' + c.desc));
+  if (!sy.same.length) off.push('<b>Même type</b> : 2 défenses pareilles = ' + synSameTxt('turret', 2) + ' ; 3 = ' + synSameTxt('turret', 3) + ' ; 4 = ' + synSameTxt('turret', 4) + '. Ogive : ' + synSameTxt('nuke', 2) + ', puis +' + pct(SYN_SAME_NUKE[3].dmg) + ' et +' + pct(SYN_SAME_NUKE[4].dmg) + ' %.');
+  SYN_COMBOS.forEach(c => {
+    if (sy.combos.indexOf(c) >= 0) return;
+    const miss = c.need.filter(t => !sy.count[t]).map(t => DEF_TYPES[t].name);
+    off.push('<b>' + c.name + '</b> : ' + c.desc + ' <span class="at-need">Il faut ' + c.need.map(t => DEF_TYPES[t].name).join(' + ') + ' (il manque : ' + miss.join(', ') + ').</span>');
+  });
+  box.innerHTML = '<h3>Synergies actives</h3>'
+    + (on.length ? on.map(t => '<div class="syn on">' + t + '</div>').join('') : '<div class="syn none">Aucune pour l’instant.</div>')
+    + (off.length ? '<div class="syn-sub">Possibles</div>' + off.map(t => '<div class="syn off">' + t + '</div>').join('') : '');
 }
 $('scrAtelier').addEventListener('click', e => {
   const b = e.target.closest('[data-at]'); if (!b || b.disabled) return;

@@ -1,15 +1,17 @@
 'use strict';
 /* ================= Tir ================= */
+// Armes à balles : rayon instantané ici. Carreaux, roquettes et flammes : 20-armes.js (armLaunch, armFlame).
 const ray = new THREE.Raycaster();
 const fwd = new THREE.Vector3();
 function cur(){ return WEAPONS[S.cur]; }
 function startReload(){
   if (reloadT > 0 || S.ammo[S.cur] >= magSize(S.cur)) return;
-  reloadDur = reloadT = cur().reload * reloadMult(); Snd.reload();
+  reloadDur = reloadT = wReload(S.cur); Snd.reload();
+  if (S.cur === 'minigun') Snd.tone(300, .5, 'sawtooth', .05, 60);
 }
 function equip(id){
-  if (!S.owned[id]) return;
-  S.cur = id; reloadT = 0; cool = .25;
+  if (!S.owned[id] || !VMS[id]) return;
+  S.cur = id; reloadT = 0; cool = .25; spin = 0;
   Object.keys(VMS).forEach(k => VMS[k].visible = (k === id));
   VMS[id].add(flash); flash.position.set(0, .02, VMS[id].userData.muzzle);
   if (!S.ammo[id] && S.ammo[id] !== 0) S.ammo[id] = magSize(id);
@@ -18,35 +20,56 @@ function swapNext(dir){
   const owned = WORDER.filter(id => S.owned[id]); if (owned.length < 2) return;
   const i = owned.indexOf(S.cur); equip(owned[(i + (dir || 1) + owned.length) % owned.length]);
 }
+// Sons des nouvelles armes (avec les outils de Snd, sans toucher 01-son.js)
+const SHOT_SND = {
+  crossbow(){ Snd.tone(520, .09, 'triangle', .07, 160); Snd.burst(3200, .05, .06); }, // presque silencieuse
+  flamer(){ Snd.burst(650, .14, .1); },
+  minigun(){ Snd.burst(2600, .07, .22); Snd.tone(130, .06, 'sine', .14, 50); },
+  rocket(){ Snd.burst(900, .55, .6); Snd.tone(240, .5, 'sawtooth', .1, 80); }
+};
+function shotSound(id){ if (SHOT_SND[id]) SHOT_SND[id](); else Snd.shot(id); }
 let flashT = 0, hitmT = 0;
+let spin = 0; // montée en régime du minigun (0 à 1), tenue à jour par 20-armes.js
 function fire(){
-  const W = cur();
-  S.ammo[S.cur]--; cool = 1 / (W.rate * (1 + .05 * T('trigger')));
-  recoilAcc += W.recoil * (zoomed ? .6 : 1); kick = 1;
-  flash.visible = true; flash.material.rotation = Math.random() * 6; const fs = W.id === 'shotgun' ? .55 : .35; flash.scale.set(fs, fs, 1);
-  muzzleLight.intensity = 3; vmFlashLight.intensity = 2; flashT = .05;
-  Snd.shot(W.id);
-  let anyHit = false, anyHead = false;
-  const origin = camera.position;
-  for (let p = 0; p < W.pellets; p++){
-    const sp = W.spread * (zoomed ? .45 : 1);
-    fwd.set(rand(-1, 1) * sp, rand(-1, 1) * sp, -1).normalize().applyQuaternion(camera.quaternion);
-    ray.set(origin, fwd); ray.far = 260;
-    const hits = ray.intersectObjects(hitMeshes, false);
-    let pierced = 0; const seen = new Set();
-    for (const h of hits){
-      const z = h.object.userData.z; if (!z || z.dead || seen.has(z)) continue;
-      seen.add(z);
-      const head = h.object.userData.head;
-      damage(z, W.dmg * dmgMult() * (head ? headMult() : 1), head, h.point);
-      anyHit = true; if (head) anyHead = true;
-      if (++pierced >= W.pierce) break;
-    }
-    if (!pierced && fwd.y < -0.01){
-      const t = -origin.y / fwd.y; tmpV.copy(origin).addScaledVector(fwd, t);
-      if (p % 3 === 0) burst(tmpV, 'dust', 3, 1.5);
-    }
+  const id = S.cur, W = cur();
+  if (W.spin && spin < 1){ cool = 0; return false; } // les canons tournent encore : pas de balle
+  S.ammo[id]--;
+  const iv = 1 / wRate(id);
+  cool = W.rate >= 10 ? Math.max(cool, -iv) + iv : iv; // cadence élevée : garde le reste d'une image à l'autre
+  recoilAcc += W.recoil * (zoomed ? .6 : 1); kick = W.kick != null ? W.kick : 1;
+  if (W.spin) shake = Math.max(shake, .07);
+  const fs = { shotgun:.55, rocket:.85, flamer:.28, crossbow:0 }[id];
+  if (fs !== 0){
+    flash.visible = true; flash.material.rotation = Math.random() * 6; const s = fs || .35; flash.scale.set(s, s, 1);
+    muzzleLight.intensity = W.kind === 'flame' ? 2 : 3; vmFlashLight.intensity = 2; flashT = .05;
   }
-  if (anyHit){ hitmT = .12; Snd.hit(); }
-  if (S.ammo[S.cur] <= 0) setTimeout(() => { if (state === 'playing') startReload(); }, 180);
+  shotSound(id);
+  if (W.kind === 'bolt' || W.kind === 'rocket'){ if (typeof armLaunch === 'function') armLaunch(id); }
+  else if (W.kind === 'flame'){ if (typeof armFlame === 'function') armFlame(id); }
+  else {
+    let anyHit = false;
+    const origin = camera.position, n = wPellets(id), sp0 = wSpread(id), pierce = wPierce(id), dmg = wDmg(id);
+    for (let p = 0; p < n; p++){
+      const sp = sp0 * (zoomed ? .45 : 1);
+      fwd.set(rand(-1, 1) * sp, rand(-1, 1) * sp, -1).normalize().applyQuaternion(camera.quaternion);
+      ray.set(origin, fwd); ray.far = 260;
+      const hits = ray.intersectObjects(hitMeshes, false);
+      let pierced = 0; const seen = new Set();
+      for (const h of hits){
+        const z = h.object.userData.z; if (!z || z.dead || seen.has(z)) continue;
+        seen.add(z);
+        const head = h.object.userData.head;
+        damage(z, dmg * (head ? headMult() : 1), head, h.point);
+        anyHit = true;
+        if (++pierced >= pierce) break;
+      }
+      if (!pierced && fwd.y < -0.01){
+        const t = -origin.y / fwd.y; tmpV.copy(origin).addScaledVector(fwd, t);
+        if (p % 3 === 0) burst(tmpV, 'dust', 3, 1.5);
+      }
+    }
+    if (anyHit){ hitmT = .12; Snd.hit(); }
+  }
+  if (S.ammo[id] <= 0) setTimeout(() => { if (state === 'playing') startReload(); }, 180);
+  return true;
 }

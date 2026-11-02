@@ -35,8 +35,7 @@ document.addEventListener('wheel', e => { if (state === 'playing') swapNext(e.de
 document.addEventListener('keydown', e => {
   if (state === 'playing'){
     if (e.code === 'KeyR') startReload();
-    else if (e.code === 'Digit1') equip('pistol'); else if (e.code === 'Digit2') equip('shotgun');
-    else if (e.code === 'Digit3') equip('rifle'); else if (e.code === 'Digit4') equip('sniper');
+    else if (/^(Digit|Numpad)[1-9]$/.test(e.code)){ const id = WORDER[+e.code.slice(-1) - 1]; if (id) equip(id); } // 1 à N : armes dans l'ordre de la boutique
     else if (e.code === 'KeyQ') swapNext(1);
     else if (e.code === 'Escape' || e.code === 'KeyP') pause();
   } else if (state === 'paused' && e.code === 'KeyP') resume();

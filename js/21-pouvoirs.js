@@ -513,21 +513,22 @@ function pwArm(id){
   pwArmed = id;
 }
 const PW_PREV_COL = { grenade:0xffb040, molotov:0xff5a20, strike:0xff2a20 };
-const pwPrevMat = new THREE.MeshBasicMaterial({ color:0xffb040, transparent:true, opacity:.75, depthWrite:false, fog:false, side:THREE.DoubleSide });
-const pwPrevFill = new THREE.MeshBasicMaterial({ color:0xffb040, transparent:true, opacity:.14, depthWrite:false, fog:false, side:THREE.DoubleSide });
-const pwPrev = new THREE.Group(); pwPrev.visible = false; scene.add(pwPrev);
+const pwPrevMat = new THREE.MeshBasicMaterial({ color:0xffb040, transparent:true, opacity:.85, depthWrite:false, depthTest:false, fog:false, side:THREE.DoubleSide });
+const pwPrevFill = new THREE.MeshBasicMaterial({ color:0xffb040, transparent:true, opacity:.18, depthWrite:false, depthTest:false, fog:false, side:THREE.DoubleSide });
+const pwPrev = new THREE.Group(); pwPrev.visible = false; scene.add(pwPrev); // dessiné par-dessus le sol (sinon il se confond avec la route au loin)
 const pwRing = new THREE.Mesh(new THREE.RingGeometry(.9, 1, 48), pwPrevMat); pwRing.rotation.x = -Math.PI / 2; pwPrev.add(pwRing);
 const pwDisc = new THREE.Mesh(new THREE.CircleGeometry(1, 40), pwPrevFill); pwDisc.rotation.x = -Math.PI / 2; pwPrev.add(pwDisc);
 const pwDot = new THREE.Mesh(new THREE.CircleGeometry(.18, 12), pwPrevMat); pwDot.rotation.x = -Math.PI / 2; pwPrev.add(pwDot);
+[pwRing, pwDisc, pwDot].forEach(m => m.renderOrder = 999);
 // Frappe aérienne : bande le long de la rue
 const pwBand = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), pwPrevFill); pwBand.rotation.x = -Math.PI / 2; pwPrev.add(pwBand);
-const pwBandEdge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(1, 1)), new THREE.LineBasicMaterial({ color:0xff2a20, transparent:true, opacity:.8, fog:false, depthWrite:false }));
+const pwBandEdge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(1, 1)), new THREE.LineBasicMaterial({ color:0xff2a20, transparent:true, opacity:.9, fog:false, depthWrite:false, depthTest:false }));
 pwBandEdge.rotation.x = -Math.PI / 2; pwPrev.add(pwBandEdge);
 // Trajectoire en pointillés (grenade, cocktail)
 const PW_ARC_N = 24;
 const pwArcGeo = new THREE.BufferGeometry(); pwArcGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(PW_ARC_N * 3), 3));
-const pwArc = new THREE.Line(pwArcGeo, new THREE.LineDashedMaterial({ color:0xffd8a0, dashSize:.6, gapSize:.45, transparent:true, opacity:.8, fog:false, depthWrite:false }));
-pwArc.frustumCulled = false; scene.add(pwArc); pwArc.visible = false;
+const pwArc = new THREE.Line(pwArcGeo, new THREE.LineDashedMaterial({ color:0xffd8a0, dashSize:.6, gapSize:.45, transparent:true, opacity:.85, fog:false, depthWrite:false, depthTest:false }));
+pwArc.frustumCulled = false; pwArc.renderOrder = 998; scene.add(pwArc); pwArc.visible = false;
 const pwPv = new THREE.Vector3(), pwHand = new THREE.Vector3();
 function pwPreview(){
   const id = pwArmed;

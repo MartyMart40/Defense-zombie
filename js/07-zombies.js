@@ -38,6 +38,7 @@ function damage(z, amt, head, point){
 function kill(z, head, point){
   z.dead = true; z.deadT = 0; removeZombieMeshes(z);
   const pay = Math.round(z.reward * (1 + .08 * T('scavenger')) * (head ? 1.5 : 1));
+  if (typeof defOnKill === 'function') defOnKill(z); // ferraille (16-atelier.js)
   addXP(z.xp);
   S.money += pay; S.earned += pay; S.kills++; S.waveKills++;
   if (head){ z.head.visible = false; z.headGone = true; burst(point, 'blood', 14, 4); }

@@ -17,6 +17,7 @@ function update(dt){
     if (spawnT <= 0 && alive < plan.maxAlive){ spawnZombie(plan.queue.pop()); spawnT = plan.interval * rand(.6, 1.4); }
   }
   updateZombies(dt);
+  if (typeof defUpdate === 'function') defUpdate(dt); // défenses automatiques (17-defenses.js)
   groanT -= dt;
   if (groanT <= 0){ groanT = rand(1.5, 4); if (zombies.some(z => !z.dead)) Snd.groan(); }
   if (S.bar <= 0 && overT < 0){ overT = 1.1; shake = 1; firing = false; banner('Ils passent !', '', 1200); }
@@ -30,6 +31,7 @@ function visuals(dt){
   time += dt;
   fires.forEach(f => { f.light.intensity = f.base * (0.75 + Math.random() * .4); f.cones.forEach((c, i) => { c.scale.y = .8 + Math.sin(time * 9 + i * 2) * .25 + Math.random() * .1; }); });
   updateParts(dt);
+  if (typeof defFrame === 'function') defFrame(dt);
   if (flashT > 0){ flashT -= dt; if (flashT <= 0){ flash.visible = false; muzzleLight.intensity = 0; vmFlashLight.intensity = 0; } }
   if (hitmT > 0) hitmT -= dt;
   kick *= Math.exp(-14 * dt);

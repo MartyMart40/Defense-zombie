@@ -19,6 +19,7 @@ function updateHUD(){
   $('scope').classList.toggle('on', scopeOn);
   $('cross').style.opacity = Math.max(0, 1 - ads * 1.6).toFixed(2);
   $('btnZoom').classList.toggle('on', zoomed);
+  if (typeof defHUD === 'function') defHUD(); // ferraille et ogive (17-defenses.js)
 }
 const projV = new THREE.Vector3();
 function floatText(txt, pos, head){

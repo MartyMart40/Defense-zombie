@@ -44,7 +44,7 @@ const TALENTS = {
   savings:   { name:'Bas de laine',       desc:'+150 $ au début de chaque partie',     max:5 },
   student:   { name:'Studieux',           desc:'+10 % d’expérience',                   max:5 }
 };
-const P = Object.assign({ xp:0, level:1, pts:0, talents:{}, unlocked:1, best:{}, wins:{}, last:0, intensity:1 }, store.get('dt_prof', {}));
+const P = Object.assign({ xp:0, level:1, pts:0, talents:{}, unlocked:1, best:{}, wins:{}, last:0, intensity:1, scrap:0 }, store.get('dt_prof', {}));
 const saveP = () => store.set('dt_prof', P);
 const INT = () => 1; // plus de choix du nombre de zombies : la difficulté vient de la campagne
 const INT_STEPS = [1, 1.5, 2, 3, 4, 5, 7, 10];

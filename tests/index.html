@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tests de Dernier toit</title>
+<style>
+:root{
+  --fond:#1e140e; --carte:#2c1f16; --encre:#f1e4cc; --pale:#bfa98a;
+  --vert:#5fbf6a; --rouge:#e0574c; --gris:#9a8f80; --ambre:#f2a33a; --ligne:rgba(242,163,58,.3);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --fond:#1e140e; --encre:#f1e4cc; } }
+:root[data-theme="dark"]{ --fond:#1e140e; --encre:#f1e4cc; }
+*{ box-sizing:border-box; }
+html, body{ margin:0; background:var(--fond); color:var(--encre); font:16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main{ max-width:820px; margin:0 auto; padding:16px; }
+h1{ font-size:22px; margin:0 0 8px; }
+#total{ font-size:20px; font-weight:700; padding:12px 14px; border-radius:10px; background:var(--carte); border:1px solid var(--ligne); margin:8px 0 12px; }
+#total.ok{ border-color:var(--vert); color:var(--vert); }
+#total.ko{ border-color:var(--rouge); color:var(--rouge); }
+#etat{ color:var(--pale); font-size:14px; margin-bottom:10px; overflow-wrap:anywhere; }
+ul{ list-style:none; margin:0; padding:0; }
+li{ background:var(--carte); border-radius:8px; padding:8px 10px; margin:6px 0; border-left:5px solid var(--gris); overflow-wrap:anywhere; }
+li.reussi{ border-left-color:var(--vert); }
+li.echec{ border-left-color:var(--rouge); }
+li.ignore{ border-left-color:var(--gris); color:var(--pale); }
+li .marque{ font-weight:700; margin-right:6px; }
+li.reussi .marque{ color:var(--vert); }
+li.echec .marque{ color:var(--rouge); }
+li .detail{ font-size:14px; color:var(--pale); margin-top:4px; white-space:pre-wrap; font-family:ui-monospace, Consolas, monospace; }
+li.echec .detail{ color:#f3b1aa; }
+.barre{ display:flex; gap:8px; flex-wrap:wrap; margin:10px 0; }
+button, a.bouton{ background:var(--ambre); color:#2a1608; border:0; border-radius:8px; padding:10px 14px; font-weight:700; font-size:15px; text-decoration:none; cursor:pointer; }
+#cadre{ width:100%; height:220px; border:1px solid var(--ligne); border-radius:8px; background:#000; display:block; margin-top:14px; }
+small{ color:var(--pale); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Tests automatiques : Dernier toit</h1>
+  <div id="total">Tests en cours…</div>
+  <div id="etat">Préparation.</div>
+  <div class="barre">
+    <button id="btnRelancer" type="button">Relancer les tests</button>
+    <a class="bouton" href="../">Retour au jeu</a>
+  </div>
+  <ul id="liste"></ul>
+  <iframe id="cadre" title="Jeu sous test"></iframe>
+  <p><small>Ta sauvegarde (clés dt_) est mise de côté pendant les tests puis remise exactement comme avant. Filtre : ajoute ?filtre=mot à l’adresse.</small></p>
+</main>
+<script src="tests.js"></script>
+</body>
+</html>

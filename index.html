@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20261102100658">
+<link rel="stylesheet" href="css/style.css?v=20261102101850">
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -21,7 +21,7 @@
 <div id="banner"><div id="bTitle"></div><div id="bSub"></div></div>
 
 <div id="hud" class="hide">
-  <div id="hudL"><div id="locName"></div><div id="wave">Vague 1</div><div id="money">0 $</div><div id="kills">0 abattus</div></div>
+  <div id="hudL"><div id="locName"></div><div id="wave">Vague 1</div><div id="money">0 $</div><div id="kills">0 abattus</div><div id="scrapH"></div><div id="nukeH" class="hide"></div></div>
   <div id="hudC"><div class="lbl">Barricade</div><div id="bar"><div id="barFill"></div></div></div>
   <div id="hudR"><button id="btnFull" aria-label="Plein écran">⛶</button><button id="btnMute" aria-label="Son">🔊</button><button id="btnPause" aria-label="Pause">❚❚</button></div>
   <div id="ammoBox"><div id="wname">Pistolet</div><div id="ammo">12 / 12</div><div id="rl"><div id="rlFill"></div></div></div>
@@ -43,6 +43,7 @@
     <div class="ctrl" id="ctrlHelp"></div>
     <button class="big" id="btnStart">Jouer</button>
     <button class="ghost" id="btnMapTitle">Carte des villes</button>
+    <button class="ghost" id="btnAtelierTitle">Atelier</button>
     <button class="ghost" id="btnFullTitle">Plein écran</button>
     <div class="best" id="bestTxt"></div>
   </div>
@@ -53,6 +54,7 @@
     <h2 class="title sm">Choisis ta ville</h2>
     <div class="lvl" id="mapLvl"></div>
     <button class="ghost" id="btnTalentsMap">Talents</button>
+    <button class="ghost" id="btnAtelierMap">Atelier</button>
     <div class="locs" id="mapList"></div>
     <button class="ghost" id="btnMapBack">Retour</button>
   </div>
@@ -104,26 +106,41 @@
     <div class="best" id="overBest"></div>
     <button class="big" id="btnAgain">Réessayer</button>
     <button class="ghost" id="btnTalentsOver">Talents</button>
+    <button class="ghost" id="btnAtelierOver">Atelier</button>
     <button class="ghost" id="btnMap">Carte des villes (rejouer une ville libérée)</button>
   </div>
 </section>
 
+<section id="scrAtelier" class="screen hide">
+  <div class="panel">
+    <h2 class="title sm">Atelier</h2>
+    <p class="lead" style="font-size:18px">Installe des défenses automatiques sur les 4 tours de la rue. Elles tirent seules et restent d’une partie à l’autre. La ferraille se gagne sur chaque zombie abattu, et plus encore dans les villes dangereuses.</p>
+    <div class="cash" id="atScrap">0 ⚙</div>
+    <h3>Emplacements</h3>
+    <div class="slots" id="atSlots"></div>
+    <div id="atDetail"></div>
+    <button class="big" id="btnAtBack">Retour</button>
+  </div>
+</section>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/00-base.js?v=20261102100658"></script>
-<script src="js/01-son.js?v=20261102100658"></script>
-<script src="js/02-villes.js?v=20261102100658"></script>
-<script src="js/03-scene.js?v=20261102100658"></script>
-<script src="js/04-arme-en-main.js?v=20261102100658"></script>
-<script src="js/05-particules.js?v=20261102100658"></script>
-<script src="js/06-donnees.js?v=20261102100658"></script>
-<script src="js/07-zombies.js?v=20261102100658"></script>
-<script src="js/08-tir.js?v=20261102100658"></script>
-<script src="js/09-vagues.js?v=20261102100658"></script>
-<script src="js/10-boutique.js?v=20261102100658"></script>
-<script src="js/11-hud.js?v=20261102100658"></script>
-<script src="js/12-souris.js?v=20261102100658"></script>
-<script src="js/13-tactile.js?v=20261102100658"></script>
-<script src="js/14-menus.js?v=20261102100658"></script>
-<script src="js/15-boucle.js?v=20261102100658"></script>
+<script src="js/00-base.js?v=20261102101850"></script>
+<script src="js/01-son.js?v=20261102101850"></script>
+<script src="js/02-villes.js?v=20261102101850"></script>
+<script src="js/03-scene.js?v=20261102101850"></script>
+<script src="js/04-arme-en-main.js?v=20261102101850"></script>
+<script src="js/05-particules.js?v=20261102101850"></script>
+<script src="js/06-donnees.js?v=20261102101850"></script>
+<script src="js/07-zombies.js?v=20261102101850"></script>
+<script src="js/08-tir.js?v=20261102101850"></script>
+<script src="js/09-vagues.js?v=20261102101850"></script>
+<script src="js/10-boutique.js?v=20261102101850"></script>
+<script src="js/11-hud.js?v=20261102101850"></script>
+<script src="js/12-souris.js?v=20261102101850"></script>
+<script src="js/13-tactile.js?v=20261102101850"></script>
+<script src="js/14-menus.js?v=20261102101850"></script>
+<script src="js/15-boucle.js?v=20261102101850"></script>
+<script src="js/16-atelier.js?v=20261102101850"></script>
+<script src="js/17-defenses.js?v=20261102101850"></script>
 </body>
 </html>

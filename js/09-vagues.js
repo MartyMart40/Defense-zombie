@@ -1,6 +1,6 @@
 'use strict';
 /* ================= Vagues ================= */
-function showScreen(id){ ['scrTitle', 'scrMap', 'scrTalents', 'scrShop', 'scrPause', 'scrOver'].forEach(s => $(s).classList.toggle('hide', s !== id)); }
+function showScreen(id){ ['scrTitle', 'scrMap', 'scrTalents', 'scrShop', 'scrPause', 'scrOver', 'scrAtelier'].forEach(s => $(s).classList.toggle('hide', s !== id)); }
 function setPlayingUI(on){
   $('hud').classList.toggle('hide', !on && state === 'menu');
   $('cross').classList.toggle('hide', !on);
@@ -42,7 +42,7 @@ let againNext = false;
 function showEnd(won, extra){
   const held = won ? curLoc.waves : Math.max(0, S.wave - 1);
   $('overTitle').textContent = won ? curLoc.name + ' libérée !' : 'La barricade a cédé';
-  $('overStats').innerHTML = '<span>Vagues tenues : <strong>' + held + ' / ' + curLoc.waves + '</strong></span><span>Zombies abattus : <strong>' + S.kills + '</strong></span><span>Expérience : <strong>+' + S.xpGained + ' XP</strong></span>';
+  $('overStats').innerHTML = '<span>Vagues tenues : <strong>' + held + ' / ' + curLoc.waves + '</strong></span><span>Zombies abattus : <strong>' + S.kills + '</strong></span><span>Expérience : <strong>+' + S.xpGained + ' XP</strong></span>' + (typeof scrapEndHTML === 'function' ? scrapEndHTML() : '');
   $('overXP').innerHTML = lvlHTML();
   let msg = extra;
   if (S.levelUps) msg += (msg ? ' ' : '') + 'Tu as gagné ' + S.levelUps + ' niveau' + (S.levelUps > 1 ? 'x' : '') + ', va placer tes points de talent.';

@@ -8,7 +8,7 @@
     if (!pret()) ignorer('Survivants absents');
     partie();
     const r = J(function(){
-      var v = __rue.rueSpawnCiv(0, -60);
+      var v = rueSpawnCiv(0, -60);
       var o = { chasers: __surv.SURV.chasers.length, chasing: __surv.SURV.chasing };
       __surv.SURV.chasers.forEach(function(c){ damage(c, 1e9, false, c.g.position.clone()); });
       update(1 / 30);
@@ -33,7 +33,7 @@
     if (!pret()) ignorer('Survivants absents');
     partie();
     const r = J(function(){
-      __rue.rueSpawnCiv(0, -90);
+      rueSpawnCiv(0, -90);
       for (var i = 0; i < 30 * 6; i++) update(1 / 30);
       return { st: __rue.RUE.civ.st, survivors: S.survivors || 0, chasing: __surv.SURV.chasing };
     });

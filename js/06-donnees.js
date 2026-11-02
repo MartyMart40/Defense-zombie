@@ -13,11 +13,19 @@ const UPG = {
   mag:    { name:'Chargeurs agrandis', desc:'+20 % de balles par chargeur.',               max:5,  cost:l => Math.round(150 * Math.pow(1.5, l)) },
   wall:   { name:'Barricade renforcée', desc:'+100 de solidité et réparation complète.',    max:8,  cost:l => Math.round(220 * Math.pow(1.4, l)) }
 };
-const ZXP = { walker:3, runner:5, brute:20 };
+// XP par type (un type absent d'ici utilise T.xp, sinon 5)
+const ZXP = { walker:3, runner:5, brute:20, jumper:6, flyer:8, spitter:10, colossus:80 };
+// ZTYPES reste un objet ouvert : un autre fichier peut y ajouter un type (ex. ZTYPES.boss = {...}).
+// stopOff : recul de l'arrêt devant la barricade ; hitShake / chips : secousse et éclats à chaque coup.
 const ZTYPES = {
-  walker: { hp:60,  speed:1.5,  dmg:6,  reward:10, scale:1,    skin:0x7d9466 },
-  runner: { hp:40,  speed:3.4,  dmg:4,  reward:15, scale:.95,  skin:0x9aa585 },
-  brute:  { hp:380, speed:.85,  dmg:18, reward:60, scale:1.55, skin:0x5c7048 }
+  walker:   { name:'Marcheur', hp:60,   speed:1.5,  dmg:6,  reward:10,  scale:1,    skin:0x7d9466 },
+  runner:   { name:'Coureur',  hp:40,   speed:3.4,  dmg:4,  reward:15,  scale:.95,  skin:0x9aa585 },
+  brute:    { name:'Costaud',  hp:380,  speed:.85,  dmg:18, reward:60,  scale:1.55, skin:0x5c7048, stopOff:.5, hitShake:.5, chips:8 },
+  // Formes et comportements propres : 18-zombies-types.js
+  jumper:   { name:'Sauteur',  hp:45,   speed:4.2,  dmg:5,  reward:18,  scale:1,    skin:0x8e9c6c },
+  flyer:    { name:'Volant',   hp:55,   speed:3,    dmg:5,  reward:24,  scale:1,    skin:0x6e5c70 },
+  spitter:  { name:'Cracheur', hp:120,  speed:1.2,  dmg:9,  reward:30,  scale:1.1,  skin:0x748c3c },
+  colossus: { name:'Colosse',  hp:1500, speed:.55,  dmg:45, reward:250, scale:2.8,  skin:0x4e5e3c, stopOff:2.6, hitShake:1.1, chips:16 }
 };
 // Combien de zombies l'appareil peut afficher en même temps sans ramer
 const BASE_ALIVE = isTouch ? 26 : 34, DEV_CAP = isTouch ? 60 : 100;
@@ -29,11 +37,21 @@ function wavePlan(w, L){
   const total = Math.round(30 * w * mult); // vague 1 : 30, vague 2 : 60, etc.
   const brutes = ew >= 4 ? Math.round((Math.floor((ew - 2) / 2) + (ew % 5 === 0 ? 2 : 0)) * (1 + (mult - 1) * .5)) : 0;
   const runners = ew >= 2 ? Math.round(total * Math.min(.4, .08 * (ew - 1))) : 0;
-  const walkers = Math.max(0, total - brutes - runners);
+  // Nouveaux types : ils remplacent une partie des marcheurs (le total ne change pas).
+  // Sauteurs dès la vague 2 de Saint-Clou, cracheurs dès la 3, volants dès la 4, colosses (rares) dès la 5.
+  // Plafonds plus hauts dans les villes plus dures (L.off).
+  const off = L.off || 0;
+  const jumpers  = ew >= 2 ? Math.round(total * Math.min(.1 + .02 * off, .025 * (ew - 1))) : 0;
+  const spitters = ew >= 3 ? Math.round(total * Math.min(.08 + .015 * off, .025 * (ew - 2))) : 0;
+  const flyers   = ew >= 4 ? Math.round(total * Math.min(.07 + .015 * off, .02 * (ew - 3))) : 0;
+  const colossi  = ew >= 5 ? Math.max(1, Math.round(Math.floor((ew - 3) / 2) * (1 + (mult - 1) * .5))) : 0;
+  const add = [['brute', brutes], ['colossus', colossi], ['spitter', spitters], ['flyer', flyers], ['jumper', jumpers], ['runner', runners]];
+  // Sécurité : jamais plus de spéciaux que le total (on retire d'abord des coureurs)
+  let room = total;
+  add.forEach(a => { a[1] = Math.min(a[1], room); room -= a[1]; });
   const q = [];
-  for (let i = 0; i < walkers; i++) q.push('walker');
-  for (let i = 0; i < runners; i++) q.push('runner');
-  for (let i = 0; i < brutes; i++) q.push('brute');
+  for (let i = 0; i < room; i++) q.push('walker');
+  add.forEach(a => { for (let i = 0; i < a[1]; i++) q.push(a[0]); });
   for (let i = q.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [q[i], q[j]] = [q[j], q[i]]; }
   return { queue: q, total: q.length, hpMult: (1 + .1 * (w - 1)) * (1 + k * .6), spdMult: Math.min(1.7, (1 + .03 * (w - 1)) * (1 + k * .12)),
     interval: Math.max(.12, 1.2 / Math.sqrt(w) / (1 + k * .5)),

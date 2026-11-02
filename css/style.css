@@ -165,3 +165,17 @@ input[type=range]{ width:100%; accent-color:var(--amber); }
 .at-lv{ font-size:15px; color:var(--amber); font-weight:600; margin-left:6px; }
 .at-note{ margin:0 0 4px; }
 @media (max-width:380px){ .slots{ grid-template-columns:1fr; } }
+/* Boss : barre de vie en haut, bannière rouge */
+#bossBar{ position:absolute; left:50%; transform:translateX(-50%); top:calc(46px + env(safe-area-inset-top,0px)); width:min(440px,46vw); text-align:center; text-shadow:0 2px 3px #000; }
+#bossName{ font-family:"Saira Stencil One",Impact,sans-serif; font-size:18px; line-height:1.1; color:#ff6a4a; letter-spacing:.03em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#bossTrack{ height:14px; margin-top:3px; background:rgba(0,0,0,.65); border:1px solid rgba(255,106,74,.6); border-radius:2px; overflow:hidden; box-shadow:0 0 10px rgba(179,38,30,.5); }
+#bossFill{ height:100%; width:100%; background:linear-gradient(90deg,#6a0f0a,#d0321e 70%,#ff6a3a); transition:width .12s; }
+#banner.boss #bTitle{ color:#ff5a3a; }
+@media (orientation: portrait){
+  #bossBar{ left:calc(12px + env(safe-area-inset-left,0px)); right:calc(12px + env(safe-area-inset-right,0px)); transform:none; width:auto; top:calc(150px + env(safe-area-inset-top,0px)); }
+}
+@media (orientation: landscape) and (max-height:480px){
+  #bossBar{ top:calc(40px + env(safe-area-inset-top,0px)); width:min(360px,40vw); }
+  #bossName{ font-size:15px; }
+  #bossTrack{ height:11px; }
+}

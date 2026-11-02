@@ -114,7 +114,8 @@ function boom(x, y, z, size){ const o = getFree(booms); if (!o) return; o.m.posi
 
 /* ---------- Dégâts ---------- */
 const hitP = new THREE.Vector3();
-const zc = z => hitP.set(z.g.position.x, 1.1 * ZTYPES[z.type].scale, z.g.position.z);
+// Centre du corps : vraie hauteur (volants, sauteurs en l'air) grâce à z.aimY posé par spawnZombie
+const zc = z => hitP.set(z.g.position.x, z.g.position.y + (z.aimY != null ? z.aimY : 1.1 * ((ZTYPES[z.type] || {}).scale || 1)), z.g.position.z);
 function defHit(z, amt, blood){
   if (z.dead) return;
   z.hp -= amt; z.flashT = .08;
@@ -232,7 +233,7 @@ const TICK = {
       if (s < 0 || s > len) continue;
       if (Math.abs(px * dz - pz * dx) < .9){ defHit(z, st.dps * dt, Math.random() < dt * 3); z.dBurn = st.burn; z.dBurnT = BURN_T; }
     }
-    segA.copy(o); segB.set(o.x + dx * len, .9, o.z + dz * len);
+    const ty = zc(rt.tgt).y; segA.copy(o); segB.set(o.x + dx * len, Math.max(.3, o.y + (ty - o.y) * len / L), o.z + dz * len); // le rayon passe par la cible, même en l'air
     const fl = .8 + Math.random() * .4;
     placeSeg(rt.beam, segA, segB, .32 * fl); placeSeg(rt.core, segA, segB, .1);
     if (Math.random() < dt * 8) burst(zc(rt.tgt), 'ember', 2, 1.5);

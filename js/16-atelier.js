@@ -2,7 +2,7 @@
 /* ================= Atelier : ferraille, défenses automatiques, écran ================= */
 // Ferraille par zombie abattu (par n'importe qui), multipliée par la difficulté de la ville (L.diff).
 // Saint-Clou complet (environ 350 marcheurs, 96 coureurs, 4 costauds) : environ 260 ferrailles.
-const SCRAP_Z = { walker:.5, runner:.7, brute:4 };
+const SCRAP_Z = { walker:.5, runner:.7, brute:4, jumper:.8, flyer:1, spitter:1.5, colossus:15 }; // type absent : .5
 function scrapFor(type, L){ return (SCRAP_Z[type] || .5) * ((L && L.diff) || 1); }
 const fmtS = n => Math.floor(n).toLocaleString('fr-CA') + ' ⚙';
 

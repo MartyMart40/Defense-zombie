@@ -96,6 +96,7 @@ const Snd = {
   },
   _musReady(){
     if (!this.ctx || !this.master) return false;
+    if (this.musBus && this.musBus.context !== this.ctx) this.musBus = null; // contexte audio recréé
     if (!this.musBus){
       try{ this.musBus = this.ctx.createGain(); this.musBus.gain.value = this.musVol * .7 * this.musDuck; this.musBus.connect(this.master); }
       catch(e){ this.musBus = null; return false; }

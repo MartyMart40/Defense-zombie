@@ -23,3 +23,8 @@ Je suis dans ma fenêtre de bunker ou sur un toit d'immeuble barricadé et je ti
 - Monnaie des défenses : ferraille, permanente, gagnée sur chaque zombie (même ceux tués par les défenses).
 - Mode infini : débloqué dans les 5 villes après la campagne. Difficulté identique partout, seul le décor change. Chaque vague +10 % de zombies et +10 % de force, départ environ 50 de vie, récompenses +10 %. Départ avec 1 000 $, plafonds de dégâts et barricade retirés, record par ville.
 - ANNULÉ (2026-11-02) : pas de Niveau de horde ni de choix du nombre de zombies. Le joueur ne choisit pas la difficulté : elle monte avec les vagues, et il y répond en achetant des améliorations.
+
+## Zombies (2026-11-02)
+- Marcheur, coureur, costaud, sauteur (bonds), volant (ailes, plonge sur la barricade), cracheur (crache de loin), colosse (géant lent, très rare).
+- Arrivée graduelle à partir de Saint-Clou vague 2. Le total par vague ne change pas : les nouveaux types remplacent des marcheurs.
+- Boss toutes les 5 vagues, un par ville (Le Fossoyeur, Le Colosse des Cendres, L'Ogre de minuit, Le Titan de béton, Le Docker, Le Léviathan du port). Lance des autos, frappe la barricade, faible à la tête.

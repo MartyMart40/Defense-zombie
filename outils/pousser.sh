@@ -15,6 +15,10 @@ find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
 tar -C "$D" --exclude=.git --exclude=.github-token -cf - . | tar -xf -
 git add -A
 if git diff --cached --quiet; then echo "Rien à pousser."; exit 0; fi
+# Numéro de version sur les scripts pour forcer les navigateurs à recharger
+V="$(date +%Y%m%d%H%M%S)"
+sed -i -E "s#(src/[a-z]+\.js)(\?v=[0-9]+)?\"#\1?v=$V\"#g" index.html
+git add -A
 git commit -q -m "$MSG"
 git push -q origin main
 git log --oneline -1

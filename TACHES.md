@@ -22,6 +22,10 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 | # | Tâche | Date |
 |---|-------|------|
 | 0 | Récupération de Dernier toit (5 villes, talents) depuis l'artifact claude.ai | 2026-11-02 |
+| 16 | Armes en main détaillées (js/04-arme-en-main.js) | 2026-11-02 |
+| 17 | Performances des hordes : instances, plafonds 400 ordi / 180 cell, hordePlan(), compteur d'images/s, tests/perf.html | 2026-11-02 |
+| 18 | Survivants : 2-3 poursuivants à abattre en 5 s, survivant qui reste sur le toit, +1 $/min chacun | 2026-11-02 |
+| 19 | Pouvoirs : cercle d'impact en visant, jusqu'à 6 charges | 2026-11-02 |
 | 15 | Arbres détaillés : sapins à étages et feuillus en grappes, nuances, ombres, tous fusionnés (03-scene.js) | 2026-11-02 |
 | 7 | Nouvelles armes : arbalète, lance-flammes, minigun, lance-roquettes + améliorations par arme (js/20-armes.js) | 2026-11-02 |
 | 8 | Synergies de défenses (même type et combinaisons) | 2026-11-02 |
@@ -51,5 +55,8 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 - Q lance maintenant la frappe aérienne (avant : changer d'arme). Molette, 1 à 8 et bouton Arme changent d'arme.
 - Pouvoirs : charges pleines à chaque vague.
 - Une explosion que le joueur cause tue un civil (pénalité) ; les défenses jamais.
+
+- Mesurer les vraies images/s : ouvrir tests/perf.html sur l'ordi et le cell de Martin.
+- Test du mitrailleur parfois instable (90 % de précision au hasard).
 
 ## Idées en vrac

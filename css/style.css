@@ -278,3 +278,11 @@ body.touch .pw .pwi{ font-size:24px; }
 #cpnShop .cpn-card .btns button:disabled{ background:rgba(255,255,255,.12); color:var(--muted); cursor:default; }
 #cpnShop .cpn-card.locked{ opacity:.7; padding-bottom:8px; }
 #cpnShop .cpn-lock{ color:var(--amber) !important; }
+
+/* Survivants (23-rue.js) */
+#survH{ font-size:16px; color:#9aff70; }
+#chaseH{ position:fixed; left:50%; top:calc(20% + env(safe-area-inset-top,0px)); transform:translateX(-50%); z-index:6; pointer-events:none; text-align:center;
+  background:rgba(20,13,9,.7); border:1px solid #9aff70; border-radius:6px; padding:6px 14px; color:#e8ffd8; font-size:19px; font-weight:700; text-shadow:0 1px 2px #000; white-space:nowrap; }
+#chaseH b{ color:#9aff70; font-family:"Saira Stencil One",Impact,sans-serif; font-size:24px; margin-left:6px; }
+#chaseH.urgent{ border-color:#ff5a4a; }
+#chaseH.urgent b{ color:#ff5a4a; }

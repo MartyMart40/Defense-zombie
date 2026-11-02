@@ -470,3 +470,110 @@ try {
 window.__rue = { RUE, RUE_CFG, RUE_BONUS, rueRoot, rueWave, rueStep, rueClear, rueSpawnBarrel, rueSpawnCrate, rueSpawnCiv, rueBarrelBlow, rueNearBlast, rueCrateGive, rueCivShot,
   get vivants(){ return { barils:RUE.barrels.filter(b => b.live).length, caisses:RUE.crates.filter(c => c.live).length, civil:RUE.civ.live }; },
   dansHit(){ let n = 0; for (const m of hitMeshes) if (m.userData.onHit && m.userData.rue) n++; return n; } };
+
+
+/* ---------- Survivants : poursuivants à abattre, puis il reste avec toi et rapporte de l'argent ---------- */
+// Quand un survivant apparaît, 2 ou 3 zombies le poursuivent. Tu as 5 s pour les abattre tous :
+// réussi, il est sauvé et reste sur le toit pour le reste de la partie ; raté, ils l'attrapent.
+// Chaque survivant sur le toit rapporte SURV_CFG.income $ par minute (versé à la minute).
+const SURV_CFG = { chasers:[2, 3], time:5, income:1, period:60, maxShown:8 };
+const SURV = { chasers:[], timer:0, chasing:false, roof:[], payT:0 };
+function survHUDEl(id){ return document.getElementById(id); }
+function survChaseHUD(){
+  const el = survHUDEl('chaseH'); if (!el) return;
+  if (!SURV.chasing){ el.classList.add('hide'); return; }
+  const left = SURV.chasers.filter(z => !z.dead).length, t = Math.max(0, SURV.timer);
+  el.classList.remove('hide'); el.classList.toggle('urgent', t < 2);
+  el.innerHTML = 'Abats ses poursuivants : ' + left + ' restant' + (left > 1 ? 's' : '') + '<b>' + t.toFixed(1).replace('.', ',') + ' s</b>';
+}
+function survIncomeTxt(){
+  const n = (S && S.survivors) || 0, el = survHUDEl('survH'); if (!el) return;
+  if (!n){ el.classList.add('hide'); return; }
+  el.classList.remove('hide');
+  const txt = '👥 ' + n + ' survivant' + (n > 1 ? 's' : '') + ' · +' + fmt(n * SURV_CFG.income) + '/min';
+  if (el.textContent !== txt) el.textContent = txt;
+}
+// Petites silhouettes sur le toit, derrière toi (visibles en tournant la tête)
+const survRoofMat = [lam(0xd8d0b8), lam(0x6a8ab0), lam(0x3a3a44), lam(0xc8a080)];
+const survRoot = new THREE.Group(); scene.add(survRoot);
+function survFigure(i){
+  const g = new THREE.Group();
+  const shirt = new THREE.Mesh(new THREE.BoxGeometry(.5, .7, .3), survRoofMat[i % 2 ? 1 : 0]); shirt.position.y = 1.25;
+  const legs = new THREE.Mesh(new THREE.BoxGeometry(.42, .85, .26), survRoofMat[2]); legs.position.y = .45;
+  const head = new THREE.Mesh(new THREE.BoxGeometry(.32, .34, .32), survRoofMat[3]); head.position.y = 1.8;
+  g.add(shirt, legs, head);
+  const side = i % 2 ? 1 : -1, k = Math.floor(i / 2);
+  g.position.set(side * (2.2 + k * .9), 8.6, -1.2 + k * 1.1);
+  g.rotation.y = Math.PI + side * .4;
+  g.userData.ph = Math.random() * 6;
+  survRoot.add(g); return g;
+}
+function survRoofSync(){
+  const n = Math.min(SURV_CFG.maxShown, (S && S.survivors) || 0);
+  while (SURV.roof.length < n) SURV.roof.push(survFigure(SURV.roof.length));
+  SURV.roof.forEach((g, i) => { g.visible = i < n; });
+}
+function survClearChase(){ SURV.chasers.length = 0; SURV.chasing = false; SURV.timer = 0; survChaseHUD(); }
+
+const _survSpawnCiv = rueSpawnCiv;
+rueSpawnCiv = function(x, z){
+  const v = _survSpawnCiv.apply(this, arguments);
+  if (!v || typeof spawnZombie !== 'function') return v;
+  survClearChase();
+  const n = SURV_CFG.chasers[0] + Math.floor(Math.random() * (SURV_CFG.chasers[1] - SURV_CFG.chasers[0] + 1));
+  for (let i = 0; i < n; i++){
+    const before = zombies.length;
+    spawnZombie(Math.random() < .5 ? 'runner' : 'walker');
+    const c = zombies[zombies.length - 1]; if (zombies.length === before || !c) continue;
+    c.chaser = true;
+    c.g.position.set(clamp(v.x + rand(-1.5, 1.5), -12, 12), c.g.position.y, v.z - 3 - i * 1.6);
+    c.speed = RUE_CFG.civSpeed * 1.02; // ils gardent le rythme du survivant
+    if (c.g.updateMatrixWorld) c.g.updateMatrixWorld(true);
+    SURV.chasers.push(c);
+  }
+  SURV.chasing = SURV.chasers.length > 0; SURV.timer = SURV_CFG.time; v.safe = false;
+  survChaseHUD();
+  return v;
+};
+const _survCivStep = rueCivStep;
+rueCivStep = function(dt){
+  const v = RUE.civ;
+  if (v && v.live && v.st === 'run' && SURV.chasing){
+    SURV.timer -= dt;
+    // les poursuivants suivent sa ligne
+    SURV.chasers.forEach(c => { if (!c.dead && c.st === 'walk') c.g.position.x += clamp(v.x - c.g.position.x, -1, 1) * dt * 2; });
+    if (SURV.chasers.every(c => c.dead)){
+      SURV.chasing = false; v.safe = true;
+      RUE_V.set(v.x, 2.6, v.z); rueFloat('Survivant hors de danger !', RUE_V, '#9aff70', true);
+      if (typeof Snd === 'object' && Snd.tone) Snd.tone(880, .15, 'triangle', .12, 1320);
+    } else if (SURV.timer <= 0){
+      SURV.chasing = false; survChaseHUD(); rueCivCaught(); return;
+    }
+    survChaseHUD();
+  }
+  // Hors de danger : les zombies ne peuvent plus l'agripper
+  if (v && v.live && v.st === 'run' && v.safe){ v.grab = 0; const g0 = RUE_CFG.civGrab; RUE_CFG.civGrab = Infinity; try { return _survCivStep.apply(this, arguments); } finally { RUE_CFG.civGrab = g0; } }
+  return _survCivStep.apply(this, arguments);
+};
+const _survCivEnd = rueCivEnd;
+rueCivEnd = function(st){ const r = _survCivEnd.apply(this, arguments); if (st !== 'run') survClearChase(); return r; };
+const _survSaved = rueCivSaved;
+rueCivSaved = function(){
+  const r = _survSaved.apply(this, arguments);
+  if (S){ S.survivors = (S.survivors || 0) + 1; survRoofSync(); survIncomeTxt();
+    setTimeout(() => toast('Il reste avec toi : +' + fmt(SURV_CFG.income) + ' par minute pour le reste de la partie'), 2300); }
+  return r;
+};
+// Revenu passif : versé chaque minute de jeu
+try { const _b = update; update = function(dt){ const r = _b.apply(this, arguments);
+  if (state === 'playing' && S && S.survivors > 0){
+    SURV.payT += dt;
+    if (SURV.payT >= SURV_CFG.period){ SURV.payT -= SURV_CFG.period; const pay = S.survivors * SURV_CFG.income; S.money += pay; S.earned += pay;
+      RUE_V.set(0, 9.6, -6); rueFloat('Survivants +' + fmt(pay), RUE_V, '#9aff70', false); }
+  }
+  return r; }; } catch (e) {}
+try { const _b = updateHUD; updateHUD = function(){ const r = _b.apply(this, arguments); survIncomeTxt(); return r; }; } catch (e) {}
+try { const _b = newGame; newGame = function(){ const r = _b.apply(this, arguments); if (S) S.survivors = 0; SURV.payT = 0; survClearChase(); survRoofSync(); survIncomeTxt(); return r; }; } catch (e) {}
+const _survClear = rueClear;
+rueClear = function(){ const r = _survClear.apply(this, arguments); survClearChase(); return r; };
+window.__surv = { SURV, SURV_CFG, survRoofSync };

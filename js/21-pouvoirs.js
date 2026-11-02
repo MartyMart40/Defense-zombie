@@ -20,7 +20,7 @@ const PW = {
     desc:'Fumée rouge sur la cible, puis un avion largue une ligne de bombes le long de la rue.',
     lines:{ dmg:'Dégâts par bombe', zone:'Rayon des bombes', cd:'Recharge', ch:'Charges' } }
 };
-const PW_MAX = { dmg:20, zone:10, cd:10, ch:2 };
+const PW_MAX = { dmg:20, zone:10, cd:10, ch:5 }; // charges : 1 au départ, jusqu'à 6
 const PW_LMULT = { dmg:1, zone:1, cd:1.2, ch:5 };
 const PW_AFTER = 1.5;   // secondes de brûlure après avoir quitté la nappe (à 50 %)
 const PW_FIRE_H = 3.2;  // hauteur des flammes : un volant qui plonge dedans brûle aussi
@@ -54,7 +54,7 @@ function pwNorm(){
 pwNorm();
 function pwLv(id){ if (!P.pow || !P.pow[id]) pwNorm(); return P.pow[id]; }
 const pwUnlocked = id => !!PW[id] && (P.level || 1) >= PW[id].level;
-const pwUpgCost = (id, k, l) => Math.round(PW[id].cost * PW_LMULT[k] * Math.pow(1.35, l));
+const pwUpgCost = (id, k, l) => Math.round(PW[id].cost * PW_LMULT[k] * Math.pow(k === 'ch' ? 2 : 1.35, l)); // une charge de plus coûte le double de la précédente
 function pwUpgrade(id, k){
   if (!PW[id] || PW_LINES.indexOf(k) < 0 || !pwUnlocked(id)) return false;
   const lv = pwLv(id), l = lv[k]; if (l >= PW_MAX[k]) return false;
@@ -405,17 +405,22 @@ window.addEventListener('keydown', e => {
   if (state !== 'playing') return;
   const id = PW_ORDER.find(k => PW[k].key === e.code); if (!id) return;
   e.stopPropagation(); if (e.cancelable) e.preventDefault();
-  if (!e.repeat) pwTry(id);
+  if (!e.repeat) pwArm(id);
+}, true);
+window.addEventListener('keyup', e => {
+  const id = PW_ORDER.find(k => PW[k].key === e.code); if (!id) return;
+  e.stopPropagation();
+  if (pwArmed === id){ pwArmed = null; if (state === 'playing') pwTry(id); }
 }, true);
 PW_ORDER.forEach(id => {
   const el = $('pw-' + id); if (!el || !el.addEventListener) return;
   el.addEventListener('touchstart', e => {
     e.preventDefault(); e.stopPropagation();
     if (typeof Snd === 'object') Snd.init();
-    el.classList.add('down'); pwTry(id);
+    el.classList.add('down'); pwArm(id); // le cercle apparaît : vise avec l'autre doigt, relâche pour lancer
   }, { passive:false });
-  const up = () => el.classList.remove('down');
-  el.addEventListener('touchend', up); el.addEventListener('touchcancel', up);
+  el.addEventListener('touchend', e => { e.preventDefault(); el.classList.remove('down'); if (pwArmed === id){ pwArmed = null; pwTry(id); } }, { passive:false });
+  el.addEventListener('touchcancel', () => { el.classList.remove('down'); if (pwArmed === id) pwArmed = null; });
   el.addEventListener('mousedown', e => { e.stopPropagation(); });
   el.addEventListener('click', e => { e.preventDefault(); if (!isTouch) pwTry(id); if (el.blur) el.blur(); });
 });
@@ -432,7 +437,7 @@ function pwLineTxt(id, k, s){
 }
 function pwRenderShop(){
   const el = $('pwShop'); if (!el) return;
-  let h = '<div class="ds at-note">Utilisables pendant les vagues' + (isTouch ? ' (boutons ronds à gauche)' : ' (touches G, F et Q)') + ', là où tu vises. Chaque vague commence avec toutes les charges. Améliorations en ferraille, permanentes. Les dégâts suivent la force des zombies de la vague.</div>';
+  let h = '<div class="ds at-note">Utilisables pendant les vagues' + (isTouch ? ' (boutons ronds à gauche)' : ' (touches G, F et Q)') + '. Garde enfoncé pour voir le cercle d’impact, relâche pour lancer. Chaque vague commence avec toutes les charges (1 au départ, jusqu’à 6 avec les améliorations). Améliorations en ferraille, permanentes. Les dégâts suivent la force des zombies de la vague.</div>';
   PW_ORDER.forEach(id => {
     const D = PW[id], lv = pwLv(id), s = pwStats(id, lv), un = pwUnlocked(id);
     h += '<div class="pw-card' + (un ? '' : ' locked') + '"><div class="nm">' + D.icon + ' ' + D.name + (isTouch ? '' : ' <span class="at-lv">touche ' + D.keyTxt + '</span>') + '</div><div class="ds">' + D.desc + '</div>';
@@ -466,8 +471,8 @@ function pwRenderShop(){
 (function(){
   const el = $('ctrlHelp'); if (!el) return;
   el.innerHTML += isTouch
-    ? '<b>Boutons ronds à gauche</b><span>pouvoirs à recharge : grenade, cocktail Molotov (niveau 3), frappe aérienne (niveau 5), lancés là où tu vises</span>'
-    : '<b>G, F, Q</b><span>pouvoirs à recharge : grenade, cocktail Molotov (niveau 3), frappe aérienne (niveau 5), lancés là où tu vises</span>';
+    ? '<b>Boutons ronds à gauche</b><span>pouvoirs à recharge : grenade, cocktail Molotov (niveau 3), frappe aérienne (niveau 5). Garde le bouton enfoncé pour voir où ça tombe, vise avec l’autre doigt, relâche pour lancer</span>'
+    : '<b>G, F, Q</b><span>pouvoirs à recharge : grenade, cocktail Molotov (niveau 3), frappe aérienne (niveau 5). Garde la touche enfoncée pour voir où ça tombe, relâche pour lancer</span>';
 })();
 
 /* ---------- Crochets sur le code commun (par réaffectation) ---------- */
@@ -497,3 +502,64 @@ window.__pouvoirs = { PW, PW_ORDER, PW_LINES, PW_MAX, pwStats, pwNorm, pwLv, pwU
   get actif(){ return pwActive; },
   get enCours(){ return pwProj.some(o => o.m.visible) || pwPuddles.some(p => p.live) || pwStrikes.some(k => k.live) || pwBooms.some(b => b.m.visible); },
   step(sec, dt){ dt = dt || 1 / 30; const n = Math.ceil(sec / dt); for (let i = 0; i < n; i++) pwUpdate(dt); } };
+
+
+/* ---------- Aperçu de la visée : cercle d'impact et trajectoire ---------- */
+// Garder G, F ou Q enfoncé (ou le bouton rond sur cell) montre où ça tombe ; relâcher lance.
+let pwArmed = null;
+function pwArm(id){
+  if (state !== 'playing') return;
+  if (!pwUnlocked(id)){ pwTry(id); return; }
+  pwArmed = id;
+}
+const PW_PREV_COL = { grenade:0xffb040, molotov:0xff5a20, strike:0xff2a20 };
+const pwPrevMat = new THREE.MeshBasicMaterial({ color:0xffb040, transparent:true, opacity:.75, depthWrite:false, fog:false, side:THREE.DoubleSide });
+const pwPrevFill = new THREE.MeshBasicMaterial({ color:0xffb040, transparent:true, opacity:.14, depthWrite:false, fog:false, side:THREE.DoubleSide });
+const pwPrev = new THREE.Group(); pwPrev.visible = false; scene.add(pwPrev);
+const pwRing = new THREE.Mesh(new THREE.RingGeometry(.9, 1, 48), pwPrevMat); pwRing.rotation.x = -Math.PI / 2; pwPrev.add(pwRing);
+const pwDisc = new THREE.Mesh(new THREE.CircleGeometry(1, 40), pwPrevFill); pwDisc.rotation.x = -Math.PI / 2; pwPrev.add(pwDisc);
+const pwDot = new THREE.Mesh(new THREE.CircleGeometry(.18, 12), pwPrevMat); pwDot.rotation.x = -Math.PI / 2; pwPrev.add(pwDot);
+// Frappe aérienne : bande le long de la rue
+const pwBand = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), pwPrevFill); pwBand.rotation.x = -Math.PI / 2; pwPrev.add(pwBand);
+const pwBandEdge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(1, 1)), new THREE.LineBasicMaterial({ color:0xff2a20, transparent:true, opacity:.8, fog:false, depthWrite:false }));
+pwBandEdge.rotation.x = -Math.PI / 2; pwPrev.add(pwBandEdge);
+// Trajectoire en pointillés (grenade, cocktail)
+const PW_ARC_N = 24;
+const pwArcGeo = new THREE.BufferGeometry(); pwArcGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(PW_ARC_N * 3), 3));
+const pwArc = new THREE.Line(pwArcGeo, new THREE.LineDashedMaterial({ color:0xffd8a0, dashSize:.6, gapSize:.45, transparent:true, opacity:.8, fog:false, depthWrite:false }));
+pwArc.frustumCulled = false; scene.add(pwArc); pwArc.visible = false;
+const pwPv = new THREE.Vector3(), pwHand = new THREE.Vector3();
+function pwPreview(){
+  const id = pwArmed;
+  if (!id || state !== 'playing' || !S){ if (pwArmed && state !== 'playing' && state !== 'paused') pwArmed = null; pwPrev.visible = pwArc.visible = false; return; }
+  const s = pwStats(id, pwLv(id)), st = pwS[id], ok = st && st.ch >= 1;
+  const p = pwAimPoint(pwPv, id !== 'grenade');
+  const col = ok ? PW_PREV_COL[id] : 0x888888;
+  pwPrevMat.color.setHex(col); pwPrevFill.color.setHex(col); pwBandEdge.material.color.setHex(col);
+  const pulse = 1 + Math.sin(performance.now() / 140) * .04;
+  pwPrev.visible = true; pwPrev.position.set(p.x, .06, p.z);
+  const strike = id === 'strike';
+  pwRing.visible = pwDisc.visible = !strike; pwBand.visible = pwBandEdge.visible = strike;
+  if (strike){
+    // la ligne de bombes suit la rue, centrée sur le point visé
+    const len = (s.bombs - 1) * s.step + s.radius * 2, w = s.radius * 2;
+    pwBand.scale.set(w, len, 1); pwBandEdge.scale.set(w, len, 1);
+  } else {
+    const r = s.radius * pulse; pwRing.scale.set(r, r, 1); pwDisc.scale.set(r, r, 1);
+  }
+  // Trajectoire : de la main jusqu'au point d'impact (hauteur réelle si une grenade vise un volant)
+  if (!strike){
+    pwHand.set(.35, -.3, -.6).applyMatrix4(camera.matrixWorld);
+    const ty = id === 'grenade' ? p.y : 0, a = pwArcGeo.attributes.position.array;
+    const dist = Math.hypot(p.x - pwHand.x, p.z - pwHand.z), hgt = Math.max(2, dist * .25);
+    for (let i = 0; i < PW_ARC_N; i++){
+      const t = i / (PW_ARC_N - 1);
+      a[i * 3] = pwHand.x + (p.x - pwHand.x) * t;
+      a[i * 3 + 1] = pwHand.y + (ty - pwHand.y) * t + Math.sin(Math.PI * t) * hgt;
+      a[i * 3 + 2] = pwHand.z + (p.z - pwHand.z) * t;
+    }
+    pwArcGeo.attributes.position.needsUpdate = true; pwArc.computeLineDistances();
+    pwArc.material.color.setHex(ok ? 0xffd8a0 : 0x888888); pwArc.visible = true;
+  } else pwArc.visible = false;
+}
+try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); pwPreview(); return r; }; } catch (e) {}

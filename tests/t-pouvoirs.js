@@ -169,7 +169,7 @@
     ok(r >= 2, 'damage() appelé ' + r + ' fois');
   });
 
-  test('Pouvoirs : touche Q lance la frappe sans changer d’arme', () => {
+  test('Pouvoirs : garder G ou Q montre la cible, relâcher lance, sans changer d’arme', () => {
     exiger(); partie({ level: 5 });
     const r = J(function(){
       if (typeof KeyboardEvent !== 'function') return null;
@@ -177,14 +177,23 @@
       var arme = S.cur, ch = __pouvoirs.pwS.strike.ch;
       camera.position.copy(EYE); camera.lookAt(0, 0, -50); camera.updateMatrixWorld(true);
       document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyQ', key: 'q', bubbles: true }));
+      visuals(1 / 30); var apercuQ = pwPrev.visible && pwBand.visible, pasEncore = __pouvoirs.pwS.strike.ch === ch;
+      document.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyQ', key: 'q', bubbles: true }));
       var g = __pouvoirs.pwS.grenade.ch;
       document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyG', key: 'g', bubbles: true }));
-      return { arme: S.cur === arme, strike: __pouvoirs.pwS.strike.ch === ch - 1, grenade: __pouvoirs.pwS.grenade.ch === g - 1 };
+      visuals(1 / 30); var apercuG = pwPrev.visible && pwRing.visible && pwArc.visible;
+      document.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyG', key: 'g', bubbles: true }));
+      visuals(1 / 30); var cache = !pwPrev.visible && !pwArc.visible;
+      return { arme: S.cur === arme, strike: __pouvoirs.pwS.strike.ch === ch - 1, grenade: __pouvoirs.pwS.grenade.ch === g - 1, apercuQ: apercuQ, apercuG: apercuG, pasEncore: pasEncore, cache: cache };
     });
     if (r === null) ignorer('KeyboardEvent absent');
     ok(r.strike, 'Q n’a pas lancé la frappe');
     ok(r.grenade, 'G n’a pas lancé la grenade');
     ok(r.arme, 'Q a changé d’arme');
+    ok(r.pasEncore, 'Q enfoncé ne doit pas encore lancer (on vise)');
+    ok(r.apercuQ, 'Bande de la frappe aérienne absente pendant la visée');
+    ok(r.apercuG, 'Cercle et trajectoire de la grenade absents pendant la visée');
+    ok(r.cache, 'Aperçu encore visible après le lancer');
   });
 
   test('Pouvoirs : effets rangés en fin de partie et au changement de ville', () => {

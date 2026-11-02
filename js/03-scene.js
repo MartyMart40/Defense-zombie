@@ -63,9 +63,110 @@ function house(x, z, w, d, h, roofCol, seed){
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), facadeMat(seed, Math.max(w, d), h)); m.position.set(x, h / 2, z); world.add(m);
   roof(x, h, z, w, d, rand(2, 3.2), roofCol);
 }
+/* ---------- Arbres : facettes, deux espèces, tous fusionnés en un seul objet ---------- */
+// Chaque arbre est fait de quelques formes simples déformées et colorées par sommet.
+// Tous les arbres d'une ville sont réunis dans une seule géométrie (1 appel de dessin),
+// plus une seconde pour les ombres au sol : léger même sur cell.
+let treeParts = null, shadowParts = null;
+const _tm = new THREE.Matrix4(), _tq = new THREE.Quaternion(), _te = new THREE.Euler(), _ts = new THREE.Vector3(), _tp = new THREE.Vector3(), _tc = new THREE.Color();
+function treeAdd(geo, x, y, z, rx, ry, rz, sx, sy, sz, col, jit, shade){
+  const g = geo.index ? geo.toNonIndexed() : geo;
+  _te.set(rx, ry, rz); _tq.setFromEuler(_te); _ts.set(sx, sy, sz); _tp.set(x, y, z);
+  _tm.compose(_tp, _tq, _ts); g.applyMatrix4(_tm);
+  const pos = g.attributes.position, n = pos.count;
+  // Déformation douce : les sommets au même endroit bougent pareil (pas de trous entre les facettes)
+  if (jit) for (let i = 0; i < n; i++){
+    const px = pos.getX(i), py = pos.getY(i), pz = pos.getZ(i);
+    const h = Math.sin(px * 12.9898 + py * 78.233 + pz * 37.719) * 43758.5453, k = (h - Math.floor(h)) - .5;
+    const h2 = Math.sin(px * 39.3468 + py * 11.135 + pz * 83.155) * 24634.6345, k2 = (h2 - Math.floor(h2)) - .5;
+    pos.setXYZ(i, px + k * jit, py + k2 * jit * .7, pz + (k - k2) * jit);
+  }
+  g.computeVertexNormals();
+  // Couleur par facette : nuance au hasard, plus sombre en bas, plus claire en haut (lumière du ciel)
+  const cols = new Float32Array(n * 3); let ymin = Infinity, ymax = -Infinity;
+  for (let i = 0; i < n; i++){ const v = pos.getY(i); if (v < ymin) ymin = v; if (v > ymax) ymax = v; }
+  for (let f = 0; f < n; f += 3){
+    const var1 = 1 + (Math.random() - .5) * .22;
+    for (let j = 0; j < 3; j++){
+      const t = (pos.getY(f + j) - ymin) / Math.max(.01, ymax - ymin);
+      const l = var1 * (shade ? (.72 + .4 * t) : 1);
+      _tc.setHex(col); cols[(f + j) * 3] = _tc.r * l; cols[(f + j) * 3 + 1] = _tc.g * l; cols[(f + j) * 3 + 2] = _tc.b * l;
+    }
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+  treeParts.push(g);
+  if (g !== geo) geo.dispose();
+}
+function treeMerge(list){
+  let n = 0; list.forEach(g => n += g.attributes.position.count);
+  const P = new Float32Array(n * 3), N = new Float32Array(n * 3), C = new Float32Array(n * 3); let o = 0;
+  list.forEach(g => {
+    P.set(g.attributes.position.array, o * 3); N.set(g.attributes.normal.array, o * 3);
+    if (g.attributes.color) C.set(g.attributes.color.array, o * 3); else C.fill(1, o * 3, (o + g.attributes.position.count) * 3);
+    o += g.attributes.position.count; g.dispose();
+  });
+  const m = new THREE.BufferGeometry();
+  m.setAttribute('position', new THREE.BufferAttribute(P, 3)); m.setAttribute('normal', new THREE.BufferAttribute(N, 3)); m.setAttribute('color', new THREE.BufferAttribute(C, 3));
+  m.computeBoundingSphere(); return m;
+}
+let TREE_PAL = null;
+function treeStart(L){
+  treeParts = []; shadowParts = [];
+  const night = L.id === 'banlieue';
+  TREE_PAL = {
+    bark: night ? [0x2a231e, 0x332a22] : [0x4a3524, 0x5a3f2a, 0x3e2c1e],
+    pine: night ? [0x1a2a22, 0x1f3026, 0x16241c] : [0x24391f, 0x2c4424, 0x203420, 0x34492a],
+    leaf: night ? [0x22301f, 0x2a3824, 0x1e2a1e] : [0x3e5a26, 0x4a6a2c, 0x56702e, 0x6a6a2a, 0x8a5a24, 0x9a6a2a], // quelques touches d'automne
+  };
+}
 function tree(x, z, sc){
-  box(.35 * sc, 2 * sc, .35 * sc, lam(0x3a2a1c), x, sc, z);
-  const c = new THREE.Mesh(new THREE.ConeGeometry(1.7 * sc, 4.5 * sc, 7), lam(0x26331e)); c.position.set(x, 4.2 * sc, z); world.add(c);
+  if (!treeParts) treeStart(curLoc || LOCS[0]);
+  const ry = Math.random() * 6.28, bark = pick(TREE_PAL.bark);
+  if (Math.random() < .5){
+    // Sapin : tronc effilé et 4 étages de branches qui rapetissent
+    const h = rand(5.5, 7.5) * sc, col = pick(TREE_PAL.pine);
+    treeAdd(new THREE.CylinderGeometry(.09 * sc, .26 * sc, h * .55, 6), x, h * .27, z, 0, ry, 0, 1, 1, 1, bark, .04 * sc, true);
+    const tiers = 4;
+    for (let i = 0; i < tiers; i++){
+      const t = i / (tiers - 1), r = (1.9 - 1.25 * t) * sc * rand(.9, 1.1), hh = (2.2 - .6 * t) * sc;
+      const y = h * .2 + i * h * .2 + hh / 2;
+      treeAdd(new THREE.ConeGeometry(r, hh, 9, 1, true), x + rand(-.08, .08) * sc, y, z + rand(-.08, .08) * sc, rand(-.05, .05), ry + i * .7, rand(-.05, .05), 1, 1, 1, col, .28 * sc * (1 - .5 * t), true);
+      // dessous de chaque étage, plus sombre
+      treeAdd(new THREE.CircleGeometry(r * .92, 9), x, y - hh / 2 + .02, z, Math.PI / 2, 0, ry, 1, 1, 1, col, .12 * sc, false);
+    }
+    treeAdd(new THREE.ConeGeometry(.35 * sc, .9 * sc, 6), x, h * .2 + tiers * h * .2 + .3 * sc, z, 0, ry, 0, 1, 1, 1, col, .06 * sc, true);
+    shadowParts.push([x, z, 2 * sc]);
+  } else {
+    // Feuillu : tronc tordu, 3 branches, feuillage en grappes bosselées
+    const h = rand(2.4, 3.2) * sc, col = pick(TREE_PAL.leaf), lean = rand(-.12, .12);
+    treeAdd(new THREE.CylinderGeometry(.14 * sc, .3 * sc, h, 7), x, h / 2, z, lean, ry, rand(-.1, .1), 1, 1, 1, bark, .07 * sc, true);
+    const top = new THREE.Vector3(x + Math.sin(lean) * h * .5, h, z);
+    const blobs = [[0, .9, 0, 1.45]];
+    for (let i = 0; i < 3; i++){
+      const a = ry + i * 2.1 + rand(-.3, .3), bl = rand(1, 1.5) * sc;
+      treeAdd(new THREE.CylinderGeometry(.05 * sc, .11 * sc, bl, 5), top.x + Math.cos(a) * bl * .35, top.y - .1 * sc + bl * .3, top.z + Math.sin(a) * bl * .35, Math.sin(a) * .9, 0, -Math.cos(a) * .9, 1, 1, 1, bark, .03 * sc, false);
+      blobs.push([Math.cos(a) * bl * .8 / sc, .5 + rand(.1, .5), Math.sin(a) * bl * .8 / sc, rand(.95, 1.25)]);
+    }
+    for (let i = 0; i < 2; i++){ const a = rand(0, 6.28); blobs.push([Math.cos(a) * .7, 1.5 + rand(0, .3), Math.sin(a) * .7, rand(.8, 1.05)]); }
+    blobs.forEach(b => {
+      const r = b[3] * sc;
+      treeAdd(new THREE.IcosahedronGeometry(r, 1), top.x + b[0] * sc, top.y + b[1] * sc, top.z + b[2] * sc, rand(0, 3), rand(0, 3), 0, 1, rand(.8, .95), 1, col, .32 * r, true);
+    });
+    shadowParts.push([top.x, z, 2.4 * sc]);
+  }
+}
+function treeFinish(){
+  if (!treeParts) return;
+  if (treeParts.length){
+    const mat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+    world.add(new THREE.Mesh(treeMerge(treeParts), mat));
+  }
+  if (shadowParts.length){
+    const list = shadowParts.map(p => { const g = new THREE.CircleGeometry(p[2], 12).toNonIndexed(); g.rotateX(-Math.PI / 2); g.translate(p[0], .04, p[1]); g.computeVertexNormals(); return g; });
+    const sm = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .28, depthWrite: false });
+    world.add(new THREE.Mesh(treeMerge(list), sm));
+  }
+  treeParts = shadowParts = null;
 }
 function disposeWorld(){
   if (!world) return;
@@ -80,7 +181,7 @@ function disposeWorld(){
 }
 const BAR_Z = -9;
 function buildWorld(L){
-  disposeWorld(); fires.length = 0;
+  disposeWorld(); fires.length = 0; treeStart(L);
   world = new THREE.Group(); scene.add(world);
   scene.fog.color.setHex(L.fog); scene.background.setHex(L.fog); scene.fog.near = L.fogNear; scene.fog.far = L.fogFar;
   world.add(new THREE.HemisphereLight(L.hemi[0], L.hemi[1], L.hemi[2]));
@@ -152,6 +253,7 @@ function buildWorld(L){
     const hh = L.style === 'houses' ? 14 : Math.max(40, L.bh[1]);
     const endB = new THREE.Mesh(new THREE.BoxGeometry(70, hh, 10), facadeMat(seed++, 70, hh)); endB.position.set(0, hh / 2, -180); world.add(endB);
   }
+  treeFinish(); // tous les arbres de la ville en un seul objet
   // Notre immeuble et les voisins
   const ours = new THREE.Mesh(new THREE.BoxGeometry(30, 8.6, 24), facadeMat(3, 30, 8.6)); ours.position.set(0, 4.3, 8.1); world.add(ours);
   [-1, 1].forEach(sd => { const m = new THREE.Mesh(new THREE.BoxGeometry(20, 14, 22), facadeMat(seed++, 20, 14)); m.position.set(sd * 25, 7, 7.2); world.add(m); });

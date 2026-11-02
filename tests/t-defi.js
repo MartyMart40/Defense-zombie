@@ -61,7 +61,7 @@
         o.boss3 = wavePlan(3).queue.indexOf('boss') >= 0; o.bossPret = typeof __boss === 'object' && __boss.bossReady();
         // Pas de réparation
         __defi.defiStart({ loc: 1, waves: 3, mods: ['sansRep', 'nuit'] });
-        S.money = 1e6; S.bar = 100; renderShop(); o.repDesactive = !!$('shopWall').innerHTML.match(/<button disabled>Interdit<\/button>/);
+        S.money = 1e6; S.bar = 100; renderShop(); o.repDesactive = !!$('shopWall').innerHTML.match(/<button disabled(="")?>Interdit<\/button>/);
         S.upg.wall++; S.barMax = barMaxCalc(); S.bar = S.barMax; renderShop(); o.apresRenfort = S.bar;
         state = 'shop'; startWave(); o.meteo = typeof __amb === 'object' ? __amb.weather : 'nuit';
         // Retour au mode normal

@@ -7,13 +7,21 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
 
+## En cours (lancé le 2026-11-02, Martin absent : tout automatique)
+
+| # | Tâche | Fichier principal |
+|---|-------|-------------------|
+| 3 | Mode infini + grands nombres compacts | js/28-infini.js, 00-base.js (fmt) |
+| 20 | Repères visuels pour jouer sans son | js/29-reperes.js |
+| 21 | Missions et succès (ferraille) | js/30-missions.js |
+| 22 | Ralenti, chiffres de dégâts (option), écran de fin riche | js/31-punch.js |
+| 23 | Habits variés des zombies + clown zombie très rare (1 sur 10 000 environ) | 07, 18 |
+
 ## À faire
 
 | # | Tâche | Priorité |
 |---|-------|----------|
-| 3 | Mode infini (sans choix de difficulté) | Haute |
-| - | Missions et succès | À confirmer |
-| - | Équilibrage après essais de Martin (arbalète peut-être trop forte, missiles très forts, lance-flammes et combos très longs) | Après essais |
+| - | Équilibrage après essais de Martin | Après essais |
 
 Écarté par Martin : choisir 1 bonus parmi 3.
 

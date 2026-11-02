@@ -6,7 +6,7 @@ function updateHUD(){
   setTxt('locName', curLoc.name);
   setTxt('wave', 'Vague ' + S.wave + ' / ' + curLoc.waves);
   setTxt('money', fmt(S.money));
-  setTxt('kills', S.kills + ' abattus');
+  setTxt('kills', fmtN(S.kills) + ' abattus');
   const pct = clamp(S.bar / S.barMax, 0, 1);
   const w = Math.round(pct * 100) + '%'; if (hudCache.bar !== w){ hudCache.bar = w; $('barFill').style.width = w; $('barFill').classList.toggle('low', pct < .3); $('vignette').classList.toggle('on', pct < .3 && state === 'playing'); }
   setTxt('wname', cur().name);

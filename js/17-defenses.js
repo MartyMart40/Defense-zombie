@@ -388,7 +388,7 @@ function defFrame(dt){
 // Crochet appelé par updateHUD() : ferraille et compte à rebours de l'ogive
 let nukeShown = false;
 function defHUD(){
-  setTxt('scrapH', '⚙ ' + Math.floor(P.scrap).toLocaleString('fr-CA') + (S && S.scrapGained ? ' (+' + Math.floor(S.scrapGained).toLocaleString('fr-CA') + ')' : ''));
+  setTxt('scrapH', '⚙ ' + fmtN(Math.floor(P.scrap)) + (S && S.scrapGained ? ' (+' + fmtN(Math.floor(S.scrapGained)) + ')' : ''));
   let best = null;
   for (const rt of RT) if (rt.type === 'nuke' && (best === null || rt.nukeT < best)) best = rt.nukeT;
   const show = best !== null;

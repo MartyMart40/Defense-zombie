@@ -15,7 +15,7 @@
 //   onWeak retourne { done, txt } : done = les dégâts sont déjà infligés, txt = texte ajouté à « Point faible ! ».
 // Géométries et matériaux partagés créés une seule fois ici : aucun n'est libéré, aucun n'est recréé.
 const ZKINDS = {};
-const ZKG = { box:new THREE.BoxGeometry(1, 1, 1), top:new THREE.BoxGeometry(1, 1, 1), sph:new THREE.SphereGeometry(1, 10, 8), spit:new THREE.SphereGeometry(.24, 8, 6) };
+const ZKG = { box:ZG.box, top:new THREE.BoxGeometry(1, 1, 1), sph:new THREE.SphereGeometry(1, 10, 8), spit:new THREE.SphereGeometry(.24, 8, 6) };
 ZKG.top.translate(0, -.5, 0); // pivot en haut : membres qui tournent à l'épaule, à la hanche, au genou
 const ZKM = {
   acid:new THREE.MeshLambertMaterial({ color:0x8fdc2a, emissive:0x3e8a0c }),
@@ -37,15 +37,16 @@ const WEAK = {
   jambe: { mult:1.3, effet:'jambe' }   // sauteur : jambes, il ne saute plus
 };
 const zkWeak = (m, w) => { m.userData.weak = w; return m; };
+const ZK_HAILLONS = [0x5b3a2e, 0x3d4a5c, 0x7a2e2e, 0x4b5a3a, ZC.hivis, ZC.navy]; // torse du sauteur : couleurs déjà dans la palette partagée
 const zkV = new THREE.Vector3();
 function zkEyes(parent, y, z, dx, s){ s = s || 1; zkMesh(parent, ZKG.box, eyeMat, .08 * s, .05 * s, .02, -dx, y, z); zkMesh(parent, ZKG.box, eyeMat, .08 * s, .05 * s, .02, dx, y, z); }
 
 /* ---------- Sauteur : maigre, longues jambes repliées, avance par bonds ---------- */
 ZKINDS.jumper = {
   build(T){
-    const skin = zmat(T.skin), rag = zmat(pick(PANTS));
+    const skin = zmat(T.skin), rag = zmat(pick(PANTS)), top = Math.random() < .5 ? rag : zmat(pick(ZK_HAILLONS));
     const g = new THREE.Group(), body = zkGroup(g, 0, 0, 0), P = [];
-    zkMesh(body, ZKG.box, rag, .34, .55, .22, 0, 1.32, 0, P);                 // torse étroit
+    zkMesh(body, ZKG.box, top, .34, .55, .22, 0, 1.32, 0, P);                 // torse étroit (haillons de couleurs variées)
     zkMesh(body, ZKG.box, skin, .1, .5, .08, 0, 1.36, -.13, P);               // colonne qui ressort
     const head = zkMesh(body, ZKG.box, skin, .26, .3, .38, 0, 1.74, .1, P);   // tête allongée vers l'avant
     zkEyes(body, 1.78, .3, .07);
@@ -60,7 +61,7 @@ ZKINDS.jumper = {
       rig.hip.push(hip); rig.knee.push(knee);
     });
     g.scale.setScalar(T.scale); g.userData.rig = rig;
-    return { g, body, head, armL, armR, parts:P, mats:[skin, rag], aimY:1.25 * T.scale };
+    return { g, body, head, armL, armR, parts:P, mats:top === rag ? [skin, rag] : [skin, top, rag], aimY:1.25 * T.scale };
   },
   init(z){ z.rig = z.g.userData.rig; z.jst = 'crouch'; z.jt = rand(.1, .4); z.ju = 0; },
   // Jambe touchée : il ne peut plus sauter (le bond en cours se termine) et avance en boitant
@@ -224,6 +225,9 @@ ZKINDS.spitter = {
     const head = zkMesh(body, ZKG.box, skin, .3, .26, .3, 0, 1.86, .1, P);
     zkEyes(body, 1.9, .26, .08);
     zkMesh(body, ZKG.box, ZKM.mouth, .2, .1, .04, 0, 1.77, .26);
+    const coiffe = Math.random(); // quelques cracheurs gardent un casque de chantier ou une tuque
+    if (coiffe < .15){ zkMesh(body, ZKG.box, zmat(ZC.jaune), .36, .12, .36, 0, 2.04, .1); zkMesh(body, ZKG.box, zmat(ZC.jaune), .42, .03, .44, 0, 1.99, .12); }
+    else if (coiffe < .27){ zkMesh(body, ZKG.box, zmat(ZC.hivis), .34, .13, .34, 0, 2.03, .1); }
     const armL = zkGroup(body, -.46, 1.4, 0), armR = zkGroup(body, .46, 1.4, 0);
     zkMesh(armL, ZKG.top, skin, .14, .5, .14, 0, 0, 0, P); zkMesh(armR, ZKG.top, skin, .14, .5, .14, 0, 0, 0, P);
     const legL = zkGroup(body, -.2, .72, 0), legR = zkGroup(body, .2, .72, 0);
@@ -395,5 +399,102 @@ ZKINDS.colossus = {
   }
 };
 
+/* ---------- Clown zombie : très rare (compteur à vie, 07-zombies.js), ridicule, gros bonus ---------- */
+// Contrat avec les missions et les succès : z.type === 'clown' et z.clown === true.
+// Modèle : l'humanoïde de 07 avec la tenue TENUES.clown (pois, perruque, nez, collerette, chaussures géantes, ballon).
+// Tout en couleurs de la palette partagée et un motif : dessiné par instances comme les autres.
+const WEAK_BALLON = { mult:1, effet:'ballon' }; // le ballon se crève (aucun dégât au clown)
+PMATS.confJ = new THREE.MeshBasicMaterial({ color:0xf0c828 });
+PMATS.confB = new THREE.MeshBasicMaterial({ color:0x3a7cf0 });
+PMATS.confR = new THREE.MeshBasicMaterial({ color:0xe03a3a });
+if (typeof SCRAP_Z === 'object' && SCRAP_Z) SCRAP_Z.clown = 60; // ferraille (× difficulté de la ville)
+const CLOWN_MOTS = ['Le cirque est fermé !', 'Fin du spectacle !', 'Pouet… pouet…', 'Plus personne ne rit !', 'Rideau !'];
+TENUES.clown = { nom:'Clown', poids:0, pour:[], shirt:'pois', pants:'pois', manches:'chemise', mains:ZC.blanc, tete:ZC.blanc,
+  acc(h){
+    const B = h.head, sph = (par, c, s, x, y, z, sy) => zkMesh(par, ZKG.sph, zCol(c), s, sy || s, s, x, y, z);
+    sph(B, ZC.rouge, .09, 0, -.03, .23);                                                     // gros nez rouge
+    zAcc(B, ZC.rouge, .22, .04, .02, 0, -.12, .205);                                         // grand sourire
+    zAcc(B, ZC.rouge, .05, .07, .02, -.11, -.09, .205, true); zAcc(B, ZC.rouge, .05, .07, .02, .11, -.09, .205, true);
+    zAcc(B, ZC.sport, .05, .1, .02, -.09, .11, .203, true); zAcc(B, ZC.sport, .05, .1, .02, .09, .11, .203, true); // losanges sur les yeux
+    [[-.23, .06, -.02, ZC.rouge, .13], [.23, .06, -.02, ZC.jaune, .13], [-.19, .19, -.1, ZC.sport, .12], [.19, .19, -.1, ZC.hivis, .12],
+     [0, .24, -.12, ZC.rouge, .12], [-.1, .25, .06, ZC.jaune, .1], [.1, .25, .06, ZC.sport, .1], [0, .12, -.22, ZC.hivis, .12]]
+      .forEach(w => sph(B, w[3], w[4], w[0], w[1], w[2]));                                   // perruque frisée multicolore
+    zAcc(h.body, ZC.blanc, .74, .07, .52, 0, 1.69, 0); zAcc(h.body, ZC.jaune, .74, .07, .52, 0, 1.71, 0).rotation.y = .785; // collerette
+    sph(h.torso, ZC.jaune, .055, 0, .17, .18); sph(h.torso, ZC.rouge, .055, 0, -.06, .18);  // pompons
+    zAcc(h.legL, ZC.rouge, .3, .15, .64, -.03, -.8, .18); zAcc(h.legR, ZC.rouge, .3, .15, .64, .03, -.8, .18); // chaussures géantes
+    const bal = zkGroup(h.body, .55, 1.15, .3);                                              // ballon au bout d'une ficelle
+    zAcc(bal, ZC.blanc, .015, 1.5, .015, 0, .75, 0);
+    const ball = zkWeak(sph(bal, ZC.rouge, .27, 0, 1.78, 0, .33), WEAK_BALLON);
+    zAcc(bal, ZC.rouge, .06, .06, .06, 0, 1.44, 0);
+    h.parts = [ball]; h.extra.bal = bal; h.extra.ball = ball;
+  } };
+function clownHonk(){ if (typeof Snd === 'undefined' || !Snd.tone) return; Snd.tone(520, .09, 'square', .05, 470); Snd.tone(390, .15, 'square', .05, 350, .1); }
+ZKINDS.clown = {
+  build(T){ const R = buildHumanoid(T, 'clown'); R.g.userData.rig = R.extra; return R; },
+  init(z){
+    z.clown = true; z.rig = z.g.userData.rig; z.pouetT = -9; z.lastS = 0;
+    if (typeof toast === 'function' && state === 'playing') toast('Pouet pouet ! Un clown zombie s’est glissé dans la horde.');
+    clownHonk();
+  },
+  // Chaque coup : « Pouet ! » (au plus un toutes les 0,3 s)
+  onHit(z, amt, head, point){
+    const now = typeof time === 'number' ? time : 0;
+    if (now >= z.pouetT && now - z.pouetT < .3) return;
+    z.pouetT = now; z.pouets = (z.pouets || 0) + 1;
+    if (point) weakText(head ? 'Pouet ! Pouet !' : 'Pouet !', point);
+    clownHonk();
+  },
+  // Ballon touché : il éclate, le clown boude et ralentit
+  onWeak(z, m, amt, point){
+    if (!z.rig || m !== z.rig.ball) return null;
+    dropZombieMesh(z, m); z.rig.bal.traverse(o => { o.visible = false; });
+    if (point){ burst(point, 'confR', 10, 3); burst(point, 'confJ', 6, 2.5); }
+    if (typeof Snd !== 'undefined' && Snd.burst) Snd.burst(2400, .08, .35);
+    z.speed *= .8; z.balCreve = true;
+    return { done:true, txt:'Ballon crevé' };
+  },
+  // Mort : pluie de confettis, texte drôle, trombone triste. Le bonus vient de ZTYPES.clown, ZXP.clown et SCRAP_Z.clown.
+  onKill(z, head, point, pay){
+    const p = point || z.g.position;
+    ['confJ', 'confB', 'confR'].forEach(t => burst(p, t, 14, 4.5));
+    const mot = pick(CLOWN_MOTS); z.motFin = mot;
+    weakText(mot, p);
+    if (typeof toast === 'function') toast('Clown zombie abattu ! ' + mot + ' Bonus : +' + fmt(pay) + (typeof scrapFor === 'function' ? ', +' + Math.round(scrapFor('clown', curLoc)) + ' ferraille' : ''));
+    if (typeof P === 'object' && P) P.clownsAbattus = (P.clownsAbattus || 0) + 1; // sauvé par addXP juste après
+    if (typeof Snd !== 'undefined' && Snd.tone){ Snd.tone(392, .28, 'sawtooth', .06, 370); Snd.tone(370, .28, 'sawtooth', .06, 349, .3); Snd.tone(349, .7, 'sawtooth', .06, 290, .6); }
+  },
+  // Démarche ridicule : il sautille en se dandinant, gros pas de chaussures qui couinent, bras qui s'agitent
+  update(z, dt){
+    const gp = z.g.position, R = z.rig;
+    if (R && R.bal && !z.balCreve){ const t = (typeof time === 'number' ? time : 0) + z.uid; R.bal.rotation.z = Math.sin(t * 1.7) * .14; R.bal.rotation.x = Math.sin(t * 1.1) * .1; }
+    if (z.st !== 'walk'){ z.body.position.y = Math.abs(Math.sin(z.phase * .5)) * .08; return false; } // tape sur la barricade comme les autres
+    z.phase += dt * (3.2 + z.speed * 2.2);
+    const s = Math.sin(z.phase), c = Math.cos(z.phase);
+    gp.z += z.speed * dt * (.7 + .6 * Math.abs(s));
+    gp.x = clamp(gp.x + Math.sin(z.phase * .21) * z.sway * dt * .7, -12, 12);
+    if (z.legL){ z.legL.rotation.x = s * .85; z.legR.rotation.x = -s * .85; z.legL.rotation.z = -.16; z.legR.rotation.z = .16; }
+    if (z.armL){ z.armL.rotation.x = -1.5 + c * .9; z.armR.rotation.x = -1.5 - c * .9; z.armL.rotation.z = -.35; z.armR.rotation.z = .35; }
+    z.body.position.y = Math.abs(s) * .26;
+    z.body.rotation.z = s * .2; z.body.rotation.x = .04;
+    if ((s >= 0) !== (z.lastS >= 0) && gp.z > -45 && Math.random() < .35 && typeof Snd !== 'undefined' && Snd.tone) Snd.tone(1500, .05, 'sine', .025, 1900); // couic
+    z.lastS = s;
+    if (gp.z >= z.stopZ){
+      gp.z = z.stopZ; z.st = 'attack';
+      if (z.legL){ z.legL.rotation.x = z.legR.rotation.x = 0; } z.body.rotation.z = 0;
+    }
+    return true;
+  }
+};
+// Pour les tests et le coordonnateur : window.__clown.forcer() fait apparaître le clown tout de suite (s'il n'y en a pas déjà un)
+window.__clown = {
+  CLOWN, forcer(x, zPos){
+    let z = zClownAlive(); if (z) return z;
+    z = spawnZombie('clown');
+    if (x != null) z.g.position.x = x; if (zPos != null) z.g.position.z = zPos;
+    return z;
+  },
+  get vivant(){ return zClownAlive(); }, get vus(){ return P.zVus; }, get seuil(){ return P.clownSeuil; }, check:zClownCheck, seuilApres:clownSeuilApres
+};
+
 // Accès pour les tests automatiques
-window.__types = { ZKINDS, ZKG, ZKM, WEAK, SPIT_POP, spits, spitLaunch, zkFrame, zkClear, get spitsActifs(){ return spits.filter(o => o.m.visible).length; } };
+window.__types ={ ZKINDS, ZKG, ZKM, WEAK, SPIT_POP, spits, spitLaunch, zkFrame, zkClear, get spitsActifs(){ return spits.filter(o => o.m.visible).length; } };

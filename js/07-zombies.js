@@ -1,7 +1,8 @@
 'use strict';
 /* ================= Zombies ================= */
 // Modèle humanoïde par défaut (walker, runner, brute). Les autres formes sont dans 18-zombies-types.js (ZKINDS).
-const ZG = { torso:new THREE.BoxGeometry(.62, .8, .34), head:new THREE.BoxGeometry(.4, .42, .4), arm:new THREE.BoxGeometry(.17, .72, .17), leg:new THREE.BoxGeometry(.22, .86, .24), eye:new THREE.BoxGeometry(.08, .05, .02) };
+const ZG = { torso:new THREE.BoxGeometry(.62, .8, .34), head:new THREE.BoxGeometry(.4, .42, .4), arm:new THREE.BoxGeometry(.17, .72, .17), leg:new THREE.BoxGeometry(.22, .86, .24), eye:new THREE.BoxGeometry(.08, .05, .02),
+  box:new THREE.BoxGeometry(1, 1, 1) }; // cube unité : accessoires des tenues, partagé avec 18-zombies-types.js (un seul lot d'instances)
 ZG.arm.translate(0, -.36, 0); ZG.leg.translate(0, -.43, 0);
 const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff3a1a });
 const SHIRTS = [0x5b3a2e, 0x3d4a5c, 0x6a6a5a, 0x7a2e2e, 0x4b5a3a, 0x8a7a60, 0x3a3a44];
@@ -27,6 +28,42 @@ function zmat(hex){
   }
   return m;
 }
+// Motif partagé (carreaux, pois) : une petite texture 8×8 créée une seule fois, matériau zshared blanc (la couleur
+// d'instance teinte la texture, le flash rouge marche aussi). Par instances : un lot de plus par (géométrie, texture).
+const ZTEX = {};
+function zTexture(nom, rows, pal, rep){
+  if (ZTEX[nom]) return ZTEX[nom];
+  const h = rows.length, w = rows[0].length, d = new Uint8Array(w * h * 4);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
+    const c = pal[rows[h - 1 - y][x]], o = (y * w + x) * 4;
+    d[o] = c >> 16 & 255; d[o + 1] = c >> 8 & 255; d[o + 2] = c & 255; d[o + 3] = 255;
+  }
+  const t = new THREE.DataTexture(d, w, h, THREE.RGBAFormat);
+  t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep || 1, rep || 1); t.needsUpdate = true;
+  return (ZTEX[nom] = t);
+}
+const ZMOTIFS = {
+  // Chemise de chasseur : gros carreaux rouges et noirs
+  carreaux:{ rows:['RRrrNNnn', 'RRrrNNnn', 'rrRRnnNN', 'rrRRnnNN', 'NNnnRRrr', 'NNnnRRrr', 'nnNNrrRR', 'nnNNrrRR'],
+    pal:{ R:0xa8261e, r:0x8a1f18, N:0x1c1414, n:0x2a1a18 }, rep:2 },
+  // Pantalon de cuisinier : petits carreaux noirs et blancs
+  damier:{ rows:['BBNNBBNN', 'BBNNBBNN', 'NNBBNNBB', 'NNBBNNBB', 'BBNNBBNN', 'BBNNBBNN', 'NNBBNNBB', 'NNBBNNBB'], pal:{ B:0xbcb8a8, N:0x1c1c20 }, rep:2 },
+  // Costume de clown : pois multicolores sur fond bleu
+  pois:{ rows:['bbbbbbbb', 'bJJbbRRb', 'bJJbbRRb', 'bbbbbbbb', 'bbbbbbbb', 'bRRbbBBb', 'bRRbbBBb', 'bbbbbbbb'], pal:{ b:0x2f63b8, J:0xf0c828, R:0xd8302a, B:0xf0ece0 }, rep:1 }
+};
+function zmatT(nom){
+  const key = 'motif:' + nom; let m = ZMATS.get(key);
+  if (!m){
+    const M = ZMOTIFS[nom];
+    m = new THREE.MeshLambertMaterial({ color:0xffffff, map:zTexture(nom, M.rows, M.pal, M.rep) });
+    m.userData.zshared = true; m.userData.keep = true;
+    m.userData.hitC = m.color.clone().multiplyScalar(.7).add(zHitTint);
+    ZMATS.set(key, m); zInstTex(m.map);
+  }
+  return m;
+}
+function zInstTex(tex){ let m = ZI_FIX.get(tex); if (!m){ m = new THREE.MeshLambertMaterial({ color:0xffffff, map:tex }); m.userData.zinst = true; ZI_FIX.set(tex, m); } return m; }
 // Matériau fixe partagé (yeux, acide, gueule...) : utilisable par le rendu par instances
 const zfix = m => { m.userData.zfixed = true; m.userData.keep = true; return m; };
 zfix(eyeMat);
@@ -47,11 +84,12 @@ function zMakeIM(b, cap){
   return im;
 }
 function zBatch(geo, mat){
-  const col = !!mat.userData.zshared, key = geo.uuid + (col ? '|c' : '|' + mat.uuid);
+  const col = !!mat.userData.zshared, tex = col && mat.map, key = geo.uuid + (col ? '|c' + (tex ? '|' + tex.uuid : '') : '|' + mat.uuid);
   let b = ZB.get(key);
   if (!b){
     let m = ZI_MAT;
     if (!col){ m = ZI_FIX.get(mat); if (!m){ m = mat.clone(); m.userData.zinst = true; ZI_FIX.set(mat, m); } }
+    else if (tex) m = zInstTex(tex); // motif : une copie par texture
     b = { geo, mat:m, col, cap:64, n:0, im:null };
     b.im = zMakeIM(b, b.cap); zInstRoot.add(b.im);
     ZB.set(key, b); zbList.push(b);
@@ -78,7 +116,7 @@ function zInstPrep(z, mats){
     const mat = o.material, col = !!mat.userData.zshared;
     if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
     I.push({ m:o, b:zBatch(o.geometry, mat), mat:col ? mat : null, fl:col && (mat === mats[0] || mat === mats[1]),
-      small:o.geometry.boundingSphere.radius * o.matrixWorld.getMaxScaleOnAxis() < ZPERF.smallR });
+      small:!!o.userData.zsmall || o.geometry.boundingSphere.radius * o.matrixWorld.getMaxScaleOnAxis() < ZPERF.smallR });
   });
   z.inst = I;
 }
@@ -163,26 +201,156 @@ function zAliveCount(){ let n = 0; for (let i = 0; i < zombies.length; i++) if (
 const zCrowdK = () => zombies.length > 150 ? .35 : zombies.length > 60 ? .65 : 1;
 const zBurst = (pos, type, n, spd) => burst(pos, type, Math.max(1, Math.round(n * zCrowdK())), spd);
 
-function buildHumanoid(T){
-  const skin = zmat(T.skin), shirt = zmat(pick(SHIRTS)), pants = zmat(pick(PANTS));
+/* ---------- Tenues des humanoïdes (marcheur, coureur, costaud) ---------- */
+// Pas un matériau par zombie : une petite palette partagée (ZC) et 3 motifs (ZMOTIFS). Les accessoires sont des cubes
+// unité (ZG.box) mis à l'échelle : tous dans le même lot d'instances, donc presque aucun appel de dessin de plus.
+// Les accessoires de tête sont des enfants de la tête (ils tombent avec elle) ; ils ne sont pas des cibles.
+// (noir et marine reprennent des couleurs de PANTS : moins de matériaux)
+const ZC = { hivis:0xd8641e, jaune:0xd8b020, blanc:0xbcb8a8, navy:0x24303a, rouge:0x9a2420, sport:0x3a7cc0, noir:0x2b2b33 };
+const zCol = c => (c && c.isMaterial) ? c : typeof c === 'string' ? zmatT(c) : Array.isArray(c) ? zCol(pick(c)) : zmat(c);
+// petit = true : détail qui n'est pas dessiné de loin (comme les yeux), voir ZPERF.farD
+function zAcc(par, c, sx, sy, sz, x, y, z, petit){ const m = new THREE.Mesh(ZG.box, zCol(c)); m.scale.set(sx, sy, sz); m.position.set(x, y, z); if (petit) m.userData.zsmall = true; par.add(m); return m; }
+// Repères (avant l'échelle de g) : torse centré à 1,28 (±0,31 × ±0,4 × ±0,17 dans son repère), tête à 1,9 (±0,2, yeux à +0,04),
+// bras : épaule en 0, main vers -0,72 ; jambes : hanche en 0, pied vers -0,86.
+// shirt / pants : couleur, liste de couleurs (une au hasard) ou nom de motif. manches : 'chemise' = comme le torse (avec mains).
+// jambes 'peau' : jambes nues (short ou robe). acc(h) : accessoires. pour : types qui peuvent la porter ; rw : poids chez le coureur.
+const TENUES = {
+  civil:    { nom:'Civil', poids:30, pour:['walker', 'runner', 'brute'],
+    acc(h){ if (Math.random() < .22) zkCasquette(h, pick([ZC.rouge, ZC.sport, 0x4b5a3a, 0x6a6a5a]), false); if (Math.random() < .15) zAcc(h.torso, pick([0x4b5a3a, 0x3a3226, ZC.noir]), .48, .56, .2, 0, -.02, -.27); } },
+  foreur:   { nom:'Foreur', poids:8, pour:['walker', 'runner', 'brute'], shirt:ZC.hivis, pants:ZC.navy, // clin d'œil à Forages Rouillier
+    acc(h){
+      zAcc(h.torso, ZC.blanc, .64, .06, .355, 0, -.14, 0);                                  // bandes réfléchissantes
+      zAcc(h.torso, ZC.blanc, .07, .8, .355, -.15, 0, 0); zAcc(h.torso, ZC.blanc, .07, .8, .355, .15, 0, 0);
+      zAcc(h.head, ZC.jaune, .46, .15, .46, 0, .27, 0); zAcc(h.head, ZC.jaune, .52, .03, .56, 0, .2, .02); // casque jaune
+    } },
+  policier: { nom:'Policier', poids:6, pour:['walker', 'runner', 'brute'], shirt:ZC.navy, pants:ZC.navy, manches:'chemise',
+    acc(h){
+      zAcc(h.torso, ZC.noir, .64, .08, .355, 0, -.35, 0); zAcc(h.torso, ZC.jaune, .08, .09, .02, -.15, .2, .175, true); // ceinture, insigne
+      zAcc(h.head, ZC.navy, .44, .1, .44, 0, .25, 0); zAcc(h.head, ZC.noir, .32, .03, .16, 0, .21, .26);         // casquette
+    } },
+  medecin:  { nom:'Médecin', poids:6, pour:['walker', 'runner'], shirt:ZC.blanc, pants:[0x3d4a5c, ZC.sport], manches:'chemise',
+    acc(h){
+      zAcc(h.torso, ZC.blanc, .64, .26, .35, 0, -.52, 0);                                    // bas de la blouse
+      zAcc(h.torso, ZC.noir, .04, .3, .02, .1, .1, .175, true); zAcc(h.torso, ZC.noir, .04, .3, .02, -.06, .1, .175, true); // stéthoscope
+      if (Math.random() < .5) zAcc(h.head, ZC.blanc, .32, .13, .03, 0, -.09, .205, true);            // masque
+    } },
+  joggeur:  { nom:'Joggeur', poids:7, rw:3, pour:['walker', 'runner'], shirt:[ZC.sport, ZC.rouge, ZC.jaune], pants:ZC.noir, jambes:'peau',
+    acc(h){
+      zAcc(h.legL, h.pants, .24, .38, .26, 0, -.17, 0); zAcc(h.legR, h.pants, .24, .38, .26, 0, -.17, 0); // short
+      zAcc(h.head, ZC.blanc, .42, .06, .42, 0, .12, 0);                                       // bandeau
+      zAcc(h.torso, ZC.blanc, .24, .2, .02, 0, -.02, .175, true);                                     // dossard
+    } },
+  affaires: { nom:'Homme d’affaires', poids:7, pour:['walker', 'runner'], shirt:[0x3a3a44, 0x2b2b33], pants:'chemise', manches:'chemise',
+    acc(h){
+      zAcc(h.torso, ZC.blanc, .16, .5, .02, 0, .15, .172); zAcc(h.torso, ZC.rouge, .07, .42, .02, 0, .08, .18); // chemise, cravate
+      if (Math.random() < .5) zAcc(h.head, ZC.noir, .34, .04, .03, 0, .085, .205, true);              // lunettes
+    } },
+  chasseur: { nom:'Chasseur', poids:7, pour:['walker', 'runner', 'brute'], shirt:'carreaux', pants:0x3a3226, manches:'chemise',
+    acc(h){ zAcc(h.head, ZC.hivis, .44, .16, .44, 0, .23, 0); zAcc(h.head, ZC.hivis, .12, .08, .12, 0, .34, 0); } }, // tuque orange
+  cuisinier:{ nom:'Cuisinier', poids:5, pour:['walker', 'brute'], shirt:ZC.blanc, pants:'damier', manches:'chemise',
+    acc(h){
+      zAcc(h.head, ZC.blanc, .38, .36, .38, 0, .4, 0); zAcc(h.head, ZC.blanc, .42, .08, .42, 0, .22, 0); // toque
+      zAcc(h.torso, ZC.rouge, .3, .06, .02, 0, .36, .177, true);                                      // foulard
+    } },
+  pompier:  { nom:'Pompier', poids:5, pour:['walker', 'runner', 'brute'], shirt:0x3a3a44, pants:'chemise', manches:'chemise',
+    acc(h){
+      zAcc(h.torso, ZC.jaune, .64, .06, .355, 0, -.2, 0); zAcc(h.torso, ZC.jaune, .64, .06, .355, 0, .14, 0);
+      zAcc(h.head, ZC.rouge, .48, .16, .5, 0, .26, 0); zAcc(h.head, ZC.rouge, .5, .03, .66, 0, .18, -.04); // casque
+    } },
+  ado:      { nom:'Ado', poids:8, pour:['walker', 'runner'], shirt:[ZC.sport, ZC.rouge, 0x6a6a5a, 0x4b5a3a], pants:0x24303a, manches:'chemise',
+    acc(h){
+      zAcc(h.torso, h.shirt, .5, .14, .16, 0, .43, -.13);                                     // capuchon
+      zkCasquette(h, pick([ZC.rouge, ZC.sport, ZC.noir, ZC.jaune]), true);                     // casquette à l'envers
+      if (Math.random() < .6) zAcc(h.torso, pick([ZC.rouge, ZC.noir, 0x4b5a3a]), .48, .56, .2, 0, -.02, -.27); // sac à dos
+    } },
+  mariee:   { nom:'Mariée', poids:1.5, pour:['walker'], shirt:ZC.blanc, pants:ZC.blanc,
+    acc(h){
+      zAcc(h.body, ZC.blanc, .72, .62, .5, 0, .68, 0);                                         // robe
+      zAcc(h.head, ZC.blanc, .46, .52, .05, 0, -.02, -.21); zAcc(h.head, ZC.jaune, .3, .04, .04, 0, .22, .1); // voile, diadème
+    } },
+  marie:    { nom:'Marié', poids:1.5, pour:['walker'], shirt:ZC.noir, pants:ZC.noir, manches:'chemise',
+    acc(h){ zAcc(h.torso, ZC.blanc, .16, .5, .02, 0, .15, .172); zAcc(h.torso, ZC.rouge, .14, .06, .02, 0, .36, .18); zAcc(h.torso, ZC.blanc, .05, .05, .02, -.18, .26, .176, true); } }
+};
+// Toute la palette est créée tout de suite : le nombre de matériaux ne dépend pas des tenues tirées au hasard
+Object.keys(ZC).forEach(k => zmat(ZC[k])); SHIRTS.forEach(zmat); PANTS.forEach(zmat); Object.keys(ZMOTIFS).forEach(zmatT);
+function zkCasquette(h, c, envers){ const s = envers ? -1 : 1; zAcc(h.head, c, .43, .1, .43, 0, .25, 0); zAcc(h.head, c, .3, .03, .16, 0, .21, .27 * s); }
+// Proportions par ville (multiplient TENUES[t].poids) : foreurs et chasseurs au village, complets au centre-ville, travailleurs au port
+const VILLE_TENUES = {
+  village:  { foreur:2.5, chasseur:3, affaires:.3, policier:.7, cuisinier:.7 },
+  ville:    { cuisinier:1.6, policier:1.3, ado:1.3, chasseur:1.2 },
+  banlieue: { joggeur:2.5, ado:1.8, mariee:1.3, marie:1.3, affaires:1.2, foreur:.7 },
+  centre:   { affaires:3.5, policier:1.6, medecin:1.6, cuisinier:1.4, chasseur:.2, foreur:.6 },
+  port:     { foreur:3.5, pompier:1.6, policier:1.2, affaires:.3, chasseur:.4, mariee:.3, marie:.3 }
+};
+function zTenueW(t, type, L){
+  const D = TENUES[t]; if (!D || !(D.poids > 0) || D.pour.indexOf(type) < 0) return 0;
+  const V = VILLE_TENUES[L && L.id] || {};
+  return D.poids * (type === 'runner' && D.rw ? D.rw : 1) * (V[t] != null ? V[t] : 1);
+}
+function zTenue(type, L){
+  L = L || (typeof curLoc !== 'undefined' ? curLoc : null);
+  const ks = Object.keys(TENUES); let tot = 0;
+  for (const k of ks) tot += zTenueW(k, type, L);
+  if (!(tot > 0)) return 'civil';
+  let r = Math.random() * tot;
+  for (const k of ks){ r -= zTenueW(k, type, L); if (r < 0) return k; }
+  return 'civil';
+}
+function buildHumanoid(T, tid){
+  const D = TENUES[tid] || TENUES.civil;
+  const skin = zmat(T.skin), shirt = D.shirt != null ? zCol(D.shirt) : zmat(pick(SHIRTS));
+  const pants = D.pants === 'chemise' ? shirt : D.pants != null ? zCol(D.pants) : zmat(pick(PANTS));
+  const sleeve = D.manches === 'chemise' ? shirt : D.manches != null ? zCol(D.manches) : skin;
+  const headM = D.tete != null ? zCol(D.tete) : skin;
   const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
   const mk = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); body.add(m); return m; };
   // Petites variations de proportions : pas deux zombies pareils
   const wide = rand(.88, 1.16), tall = rand(.94, 1.06), hs = rand(.88, 1.12), al = rand(.9, 1.15);
   const torso = mk(ZG.torso, shirt, 0, 1.28, 0); torso.scale.set(wide, 1, rand(.9, 1.2));
-  const head = mk(ZG.head, skin, rand(-.03, .03), 1.9, 0); head.scale.setScalar(hs); head.rotation.z = rand(-.15, .15);
+  const head = mk(ZG.head, headM, rand(-.03, .03), 1.9, 0); head.scale.setScalar(hs); head.rotation.z = rand(-.15, .15);
   mk(ZG.eye, eyeMat, -.09, 1.94, .205 * hs); mk(ZG.eye, eyeMat, .09, 1.94, .205 * hs);
-  const armL = mk(ZG.arm, skin, -.4 * wide, 1.62, 0), armR = mk(ZG.arm, skin, .4 * wide, 1.62, 0);
+  const armL = mk(ZG.arm, sleeve, -.4 * wide, 1.62, 0), armR = mk(ZG.arm, sleeve, .4 * wide, 1.62, 0);
   armL.scale.y = al; armR.scale.y = al * rand(.92, 1.05);
-  const legL = mk(ZG.leg, pants, -.16, .86, 0), legR = mk(ZG.leg, pants, .16, .86, 0);
+  if (sleeve !== skin && D.mains !== false){ zAcc(armL, D.mains || skin, .15, .13, .15, 0, -.76, 0, true); zAcc(armR, D.mains || skin, .15, .13, .15, 0, -.76, 0, true); }
+  const legM = D.jambes === 'peau' ? skin : pants;
+  const legL = mk(ZG.leg, legM, -.16, .86, 0), legR = mk(ZG.leg, legM, .16, .86, 0);
+  const h = { T, skin, shirt, pants, body, torso, head, armL, armR, legL, legR, extra:{} };
+  if (D.acc) D.acc(h);
   g.scale.set(T.scale, T.scale * tall, T.scale);
-  return { g, body, head, armL, armR, legL, legR, parts:[torso, head, armL, armR, legL, legR], mats:[skin, shirt, pants], aimY:1.1 * T.scale };
+  const parts = [torso, head, armL, armR, legL, legR].concat(h.parts || []);
+  const mats = headM !== skin ? [headM, shirt, pants, skin] : [skin, shirt, pants];
+  return { g, body, head, armL, armR, legL, legR, parts, mats, aimY:1.1 * T.scale, tenue:TENUES[tid] ? tid : 'civil', extra:h.extra };
+}
+/* ---------- Clown zombie : très rare, compté à vie ---------- */
+// P.zVus : zombies apparus depuis toujours. P.clownSeuil : au prochain seuil (tiré entre 8 000 et 12 000 zombies plus loin),
+// le prochain marcheur ou coureur devient un clown (type 'clown', z.clown = true ; modèle et comportement : 18-zombies-types.js).
+// Jamais deux clowns en vie à la fois : s'il y en a déjà un, le seuil attend qu'il soit parti.
+const CLOWN = { min:8000, max:12000 };
+const clownSeuilApres = n => Math.round((n || 0) + rand(CLOWN.min, CLOWN.max));
+function zClownNorm(){
+  if (typeof P !== 'object' || !P) return;
+  if (!(typeof P.zVus === 'number' && isFinite(P.zVus) && P.zVus >= 0)) P.zVus = 0;
+  if (!(typeof P.clownSeuil === 'number' && isFinite(P.clownSeuil) && P.clownSeuil > 0)) P.clownSeuil = clownSeuilApres(P.zVus);
+  if (!(typeof P.clowns === 'number' && P.clowns >= 0)) P.clowns = 0;
+}
+zClownNorm();
+const zClownAlive = () => { for (let i = 0; i < zombies.length; i++){ const z = zombies[i]; if (z.clown && !z.dead) return z; } return null; };
+const zClownOk = () => !!(ZTYPES.clown && zkind('clown'));
+function zClownCheck(type){
+  zClownNorm(); P.zVus++;
+  if (type !== 'walker' && type !== 'runner') return type;
+  if (P.zVus < P.clownSeuil || !zClownOk() || zClownAlive()) return type;
+  P.clownSeuil = clownSeuilApres(P.zVus); P.clowns++;
+  if (typeof saveP === 'function') saveP();
+  return 'clown';
 }
 function spawnZombie(type){
+  type = zClownCheck(type);
+  if (type === 'clown' && (!zClownOk() || zClownAlive())) type = 'walker'; // jamais deux clowns à la fois
   const T = ZTYPES[type] || ZTYPES.walker; if (!ZTYPES[type]) type = 'walker';
   const K = zkind(type);
   // build() d'un type de ZKINDS : il s'occupe lui-même de son échelle ; on le positionne et on l'ajoute à la scène
-  const R = (K && K.build) ? K.build(T) : buildHumanoid(T);
+  const R = (K && K.build) ? K.build(T) : buildHumanoid(T, zTenue(type));
   const g = R.g;
   zBoxFor(type, g);
   g.position.set(rand(-11, 11), 0, rand(-118, -100));
@@ -197,6 +365,7 @@ function spawnZombie(type){
   parts.forEach(m => { m.userData.z = z; m.userData.head = (m === z.head); z.meshes.push(m); });
   const px = new THREE.Object3D(); px.userData.z = z; px.raycast = zProxyRaycast; z.proxy = px; hitMeshes.push(px);
   zombies.push(z);
+  z.tenue = R.tenue || null; // tenue de l'humanoïde (TENUES), null pour les autres formes
   if (K && K.init) K.init(z);
   return z;
 }
@@ -215,6 +384,7 @@ const tmpV = new THREE.Vector3();
 function damage(z, amt, head, point){
   if (z.dead) return;
   z.hp -= amt; z.flashT = .08;
+  if (z.clown){ const K = zkind(z.type); if (K && K.onHit) K.onHit(z, amt, head, point); } // « Pouet ! » (18-zombies-types.js)
   zBurst(point, 'blood', head ? 10 : 5, head ? 3 : 2);
   if (z.hp <= 0) kill(z, head, point);
 }
@@ -226,8 +396,9 @@ function kill(z, head, point){
   if (typeof defOnKill === 'function') defOnKill(z); // ferraille (16-atelier.js)
   addXP(z.xp);
   S.money += pay; S.earned += pay; S.kills++; S.waveKills++;
-  if (head && z.head){ z.head.visible = false; z.headGone = true; zBurst(point, 'blood', 14, 4); }
+  if (head && z.head){ z.head.traverse(o => { o.visible = false; }); z.headGone = true; zBurst(point, 'blood', 14, 4); } // la tête part avec son casque
   floatText((head ? 'Tête ! +' : '+') + fmt(pay), point, head);
+  const K = zkind(z.type); if (K && K.onKill) K.onKill(z, head, point, pay); // bonus et texte propres au type (clown)
 }
 /* ---------- Points faibles ---------- */
 // Un maillage peut porter userData.weak = { mult, effet } (posé par ZKINDS[type].build, 18-zombies-types.js).

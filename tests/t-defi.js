@@ -12,7 +12,7 @@
   const date = d => J(function(x){ __defi.setNow(x); }, d);
   const finir = () => { try { J(function(){ __defi.setNow(null); if (__defi.active || (curLoc && curLoc.defi)) goMap(); }); } catch (e) {} };
   // Gagne la partie de défi en cours (sans jouer les vagues)
-  const gagner = () => J(function(){ state = 'playing'; S.wave = curLoc.waves; victory(); return { scrap: P.scrap, titre: $('overTitle').textContent, state: state }; });
+  const gagner = () => J(function(){ state = 'playing'; S.wave = curLoc.waves; victory(); return { scrap: P.scrap - (P.achScrap || 0) - ((P.miss && P.miss.scrap) || 0), titre: $('overTitle').textContent, state: state }; });
 
   test('Défi : même date = même défi, dates différentes = défis différents', () => {
     exiger();

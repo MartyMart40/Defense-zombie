@@ -38,7 +38,7 @@ const UPG = {
   wall:   { name:'Barricade renforcée', desc:'+100 de solidité et réparation complète.',    max:8,  cost:l => Math.round(220 * Math.pow(1.4, l)) }
 };
 // XP par type (un type absent d'ici utilise T.xp, sinon 5)
-const ZXP = { walker:3, runner:5, brute:20, jumper:6, flyer:8, spitter:10, colossus:80 };
+const ZXP = { walker:3, runner:5, brute:20, jumper:6, flyer:8, spitter:10, colossus:80, clown:300 };
 // ZTYPES reste un objet ouvert : un autre fichier peut y ajouter un type (ex. ZTYPES.boss = {...}).
 // stopOff : recul de l'arrêt devant la barricade ; hitShake / chips : secousse et éclats à chaque coup.
 const ZTYPES = {
@@ -49,7 +49,9 @@ const ZTYPES = {
   jumper:   { name:'Sauteur',  hp:45,   speed:4.2,  dmg:5,  reward:18,  scale:1,    skin:0x8e9c6c },
   flyer:    { name:'Volant',   hp:55,   speed:3,    dmg:5,  reward:24,  scale:1,    skin:0x6e5c70 },
   spitter:  { name:'Cracheur', hp:120,  speed:1.2,  dmg:9,  reward:30,  scale:1.1,  skin:0x748c3c },
-  colossus: { name:'Colosse',  hp:1500, speed:.55,  dmg:45, reward:250, scale:2.8,  skin:0x4e5e3c, stopOff:2.6, hitShake:1.1, chips:16 }
+  colossus: { name:'Colosse',  hp:1500, speed:.55,  dmg:45, reward:250, scale:2.8,  skin:0x4e5e3c, stopOff:2.6, hitShake:1.1, chips:16 },
+  // Très rare (environ 1 zombie sur 10 000, compté à vie : 07-zombies.js) ; jamais dans wavePlan. Gros bonus à sa mort.
+  clown:    { name:'Clown',    hp:260,  speed:1.6,  dmg:6,  reward:1500, scale:1.02, skin:0x7d9466 }
 };
 // Combien de zombies en vie à la fois. BASE_ALIVE : vague 1 de Saint-Clou. DEV_CAP : plafond de l'appareil
 // (rendu par instances et cibles pré-triées, 07-zombies.js : mesuré avec tests/perf.html).

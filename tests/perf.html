@@ -42,13 +42,15 @@ small{ color:var(--pale); }
     <a class="bouton" href="../">Retour au jeu</a>
   </div>
   <iframe id="cadre" title="Jeu mesuré"></iframe>
-  <p><small>Scène : zombies de tous les types (quelques colosses), défenses et compagnon actifs, tir continu au minigun et au fusil à pompe. Chaque palier dure quelques secondes ; les images/s sont celles de requestAnimationFrame dans le jeu. Ta sauvegarde (clés dt_) est mise de côté puis remise comme avant. Réglages : ?paliers=50,150,300,600&amp;duree=4. Résultat lisible par un outil : window.PERF.</small></p>
+  <p><small>Scène : zombies de tous les types (quelques colosses), défenses et compagnon actifs, tir continu au minigun et au fusil à pompe. Chaque palier dure quelques secondes ; les images/s sont celles de requestAnimationFrame dans le jeu. Ta sauvegarde (clés dt_) est mise de côté puis remise comme avant. Réglages : ?paliers=50,150,300,600&amp;duree=4&amp;chiffres=300 (dernier palier avec les chiffres de dégâts affichés, 0 pour l’enlever ; les autres sans). Résultat lisible par un outil : window.PERF.</small></p>
 </main>
 <script>
 'use strict';
 const PREFIXE = 'dt_', CLE_SECOURS = 'perf_secours_dt';
 const params = new URLSearchParams(location.search);
 const PALIERS = (params.get('paliers') || '50,150,300,600').split(',').map(Number).filter(n => n > 0);
+// Palier de plus avec les chiffres de dégâts (31-punch.js) affichés ; les autres paliers sont mesurés sans. ?chiffres=0 pour l'enlever.
+const CHIFFRES = Math.max(0, +(params.get('chiffres') != null ? params.get('chiffres') : 300) || 0);
 const DUREE = Math.max(1.5, +(params.get('duree') || 4)); // secondes mesurées par palier
 const CHAUFFE = .8;                                         // secondes ignorées au début de chaque palier
 window.PERF = { paliers: [], fini: false, appareil: null, erreurs: [] };
@@ -161,7 +163,7 @@ const pause = ms => new Promise(r => setTimeout(r, ms));
 function classe(fps){ return fps >= 55 ? 'bon' : fps >= 30 ? 'moyen' : 'mauvais'; }
 function ligne(r){
   const tr = document.createElement('tr');
-  [[r.n + (r.vivants !== r.n ? ' (' + r.vivants + ')' : ''), ''], [r.fps.toFixed(1), classe(r.fps)], [r.cpuMs.toFixed(2), ''], [r.visMs.toFixed(2), ''], [r.renderMs.toFixed(2), ''], [r.pireMs.toFixed(1), '']].forEach(c => {
+  [[r.n + (r.vivants !== r.n ? ' (' + r.vivants + ')' : '') + (r.chiffres ? ' + chiffres' : ''), ''], [r.fps.toFixed(1), classe(r.fps)], [r.cpuMs.toFixed(2), ''], [r.visMs.toFixed(2), ''], [r.renderMs.toFixed(2), ''], [r.pireMs.toFixed(1), '']].forEach(c => {
     const td = document.createElement('td'); td.textContent = c[0]; if (c[1]) td.className = c[1]; tr.appendChild(td);
   });
   lignes.appendChild(tr);
@@ -174,14 +176,19 @@ async function lancer(){
     win.eval('(' + sceneHorde.toString() + ')()');
     win.eval('__horde.setup()');
     PERF.appareil = win.eval('__horde.appareil()');
-    for (const n of PALIERS){
-      etat('Palier ' + n + ' zombies : mise en place…');
+    const avecChiffres = CHIFFRES > 0 && win.eval('typeof __punch === "object"');
+    const liste = PALIERS.map(n => ({ n, ch: false })).concat(avecChiffres ? [{ n: CHIFFRES, ch: true }] : []);
+    for (const p of liste){
+      const n = p.n;
+      if (avecChiffres) win.eval('__punch.pkSetNums(' + p.ch + '); __punch.setCap(__punch.PKN_MAX)');
+      etat('Palier ' + n + ' zombies' + (p.ch ? ' avec chiffres de dégâts' : '') + ' : mise en place…');
       win.eval('__horde.palier(' + n + ')');
       await pause(CHAUFFE * 1000);
       win.eval('__horde.debut()');
       etat('Palier ' + n + ' zombies : mesure pendant ' + DUREE + ' s…');
       await pause(DUREE * 1000);
       const r = win.eval('__horde.fin()');
+      if (p.ch){ r.chiffres = true; r.chiffresMax = win.eval('__punch.cap'); }
       PERF.paliers.push(r); ligne(r);
     }
     win.eval('__horde.arreter()');

@@ -552,9 +552,9 @@ function pwPreview(){
   if (!strike){
     pwHand.set(.35, -.3, -.6).applyMatrix4(camera.matrixWorld);
     const ty = id === 'grenade' ? p.y : 0, a = pwArcGeo.attributes.position.array;
-    const dist = Math.hypot(p.x - pwHand.x, p.z - pwHand.z), hgt = Math.max(2, dist * .25);
+    const dist = Math.hypot(p.x - pwHand.x, p.z - pwHand.z), hgt = Math.max(1, dist * .09); // arc bas : reste dans l'écran vu du toit
     for (let i = 0; i < PW_ARC_N; i++){
-      const t = i / (PW_ARC_N - 1);
+      const t = .12 + .88 * i / (PW_ARC_N - 1); // part un peu devant la main
       a[i * 3] = pwHand.x + (p.x - pwHand.x) * t;
       a[i * 3 + 1] = pwHand.y + (ty - pwHand.y) * t + Math.sin(Math.PI * t) * hgt;
       a[i * 3 + 2] = pwHand.z + (p.z - pwHand.z) * t;

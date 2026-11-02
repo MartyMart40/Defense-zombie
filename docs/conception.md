@@ -28,3 +28,10 @@ Je suis dans ma fenêtre de bunker ou sur un toit d'immeuble barricadé et je ti
 - Marcheur, coureur, costaud, sauteur (bonds), volant (ailes, plonge sur la barricade), cracheur (crache de loin), colosse (géant lent, très rare).
 - Arrivée graduelle à partir de Saint-Clou vague 2. Le total par vague ne change pas : les nouveaux types remplacent des marcheurs.
 - Boss toutes les 5 vagues, un par ville (Le Fossoyeur, Le Colosse des Cendres, L'Ogre de minuit, Le Titan de béton, Le Docker, Le Léviathan du port). Lance des autos, frappe la barricade, faible à la tête.
+
+## Ajouts du 2026-11-02 (soir)
+- Mode infini après les 5 villes : +10 % de zombies, de force et d'argent par vague, boss aux 5 vagues, départ 1 000 $, plafonds de dégâts et barricade retirés, record par ville.
+- Repères visuels pour jouer sans son, sous-titres, réglages dans Pause.
+- Succès (37) et missions (3 actives parmi 21), récompensés en ferraille.
+- Ralenti à la mort du boss et sur gros combos ; chiffres de dégâts en option (pool de 24, regroupés, format compact) ; écran de fin détaillé.
+- 12 tenues selon la ville ; clown zombie environ 1 sur 10 000 zombies (compteur à vie).

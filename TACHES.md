@@ -7,16 +7,6 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
 
-## En cours (lancé le 2026-11-02, Martin absent : tout automatique)
-
-| # | Tâche | Fichier principal |
-|---|-------|-------------------|
-| 3 | Mode infini + grands nombres compacts | js/28-infini.js, 00-base.js (fmt) |
-| 20 | Repères visuels pour jouer sans son | js/29-reperes.js |
-| 21 | Missions et succès (ferraille) | js/30-missions.js |
-| 22 | Ralenti, chiffres de dégâts (option), écran de fin riche | js/31-punch.js |
-| 23 | Habits variés des zombies + clown zombie très rare (1 sur 10 000 environ) | 07, 18 |
-
 ## À faire
 
 | # | Tâche | Priorité |
@@ -32,6 +22,12 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 | 0 | Récupération de Dernier toit (5 villes, talents) depuis l'artifact claude.ai | 2026-11-02 |
 | 16 | Armes en main détaillées (js/04-arme-en-main.js) | 2026-11-02 |
 | 17 | Performances des hordes : instances, plafonds 400 ordi / 180 cell, hordePlan(), compteur d'images/s, tests/perf.html | 2026-11-02 |
+| 3 | Mode infini : +10 % par vague, boss aux 5 vagues, records par ville, grands nombres compacts (js/28-infini.js) | 2026-11-02 |
+| 20 | Repères visuels sans son : flèches hors champ, flash de barricade, sous-titres (js/29-reperes.js) | 2026-11-02 |
+| 21 | 37 succès et 21 missions en ferraille (js/30-missions.js) | 2026-11-02 |
+| 22 | Ralenti, chiffres de dégâts en option, écran de fin détaillé (js/31-punch.js) | 2026-11-02 |
+| 23 | 12 tenues de zombies selon la ville, clown zombie environ 1 sur 10 000 | 2026-11-02 |
+| 24 | Viseur : petit point vert | 2026-11-02 |
 | 18 | Survivants : 2-3 poursuivants à abattre en 5 s, survivant qui reste sur le toit, +1 $/min chacun | 2026-11-02 |
 | 19 | Pouvoirs : cercle d'impact en visant, jusqu'à 6 charges | 2026-11-02 |
 | 15 | Arbres détaillés : sapins à étages et feuillus en grappes, nuances, ombres, tous fusionnés (03-scene.js) | 2026-11-02 |
@@ -46,7 +42,7 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 | 5 | Zombies sauteur, volant, cracheur, colosse (js/18-zombies-types.js) | 2026-11-02 |
 | 6 | Boss aux 5 vagues, un par ville (js/19-boss.js) | 2026-11-02 |
 | 2 | Atelier, ferraille, 5 défenses (js/16-atelier.js, js/17-defenses.js) | 2026-11-02 |
-| 4 | Page de tests tests/ : 111 tests | 2026-11-02 |
+| 4 | Page de tests tests/ : 159 tests | 2026-11-02 |
 | 1 | Jeu découpé en 16 fichiers js/ + css/, règles des agents (AGENTS.md) | 2026-11-02 |
 | 0c | Campagne linéaire, 30 zombies en vague 1 (+30 par vague), retrait du choix du nombre de zombies | 2026-11-02 |
 | 0b | Mise en ligne automatique sur GitHub Pages | 2026-11-02 |
@@ -66,5 +62,8 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 - Mesurer les vraies images/s : ouvrir tests/perf.html sur l'ordi et le cell de Martin.
 - Test du mitrailleur parfois instable (90 % de précision au hasard).
+
+- Infini : un joueur devrait céder vers les vagues 25 à 35 (dégâts +12 % par niveau contre zombies +10 % composés). À confirmer en jouant.
+- Succès : environ 760 ferrailles d'un coup à la première victoire de Saint-Clou. À baisser si trop.
 
 ## Idées en vrac

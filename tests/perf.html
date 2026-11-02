@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesure de la horde</title>
+<style>
+:root{
+  --fond:#1e140e; --carte:#2c1f16; --encre:#f1e4cc; --pale:#bfa98a;
+  --vert:#5fbf6a; --rouge:#e0574c; --ambre:#f2a33a; --ligne:rgba(242,163,58,.3);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --fond:#1e140e; --encre:#f1e4cc; } }
+:root[data-theme="dark"]{ --fond:#1e140e; --encre:#f1e4cc; }
+*{ box-sizing:border-box; }
+html, body{ margin:0; background:var(--fond); color:var(--encre); font:16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main{ max-width:900px; margin:0 auto; padding:16px; }
+h1{ font-size:22px; margin:0 0 8px; }
+#etat{ color:var(--pale); font-size:14px; margin:6px 0 10px; overflow-wrap:anywhere; }
+table{ width:100%; border-collapse:collapse; background:var(--carte); border-radius:8px; overflow:hidden; font-variant-numeric:tabular-nums; }
+th, td{ padding:7px 8px; text-align:right; border-bottom:1px solid var(--ligne); font-size:15px; }
+th:first-child, td:first-child{ text-align:left; }
+td.bon{ color:var(--vert); font-weight:700; } td.moyen{ color:var(--ambre); font-weight:700; } td.mauvais{ color:var(--rouge); font-weight:700; }
+.tab{ overflow-x:auto; }
+.barre{ display:flex; gap:8px; flex-wrap:wrap; margin:10px 0; }
+button, a.bouton{ background:var(--ambre); color:#2a1608; border:0; border-radius:8px; padding:10px 14px; font-weight:700; font-size:15px; text-decoration:none; cursor:pointer; }
+#cadre{ width:100%; height:62vh; min-height:280px; border:1px solid var(--ligne); border-radius:8px; background:#000; display:block; margin-top:14px; }
+small{ color:var(--pale); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Mesure de la horde : Dernier toit</h1>
+  <div id="etat">Préparation.</div>
+  <div class="tab"><table>
+    <thead><tr><th>Zombies en vie</th><th>Images/s</th><th>update() ms</th><th>visuals() ms</th><th>rendu ms (CPU)</th><th>Image la plus lente ms</th></tr></thead>
+    <tbody id="lignes"></tbody>
+  </table></div>
+  <div class="barre">
+    <button id="btnRelancer" type="button">Relancer la mesure</button>
+    <a class="bouton" href="./">Tests</a>
+    <a class="bouton" href="../">Retour au jeu</a>
+  </div>
+  <iframe id="cadre" title="Jeu mesuré"></iframe>
+  <p><small>Scène : zombies de tous les types (quelques colosses), défenses et compagnon actifs, tir continu au minigun et au fusil à pompe. Chaque palier dure quelques secondes ; les images/s sont celles de requestAnimationFrame dans le jeu. Ta sauvegarde (clés dt_) est mise de côté puis remise comme avant. Réglages : ?paliers=50,150,300,600&amp;duree=4. Résultat lisible par un outil : window.PERF.</small></p>
+</main>
+<script>
+'use strict';
+const PREFIXE = 'dt_', CLE_SECOURS = 'perf_secours_dt';
+const params = new URLSearchParams(location.search);
+const PALIERS = (params.get('paliers') || '50,150,300,600').split(',').map(Number).filter(n => n > 0);
+const DUREE = Math.max(1.5, +(params.get('duree') || 4)); // secondes mesurées par palier
+const CHAUFFE = .8;                                         // secondes ignorées au début de chaque palier
+window.PERF = { paliers: [], fini: false, appareil: null, erreurs: [] };
+const elEtat = document.getElementById('etat'), lignes = document.getElementById('lignes');
+const etat = t => { elEtat.textContent = t; };
+document.getElementById('btnRelancer').addEventListener('click', () => location.reload());
+
+/* ---------- Sauvegarde du joueur (comme tests.js) ---------- */
+let sauvegarde = null, restauree = false;
+function lireClesDt(){ const o = {}; for (let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if (k && k.indexOf(PREFIXE) === 0) o[k] = localStorage.getItem(k); } return o; }
+function ecrireClesDt(o){ Object.keys(lireClesDt()).forEach(k => localStorage.removeItem(k)); Object.keys(o).forEach(k => localStorage.setItem(k, o[k])); }
+function mettreDeCote(){
+  const vieille = localStorage.getItem(CLE_SECOURS);
+  if (vieille){ try { ecrireClesDt(JSON.parse(vieille)); } catch (e) {} localStorage.removeItem(CLE_SECOURS); }
+  sauvegarde = lireClesDt();
+  localStorage.setItem(CLE_SECOURS, JSON.stringify(sauvegarde));
+  Object.keys(sauvegarde).forEach(k => localStorage.removeItem(k));
+}
+function restaurer(){
+  if (restauree || !sauvegarde) return;
+  try {
+    ecrireClesDt(sauvegarde);
+    const v = lireClesDt();
+    if (Object.keys(sauvegarde).length === Object.keys(v).length && Object.keys(sauvegarde).every(k => v[k] === sauvegarde[k])){ localStorage.removeItem(CLE_SECOURS); restauree = true; }
+  } catch (e) { console.error('Restauration impossible', e); }
+}
+let cadre = document.getElementById('cadre'), win = null;
+function arreterJeu(){ try { if (win) win.eval('state = "test"; firing = false;'); } catch (e) {} }
+addEventListener('pagehide', () => { arreterJeu(); restaurer(); });
+addEventListener('beforeunload', () => { arreterJeu(); restaurer(); });
+
+/* ---------- Chargement du jeu (comme tests.js) ---------- */
+async function chargerJeu(){
+  const urlJeu = new URL('../', location.href).href;
+  const rep = await fetch(urlJeu + 'index.html?t=' + Date.now(), { cache: 'no-store' });
+  if (!rep.ok) throw new Error('Lecture de ../index.html impossible (HTTP ' + rep.status + ')');
+  let html = await rep.text(); const v = Date.now();
+  html = html.replace(/(src|href)="((?:js|css)\/[^"?]+)"/g, (m, a, p) => a + '="' + p + '?v=' + v + '"');
+  const capteur = '<base href="' + urlJeu + '"><script>window.__erreurs=[];window.addEventListener("error",function(e){var t=e.target;if(t&&t!==window&&(t.src||t.href)){if(t.src)window.__erreurs.push("Fichier introuvable : "+t.src);return;}window.__erreurs.push((e.message||"Erreur")+" ("+String(e.filename||"").split("/").pop()+":"+(e.lineno||0)+")");},true);<\/script>';
+  html = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, m => m + capteur) : capteur + html;
+  if ('srcdoc' in cadre && params.get('mode') !== 'ecrire') cadre.srcdoc = html;
+  else { const d = cadre.contentWindow.document; d.open(); d.write(html); d.close(); }
+  const fin = Date.now() + 25000;
+  while (Date.now() < fin){
+    await new Promise(r => setTimeout(r, 100));
+    try {
+      const w = cadre.contentWindow;
+      if (w && w.document.readyState === 'complete' && w.eval('typeof update === "function" && typeof spawnZombie === "function" && typeof P === "object"')){ win = w; return; }
+    } catch (e) {}
+  }
+  throw new Error('Le jeu n’est pas prêt après 25 s');
+}
+
+/* ---------- Scène de horde, installée DANS le jeu ---------- */
+function sceneHorde(){
+  try { canvas.requestPointerLock = function(){}; } catch (e) {}
+  Snd.on = false; if (Snd.master) Snd.master.gain.value = 0;
+  var MIX = [['walker', 46], ['runner', 16], ['brute', 7], ['jumper', 10], ['spitter', 9], ['flyer', 10], ['colossus', 2]];
+  var TOT = 100, seq = 0, cible = 0, M = { on: false, upd: 0, vis: 0, ren: 0, frames: 0, t0: 0, pire: 0, last: 0 };
+  function typeAt(i){ var k = (i * 37) % TOT; for (var j = 0; j < MIX.length; j++){ if (k < MIX[j][1]) return MIX[j][0]; k -= MIX[j][1]; } return 'walker'; }
+  function add(){ var z = spawnZombie(typeAt(seq++)); z.g.position.set(rand(-11, 11), z.g.position.y, rand(-100, -12)); z.hp = z.maxHp = z.hp * 4; return z; }
+  function vivants(){ var n = 0; for (var i = 0; i < zombies.length; i++) if (!zombies[i].dead) n++; return n; }
+  // Mesure : temps de update(), visuals() et renderer.render() (CPU), images par requestAnimationFrame
+  var bU = update, bV = visuals, bR = renderer.render.bind(renderer);
+  update = function(dt){
+    var t = performance.now(), r = bU(dt); if (M.on) M.upd += performance.now() - t;
+    // Scène entretenue : barricade invincible, munitions infinies, tir continu qui balaie la rue
+    S.bar = S.barMax; S.ammo[S.cur] = 999; reloadT = 0; firing = true; spin = 1;
+    yaw = Math.sin(performance.now() / 1300) * .35; pitch = -.13 + Math.sin(performance.now() / 900) * .03;
+    if (Math.random() < dt * 2){ var c0 = S.cur; equip('shotgun'); cool = 0; S.ammo.shotgun = 99; fire(); equip(c0); spin = 1; }
+    if (state !== 'playing') state = 'playing';
+    var n = vivants(); while (n < cible){ add(); n++; }
+    return r;
+  };
+  visuals = function(dt){ var t = performance.now(), r = bV(dt); if (M.on) M.vis += performance.now() - t; return r; };
+  renderer.render = function(s, c){ var t = performance.now(), r = bR(s, c); if (M.on) M.ren += performance.now() - t; return r; };
+  function rafTick(t){
+    requestAnimationFrame(rafTick);
+    if (M.on){ M.frames++; if (M.last){ var d = t - M.last; if (d > M.pire) M.pire = d; } }
+    M.last = t;
+  }
+  requestAnimationFrame(rafTick);
+  function setup(){
+    state = 'test';
+    P.scrap = 1e9;
+    P.slots = [{ type:'turret', paid:0, lv:{ dmg:3, rate:3, range:3, spec:3 } }, { type:'laser', paid:0, lv:{ dmg:3, rate:3, range:3, spec:3 } },
+      { type:'mortar', paid:0, lv:{ dmg:3, rate:3, range:3, spec:3 } }, { type:'missile', paid:0, lv:{ dmg:3, rate:3, range:3, spec:3 } }];
+    if (typeof cpnNorm === 'function'){ cpnNorm(); P.comp.own.gunner = true; P.comp.own.sniper = true; P.comp.act = 'gunner'; }
+    startLocation(0);
+    if (typeof defRebuild === 'function') defRebuild();
+    if (typeof cpnApply === 'function') cpnApply();
+    plan.queue = ['walker']; spawnT = 1e9; plan.maxAlive = 1e6;
+    S.owned.minigun = true; S.owned.shotgun = true; equip('minigun'); spin = 1;
+    state = 'playing'; showScreen(null); setPlayingUI(true);
+  }
+  window.__horde = {
+    setup: setup,
+    palier: function(n){ clearZombies(); cible = n; for (var i = 0; i < n; i++) add(); },
+    debut: function(){ M.on = true; M.upd = M.vis = M.ren = 0; M.frames = 0; M.pire = 0; M.t0 = performance.now(); },
+    fin: function(){
+      M.on = false; var s = (performance.now() - M.t0) / 1000, f = Math.max(1, M.frames);
+      return { n: cible, vivants: vivants(), fps: +(M.frames / s).toFixed(1), cpuMs: +(M.upd / f).toFixed(2), visMs: +(M.vis / f).toFixed(2), renderMs: +(M.ren / f).toFixed(2), pireMs: +M.pire.toFixed(1),
+        dessins: window.__zperf ? __zperf.draws() : null };
+    },
+    arreter: function(){ cible = 0; state = 'test'; firing = false; clearZombies(); },
+    appareil: function(){ return { tactile: isTouch, DEV_CAP: DEV_CAP, BASE_ALIVE: BASE_ALIVE, largeur: innerWidth, hauteur: innerHeight, pixelRatio: renderer.getPixelRatio ? renderer.getPixelRatio() : 1 }; }
+  };
+}
+const pause = ms => new Promise(r => setTimeout(r, ms));
+function classe(fps){ return fps >= 55 ? 'bon' : fps >= 30 ? 'moyen' : 'mauvais'; }
+function ligne(r){
+  const tr = document.createElement('tr');
+  [[r.n + (r.vivants !== r.n ? ' (' + r.vivants + ')' : ''), ''], [r.fps.toFixed(1), classe(r.fps)], [r.cpuMs.toFixed(2), ''], [r.visMs.toFixed(2), ''], [r.renderMs.toFixed(2), ''], [r.pireMs.toFixed(1), '']].forEach(c => {
+    const td = document.createElement('td'); td.textContent = c[0]; if (c[1]) td.className = c[1]; tr.appendChild(td);
+  });
+  lignes.appendChild(tr);
+}
+async function lancer(){
+  try {
+    mettreDeCote();
+    etat('Chargement du jeu…');
+    await chargerJeu();
+    win.eval('(' + sceneHorde.toString() + ')()');
+    win.eval('__horde.setup()');
+    PERF.appareil = win.eval('__horde.appareil()');
+    for (const n of PALIERS){
+      etat('Palier ' + n + ' zombies : mise en place…');
+      win.eval('__horde.palier(' + n + ')');
+      await pause(CHAUFFE * 1000);
+      win.eval('__horde.debut()');
+      etat('Palier ' + n + ' zombies : mesure pendant ' + DUREE + ' s…');
+      await pause(DUREE * 1000);
+      const r = win.eval('__horde.fin()');
+      PERF.paliers.push(r); ligne(r);
+    }
+    win.eval('__horde.arreter()');
+    PERF.erreurs = (win.__erreurs || []).slice();
+    const a = PERF.appareil;
+    etat('Terminé. ' + (a.tactile ? 'Appareil tactile' : 'Ordinateur') + ', plafond du jeu ' + a.DEV_CAP + ' zombies en vie, écran ' + a.largeur + ' × ' + a.hauteur + '.'
+      + (PERF.erreurs.length ? ' Erreurs : ' + PERF.erreurs.join(' | ') : ' Aucune erreur.'));
+  } catch (e) {
+    PERF.erreurs.push(String(e && e.message || e));
+    etat('Échec : ' + (e && e.message || e));
+  } finally {
+    arreterJeu();
+    try { const vide = document.createElement('iframe'); vide.id = 'cadre'; vide.title = 'Jeu arrêté'; cadre.replaceWith(vide); cadre = vide; } catch (e) {}
+    win = null;
+    restaurer();
+    if (!restauree) etat(elEtat.textContent + ' Sauvegarde NON remise : une copie reste sous ' + CLE_SECOURS + '.');
+    PERF.fini = true;
+  }
+}
+lancer();
+</script>
+</body>
+</html>

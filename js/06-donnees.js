@@ -51,8 +51,17 @@ const ZTYPES = {
   spitter:  { name:'Cracheur', hp:120,  speed:1.2,  dmg:9,  reward:30,  scale:1.1,  skin:0x748c3c },
   colossus: { name:'Colosse',  hp:1500, speed:.55,  dmg:45, reward:250, scale:2.8,  skin:0x4e5e3c, stopOff:2.6, hitShake:1.1, chips:16 }
 };
-// Combien de zombies l'appareil peut afficher en même temps sans ramer
-const BASE_ALIVE = isTouch ? 26 : 34, DEV_CAP = isTouch ? 60 : 100;
+// Combien de zombies en vie à la fois. BASE_ALIVE : vague 1 de Saint-Clou. DEV_CAP : plafond de l'appareil
+// (rendu par instances et cibles pré-triées, 07-zombies.js : mesuré avec tests/perf.html).
+const BASE_ALIVE = isTouch ? 26 : 34, DEV_CAP = isTouch ? 180 : 400;
+// Règle de la campagne : le plafond grandit avec la vague (+25 % par vague) et la ville (difficulté), jusqu'au plafond de l'appareil.
+// Saint-Clou vague 1 : 34 (ordi) ; vague 5 : 68 ; Port industriel vague 10 : environ 240 sur ordi, 180 sur cell.
+// Le nombre total de zombies de la vague ne change pas (30 × vague × (1 + 0,15 × ville)).
+function aliveCap(w, L){
+  L = L || curLoc;
+  const k = ((L && L.diff) || 1) - 1;
+  return Math.round(Math.min(DEV_CAP, BASE_ALIVE * (1 + k * .5) * (1 + .25 * (Math.max(1, w) - 1)) * Math.sqrt(INT())));
+}
 const ECO = .35; // part de l'argent et de l'XP par zombie (il y en a environ 5 fois plus qu'avant)
 function wavePlan(w, L){
   L = L || curLoc;
@@ -79,8 +88,23 @@ function wavePlan(w, L){
   for (let i = q.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [q[i], q[j]] = [q[j], q[i]]; }
   return { queue: q, total: q.length, hpMult: (1 + .1 * (w - 1)) * (1 + k * .6), spdMult: Math.min(1.7, (1 + .03 * (w - 1)) * (1 + k * .12)),
     interval: Math.max(.12, 1.2 / Math.sqrt(w) / (1 + k * .5)),
-    maxAlive: Math.round(Math.min(DEV_CAP, BASE_ALIVE * (1 + k * .5) * Math.sqrt(INT()))),
+    maxAlive: aliveCap(w, L),
     dmgMult: 1 + k * .6, cashMult: 1 + k * .5, xp: L.xp };
+}
+// Pour un futur mode (infini, « horde ») : une vague énorme avec le mélange de types et la force de la vague w de la ville L.
+//   total : nombre de zombies (des milliers possibles : ils attendent leur tour au bout de la rue)
+//   o.maxAlive : en vie à la fois (plafonné par DEV_CAP), o.interval : secondes entre deux sorties, o.burst : zombies par sortie
+// Ex. : plan = hordePlan(5000, { wave:10, loc:LOCS[4], burst:4 }); puis la boucle normale (15-boucle.js) les fait sortir.
+function hordePlan(total, o){
+  o = o || {};
+  const w = o.wave || 10, L = o.loc || curLoc, base = wavePlan(w, L), cnt = {};
+  base.queue.forEach(t => { if (t !== 'boss') cnt[t] = (cnt[t] || 0) + 1; });
+  const n0 = base.queue.filter(t => t !== 'boss').length || 1, q = [];
+  Object.keys(cnt).forEach(t => { const n = Math.round(total * cnt[t] / n0); for (let i = 0; i < n; i++) q.push(t); });
+  while (q.length < total) q.push('walker'); q.length = Math.max(0, Math.round(total));
+  for (let i = q.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [q[i], q[j]] = [q[j], q[i]]; }
+  return Object.assign(base, { queue: q, total: q.length, boss: undefined,
+    maxAlive: Math.round(Math.min(DEV_CAP, o.maxAlive || DEV_CAP)), interval: o.interval != null ? o.interval : .05, burst: Math.max(1, Math.round(o.burst || 3)) });
 }
 
 

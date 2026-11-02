@@ -13,16 +13,20 @@ function update(dt){
   // Apparitions
   if (plan.queue.length){
     spawnT -= dt;
-    const alive = zombies.filter(z => !z.dead).length;
-    if (spawnT <= 0 && alive < plan.maxAlive){ spawnZombie(plan.queue.pop()); spawnT = plan.interval * rand(.6, 1.4); }
+    let alive = zAliveCount();
+    if (spawnT <= 0 && alive < plan.maxAlive){
+      // plan.burst : plusieurs zombies par sortie (mode horde, hordePlan dans 06-donnees.js) ; 1 dans la campagne
+      for (let k = plan.burst || 1; k > 0 && alive < plan.maxAlive && plan.queue.length; k--){ spawnZombie(plan.queue.pop()); alive++; }
+      spawnT = plan.interval * rand(.6, 1.4);
+    }
   }
   updateZombies(dt);
   if (typeof defUpdate === 'function') defUpdate(dt); // défenses automatiques (17-defenses.js)
   groanT -= dt;
-  if (groanT <= 0){ groanT = rand(1.5, 4); if (zombies.some(z => !z.dead)) Snd.groan(); }
+  if (groanT <= 0){ groanT = rand(1.5, 4); if (zAliveCount() > 0) Snd.groan(); }
   if (S.bar <= 0 && overT < 0){ overT = 1.1; shake = 1; firing = false; banner('Ils passent !', '', 1200); }
   if (overT > 0){ overT -= dt; if (overT <= 0) gameOver(); return; }
-  if (!plan.queue.length && !zombies.some(z => !z.dead)){
+  if (!plan.queue.length && zAliveCount() === 0){
     if (endT < 0){ endT = 1.4; if (S.wave >= curLoc.waves) banner(curLoc.name + ' libérée !', '', 1400); else banner('Vague ' + S.wave + ' tenue', '', 1400); }
     else { endT -= dt; if (endT <= 0) endWave(); }
   }
@@ -52,6 +56,7 @@ function visuals(dt){
   vmRoot.position.set(hx + (ax - hx) * ads, hy + (ay - hy) * ads + bob, hz + (az - hz) * ads + kick * (.07 - .04 * ads));
   vmRoot.rotation.set(kick * (.18 - .12 * ads) - rl * .7, 0, rl * .3);
   vmRoot.visible = !(S && S.cur === 'sniper' && ads > .85);
+  if (typeof vmAnim === 'function') vmAnim(dt); // culasse, pompe, chargeur, douilles, respiration (04-arme-en-main.js)
 }
 function loop(t){
   requestAnimationFrame(loop);

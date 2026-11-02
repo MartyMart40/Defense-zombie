@@ -5,7 +5,9 @@
 //   build(T) reçoit ZTYPES[type] et retourne { g, body, head, parts, mats, aimY? } :
 //     g = groupe racine (spawnZombie le positionne et l'ajoute à la scène ; build gère lui-même l'échelle),
 //     body = groupe qui bascule à la mort, head = maillage de la tête, parts = maillages touchables,
-//     mats = matériaux propres au zombie (mats[0] au minimum ; flash rouge et libérés à la mort),
+//     mats = matériaux du zombie (mats[0] au minimum ; mats[0] et mats[1] font le flash rouge). Avec zmat(couleur) ou zfix(matériau)
+//       (07-zombies.js), ils sont partagés et le zombie est dessiné par instances (rapide en foule) ; un matériau créé à part
+//       (lam, new ...) garde l'ancien chemin : vrai groupe dans la scène, matériau libéré à la mort (le boss fait ainsi).
 //     aimY = hauteur du centre du corps au-dessus de g (ciblage des défenses). Facultatif : geos = géométries propres à libérer.
 //   init(z) : juste après la création de z. update(z, dt) : chaque image pour un zombie vivant ; true = saute le code par défaut.
 //   Points faibles (facultatif) : un maillage de parts porte userData.weak = { mult, effet } ; un tir dessus passe par
@@ -21,6 +23,7 @@ const ZKM = {
   mouth:new THREE.MeshBasicMaterial({ color:0x140806 }),
   spit:new THREE.MeshBasicMaterial({ color:0x9cff3a, fog:false })
 };
+Object.keys(ZKM).forEach(k => zfix(ZKM[k])); // partagés : les zombies qui les portent passent par le rendu par instances (07-zombies.js)
 PMATS.acid = new THREE.MeshBasicMaterial({ color:0x7ee02a });
 function zkMesh(parent, geo, mat, sx, sy, sz, x, y, z, list){
   const m = new THREE.Mesh(geo, mat); m.scale.set(sx, sy, sz); m.position.set(x, y, z); parent.add(m); if (list) list.push(m); return m;
@@ -40,7 +43,7 @@ function zkEyes(parent, y, z, dx, s){ s = s || 1; zkMesh(parent, ZKG.box, eyeMat
 /* ---------- Sauteur : maigre, longues jambes repliées, avance par bonds ---------- */
 ZKINDS.jumper = {
   build(T){
-    const skin = lam(T.skin), rag = lam(pick(PANTS));
+    const skin = zmat(T.skin), rag = zmat(pick(PANTS));
     const g = new THREE.Group(), body = zkGroup(g, 0, 0, 0), P = [];
     zkMesh(body, ZKG.box, rag, .34, .55, .22, 0, 1.32, 0, P);                 // torse étroit
     zkMesh(body, ZKG.box, skin, .1, .5, .08, 0, 1.36, -.13, P);               // colonne qui ressort
@@ -106,7 +109,7 @@ ZKINDS.jumper = {
 /* ---------- Volant : créature ailée, vol ondulé, plonge sur la barricade ---------- */
 ZKINDS.flyer = {
   build(T){
-    const skin = lam(T.skin), wingM = lam(0x3a2c34);
+    const skin = zmat(T.skin), wingM = zmat(0x3a2c34);
     const g = new THREE.Group(), body = zkGroup(g, 0, 0, 0), P = [];
     zkMesh(body, ZKG.box, skin, .36, .32, .9, 0, .4, 0, P);                    // corps allongé, horizontal
     zkMesh(body, ZKG.sph, skin, .24, .22, .28, 0, .36, .26, P);                // poitrail
@@ -210,7 +213,7 @@ ZKINDS.flyer = {
 /* ---------- Cracheur : corps gonflé, gorge enflée, crache de l'acide à distance ---------- */
 ZKINDS.spitter = {
   build(T){
-    const skin = lam(T.skin), rag = lam(pick(PANTS));
+    const skin = zmat(T.skin), rag = zmat(pick(PANTS));
     const g = new THREE.Group(), body = zkGroup(g, 0, 0, 0), P = [];
     zkMesh(body, ZKG.sph, skin, .5, .55, .46, 0, 1.12, .05, P);                // ventre gonflé
     zkMesh(body, ZKG.sph, skin, .38, .3, .34, 0, 1.52, -.08, P);               // bosse du dos
@@ -318,7 +321,7 @@ function zkClear(){
 /* ---------- Colosse : énorme, épaules massives, bras géants, frappe qui secoue tout ---------- */
 ZKINDS.colossus = {
   build(T){
-    const skin = lam(T.skin), dark = lam(0x2a2620), bone = lam(0xb5aa8a);
+    const skin = zmat(T.skin), dark = zmat(0x2a2620), bone = zmat(0xb5aa8a);
     const g = new THREE.Group(), body = zkGroup(g, 0, 0, 0), P = [];
     zkMesh(body, ZKG.box, skin, 1.1, .56, .62, 0, 1.42, .08, P);               // poitrine énorme
     zkMesh(body, ZKG.box, skin, .66, .42, .46, 0, 1.0, .02, P);                // ventre

@@ -189,7 +189,7 @@
     ok(D.top.length >= 2 && D.top.length <= 3, 'Top des armes : ' + D.top.join(', '));
     egal(D.fav, 'pistol', 'Arme préférée (le plus de tirs)');
     ok(D.types.indexOf('walker:1') >= 0, 'Zombies par type : ' + D.types.join(', '));
-    ok(/Précision/.test(r.html) && /83 %/.test(r.html), 'Section de fin affichée');
+    ok(/Précision/.test(r.html) && /83[\s\u00a0\u202f]*%/.test(r.html), 'Section de fin affichée : ' + r.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 200));
     ok(/Dégâts par arme/.test(r.html) && /Pistolet/.test(r.html), 'Barres des armes');
     ok(/2 min 05 s/.test(r.html), 'Temps de jeu');
     ok(/Zombies abattus/.test(r.stats), 'Les statistiques existantes restent');

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Défense Zombie 3D</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-family: system-ui, sans-serif; }
+  #hud { position: fixed; top: 12px; left: 12px; color: #fff; font-size: 18px; text-shadow: 0 0 4px #000; pointer-events: none; }
+  #viseur { position: fixed; top: 50%; left: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: #fff; pointer-events: none; }
+  #ecran { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; color: #fff; background: rgba(0,0,0,.6); font-size: 22px; text-align: center; }
+  #ecran h1 { margin: 0 0 12px; }
+</style>
+</head>
+<body>
+<div id="hud"></div>
+<div id="viseur"></div>
+<div id="ecran"><h1>Défense Zombie</h1><div id="ecran-texte">Cliquer pour jouer</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="src/scene.js"></script>
+<script src="src/joueur.js"></script>
+<script src="src/arme.js"></script>
+<script src="src/zombies.js"></script>
+<script src="src/hud.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>

@@ -18,9 +18,12 @@ Ouvrir `index.html` dans Chrome ou Edge. Cliquer dans la fenêtre pour verrouill
 ## Structure
 
 ```
-index.html        page du jeu
-src/              code (un fichier par système)
-assets/           sons et modèles 3D
-docs/             conception du jeu
-TACHES.md         suivi des tâches
+index.html            écrans et liste des scripts
+css/style.css         style
+js/NN-nom.js          code, un fichier par système, chargés dans l'ordre
+docs/conception.md    conception du jeu
+TACHES.md             suivi des tâches
+AGENTS.md             règles pour les agents
+archives/             anciennes versions
+outils/pousser.sh     mise en ligne sur GitHub
 ```

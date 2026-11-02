@@ -196,6 +196,7 @@ input[type=range]{ width:100%; accent-color:var(--amber); }
     <p class="lead">Tu es posté sur le toit, la rue en bas est pleine de zombies. Libère les villes une à une, de plus en plus dangereuses. Chaque zombie te rapporte de l’argent pour tes armes et de l’expérience pour des talents permanents.</p>
     <div class="ctrl" id="ctrlHelp"></div>
     <button class="big" id="btnStart">Jouer</button>
+    <button class="ghost" id="btnMapTitle">Carte des villes</button>
     <button class="ghost" id="btnFullTitle">Plein écran</button>
     <div class="best" id="bestTxt"></div>
   </div>
@@ -206,8 +207,6 @@ input[type=range]{ width:100%; accent-color:var(--amber); }
     <h2 class="title sm">Choisis ta ville</h2>
     <div class="lvl" id="mapLvl"></div>
     <button class="ghost" id="btnTalentsMap">Talents</button>
-    <div class="row intens"><div class="info"><div class="nm">Nombre de zombies</div><div class="ds" id="intDesc"></div></div>
-      <button id="intMinus" aria-label="Moins de zombies">−</button><span id="intVal">×1</span><button id="intPlus" aria-label="Plus de zombies">+</button></div>
     <div class="locs" id="mapList"></div>
     <button class="ghost" id="btnMapBack">Retour</button>
   </div>
@@ -257,9 +256,9 @@ input[type=range]{ width:100%; accent-color:var(--amber); }
     <div class="stats" id="overStats"></div>
     <div class="lvl" id="overXP"></div>
     <div class="best" id="overBest"></div>
-    <button class="big" id="btnMap">Carte des villes</button>
+    <button class="big" id="btnAgain">Réessayer</button>
     <button class="ghost" id="btnTalentsOver">Talents</button>
-    <button class="ghost" id="btnAgain">Réessayer</button>
+    <button class="ghost" id="btnMap">Carte des villes (rejouer une ville libérée)</button>
   </div>
 </section>
 
@@ -374,7 +373,7 @@ const TALENTS = {
 };
 const P = Object.assign({ xp:0, level:1, pts:0, talents:{}, unlocked:1, best:{}, wins:{}, last:0, intensity:1 }, store.get('dt_prof', {}));
 const saveP = () => store.set('dt_prof', P);
-const INT = () => Math.max(1, P.intensity || 1);
+const INT = () => 1; // plus de choix du nombre de zombies : la difficulté vient de la campagne
 const INT_STEPS = [1, 1.5, 2, 3, 4, 5, 7, 10];
 function intNext(v){ const i = INT_STEPS.findIndex(x => x > v + 1e-9); return i >= 0 ? INT_STEPS[i] : Math.round(v * 1.5); }
 function intPrev(v){ if (v > 10) return Math.max(10, Math.round(v / 1.5)); const l = INT_STEPS.filter(x => x < v - 1e-9); return l.length ? l[l.length - 1] : 1; }
@@ -673,11 +672,12 @@ const ZTYPES = {
 };
 // Combien de zombies l'appareil peut afficher en même temps sans ramer
 const BASE_ALIVE = isTouch ? 26 : 34, DEV_CAP = isTouch ? 60 : 100;
+const ECO = .35; // part de l'argent et de l'XP par zombie (il y en a environ 5 fois plus qu'avant)
 function wavePlan(w, L){
   L = L || curLoc;
   const ew = w + L.off, k = L.diff - 1;
-  const base = 6 + w * 3, mult = (1 + k * 1.6) * INT();
-  const total = Math.round(base * mult);
+  const mult = 1 + .15 * L.off; // chaque ville : +15 % de zombies
+  const total = Math.round(30 * w * mult); // vague 1 : 30, vague 2 : 60, etc.
   const brutes = ew >= 4 ? Math.round((Math.floor((ew - 2) / 2) + (ew % 5 === 0 ? 2 : 0)) * (1 + (mult - 1) * .5)) : 0;
   const runners = ew >= 2 ? Math.round(total * Math.min(.4, .08 * (ew - 1))) : 0;
   const walkers = Math.max(0, total - brutes - runners);
@@ -687,7 +687,7 @@ function wavePlan(w, L){
   for (let i = 0; i < brutes; i++) q.push('brute');
   for (let i = q.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [q[i], q[j]] = [q[j], q[i]]; }
   return { queue: q, total: q.length, hpMult: (1 + .1 * (w - 1)) * (1 + k * .6), spdMult: Math.min(1.7, (1 + .03 * (w - 1)) * (1 + k * .12)),
-    interval: Math.max(.06, (1.5 - .09 * w) / (1 + k * .9) / Math.sqrt(INT())),
+    interval: Math.max(.12, 1.2 / Math.sqrt(w) / (1 + k * .5)),
     maxAlive: Math.round(Math.min(DEV_CAP, BASE_ALIVE * (1 + k * .5) * Math.sqrt(INT()))),
     dmgMult: 1 + k * .6, cashMult: 1 + k * .5, xp: L.xp };
 }
@@ -733,7 +733,7 @@ function spawnZombie(type){
   g.position.set(x, 0, rand(-118, -100));
   scene.add(g);
   const z = { type, g, body, head, armL, armR, legL, legR, mats:[skin, shirt, pants],
-    hp: T.hp * plan.hpMult, maxHp: T.hp * plan.hpMult, speed: T.speed * plan.spdMult * rand(.85, 1.15), dmg: T.dmg * plan.dmgMult, reward: T.reward * plan.cashMult, xp: ZXP[type] * plan.xp,
+    hp: T.hp * plan.hpMult, maxHp: T.hp * plan.hpMult, speed: T.speed * plan.spdMult * rand(.85, 1.15), dmg: T.dmg * plan.dmgMult, reward: T.reward * plan.cashMult * ECO, xp: ZXP[type] * plan.xp * ECO,
     phase: rand(0, 6.28), st:'walk', atkT: rand(.2, 1), stopZ: BAR_Z - .7 - rand(0, .9) - (type === 'brute' ? .5 : 0), flashT: 0, deadT: 0, sway: rand(.3, .9), headGone:false, meshes:[] };
   [torso, head, armL, armR, legL, legR].forEach(m => { m.userData.z = z; m.userData.head = (m === head); z.meshes.push(m); hitMeshes.push(m); });
   zombies.push(z);
@@ -887,6 +887,7 @@ function gameOver(){
   P.best[curLoc.id] = Math.max(P.best[curLoc.id] || 0, S.wave - 1); saveP();
   showEnd(false, '');
 }
+let againNext = false;
 function showEnd(won, extra){
   const held = won ? curLoc.waves : Math.max(0, S.wave - 1);
   $('overTitle').textContent = won ? curLoc.name + ' libérée !' : 'La barricade a cédé';
@@ -894,9 +895,12 @@ function showEnd(won, extra){
   $('overXP').innerHTML = lvlHTML();
   let msg = extra;
   if (S.levelUps) msg += (msg ? ' ' : '') + 'Tu as gagné ' + S.levelUps + ' niveau' + (S.levelUps > 1 ? 'x' : '') + ', va placer tes points de talent.';
-  else if (!won && !msg) msg = 'Astuce : rejoue une ville déjà libérée pour amasser de l’expérience, puis place tes points de talent.';
+  
   $('overBest').textContent = msg;
-  $('btnAgain').textContent = won ? 'Rejouer ' + curLoc.name : 'Réessayer ' + curLoc.name;
+  const nxt = LOCS[LOCS.indexOf(curLoc) + 1];
+  againNext = won && !!nxt;
+  $('btnAgain').textContent = againNext ? 'Continuer : ' + nxt.name : (won ? 'Rejouer ' : 'Réessayer ') + curLoc.name;
+  $('btnAgain').className = 'big'; $('btnMap').className = 'ghost';
   $('btnTalentsOver').textContent = 'Talents' + (P.pts ? ' (' + P.pts + ' point' + (P.pts > 1 ? 's' : '') + ' à placer)' : '');
   showScreen('scrOver');
 }
@@ -908,6 +912,7 @@ function startLocation(i){
   if (cash > 0){ state = 'shop'; lastBonus = 0; setPlayingUI(false); $('hud').classList.remove('hide'); renderShop(); showScreen('scrShop'); }
   else startWave();
 }
+function campaignIdx(){ const i = LOCS.findIndex(L => !(P.wins[L.id] > 0)); return i < 0 ? LOCS.length - 1 : i; }
 function goMap(){
   state = 'menu'; clearZombies(); setPlayingUI(false); $('hud').classList.add('hide');
   renderMap(); showScreen('scrMap');
@@ -919,11 +924,8 @@ function renderIntensity(){
   const first = wavePlan(1, curLoc).total;
   $('intDesc').textContent = (v === 1 ? 'Normal. ' : '') + 'Vague 1 de ' + curLoc.name + ' : ' + first + ' zombies. Plus il y en a, plus tu gagnes d’argent et d’expérience. Pas de maximum : au-delà de ' + DEV_CAP + ' à la fois, ils attendent leur tour au bout de la rue.';
 }
-$('intPlus').addEventListener('click', () => { P.intensity = intNext(INT()); saveP(); renderMap(); });
-$('intMinus').addEventListener('click', () => { P.intensity = intPrev(INT()); saveP(); renderMap(); });
 function cityTotal(L){ let n = 0; for (let w = 1; w <= L.waves; w++) n += wavePlan(w, L).total; return n; }
 function renderMap(){
-  renderIntensity();
   $('mapLvl').innerHTML = lvlHTML();
   $('btnTalentsMap').textContent = 'Talents' + (P.pts ? ' (' + P.pts + ' point' + (P.pts > 1 ? 's' : '') + ' à placer)' : '');
   let h = '';
@@ -1143,12 +1145,14 @@ $('sens').value = sens; $('sensVal').textContent = sensFmt(sens);
 $('sens').addEventListener('input', e => { sens = parseFloat(e.target.value); $('sensVal').textContent = sensFmt(sens); store.set('dt_sens', sens); });
 $('btnResume').addEventListener('click', resume);
 $('btnQuit').addEventListener('click', () => { gameOver(); });
-$('btnStart').addEventListener('click', () => { Snd.init(); goMap(); });
+$('btnMapTitle').addEventListener('click', () => { Snd.init(); goMap(); });
+$('btnStart').addEventListener('click', () => { Snd.init(); startLocation(campaignIdx()); });
 $('btnNext').addEventListener('click', () => { Snd.init(); startWave(); });
-$('btnAgain').addEventListener('click', () => { startLocation(LOCS.indexOf(curLoc)); });
+$('btnAgain').addEventListener('click', () => { const i = LOCS.indexOf(curLoc); startLocation(againNext && i + 1 < LOCS.length ? i + 1 : i); });
 $('ctrlHelp').innerHTML = isTouch
   ? '<b>Glisser le doigt</b><span>viser, n’importe où sur l’écran</span><b>Feu</b><span>garde le doigt dessus pour tirer</span><b>Viser</b><span>amène l’arme à l’œil, aligne la pointe orange sur ta cible</span><b>Arme, Recharger</b><span>boutons à droite</span>'
   : '<b>Souris</b><span>viser</span><b>Clic gauche</b><span>tirer (garde enfoncé)</span><b>Clic droit</b><span>viser avec l’arme à l’œil (garde enfoncé)</span><b>R</b><span>recharger</span><b>1 à 4 ou molette</b><span>changer d’arme</span><b>Échap</b><span>pause</span>';
+$('btnStart').textContent = 'Jouer : ' + LOCS[campaignIdx()].name;
 $('bestTxt').textContent = P.level > 1 || P.unlocked > 1 ? 'Niveau ' + P.level + ' · ' + P.unlocked + ' ville' + (P.unlocked > 1 ? 's' : '') + ' débloquée' + (P.unlocked > 1 ? 's' : '') : '';
 document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 

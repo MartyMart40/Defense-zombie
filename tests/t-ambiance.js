@@ -83,11 +83,12 @@
   test('Ambiance : la musique change d’état (menu, vague, boss) sans erreur, même sans audio', () => {
     exiger(); reset();
     const r = J(function(){
-      var ctx0 = Snd.ctx, res = { erreurs: [] };
+      var ctx0 = Snd.ctx, sauve = { master: Snd.master, noise: Snd.noise, musBus: Snd.musBus, rainSrc: Snd.rainSrc, rainGain: Snd.rainGain, init: Snd.init }, res = { erreurs: [] };
+      Snd.init = function(){ if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume(); }; // pas de nouveau contexte audio pendant le test
       function etape(nom, f){ try { f(); } catch (e) { res.erreurs.push(nom + ' : ' + e.message); } }
       [true, false].forEach(function(sansAudio){
         var k = sansAudio ? 'sans' : 'avec';
-        if (sansAudio) Snd.ctx = null; else Snd.ctx = ctx0;
+        if (sansAudio) Snd.ctx = null; else { Snd.ctx = ctx0; Snd.master = sauve.master; Snd.musBus = sauve.musBus; }
         etape(k + ' menu', function(){ state = 'menu'; visuals(1 / 30); res[k + 'Menu'] = Snd.musWant; });
         etape(k + ' vague', function(){
           startLocation(0); if (state !== 'playing'){ state = 'shop'; startWave(); }
@@ -106,7 +107,7 @@
         etape(k + ' victoire', function(){ victory(); visuals(1 / 30); res[k + 'Fin'] = Snd.musWant; });
         etape(k + ' défaite', function(){ state = 'playing'; gameOver(); visuals(1 / 30); });
       });
-      Snd.ctx = ctx0; state = 'test';
+      Snd.ctx = ctx0; Object.keys(sauve).forEach(function(k){ Snd[k] = sauve[k]; }); state = 'test';
       return res;
     });
     egal(r.erreurs.length, 0, 'Erreurs : ' + r.erreurs.join(' | ') + '\nNombre');

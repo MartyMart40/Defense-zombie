@@ -89,6 +89,7 @@
     exigerF(); partie();
     const r = J(function(){
       clearZombies();
+      var fl0 = document.getElementById('floats'); if (fl0) fl0.innerHTML = ''; // textes flottants laissés par les tests précédents
       var z = __t.placer('colossus', 0, -18); __tf.robuste(z, 1e5);
       var plaque = __tf.faibles(z)[0];
       __tf.viserM(plaque); var vise = __tf.premier() === plaque;

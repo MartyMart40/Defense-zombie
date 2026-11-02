@@ -86,10 +86,10 @@ function treeAdd(geo, x, y, z, rx, ry, rz, sx, sy, sz, col, jit, shade){
   const cols = new Float32Array(n * 3); let ymin = Infinity, ymax = -Infinity;
   for (let i = 0; i < n; i++){ const v = pos.getY(i); if (v < ymin) ymin = v; if (v > ymax) ymax = v; }
   for (let f = 0; f < n; f += 3){
-    const var1 = 1 + (Math.random() - .5) * .22;
+    const var1 = 1 + (Math.random() - .5) * .38;
     for (let j = 0; j < 3; j++){
       const t = (pos.getY(f + j) - ymin) / Math.max(.01, ymax - ymin);
-      const l = var1 * (shade ? (.72 + .4 * t) : 1);
+      const l = var1 * (shade ? (.62 + .55 * t) : .8);
       _tc.setHex(col); cols[(f + j) * 3] = _tc.r * l; cols[(f + j) * 3 + 1] = _tc.g * l; cols[(f + j) * 3 + 2] = _tc.b * l;
     }
   }

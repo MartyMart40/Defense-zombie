@@ -11,17 +11,24 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 | # | Tâche | Priorité | Note |
 |---|-------|----------|------|
-| 2 | Atelier et 5 défenses automatiques avec améliorations infinies, ferraille | Haute | Voir docs/conception.md |
 | 3 | Mode infini (sans choix de difficulté) | Haute | Dépend de 2 pour l'équilibre |
-| 4 | Tests automatiques (tir, boutique, villes, sauvegarde) | Moyenne | Les 171 tests d'origine sont perdus |
 
 ## Fait
 
 | # | Tâche | Date |
 |---|-------|------|
 | 0 | Récupération de Dernier toit (5 villes, talents) depuis l'artifact claude.ai | 2026-11-02 |
+| 2 | Atelier, ferraille, 5 défenses (js/16-atelier.js, js/17-defenses.js) | 2026-11-02 |
+| 4 | Page de tests tests/ : 27 sur 27 en ligne | 2026-11-02 |
 | 1 | Jeu découpé en 16 fichiers js/ + css/, règles des agents (AGENTS.md) | 2026-11-02 |
 | 0c | Campagne linéaire, 30 zombies en vague 1 (+30 par vague), retrait du choix du nombre de zombies | 2026-11-02 |
 | 0b | Mise en ligne automatique sur GitHub Pages | 2026-11-02 |
+
+## À valider par Martin
+
+- Améliorations des défenses par emplacement (4 tourelles = 4 à améliorer séparément).
+- Ogive : lignes Puissance, Retombées, Souffle, Recharge.
+- Vente en deux touches (Vendre puis Confirmer).
+- Ferraille : marcheur 0,5, coureur 0,7, costaud 4, × difficulté de la ville. Saint-Clou complet = environ 258.
 
 ## Idées en vrac

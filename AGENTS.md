@@ -21,4 +21,5 @@ Jeu de tir défensif 3D en navigateur (Three.js r128 chargé depuis cdnjs). Conc
 5. Doit marcher sur cell (tactile, vertical et horizontal) et sur ordi (souris).
 6. Vérifie la syntaxe : `cat js/*.js > /tmp/all.js && node --check /tmp/all.js`.
 7. **Ne pousse jamais sur GitHub.** Ne lis pas et ne copie pas `.github-token`. Le coordonnateur pousse et teste en ligne.
-8. Termine par un rapport court : fichiers touchés, ce qui marche, ce qui n'est pas vérifié.
+8. Tests : `tests/` (page en ligne /tests/, résultat dans window.RESULTATS). Ajoute des tests pour ce que tu bâtis, de façon défensive (typeof).
+9. Termine par un rapport court : fichiers touchés, ce qui marche, ce qui n'est pas vérifié.

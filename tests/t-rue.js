@@ -144,16 +144,19 @@
     ok(r.m < r.m0, 'Bonus donné quand même');
   });
 
-  test('Rue : les zombies qui attrapent le civil le tuent (pas de bonus)', () => {
+  test('Rue : un zombie qui agrippe le civil avant les trois quarts le ralentit sans le tuer', () => {
     exiger(); partie();
     const r = J(function(){
       var z = __t.placer('walker', 0, -26); z.hp = z.maxHp = 1e6; z.speed = 0;
       var v = __rue.rueSpawnCiv(0, -28), m0 = S.money;
-      __t.sim(6);
-      return { st: v.st, m: S.money - m0 };
+      __t.sim(1);
+      var z1 = v.z, st1 = v.st;
+      __t.sim(8);
+      return { st1: st1, z1: z1, st: v.st, m: S.money - m0 };
     });
-    egal(r.st, 'dead', 'Le civil agrippé n’est pas mort');
-    egal(r.m, 0, 'Argent changé quand le civil meurt agrippé');
+    egal(r.st1, 'run', 'Le civil agrippé avant les trois quarts doit rester en vie');
+    ok(r.z1 < -28 + 4.8 * .8, 'Le civil agrippé devrait ralentir (z après 1 s : ' + r.z1 + ')');
+    egal(r.st, 'saved', 'Le civil devrait finir par passer');
   });
 
   test('Rue : les défenses et les pouvoirs ne visent pas le civil', () => {

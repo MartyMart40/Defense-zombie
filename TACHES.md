@@ -19,6 +19,9 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 | # | Tâche | Date |
 |---|-------|------|
+| 25 | Survivant : invincible jusqu'aux trois quarts du trajet, attrapé là seulement si un poursuivant vit encore ; poursuivants plus lents au départ ; flèche et halo verts visibles de loin (js/23-rue.js) | 2026-11-03 |
+| 26 | Sons : vraie pluie (bruit rose et brun longs, filtres qui dérivent, gouttes au hasard), tirs en couches différents à chaque coup et par arme, ambiances météo (js/01-son.js) | 2026-11-03 |
+| 27 | Météo : grand soleil, canicule, coucher de soleil, aube, vent fort, grêle, tempête de poussière, nuit claire, tornade au loin ; beau temps fréquent, pluie et orage rares, AMB_KEEP 0,15 (js/22-ambiance.js) | 2026-11-03 |
 | 0 | Récupération de Dernier toit (5 villes, talents) depuis l'artifact claude.ai | 2026-11-02 |
 | 16 | Armes en main détaillées (js/04-arme-en-main.js) | 2026-11-02 |
 | 17 | Performances des hordes : instances, plafonds 400 ordi / 180 cell, hordePlan(), compteur d'images/s, tests/perf.html | 2026-11-02 |
@@ -65,5 +68,9 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 - Infini : un joueur devrait céder vers les vagues 25 à 35 (dégâts +12 % par niveau contre zombies +10 % composés). À confirmer en jouant.
 - Succès : environ 760 ferrailles d'un coup à la première victoire de Saint-Clou. À baisser si trop.
+
+- Survivant : il meurt aux trois quarts du trajet si un poursuivant vit encore (plus de minuterie de 5 s). Poursuivants à 78 % de sa vitesse au départ, 94 % aux trois quarts.
+- Météo : beau temps environ 70 % du temps, pluie et orage environ 7 à 10 %, tornade environ 1 à 2 %. À ajuster en jouant.
+- Sons : écouter les tirs, la pluie, le vent, la grêle, les oiseaux et les cigales sur le cell (le volume des ambiances n'a pas été réglé à l'oreille).
 
 ## Idées en vrac

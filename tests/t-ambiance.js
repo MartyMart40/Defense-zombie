@@ -127,4 +127,75 @@
     egal(r.w, 'brouillard', 'Météo forcée');
     ok(r.t.indexOf('Brouillard épais') >= 0, 'Libellé absent : « ' + r.t + ' »');
   });
+
+  test('Ambiance : nouvelles météos présentes, chacune avec son nom et son ambiance sonore', () => {
+    exiger();
+    const r = J(function(){ var o = {}; Object.keys(__amb.WEATHERS).forEach(function(k){ var W = __amb.WEATHERS[k]; o[k] = { name: W.name, snd: !!W.snd }; }); return o; });
+    ['soleil', 'canicule', 'coucher', 'aube', 'vent', 'grele', 'poussiere', 'nuitClaire', 'tornade'].forEach(k => {
+      ok(!!r[k], 'Météo absente : ' + k);
+      if (r[k]) ok(!!r[k].name, 'Météo sans nom : ' + k);
+    });
+    Object.keys(r).forEach(k => ok(r[k].snd, 'Météo sans ambiance sonore : ' + k));
+  });
+
+  test('Ambiance : beau temps fréquent partout, pluie et orage rares, tornade très rare', () => {
+    exiger();
+    const r = J(function(){ return { T: __amb.WEATHER_BY_LOC, nice: __amb.AMB_NICE, keep: __amb.AMB_KEEP, ids: LOCS.map(function(L){ return L.id; }) }; });
+    ok(r.keep <= .2, 'AMB_KEEP trop haut : ' + r.keep);
+    r.ids.forEach(id => {
+      const t = r.T[id]; ok(!!t, 'Ville sans table : ' + id); if (!t) return;
+      let sum = 0, nice = 0, wet = 0; Object.keys(t).forEach(k => { sum += t[k]; if (r.nice.indexOf(k) >= 0) nice += t[k]; if (k === 'pluie' || k === 'orage') wet += t[k]; });
+      ok(Object.keys(t).length >= 9, id + ' : au moins 9 météos possibles (' + Object.keys(t).length + ')');
+      ok(nice / sum >= .55, id + ' : beau temps ' + Math.round(nice / sum * 100) + ' %');
+      ok(wet / sum <= .12, id + ' : pluie et orage ' + Math.round(wet / sum * 100) + ' %');
+      if (t.tornade) ok(t.tornade / sum <= .03, id + ' : tornade trop fréquente');
+    });
+  });
+
+  test('Ambiance : la météo change souvent d’une vague à l’autre', () => {
+    exiger(); reset(); J('startLocation(0)');
+    const r = J(function(){
+      var vus = {}, chg = 0, prev = __amb.weather, n = 400, pluie = 0;
+      for (var i = 0; i < n; i++){
+        var w = __amb.pick(curLoc, 2 + (i % 3)); AMB.weather = w;
+        vus[w] = 1; if (w !== prev) chg++; if (w === 'pluie' || w === 'orage') pluie++; prev = w;
+      }
+      __amb.set('clair');
+      return { sortes: Object.keys(vus).length, chg: chg / n, pluie: pluie / n };
+    });
+    ok(r.sortes >= 9, 'Variété : ' + r.sortes + ' météos en 400 vagues');
+    ok(r.chg >= .65, 'La météo change ' + Math.round(r.chg * 100) + ' % du temps');
+    ok(r.pluie <= .15, 'Pluie ou orage ' + Math.round(r.pluie * 100) + ' % du temps');
+  });
+
+  test('Ambiance : chaque météo s’applique sans erreur, avec ses effets, et tout repart au temps clair', () => {
+    exiger(); reset(); J('startLocation(0)');
+    const r = J(function(){
+      var o = { err: [], far: [] , fx: {} }, sky = AMB.base.sky;
+      Object.keys(__amb.WEATHERS).forEach(function(k){
+        try {
+          __amb.set(k); for (var i = 0; i < 10; i++) __amb.frame(1 / 30);
+          var W = __amb.WEATHERS[k], X = __amb.AMB_X;
+          if (scene.fog.far < Math.min(LOCS[0].fogFar, __amb.AMB_MIN_FAR) - 1e-9) o.far.push(k + ' ' + scene.fog.far);
+          o.fx[k] = { flk: W.flakes ? !!(__amb.flakes && __amb.flakes.o.visible && __amb.flakes.kind === W.flakes) : null,
+            heat: W.heat ? !!(X.heat && X.heat.g.visible) : null, moon: W.moon ? !!(X.sky && X.sky.g.visible) : null,
+            tor: W.tornado ? !!(X.tornado && X.tornado.g.visible) : null,
+            ciel: sky ? sky.o.material.color.getHexString() : '' };
+        } catch (e) { o.err.push(k + ' : ' + e.message); }
+      });
+      __amb.set('clair'); __amb.frame(1 / 30);
+      var X = __amb.AMB_X;
+      o.apres = { heat: !!(X.heat && X.heat.g.visible), moon: !!(X.sky && X.sky.g.visible), tor: !!(X.tornado && X.tornado.g.visible), flk: !!(__amb.flakes && __amb.flakes.o.visible), pluie: !!(__amb.rain && __amb.rain.o.visible) };
+      o.nflk = __amb.flakes ? __amb.flakes.pos.length / 3 : 0; o.touch = isTouch;
+      o.sun = AMB.base.sun ? [AMB.base.sun.o.color.getHex(), AMB.base.sun.c] : null;
+      return o;
+    });
+    egal(r.err.length, 0, 'Erreurs : ' + r.err.join(' | ') + '\nNombre');
+    egal(r.far.join(', '), '', 'Brouillard trop épais');
+    Object.keys(r.fx).forEach(k => { const f = r.fx[k]; ['flk', 'heat', 'moon', 'tor'].forEach(e => { if (f[e] !== null) ok(f[e], k + ' : effet ' + e + ' absent'); }); });
+    ok(r.fx.soleil.ciel !== r.fx.orage.ciel, 'Le ciel du grand soleil devrait différer de celui de l’orage');
+    ok(!r.apres.heat && !r.apres.moon && !r.apres.tor && !r.apres.flk && !r.apres.pluie, 'Restes après le retour au temps clair : ' + JSON.stringify(r.apres));
+    ok(r.nflk <= (r.touch ? 220 : 600), 'Particules au-dessus du plafond : ' + r.nflk);
+    if (r.sun) egal(r.sun[0], r.sun[1], 'Couleur du soleil remise après le temps clair');
+  });
 })();

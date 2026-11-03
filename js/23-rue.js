@@ -82,8 +82,18 @@ function rueHitOff(m){ const i = hitMeshes.indexOf(m); if (i >= 0) hitMeshes.spl
     const legL = limb(RUEM.pants, -.15, .9, .88, .2), legR = limb(RUEM.pants, .15, .9, .88, .2);
     [legL, legR].forEach(l => ruePart(l.p, RUEG.box, RUEM.shoe, .22, .1, .32, 0, -.86, .05));
     const mark = new THREE.Sprite(rueGlow(0x60ff90)); mark.position.y = 2.6; mark.scale.set(.8, .8, 1); g.add(mark);
+    // Repère visible de loin : flèche verte qui pointe vers lui et halo au sol (à travers le brouillard et les murs)
+    const cue = new THREE.Group(); cue.visible = false; g.add(cue);
+    const cueMat = new THREE.MeshBasicMaterial({ color:0x7aff9a, transparent:true, opacity:.95, depthTest:false, depthWrite:false, fog:false });
+    const haloMat = new THREE.MeshBasicMaterial({ color:0x60ff90, transparent:true, opacity:.6, blending:THREE.AdditiveBlending, depthWrite:false, fog:false, side:THREE.DoubleSide });
+    const arrow = new THREE.Group(); arrow.position.y = 3.3; cue.add(arrow);
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(.42, .7, 4), cueMat); tip.rotation.x = Math.PI; tip.position.y = .35; arrow.add(tip);
+    const stem = new THREE.Mesh(RUEG.box, cueMat); stem.scale.set(.2, .6, .2); stem.position.y = 1; arrow.add(stem);
+    tip.renderOrder = stem.renderOrder = 20;
+    const halo = new THREE.Mesh(new THREE.RingGeometry(.7, 1.05, 24), haloMat); halo.rotation.x = -Math.PI / 2; halo.position.y = .05; cue.add(halo);
+    const glow = new THREE.Sprite(rueGlow(0x60ff90)); glow.position.y = 1.2; glow.scale.set(3.4, 3.4, 1); glow.material.opacity = .45; cue.add(glow);
     const meshes = [torso, head, armL.m, armR.m, legL.m, legR.m];
-    const civ = { g, body, mark, meshes, armL:armL.p, armR:armR.p, legL:legL.p, legR:legR.p, live:false, st:'run', t:0, ph:0, grab:0, x:0, z:0 };
+    const civ = { g, body, mark, cue, arrow, halo, glow, meshes, armL:armL.p, armR:armR.p, legL:legL.p, legR:legR.p, live:false, st:'run', t:0, ph:0, grab:0, x:0, z:0 };
     meshes.forEach(m => { m.userData.onHit = () => rueCivShot(); m.userData.rue = 'civil'; });
     RUE.civ = civ;
   }
@@ -241,11 +251,26 @@ function rueSpawnCiv(x, z){
   const v = RUE.civ; if (v.live) return null;
   v.live = true; v.st = 'run'; v.t = 0; v.ph = 0; v.grab = 0; v.x = x; v.z = z;
   v.g.position.set(x, 0, z); v.g.rotation.set(0, 0, 0); v.body.rotation.set(0, 0, 0); v.body.position.set(0, 0, 0);
-  v.g.visible = true; v.mark.visible = true; v.g.updateMatrixWorld(true);
+  v.g.visible = true; v.mark.visible = true; v.cue.visible = true; v.z0 = z; v.g.updateMatrixWorld(true);
   v.meshes.forEach(rueHitOn); RUE.active = true;
   return v;
 }
-function rueCivEnd(st){ const v = RUE.civ; v.st = st; v.t = 0; v.meshes.forEach(rueHitOff); v.mark.visible = false; }
+function rueCivEnd(st){ const v = RUE.civ; v.st = st; v.t = 0; v.meshes.forEach(rueHitOff); v.mark.visible = false; v.cue.visible = false; }
+// Part du trajet parcourue (0 au départ, 1 à la barricade)
+function rueCivProgress(v){
+  v = v || RUE.civ; const d = RUE_CFG.civSaveZ - (v.z0 != null ? v.z0 : v.z);
+  return d > 0 ? clamp((v.z - v.z0) / d, 0, 1) : 1;
+}
+// Repère : la flèche monte et descend, le halo bat ; plus gros quand il est loin pour rester lisible
+function rueCivCue(v){
+  if (!v.cue.visible) return;
+  const far = clamp(camera.position.distanceTo(v.g.position) / 20, 1, 4.5);
+  v.arrow.position.y = 2.9 + .35 * far + Math.sin(v.t * 6) * .25 * far;
+  v.arrow.scale.setScalar(far); v.arrow.rotation.y = v.t * 2.5;
+  const p = .5 + .5 * Math.sin(v.t * 7);
+  v.halo.scale.setScalar((1 + .35 * p) * Math.min(far, 2)); v.halo.material.opacity = .35 + .4 * p;
+  v.glow.scale.set(3.4 * far, 3.4 * far, 1);
+}
 function rueCivShot(){
   const v = RUE.civ; if (!v.live || v.st !== 'run') return;
   rueCivEnd('dead');
@@ -293,6 +318,7 @@ function rueCivStep(dt){
     v.body.rotation.x = .18; v.body.rotation.z = held ? Math.sin(v.t * 30) * .12 : 0;
     v.body.position.y = Math.abs(Math.cos(v.ph)) * .08;
     v.g.position.set(v.x, 0, v.z); v.g.updateMatrixWorld(true);
+    rueCivCue(v);
     if (v.z >= RUE_CFG.civSaveZ) rueCivSaved();
   } else if (v.st === 'saved'){
     // Il saute par-dessus la barricade et disparaît
@@ -376,7 +402,7 @@ function rueFx(dt){
 function rueClear(){
   RUE.barrels.forEach(b => { b.live = false; b.fuse = -1; b.g.visible = false; rueHitOff(b.body); });
   RUE.crates.forEach(rueCrateOff);
-  const v = RUE.civ; v.live = false; v.g.visible = false; v.meshes.forEach(rueHitOff);
+  const v = RUE.civ; v.live = false; v.g.visible = false; v.cue.visible = false; v.meshes.forEach(rueHitOff);
   RUE.fires.forEach(f => { f.g.visible = false; f.t = 0; });
   RUE.booms.forEach(b => { b.m.visible = false; b.life = 0; });
   rueLight.intensity = 0;
@@ -467,24 +493,32 @@ try {
 } catch (e) {}
 
 // Accès pour les tests automatiques
-window.__rue = { RUE, RUE_CFG, RUE_BONUS, rueRoot, rueWave, rueStep, rueClear, rueSpawnBarrel, rueSpawnCrate, rueSpawnCiv, rueBarrelBlow, rueNearBlast, rueCrateGive, rueCivShot,
+window.__rue = { RUE, RUE_CFG, RUE_BONUS, rueRoot, rueWave, rueStep, rueClear, rueSpawnBarrel, rueSpawnCrate, rueSpawnCiv, rueBarrelBlow, rueNearBlast, rueCrateGive, rueCivShot, rueCivProgress,
   get vivants(){ return { barils:RUE.barrels.filter(b => b.live).length, caisses:RUE.crates.filter(c => c.live).length, civil:RUE.civ.live }; },
   dansHit(){ let n = 0; for (const m of hitMeshes) if (m.userData.onHit && m.userData.rue) n++; return n; } };
 
 
 /* ---------- Survivants : poursuivants à abattre, puis il reste avec toi et rapporte de l'argent ---------- */
-// Quand un survivant apparaît, 2 ou 3 zombies le poursuivent. Tu as 5 s pour les abattre tous :
-// réussi, il est sauvé et reste sur le toit pour le reste de la partie ; raté, ils l'attrapent.
+// Quand un survivant apparaît, 2 ou 3 zombies le poursuivent, un peu plus lents que lui au départ.
+// Il est invincible (ni agrippé à mort, ni rattrapé) tant qu'il n'a pas fait les trois quarts du trajet
+// entre son point d'apparition et la barricade. Rendu là : si un poursuivant vit encore, il l'attrape ;
+// sinon il est sauvé et reste sur le toit pour le reste de la partie. Un tir du joueur le tue toujours (pénalité).
 // Chaque survivant sur le toit rapporte SURV_CFG.income $ par minute (versé à la minute).
-const SURV_CFG = { chasers:[2, 3], time:5, income:1, period:60, maxShown:8 };
-const SURV = { chasers:[], timer:0, chasing:false, roof:[], payT:0 };
+const SURV_CFG = { chasers:[2, 3], mark:.75, spd0:.78, spd1:.94, income:1, period:60, maxShown:8 };
+const SURV = { chasers:[], chasing:false, roof:[], payT:0 };
 function survHUDEl(id){ return document.getElementById(id); }
+// Mètres qui restent avant le point des trois quarts
+function survLeft(){
+  const v = RUE.civ; if (!v || v.z0 == null) return 0;
+  return Math.max(0, v.z0 + (RUE_CFG.civSaveZ - v.z0) * SURV_CFG.mark - v.z);
+}
 function survChaseHUD(){
   const el = survHUDEl('chaseH'); if (!el) return;
   if (!SURV.chasing){ el.classList.add('hide'); return; }
-  const left = SURV.chasers.filter(z => !z.dead).length, t = Math.max(0, SURV.timer);
-  el.classList.remove('hide'); el.classList.toggle('urgent', t < 2);
-  el.innerHTML = 'Abats ses poursuivants : ' + left + ' restant' + (left > 1 ? 's' : '') + '<b>' + t.toFixed(1).replace('.', ',') + ' s</b>';
+  const left = SURV.chasers.filter(z => !z.dead).length, m = survLeft();
+  el.classList.remove('hide'); el.classList.toggle('urgent', m < 12);
+  const txt = 'Abats ses poursuivants : ' + left + ' restant' + (left > 1 ? 's' : '') + '<b>' + Math.ceil(m) + ' m</b>';
+  if (el.innerHTML !== txt) el.innerHTML = txt;
 }
 function survIncomeTxt(){
   const n = (S && S.survivors) || 0, el = survHUDEl('survH'); if (!el) return;
@@ -513,7 +547,7 @@ function survRoofSync(){
   while (SURV.roof.length < n) SURV.roof.push(survFigure(SURV.roof.length));
   SURV.roof.forEach((g, i) => { g.visible = i < n; });
 }
-function survClearChase(){ SURV.chasers.length = 0; SURV.chasing = false; SURV.timer = 0; survChaseHUD(); }
+function survClearChase(){ SURV.chasers.length = 0; SURV.chasing = false; survChaseHUD(); }
 
 const _survSpawnCiv = rueSpawnCiv;
 rueSpawnCiv = function(x, z){
@@ -526,33 +560,49 @@ rueSpawnCiv = function(x, z){
     spawnZombie(Math.random() < .5 ? 'runner' : 'walker');
     const c = zombies[zombies.length - 1]; if (zombies.length === before || !c) continue;
     c.chaser = true;
-    c.g.position.set(clamp(v.x + rand(-1.5, 1.5), -12, 12), c.g.position.y, v.z - 3 - i * 1.6);
-    c.speed = RUE_CFG.civSpeed * 1.02; // ils gardent le rythme du survivant
+    c.g.position.set(clamp(v.x + rand(-1.5, 1.5), -12, 12), c.g.position.y, v.z - 4 - i * 1.8);
+    c.speed = RUE_CFG.civSpeed * SURV_CFG.spd0; // plus lents au départ : ils restent derrière lui
     if (c.g.updateMatrixWorld) c.g.updateMatrixWorld(true);
     SURV.chasers.push(c);
   }
-  SURV.chasing = SURV.chasers.length > 0; SURV.timer = SURV_CFG.time; v.safe = false;
+  SURV.chasing = SURV.chasers.length > 0; v.safe = false;
   survChaseHUD();
   return v;
 };
 const _survCivStep = rueCivStep;
 rueCivStep = function(dt){
   const v = RUE.civ;
-  if (v && v.live && v.st === 'run' && SURV.chasing){
-    SURV.timer -= dt;
-    // les poursuivants suivent sa ligne
-    SURV.chasers.forEach(c => { if (!c.dead && c.st === 'walk') c.g.position.x += clamp(v.x - c.g.position.x, -1, 1) * dt * 2; });
-    if (SURV.chasers.every(c => c.dead)){
-      SURV.chasing = false; v.safe = true;
-      RUE_V.set(v.x, 2.6, v.z); rueFloat('Survivant hors de danger !', RUE_V, '#9aff70', true);
-      if (typeof Snd === 'object' && Snd.tone) Snd.tone(880, .15, 'triangle', .12, 1320);
-    } else if (SURV.timer <= 0){
-      SURV.chasing = false; survChaseHUD(); rueCivCaught(); return;
+  let shield = false;
+  if (v && v.live && v.st === 'run' && !v.safe){
+    const prog = rueCivProgress(v), k = clamp(prog / SURV_CFG.mark, 0, 1);
+    if (SURV.chasing){
+      // Les poursuivants suivent sa ligne et reprennent un peu de vitesse, sans jamais le dépasser
+      SURV.chasers.forEach(c => {
+        if (c.dead || c.st !== 'walk') return;
+        c.g.position.x += clamp(v.x - c.g.position.x, -1, 1) * dt * 2;
+        c.speed = RUE_CFG.civSpeed * (SURV_CFG.spd0 + (SURV_CFG.spd1 - SURV_CFG.spd0) * k);
+        if (c.g.position.z > v.z - 1.2) c.g.position.z = v.z - 1.2;
+      });
+      if (SURV.chasers.every(c => c.dead)){
+        SURV.chasing = false; v.safe = true;
+        RUE_V.set(v.x, 2.6, v.z); rueFloat('Survivant hors de danger !', RUE_V, '#9aff70', true);
+        if (typeof Snd === 'object' && Snd.tone) Snd.tone(880, .15, 'triangle', .12, 1320);
+      }
+    } else if (!v.safe) v.safe = true; // personne ne le poursuit
+    if (!v.safe){
+      if (prog >= SURV_CFG.mark){
+        // Rendu aux trois quarts avec un poursuivant encore debout : il est rattrapé
+        let best = null, bd = 1e9;
+        SURV.chasers.forEach(c => { if (c.dead) return; const d = Math.abs(c.g.position.z - v.z); if (d < bd){ bd = d; best = c; } });
+        if (best && best.st === 'walk'){ best.g.position.set(v.x + .4, best.g.position.y, v.z - .7); if (best.g.updateMatrixWorld) best.g.updateMatrixWorld(true); }
+        SURV.chasing = false; survChaseHUD(); rueCivCaught(); return;
+      }
+      shield = true; // avant les trois quarts : invincible
     }
     survChaseHUD();
   }
-  // Hors de danger : les zombies ne peuvent plus l'agripper
-  if (v && v.live && v.st === 'run' && v.safe){ v.grab = 0; const g0 = RUE_CFG.civGrab; RUE_CFG.civGrab = Infinity; try { return _survCivStep.apply(this, arguments); } finally { RUE_CFG.civGrab = g0; } }
+  // Invincible avant les trois quarts, ou hors de danger : les zombies ne peuvent pas le tuer en l'agrippant
+  if (v && v.live && v.st === 'run' && (v.safe || shield)){ v.grab = 0; const g0 = RUE_CFG.civGrab; RUE_CFG.civGrab = Infinity; try { return _survCivStep.apply(this, arguments); } finally { RUE_CFG.civGrab = g0; } }
   return _survCivStep.apply(this, arguments);
 };
 const _survCivEnd = rueCivEnd;
@@ -576,4 +626,4 @@ try { const _b = updateHUD; updateHUD = function(){ const r = _b.apply(this, arg
 try { const _b = newGame; newGame = function(){ const r = _b.apply(this, arguments); if (S) S.survivors = 0; SURV.payT = 0; survClearChase(); survRoofSync(); survIncomeTxt(); return r; }; } catch (e) {}
 const _survClear = rueClear;
 rueClear = function(){ const r = _survClear.apply(this, arguments); survClearChase(); return r; };
-window.__surv = { SURV, SURV_CFG, survRoofSync };
+window.__surv = { SURV, SURV_CFG, survRoofSync, survLeft };

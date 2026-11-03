@@ -8,7 +8,7 @@ const Snd = {
       const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
       this.ctx = new C(); this.master = this.ctx.createGain();
       this.master.gain.value = this.on ? 0.5 : 0; this.master.connect(this.ctx.destination);
-      const len = Math.floor(this.ctx.sampleRate * 0.7), b = this.ctx.createBuffer(1, len, this.ctx.sampleRate), d = b.getChannelData(0);
+      const len = Math.floor(this.ctx.sampleRate * 2.5), b = this.ctx.createBuffer(1, len, this.ctx.sampleRate), d = b.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       this.noise = b;
     }catch(e){ this.ctx = null; }
@@ -19,7 +19,7 @@ const Snd = {
     const s = c.createBufferSource(); s.buffer = this.noise;
     const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(freq, t); f.frequency.exponentialRampToValueAtTime(120, t + dur);
     const g = c.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    s.connect(f); f.connect(g); g.connect(this.master); s.start(t); s.stop(t + dur + 0.05);
+    s.connect(f); f.connect(g); g.connect(this.master); s.start(t, Math.random() * 1.6); s.stop(t + dur + 0.05);
   },
   tone(freq, dur, type, vol, slideTo, delay){
     if (!this.ctx) return; const c = this.ctx, t = c.currentTime + (delay || 0);
@@ -28,9 +28,70 @@ const Snd = {
     const g = c.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     o.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + 0.05);
   },
+  /* ---------- Tirs : son de fusil en couches, différent à chaque coup ----------
+     Couches : claquement sec (bruit aigu très court), corps grave (bruit filtré + coup sourd qui descend),
+     écho de rue (bruit sombre retardé, deux rebonds pour les grosses armes), mécanique propre à l'arme.
+     Chaque coup tire au hasard la hauteur, le volume, le timbre (filtres) et le délai d'écho.
+     Profil : crack [fréq, durée, vol], body [fréq filtre, durée, vol], thump [fréq départ, fréq fin, durée, vol],
+     echo [délai, durée, vol, fréq], mech (bruit d'arme après le coup). */
+  GUNS: {
+    pistol:  { crack:[4200, .035, .32], body:[1900, .16, .42], thump:[190, 60, .12, .38], echo:[.11, .45, .1, 1300] },
+    shotgun: { crack:[3000, .05, .42], body:[1100, .34, .8],  thump:[120, 34, .26, .8],  echo:[.13, .9, .2, 900], echo2:.34, mech:'pump' },
+    rifle:   { crack:[5200, .028, .3], body:[2300, .11, .36], thump:[160, 55, .09, .34], echo:[.09, .35, .08, 1500], light:true },
+    sniper:  { crack:[6000, .05, .55], body:[900, .5, .9],    thump:[95, 28, .34, .95],  echo:[.18, 1.4, .26, 800], echo2:.5, mech:'bolt' },
+    crossbow:{ twang:true },
+    flamer:  { flame:true },
+    minigun: { crack:[4800, .022, .2], body:[2000, .065, .22], thump:[140, 60, .06, .16], echo:[.07, .25, .05, 1400], light:true, buzz:true },
+    rocket:  { crack:[1800, .06, .3], body:[700, .6, .6],     thump:[80, 30, .5, .55],   echo:[.2, 1.2, .18, 700], mech:'whoosh' }
+  },
+  lastShot: 0, shotN: 0,
+  // Bruit filtré : source dans le grand tampon blanc, départ au hasard (jamais deux fois le même grain)
+  _nz(t, type, freq, q, dur, vol, out, sweepTo, atk){
+    const c = this.ctx, s = c.createBufferSource(); s.buffer = this.noise;
+    const f = c.createBiquadFilter(); f.type = type; f.frequency.setValueAtTime(freq, t); if (q) f.Q.value = q;
+    if (sweepTo) f.frequency.exponentialRampToValueAtTime(sweepTo, t + dur);
+    const g = c.createGain();
+    if (atk){ g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + atk); } else g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0005, t + dur);
+    s.connect(f); f.connect(g); g.connect(out || this.master); s.start(t, Math.random() * 1.8); s.stop(t + dur + .05);
+  },
+  _osc(t, type, f0, f1, dur, vol, out){
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain(); o.type = type;
+    o.frequency.setValueAtTime(f0, t); if (f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0005, t + dur);
+    o.connect(g); g.connect(out || this.master); o.start(t); o.stop(t + dur + .05);
+  },
+  // Rend true quand l'arme est connue (le son est joué), false sinon
   shot(kind){
-    const p = { pistol:[2400, .18, .45], shotgun:[1300, .38, .85], rifle:[2800, .12, .38], sniper:[1000, .55, .95] }[kind];
-    this.burst(p[0], p[1], p[2]); this.tone(150, .16, 'sine', p[2] * .8, 40);
+    const P = this.GUNS[kind]; if (!P) return false;
+    this.shotN++;
+    if (!this.ctx) return true;
+    try{
+      const c = this.ctx, t = c.currentTime, gap = t - this.lastShot; this.lastShot = t;
+      const pit = rand(.86, 1.16), vol = rand(.78, 1.08), tim = rand(.7, 1.35);
+      if (P.twang){ // arbalète : corde qui claque, presque silencieuse
+        this._osc(t, 'triangle', 520 * pit, 150, .1, .08 * vol); this._nz(t, 'highpass', 3000 * tim, 0, .05, .06 * vol);
+        this._osc(t + .01, 'sine', 95 * pit, 60, .14, .1 * vol); return true;
+      }
+      if (P.flame){ // lance-flammes : souffle grondant (appelé très souvent : une seule couche)
+        this._nz(t, 'lowpass', 700 * tim, 0, .16, .1 * vol, null, 300); return true;
+      }
+      const busy = gap < .09; // tir rapide : on allège (moins de nœuds audio par seconde)
+      const cr = P.crack, bo = P.body, th = P.thump, ec = P.echo;
+      this._nz(t, 'highpass', cr[0] * tim, 0, cr[1] * rand(.8, 1.25), cr[2] * vol);
+      this._nz(t, 'lowpass', bo[0] * tim, rand(.5, 2.5), bo[1] * rand(.85, 1.2), bo[2] * vol, null, 140);
+      this._osc(t, 'sine', th[0] * pit, th[1] * pit, th[2] * rand(.85, 1.15), th[3] * vol);
+      if (!busy || Math.random() < .3){
+        const d = ec[0] * rand(.75, 1.35);
+        this._nz(t + d, 'bandpass', ec[3] * tim, .8, ec[1] * rand(.8, 1.2), ec[2] * vol, null, 250, .02);
+        if (P.echo2 && !busy) this._nz(t + d + P.echo2 * rand(.8, 1.3), 'lowpass', ec[3] * .7 * tim, 0, ec[1] * .9, ec[2] * .45 * vol, null, 180, .04);
+      }
+      if (P.buzz && !busy) this._osc(t, 'sawtooth', 110 * pit, 70, .05, .04 * vol);
+      if (P.mech === 'pump'){ this._nz(t + .38, 'bandpass', 2400, 4, .04, .12); this._nz(t + .5, 'bandpass', 1800, 4, .05, .14); }
+      else if (P.mech === 'bolt'){ this._nz(t + .55, 'bandpass', 3200, 5, .035, .1); this._nz(t + .72, 'bandpass', 2600, 5, .04, .11); }
+      else if (P.mech === 'whoosh') this._nz(t, 'bandpass', 900, 1.2, .9, .3 * vol, null, 2600, .05);
+    }catch(e){}
+    return true;
   },
   hit(){ this.tone(1100, .05, 'square', .05, 600); },
   reload(){ this.tone(1500, .04, 'square', .07, 900); this.tone(900, .05, 'square', .08, 500, .28); },
@@ -57,25 +118,158 @@ const Snd = {
       this.tone(48, d * .7, 'sine', .25 * p, 30, delay);
     }catch(e){}
   },
-  // Pluie en continu : bruit filtré en boucle, niveau 0 (arrêt) à environ 1,5 (orage)
-  rainLvl: 0, rainSrc: null, rainGain: null,
+  /* ---------- Pluie et ambiances météo ----------
+     Bruit rose et bruit brun générés une fois en longs tampons de longueurs différentes (11,3 s et 13,7 s) :
+     joués ensemble avec des filtres qui dérivent lentement au hasard, la répétition ne s'entend pas.
+     Gouttes : petits « tic » aléatoires sur les toits (tôle) et « plic » dans les flaques, plus nombreux quand ça tombe fort.
+     Ambiances (setAmbience) : vent (rafales), oiseaux, grêle sur la tôle, criquets, cigales, grondement lointain.
+     Tout passe par ambBus (sous master). rainTick() est appelé à chaque image par rainLevel(). */
+  pink: null, brown: null, ambBus: null, rainLvl: 0, rainSrc: null, rainGain: null, rainNodes: null,
+  ambWant: { wind:0, birds:0, hail:0, crickets:0, cicadas:0, rumble:0 }, ambCur: null, ambNodes: null, ambNext: 0,
+  rainDrops: 0,
+  _ambReady(){
+    if (!this.ctx || !this.master) return false;
+    if (this.ambBus && this.ambBus.context !== this.ctx){ this.ambBus = null; this.rainNodes = null; this.ambNodes = null; this.rainSrc = null; this.rainGain = null; this.pink = this.brown = null; }
+    if (!this.ambBus){ this.ambBus = this.ctx.createGain(); this.ambBus.gain.value = 1; this.ambBus.connect(this.master); }
+    if (!this.pink){
+      // Bruit rose (filtre de Paul Kellet) et bruit brun (marche aléatoire amortie)
+      const sr = this.ctx.sampleRate, mk = (sec, fn) => { const n = Math.floor(sr * sec), b = this.ctx.createBuffer(1, n, sr); fn(b.getChannelData(0), n); return b; };
+      this.pink = mk(11.3, (d, n) => {
+        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+        for (let i = 0; i < n; i++){
+          const w = Math.random() * 2 - 1;
+          b0 = .99886 * b0 + w * .0555179; b1 = .99332 * b1 + w * .0750759; b2 = .969 * b2 + w * .153852;
+          b3 = .8665 * b3 + w * .3104856; b4 = .55 * b4 + w * .5329522; b5 = -.7616 * b5 - w * .016898;
+          d[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * .5362) * .11; b6 = w * .115926;
+        }
+      });
+      this.brown = mk(13.7, (d, n) => { let l = 0; for (let i = 0; i < n; i++){ l = (l + .02 * (Math.random() * 2 - 1)) / 1.02; d[i] = l * 3.5; } });
+    }
+    return true;
+  },
+  _loop(buf, rate){
+    const s = this.ctx.createBufferSource(); s.buffer = buf; s.loop = true; s.playbackRate.value = rate || 1;
+    s.start(this.ctx.currentTime, Math.random() * buf.duration); return s;
+  },
+  // Niveau de pluie : 0 (arrêt) à environ 1,5 (orage)
   rainLevel(v){
-    v = v || 0; if (!this.ctx){ this.rainLvl = 0; return; }
-    if (Math.abs(v - this.rainLvl) < .01 && (v === 0 || this.rainSrc)) return;
+    v = Math.max(0, +v || 0);
+    if (!this.ctx){ this.rainLvl = 0; return; }
     this.rainLvl = v;
-    const c = this.ctx, t = c.currentTime;
-    try{
-      if (v > 0 && !this.rainSrc){
-        const s = c.createBufferSource(); s.buffer = this.noise; s.loop = true;
-        const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 700;
-        const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 5200;
-        const g = c.createGain(); g.gain.value = 0.0001;
-        s.connect(hp); hp.connect(lp); lp.connect(g); g.connect(this.master); s.start(t);
-        this.rainSrc = s; this.rainGain = g;
+    try { this._rainTick(); this._ambTick(); } catch (e) { this.rainNodes = null; this.rainSrc = null; this.rainGain = null; }
+  },
+  _rainTick(){
+    const v = this.rainLvl, c = this.ctx;
+    if (v <= 0 && !this.rainNodes) return;
+    if (!this._ambReady()) return;
+    const t = c.currentTime;
+    if (v > 0 && !this.rainNodes){
+      const g = c.createGain(); g.gain.value = 0.0001; g.connect(this.ambBus);
+      // Nappe : bruit rose (sifflement de la pluie) et bruit brun (masse, grondement des grosses averses)
+      const ps = this._loop(this.pink, rand(.97, 1.03)), pf = c.createBiquadFilter(); pf.type = 'lowpass'; pf.frequency.value = 3200;
+      const ph = c.createBiquadFilter(); ph.type = 'highpass'; ph.frequency.value = 350;
+      const pg = c.createGain(); pg.gain.value = .9;
+      ps.connect(ph); ph.connect(pf); pf.connect(pg); pg.connect(g);
+      const bs = this._loop(this.brown, rand(.97, 1.03)), bf = c.createBiquadFilter(); bf.type = 'lowpass'; bf.frequency.value = 600;
+      const bg = c.createGain(); bg.gain.value = .5;
+      bs.connect(bf); bf.connect(bg); bg.connect(g);
+      this.rainNodes = { g, ps, pf, pg, bs, bf, bg, next:0, drift:0 };
+      this.rainSrc = ps; this.rainGain = g;
+    }
+    const N = this.rainNodes; if (!N) return;
+    N.g.gain.setTargetAtTime(v > 0 ? .11 * Math.min(v, 1.6) : 0.0001, t, .9);
+    if (v <= 0){
+      const n = N; this.rainNodes = null; this.rainSrc = null; this.rainGain = null;
+      try { n.ps.stop(t + 3); n.bs.stop(t + 3); } catch (e) {}
+      return;
+    }
+    // Filtres qui dérivent lentement (nouvelle cible toutes les 2 à 5 s, glissement doux)
+    if (t >= N.next){
+      N.next = t + rand(2, 5);
+      N.pf.frequency.setTargetAtTime(rand(2200, 4600) * (v > 1.2 ? 1.1 : 1), t, rand(1.5, 3));
+      N.pg.gain.setTargetAtTime(rand(.7, 1), t, rand(1, 2.5));
+      N.bf.frequency.setTargetAtTime(rand(350, 800), t, rand(1.5, 3));
+      N.bg.gain.setTargetAtTime((v > 1.2 ? .9 : .45) * rand(.75, 1.15), t, 2);
+    }
+    // Gouttes : rythme au hasard (loi exponentielle), jamais plus de quelques-unes par image
+    if (!N.drop) N.drop = t;
+    const rate = 6 + 22 * Math.min(v, 1.5);
+    let k = 0;
+    while (N.drop < t + .1 && k++ < 5){
+      const at = Math.max(t, N.drop);
+      if (Math.random() < .55) this._nz(at, 'bandpass', rand(2500, 6500), rand(6, 14), rand(.02, .05), rand(.03, .09) * Math.min(1, v), this.ambBus); // tic sur un toit
+      else this._osc(at, 'sine', rand(900, 2200), rand(2400, 3800), rand(.03, .06), rand(.015, .04) * Math.min(1, v), this.ambBus); // plic dans une flaque
+      this.rainDrops++;
+      N.drop += -Math.log(1 - Math.random()) / rate;
+    }
+    if (N.drop < t - .5) N.drop = t;
+  },
+  // Ambiance de la météo : niveaux de 0 à 1 (voir ambWant)
+  setAmbience(o){
+    const w = this.ambWant;
+    Object.keys(w).forEach(k => { w[k] = clamp(+((o && o[k]) || 0), 0, 1); });
+  },
+  _ambTick(){
+    const w = this.ambWant, c = this.ctx;
+    const any = w.wind > 0 || w.rumble > 0 || w.birds > 0 || w.hail > 0 || w.crickets > 0 || w.cicadas > 0;
+    if (!any && !this.ambNodes) return;
+    if (!this._ambReady()) return;
+    const t = c.currentTime;
+    if (!this.ambNodes && (w.wind > 0 || w.rumble > 0 || w.hail > 0)){
+      // Vent : bruit brun dans un passe-bande qui balaie (sifflement des rafales) ; grondement : brun très grave
+      const ws = this._loop(this.brown, rand(.9, 1.1)), wf = c.createBiquadFilter(); wf.type = 'bandpass'; wf.frequency.value = 400; wf.Q.value = 1.2;
+      const wg = c.createGain(); wg.gain.value = 0.0001; ws.connect(wf); wf.connect(wg); wg.connect(this.ambBus);
+      const rs = this._loop(this.brown, rand(.5, .6)), rf = c.createBiquadFilter(); rf.type = 'lowpass'; rf.frequency.value = 140;
+      const rg = c.createGain(); rg.gain.value = 0.0001; rs.connect(rf); rf.connect(rg); rg.connect(this.ambBus);
+      this.ambNodes = { ws, wf, wg, rs, rg, gust:0, hail:t, ev:t };
+    }
+    const A = this.ambNodes;
+    if (A){
+      if (t >= A.gust){ // rafale : nouvelle force et nouvelle hauteur au hasard
+        A.gust = t + rand(1.2, 4);
+        const g = rand(.45, 1.15);
+        A.wg.gain.setTargetAtTime(Math.max(0.0001, .32 * w.wind * g), t, rand(.5, 1.6));
+        A.wf.frequency.setTargetAtTime(rand(250, 900) * (.7 + .5 * g), t, rand(.6, 1.8));
+        A.rg.gain.setTargetAtTime(Math.max(0.0001, .5 * w.rumble * rand(.7, 1.1)), t, 1.5);
       }
-      if (this.rainGain) this.rainGain.gain.setTargetAtTime(v > 0 ? .07 * v : 0.0001, t, .8);
-      if (v <= 0 && this.rainSrc){ const s = this.rainSrc; this.rainSrc = null; this.rainGain = null; try{ s.stop(t + 3); }catch(e){} }
-    }catch(e){ this.rainSrc = null; this.rainGain = null; }
+      if (!any){
+        const n = A; this.ambNodes = null;
+        n.wg.gain.setTargetAtTime(0.0001, t, .5); n.rg.gain.setTargetAtTime(0.0001, t, .5);
+        try { n.ws.stop(t + 2.5); n.rs.stop(t + 2.5); } catch (e) {}
+        return;
+      }
+      // Grêle : impacts durs et nombreux sur la tôle (cliquetis métallique)
+      if (w.hail > 0){
+        let k = 0;
+        while (A.hail < t + .1 && k++ < 6){
+          const at = Math.max(t, A.hail);
+          this._nz(at, 'bandpass', rand(3000, 7000), rand(8, 18), rand(.015, .04), rand(.06, .14) * w.hail, this.ambBus);
+          if (Math.random() < .3) this._osc(at, 'triangle', rand(1800, 3400), rand(1500, 2800), rand(.05, .12), .025 * w.hail, this.ambBus);
+          A.hail += -Math.log(1 - Math.random()) / (35 * w.hail);
+        }
+        if (A.hail < t - .5) A.hail = t;
+      }
+    }
+    // Événements espacés : oiseaux, criquets, cigales
+    if (t < this.ambNext) return;
+    this.ambNext = t + rand(.25, .6);
+    if (w.birds > 0 && Math.random() < .35 * w.birds){ // gazouillis : 2 à 5 notes qui glissent
+      const n = 2 + Math.floor(Math.random() * 4), f = rand(2200, 4200), d = rand(.05, .09);
+      for (let i = 0; i < n; i++) this._osc(t + i * d * 1.3, 'sine', f * rand(.9, 1.15), f * rand(1.1, 1.4), d, .03 * w.birds, this.ambBus);
+    }
+    if (w.crickets > 0 && Math.random() < .5 * w.crickets){ // criquets : petites rafales de stridulations
+      const f = rand(4200, 4800);
+      for (let i = 0; i < 3; i++) this._osc(t + i * .045, 'triangle', f, f * .98, .03, .012 * w.crickets, this.ambBus);
+    }
+    if (w.cicadas > 0 && Math.random() < .25 * w.cicadas){ // cigales : bourdonnement aigu qui monte et descend
+      const o = c.createOscillator(), g = c.createGain(), m = c.createOscillator(), mg = c.createGain(), d = rand(1.2, 2.6);
+      o.type = 'sawtooth'; o.frequency.value = rand(5200, 6400); m.frequency.value = rand(38, 60); mg.gain.value = .006 * w.cicadas;
+      const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 6000; f.Q.value = 3;
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(.012 * w.cicadas, t + d * .4); g.gain.linearRampToValueAtTime(0.0001, t + d);
+      m.connect(mg); mg.connect(g.gain); o.connect(f); f.connect(g); g.connect(this.ambBus);
+      o.start(t); m.start(t); o.stop(t + d + .05); m.stop(t + d + .05);
+      this.ambNext = t + d * .8;
+    }
   },
 
   /* ---------- Musique générée (aucun fichier) ----------

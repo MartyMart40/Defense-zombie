@@ -27,7 +27,8 @@ const SHOT_SND = {
   minigun(){ Snd.burst(2600, .07, .22); Snd.tone(130, .06, 'sine', .14, 50); },
   rocket(){ Snd.burst(900, .55, .6); Snd.tone(240, .5, 'sawtooth', .1, 80); }
 };
-function shotSound(id){ if (SHOT_SND[id]) SHOT_SND[id](); else Snd.shot(id); }
+// Snd.shot (01-son.js) a un son en couches par arme ; SHOT_SND sert de secours pour une arme qu'il ne connaît pas
+function shotSound(id){ if (Snd.shot(id) === true) return; if (SHOT_SND[id]) SHOT_SND[id](); }
 let flashT = 0, hitmT = 0;
 let spin = 0; // montée en régime du minigun (0 à 1), tenue à jour par 20-armes.js
 function fire(){

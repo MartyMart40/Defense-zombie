@@ -380,3 +380,15 @@ body.touch .pkn.kf{ font-size:11px; }
 /* Sauvegarde */
 #scrSave .sav-aide{ font-size:14px; opacity:.8; }
 #savMsg{ min-height:1.4em; }
+
+/* Écritures du jeu : colonne à gauche, sous les infos de la partie (33-ecritures.js) */
+#ecrFeed{ position:fixed; left:calc(14px + env(safe-area-inset-left,0px)); top:max(200px, 34vh); z-index:5; pointer-events:none;
+  display:flex; flex-direction:column; align-items:flex-start; gap:3px; max-width:45vw; }
+.ecr{ font-weight:700; font-size:17px; line-height:1.2; color:var(--amber); text-shadow:0 2px 3px #000,0 0 6px rgba(0,0,0,.6);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; transition:opacity .25s, transform .25s; }
+.ecr.head{ color:#ffdf8a; font-size:19px; }
+.ecr.weak{ color:#9dff5a; }
+.ecr.pop{ animation:ecrPop .22s ease-out; }
+.ecr.out{ opacity:0; transform:translateX(-12px); }
+@keyframes ecrPop{ from{ opacity:0; transform:translateX(-14px); } to{ opacity:1; transform:none; } }
+@media (orientation:landscape) and (max-height:500px){ #ecrFeed{ top:max(150px, 40vh); } .ecr{ font-size:15px; } .ecr.head{ font-size:16px; } }

@@ -96,8 +96,11 @@
       var h0 = z.hp; __tf.tirer('pistol'); var dPlaque = h0 - z.hp, stun = z.stunT;
       __tf.viserM(z.meshes[1]); var corps = __tf.premier(), corpsOk = !!corps && !corps.userData.weak && !corps.userData.head;
       h0 = z.hp; __tf.tirer(); var dCorps = h0 - z.hp;
-      var texte = false; var fl = document.getElementById('floats');
-      if (fl && fl.children) for (var i = 0; i < fl.children.length; i++) if (/Point faible/.test(fl.children[i].textContent) && /weak/.test(fl.children[i].className)) texte = true;
+      var texte = false;
+      ['floats', 'ecrFeed'].forEach(function(id){ // ecrFeed : colonne de gauche (33-ecritures.js)
+        var fl = document.getElementById(id);
+        if (fl && fl.children) for (var i = 0; i < fl.children.length; i++) if (/Point faible/.test(fl.children[i].textContent) && /weak/.test(fl.children[i].className)) texte = true;
+      });
       clearZombies();
       return { vise: vise, corpsOk: corpsOk, dPlaque: dPlaque, dCorps: dCorps, stun: stun, wk: weakT > 0, texte: texte };
     });

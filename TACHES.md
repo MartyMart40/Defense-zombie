@@ -19,6 +19,8 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 | # | Tâche | Date |
 |---|-------|------|
+| 31 | Écritures du jeu (Tête !, +15 $, Point faible...) dans une colonne à gauche au lieu d'au-dessus du viseur (js/33-ecritures.js) | 2026-11-03 |
+| 30 | Chaque survivant devient un tireur sur le rebord du toit (js/23-rue.js) | 2026-11-03 |
 | 29 | Survivants : revenu passé de 1 $ à 10 $ par minute chacun (js/23-rue.js) | 2026-11-03 |
 | 28 | Sauvegarde dans un fichier (OneDrive) : écran Sauvegarde sur l'écran titre, enregistrer (partage sur cell, téléchargement sur ordi) et charger avec vérification (js/32-sauvegarde.js) | 2026-11-03 |
 | 25 | Survivant : invincible jusqu'aux trois quarts du trajet, attrapé là seulement si un poursuivant vit encore ; poursuivants plus lents au départ ; flèche et halo verts visibles de loin (js/23-rue.js) | 2026-11-03 |
@@ -74,5 +76,7 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 - Survivant : il meurt aux trois quarts du trajet si un poursuivant vit encore (plus de minuterie de 5 s). Poursuivants à 78 % de sa vitesse au départ, 94 % aux trois quarts.
 - Météo : beau temps environ 70 % du temps, pluie et orage environ 7 à 10 %, tornade environ 1 à 2 %. À ajuster en jouant.
 - Sons : écouter les tirs, la pluie, le vent, la grêle, les oiseaux et les cigales sur le cell (le volume des ambiances n'a pas été réglé à l'oreille).
+
+- Tireurs survivants : 1 tir toutes les 1,5 s environ, 22 dégâts × force de la vague, portée 75 m. À ajuster en jouant.
 
 ## Idées en vrac

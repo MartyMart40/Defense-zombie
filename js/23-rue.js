@@ -503,7 +503,7 @@ window.__rue = { RUE, RUE_CFG, RUE_BONUS, rueRoot, rueWave, rueStep, rueClear, r
 // Il est invincible (ni agrippé à mort, ni rattrapé) tant qu'il n'a pas fait les trois quarts du trajet
 // entre son point d'apparition et la barricade. Rendu là : si un poursuivant vit encore, il l'attrape ;
 // sinon il est sauvé et reste sur le toit pour le reste de la partie. Un tir du joueur le tue toujours (pénalité).
-// Chaque survivant sur le toit rapporte SURV_CFG.income $ par minute (versé à la minute).
+// Chaque survivant sur le toit rapporte SURV_CFG.income $ par minute (versé à la minute) et tire sur les zombies.
 const SURV_CFG = { chasers:[2, 3], mark:.75, spd0:.78, spd1:.94, income:10, period:60, maxShown:8 };
 const SURV = { chasers:[], chasing:false, roof:[], payT:0 };
 function survHUDEl(id){ return document.getElementById(id); }
@@ -527,20 +527,64 @@ function survIncomeTxt(){
   const txt = '👥 ' + n + ' survivant' + (n > 1 ? 's' : '') + ' · +' + fmt(n * SURV_CFG.income) + '/min';
   if (el.textContent !== txt) el.textContent = txt;
 }
-// Petites silhouettes sur le toit, derrière toi (visibles en tournant la tête)
-const survRoofMat = [lam(0xd8d0b8), lam(0x6a8ab0), lam(0x3a3a44), lam(0xc8a080)];
+// Tireurs sur le toit : chaque survivant sauvé se poste sur le rebord, de part et d'autre de toi, et tire sur les zombies.
+// Au-delà de SURV_CFG.maxShown, les survivants en plus renforcent les tirs des tireurs visibles.
+const SURV_GUN = { rate:1.5, dmg:22, range:-75, spread:.5 }; // s entre deux tirs, dégâts (× force de la vague), portée (z), écart du rythme
+const SURV_X = [4.2, -5.6, 6.4, -7.6, 8.6, -9.6, 10.6, -11.6];
+const survRoofMat = [lam(0xd8d0b8), lam(0x6a8ab0), lam(0x3a3a44), lam(0xc8a080), lam(0x2a2826)];
 const survRoot = new THREE.Group(); scene.add(survRoot);
+const survFlashMat = new THREE.SpriteMaterial({ map:glowTex, color:0xffc070, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, fog:false });
 function survFigure(i){
   const g = new THREE.Group();
-  const shirt = new THREE.Mesh(new THREE.BoxGeometry(.5, .7, .3), survRoofMat[i % 2 ? 1 : 0]); shirt.position.y = 1.25;
-  const legs = new THREE.Mesh(new THREE.BoxGeometry(.42, .85, .26), survRoofMat[2]); legs.position.y = .45;
-  const head = new THREE.Mesh(new THREE.BoxGeometry(.32, .34, .32), survRoofMat[3]); head.position.y = 1.8;
-  g.add(shirt, legs, head);
-  const side = i % 2 ? 1 : -1, k = Math.floor(i / 2);
-  g.position.set(side * (2.2 + k * .9), 8.6, -1.2 + k * 1.1);
-  g.rotation.y = Math.PI + side * .4;
-  g.userData.ph = Math.random() * 6;
+  const body = new THREE.Group(); g.add(body);
+  const shirt = new THREE.Mesh(RUEG.box, survRoofMat[i % 2 ? 1 : 0]); shirt.scale.set(.5, .7, .3); shirt.position.y = 1.25;
+  const legs = new THREE.Mesh(RUEG.box, survRoofMat[2]); legs.scale.set(.42, .85, .26); legs.position.y = .45;
+  const head = new THREE.Mesh(RUEG.box, survRoofMat[3]); head.scale.set(.32, .34, .32); head.position.y = 1.8;
+  body.add(shirt, legs, head);
+  // Bras tendus et fusil vers l'avant (-z)
+  const gun = new THREE.Group(); gun.position.set(.12, 1.42, -.1); body.add(gun);
+  const arms = new THREE.Mesh(RUEG.box, survRoofMat[i % 2 ? 1 : 0]); arms.scale.set(.42, .12, .4); arms.position.set(-.1, -.05, -.18); gun.add(arms);
+  const barrel = new THREE.Mesh(RUEG.box, survRoofMat[4]); barrel.scale.set(.07, .09, .8); barrel.position.set(0, .04, -.45); gun.add(barrel);
+  const flash = new THREE.Sprite(survFlashMat); flash.position.set(0, .04, -.92); flash.scale.set(.55, .55, 1); flash.visible = false; gun.add(flash);
+  g.position.set(SURV_X[i % SURV_X.length], 8.6, -3.25);
+  g.userData = { cd:rand(.3, SURV_GUN.rate), flashT:0, rec:0, body, gun, flash, yaw:0 };
   survRoot.add(g); return g;
+}
+const SURV_A = new THREE.Vector3(), SURV_B = new THREE.Vector3();
+// Cible : un des zombies les plus proches de la barricade (au hasard parmi les 3 premiers, pour répartir les tirs)
+function survTarget(){
+  let a = null, b = null, c = null;
+  for (const z of zombies){
+    if (z.dead || z.hp <= 0 || z.g.position.z < SURV_GUN.range) continue;
+    if (!a || z.g.position.z > a.g.position.z){ c = b; b = a; a = z; }
+    else if (!b || z.g.position.z > b.g.position.z){ c = b; b = z; }
+    else if (!c || z.g.position.z > c.g.position.z) c = z;
+  }
+  const l = [a, b, c].filter(Boolean); return l.length ? l[Math.floor(Math.random() * l.length)] : null;
+}
+let survShots = 0;
+function survShoot(dt){
+  const n = (S && S.survivors) || 0; if (!n || !SURV.roof.length) return;
+  const shown = Math.min(n, SURV_CFG.maxShown), boost = n / shown; // survivants en plus : tirs renforcés
+  for (let i = 0; i < shown && i < SURV.roof.length; i++){
+    const g = SURV.roof[i], u = g.userData;
+    if (u.flashT > 0){ u.flashT -= dt; if (u.flashT <= 0) u.flash.visible = false; }
+    if (u.rec > 0){ u.rec = Math.max(0, u.rec - dt * 4); u.gun.position.z = -.1 + u.rec * .12; }
+    u.cd -= dt; if (u.cd > 0) continue;
+    const z = survTarget(); if (!z){ u.cd = .3; continue; }
+    u.cd = SURV_GUN.rate * rand(1 - SURV_GUN.spread / 2, 1 + SURV_GUN.spread / 2);
+    const ZT = ZTYPES[z.type] || {};
+    SURV_B.set(z.g.position.x, z.g.position.y + (z.aimY != null ? z.aimY : 1.1 * (ZT.scale || 1)), z.g.position.z);
+    const dx = SURV_B.x - g.position.x, dz = SURV_B.z - g.position.z;
+    u.yaw = Math.atan2(-dx, -dz); g.rotation.y = u.yaw;
+    u.gun.rotation.x = Math.atan2(SURV_B.y - (g.position.y + 1.42), Math.sqrt(dx * dx + dz * dz));
+    g.updateMatrixWorld(true); u.flash.getWorldPosition(SURV_A);
+    u.flash.visible = true; u.flashT = .06; u.rec = 1;
+    if (typeof cpnTracer === 'function') cpnTracer(SURV_A, SURV_B, .04, .06);
+    damage(z, SURV_GUN.dmg * ruePower() * boost, false, SURV_B.clone());
+    survShots++;
+    if (typeof Snd === 'object' && Snd.burst && Math.random() < .6) Snd.burst(rand(1800, 2600), .06, .07);
+  }
 }
 function survRoofSync(){
   const n = Math.min(SURV_CFG.maxShown, (S && S.survivors) || 0);
@@ -621,9 +665,10 @@ try { const _b = update; update = function(dt){ const r = _b.apply(this, argumen
     if (SURV.payT >= SURV_CFG.period){ SURV.payT -= SURV_CFG.period; const pay = S.survivors * SURV_CFG.income; S.money += pay; S.earned += pay;
       RUE_V.set(0, 9.6, -6); rueFloat('Survivants +' + fmt(pay), RUE_V, '#9aff70', false); }
   }
+  if (state === 'playing') survShoot(dt);
   return r; }; } catch (e) {}
 try { const _b = updateHUD; updateHUD = function(){ const r = _b.apply(this, arguments); survIncomeTxt(); return r; }; } catch (e) {}
 try { const _b = newGame; newGame = function(){ const r = _b.apply(this, arguments); if (S) S.survivors = 0; SURV.payT = 0; survClearChase(); survRoofSync(); survIncomeTxt(); return r; }; } catch (e) {}
 const _survClear = rueClear;
 rueClear = function(){ const r = _survClear.apply(this, arguments); survClearChase(); return r; };
-window.__surv = { SURV, SURV_CFG, survRoofSync, survLeft };
+window.__surv = { SURV, SURV_CFG, SURV_GUN, survRoofSync, survLeft, survShoot, get shots(){ return survShots; } };

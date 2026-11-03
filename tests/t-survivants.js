@@ -109,4 +109,27 @@
     egal(r.st, 'dead', 'Le tir doit le tuer');
     ok(r.pen > 0, 'Pénalité : ' + r.pen);
   });
+  test('Survivants : chaque survivant devient un tireur sur le toit', () => {
+    if (!pret()) ignorer('Survivants absents');
+    partie();
+    const r = J(function(){
+      S.survivors = 2; __surv.survRoofSync();
+      var roof = __surv.SURV.roof.filter(function(g){ return g.visible; });
+      var o = { n: roof.length, devant: roof.every(function(g){ return g.position.z < EYE.z + .5 && Math.abs(g.position.x) < 15 && Math.abs(g.position.x) > 3; }) };
+      var z = __t.placer('walker', 0, -30); z.hp = z.maxHp = 1e6; z.speed = 0;
+      var s0 = __surv.shots, hp0 = z.hp;
+      for (var i = 0; i < 30 * 4; i++) update(1 / 30);
+      o.tirs = __surv.shots - s0; o.degats = hp0 - z.hp;
+      var z2 = __t.placer('walker', 2, -40); clearZombies(); var s1 = __surv.shots;
+      for (var k = 0; k < 30 * 2; k++) update(1 / 30);
+      o.sansCible = __surv.shots - s1;
+      S.survivors = 0; __surv.survRoofSync();
+      return o;
+    });
+    egal(r.n, 2, 'Tireurs visibles sur le toit');
+    ok(r.devant, 'Les tireurs doivent être sur le rebord, de chaque côté');
+    ok(r.tirs >= 4, 'Tirs en 4 s pour 2 survivants : ' + r.tirs);
+    ok(r.degats > 0, 'Les tirs doivent blesser le zombie');
+    egal(r.sansCible, 0, 'Pas de tir sans zombie');
+  });
 })();

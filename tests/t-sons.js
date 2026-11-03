@@ -117,7 +117,7 @@
     ok(r.moteur && r.boucle, 'Moteur et rafale en boucle');
     ok(r.tir, 'La rafale doit jouer pendant le tir');
     ok(r.duree >= .9, 'Tampon de rafale : ' + r.duree + ' s');
-    ok(r.pics >= 40, 'Coups par seconde dans la rafale : ' + r.pics);
+    ok(r.pics >= 55, 'Coups par seconde dans la rafale (vraie rotative : 50 à 100) : ' + r.pics);
     ok(r.shotRend, 'Snd.shot(minigun) compte le coup');
     ok(r.arret, 'Le son s’arrête une fois les canons arrêtés');
   });

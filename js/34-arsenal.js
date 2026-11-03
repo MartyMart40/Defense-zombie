@@ -402,6 +402,9 @@ try { const _b = wupgHTML; wupgHTML = function(){ const h = _b.apply(this, argum
   });
 })();
 
+/* ---------- Secousse de l'écran par arme (les grosses armes secouent plus) ---------- */
+// Valeur de shake (15-boucle.js : décalage de la caméra, amorti en environ 0,2 s). Un peu moins en visée.
+const ARS_SHAKE = { shotgun:.25, sniper:.3, minigun:.28, rocket:.6, mg50:.32, laser:.06, railgun:.7, gl:.42, arc:.2 };
 /* ---------- Crochets ---------- */
 try {
   const _b = fire;
@@ -410,6 +413,7 @@ try {
     const first = W.chain ? arsFirst() : null;
     const r = _b.apply(this, arguments);
     if (r === false) return r;
+    if (ARS_SHAKE[id]) shake = Math.max(shake, ARS_SHAKE[id] * (zoomed ? .7 : 1) * (accMul(id, 'recoil') < 1 ? .75 : 1)); // un trépied ou une poignée calme aussi l'écran
     const rm = accMul(id, 'recoil'); if (rm < 1) recoilAcc = Math.max(0, recoilAcc - W.recoil * (zoomed ? .6 : 1) * (1 - rm));
     if (W.beam){ armMuzzle(arsA); arsBeam(arsA, arsEnd(arsB), W.beam.c, W.beam.w, W.beam.life); }
     else if (!W.kind && !W.chain && W.pellets === 1 && Math.random() < (W.rate >= 8 ? .45 : .8)){
@@ -427,5 +431,5 @@ try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, argum
 try { const _b = clearZombies; clearZombies = function(){ const r = _b.apply(this, arguments); arsFxClear(); return r; }; } catch (e) {}
 
 // Accès pour les tests automatiques
-window.__ars = { ARS_W, ACC, ACC_ORDER, accName, accMul, accAdd, accBuy, accCost, accOwned, accSync, arsChain, arsFirst,
+window.__ars = { ARS_SHAKE, ARS_W, ACC, ACC_ORDER, accName, accMul, accAdd, accBuy, accCost, accOwned, accSync, arsChain, arsFirst,
   get beams(){ return arsBeamsN; }, get arcs(){ return arsArcN; } };

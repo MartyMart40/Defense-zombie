@@ -178,17 +178,22 @@ const Snd = {
   mg: null, mgLast: 0, mgFiring: false,
   _mgBuf(){
     if (this._mgB && this._mgB.sampleRate === this.ctx.sampleRate) return this._mgB;
+    // Une vraie M134 tire 50 à 100 coups par seconde : les détonations se fondent en un rugissement déchiré.
+    // Chaque coup : claquement (bruit très court), coup de bélier grave (65 à 90 Hz) et corps médium ; environ 70 par seconde.
     const sr = this.ctx.sampleRate, n = sr, b = this.ctx.createBuffer(1, n, sr), d = b.getChannelData(0);
-    let tt = 0;
+    let tt = 0, lp = 0;
     while (tt < 1){
-      const k0 = Math.floor(tt * sr), a = rand(.65, 1), f = rand(95, 135);
-      for (let j = 0; j < sr * .03 && k0 + j < n; j++){
-        const u = j / sr;
-        d[k0 + j] += (Math.random() * 2 - 1) * a * Math.exp(-u / .0035) + Math.sin(u * f * 6.283) * .55 * a * Math.exp(-u / .012);
+      const k0 = Math.floor(tt * sr), a = rand(.7, 1), f = rand(65, 90), fm = rand(380, 520);
+      for (let j = 0; j < sr * .045 && k0 + j < n; j++){
+        const u = j / sr, w = Math.random() * 2 - 1;
+        lp += (w - lp) * .25; // bruit adouci pour le corps
+        d[k0 + j] += w * a * Math.exp(-u / .004) + lp * 1.4 * a * Math.exp(-u / .012)
+          + Math.sin(u * f * 6.283) * 1.1 * a * Math.exp(-u / .022) + Math.sin(u * fm * 6.283) * .3 * a * Math.exp(-u / .008);
       }
-      tt += rand(.016, .02);
+      tt += rand(.0128, .0158);
     }
-    for (let i = 0; i < n; i++) d[i] = Math.max(-1, Math.min(1, d[i] * .7));
+    // Saturation douce : le son reste plein et fort sans écrêter
+    for (let i = 0; i < n; i++) d[i] = Math.tanh(d[i] * 1.6) * .9;
     return (this._mgB = b);
   },
   mgTick(sp, firing){
@@ -197,21 +202,35 @@ const Snd = {
     sp = Math.max(0, Math.min(1, +sp || 0)); firing = !!firing;
     try {
       if (!this.mg && (sp > 0 || firing)){
+        // Moteur électrique (sifflement de rotation)
         const mo = c.createOscillator(), m2 = c.createOscillator(), mf = c.createBiquadFilter(), mgn = c.createGain();
         mo.type = 'sawtooth'; m2.type = 'triangle'; mf.type = 'lowpass'; mf.frequency.value = 1600; mgn.gain.value = 0.0001;
         mo.connect(mf); m2.connect(mf); mf.connect(mgn); mgn.connect(this.master);
-        const bs = c.createBufferSource(); bs.buffer = this._mgBuf(); bs.loop = true;
-        const bf = c.createBiquadFilter(); bf.type = 'lowpass'; bf.frequency.value = 4500;
-        const bg = c.createGain(); bg.gain.value = 0.0001; bs.connect(bf); bf.connect(bg); bg.connect(this._fx() || this.master);
-        mo.start(t); m2.start(t); bs.start(t, Math.random());
-        this.mg = { mo, m2, mgn, bs, bg, idle:0 };
+        // Rafale : deux lectures décalées du même tampon (gauche et droite), compresseur pour le volume, grognement grave
+        const comp = c.createDynamicsCompressor(); comp.threshold.value = -20; comp.ratio.value = 5; comp.attack.value = .003; comp.release.value = .12;
+        const bg = c.createGain(); bg.gain.value = 0.0001;
+        const bf = c.createBiquadFilter(); bf.type = 'lowpass'; bf.frequency.value = 6000;
+        const srcs = [];
+        [[-.35, 1, 0], [.35, .985, .37]].forEach(o => {
+          const bs = c.createBufferSource(); bs.buffer = this._mgBuf(); bs.loop = true; bs.playbackRate.value = o[1];
+          let node = bs;
+          if (c.createStereoPanner){ const pn = c.createStereoPanner(); pn.pan.value = o[0]; bs.connect(pn); node = pn; }
+          node.connect(bf); bs.start(t, (Math.random() + o[2]) % 1); srcs.push(bs);
+        });
+        const sub = c.createOscillator(), sf = c.createBiquadFilter(), sg = c.createGain();
+        sub.type = 'square'; sub.frequency.value = 70; sf.type = 'lowpass'; sf.frequency.value = 160; sg.gain.value = 0.0001;
+        sub.connect(sf); sf.connect(sg); sg.connect(comp);
+        bf.connect(comp); comp.connect(bg); bg.connect(this._fx() || this.master);
+        mo.start(t); m2.start(t); sub.start(t);
+        this.mg = { mo, m2, mgn, bs:srcs[0], srcs, bg, sub, sg, idle:0 };
       }
       const M = this.mg; if (!M) return;
       M.mo.frequency.setTargetAtTime(90 + 520 * sp, t, .05); M.m2.frequency.setTargetAtTime(180 + 1500 * sp, t, .05);
       M.mgn.gain.setTargetAtTime(sp > 0 ? .02 + .05 * sp : 0.0001, t, .06);
-      M.bg.gain.setTargetAtTime(firing ? .5 : 0.0001, t, firing ? .006 : .03);
-      if (firing && Math.random() < .05) M.bs.playbackRate.setTargetAtTime(rand(.96, 1.05), t, .2);
-      if (this.mgFiring && !firing) this._nz(t + .02, 'bandpass', 800, .8, .7, .16, this._fx(), 200, .02); // écho de la rafale
+      M.bg.gain.setTargetAtTime(firing ? .95 : 0.0001, t, firing ? .005 : .03);
+      M.sg.gain.setTargetAtTime(firing ? .35 : 0.0001, t, firing ? .01 : .03);
+      if (firing && Math.random() < .05){ const r = rand(.97, 1.04); M.srcs.forEach((s, k) => s.playbackRate.setTargetAtTime(r * (k ? .985 : 1), t, .2)); M.sub.frequency.setTargetAtTime(66 + 8 * Math.random(), t, .1); }
+      if (this.mgFiring && !firing){ const o = this._fx(); this._nz(t + .02, 'bandpass', 700, .8, 1, .3, o, 160, .02); this._osc(t + .02, 'sine', 70, 35, .5, .25, o); } // écho de la rafale dans la rue
       this.mgFiring = firing;
       if (sp <= 0 && !firing){ M.idle += 1; if (M.idle > 90) this._mgStop(); } else M.idle = 0;
     } catch (e) { this.mg = null; }
@@ -219,7 +238,7 @@ const Snd = {
   _mgStop(){
     const M = this.mg; this.mg = null; this.mgFiring = false; if (!M || !this.ctx) return;
     const t = this.ctx.currentTime;
-    try { M.mgn.gain.setTargetAtTime(0.0001, t, .05); M.bg.gain.setTargetAtTime(0.0001, t, .02); M.mo.stop(t + .4); M.m2.stop(t + .4); M.bs.stop(t + .4); } catch (e) {}
+    try { M.mgn.gain.setTargetAtTime(0.0001, t, .05); M.bg.gain.setTargetAtTime(0.0001, t, .02); [M.mo, M.m2, M.sub].concat(M.srcs || [M.bs]).forEach(o => o.stop(t + .4)); } catch (e) {}
   },
   // Tonnerre : grondement grave, un peu après l'éclair (delay en secondes)
   thunder(delay, power){

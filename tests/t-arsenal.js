@@ -141,4 +141,20 @@
     egal(r.nomSniper, 'Bipied', 'Nom sur le sniper'); egal(r.nomMg, 'Trépied', 'Nom sur la .50');
     ok(Object.keys(r).every(k => typeof r[k] === 'string' || r[k].indexOf('flamer') < 0), 'Aucun accessoire sur le lance-flammes');
   });
+
+  test('Arsenal : les grosses armes secouent l’écran, plus que les petites', () => {
+    exiger(); partie();
+    const r = J(function(){
+      var o = {};
+      ['pistol', 'rifle', 'minigun', 'mg50', 'gl', 'rocket', 'railgun'].forEach(function(id){
+        equip(id); camera.position.copy(EYE); spin = 1; reloadT = 0; cool = 0; zoomed = false; shake = 0; S.ammo[id] = magSize(id); fire(); o[id] = shake;
+      });
+      equip('mg50'); __ars.accBuy('mg50', 'bipod'); shake = 0; cool = 0; fire(); o.trepied = shake;
+      return o;
+    });
+    ok(r.pistol < .1 && r.rifle < .1, 'Petites armes : presque pas de secousse (' + r.pistol + ', ' + r.rifle + ')');
+    ['minigun', 'mg50', 'gl', 'rocket', 'railgun'].forEach(id => ok(r[id] >= .25, id + ' : secousse ' + r[id]));
+    ok(r.railgun > r.mg50 && r.rocket > r.minigun, 'Plus l’arme est grosse, plus ça secoue');
+    ok(r.trepied < r.mg50, 'Le trépied calme la secousse');
+  });
 })();

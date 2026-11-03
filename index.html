@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20261102165126">
+<link rel="stylesheet" href="css/style.css?v=20261103004804">
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -54,6 +54,7 @@
     <button class="ghost defi-btn" id="btnDefiTitle">Défi du jour</button>
     <button class="ghost" id="btnAtelierTitle">Atelier</button>
     <button class="ghost" id="btnSuccesTitle">Succès</button>
+    <button class="ghost" id="btnSaveTitle">Sauvegarde (OneDrive)</button>
     <button class="ghost" id="btnFullTitle">Plein écran</button>
     <div class="best" id="bestTxt"></div>
   </div>
@@ -95,6 +96,19 @@
     <h3>Barricade</h3>
     <div id="shopWall"></div>
     <button class="big" id="btnNext">Lancer la vague 2</button>
+  </div>
+</section>
+
+<section id="scrSave" class="screen hide">
+  <div class="panel">
+    <h2 class="title sm">Sauvegarde</h2>
+    <p class="lead" id="savNow"></p>
+    <button class="big" id="btnSaveExport">Enregistrer dans un fichier</button>
+    <button class="ghost" id="btnSaveImport">Charger un fichier</button>
+    <input type="file" id="savFile" accept=".json,application/json" hidden>
+    <p class="lead" id="savMsg" aria-live="polite"></p>
+    <p class="lead sav-aide">Sur le cell : « Enregistrer », puis choisis OneDrive et remplace l’ancien fichier. Pour charger, choisis OneDrive dans la liste et touche le fichier.<br>Sur l’ordi : le fichier va dans Téléchargements, place-le dans ton dossier OneDrive. Pour charger, prends-le dans ce dossier.<br>Pense à enregistrer avant de changer d’appareil.</p>
+    <button class="ghost" id="btnSaveBack">Retour</button>
   </div>
 </section>
 
@@ -155,37 +169,38 @@
 <div id="msNote" aria-live="polite"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/00-base.js?v=20261102165126"></script>
-<script src="js/01-son.js?v=20261102165126"></script>
-<script src="js/02-villes.js?v=20261102165126"></script>
-<script src="js/03-scene.js?v=20261102165126"></script>
-<script src="js/04-arme-en-main.js?v=20261102165126"></script>
-<script src="js/05-particules.js?v=20261102165126"></script>
-<script src="js/06-donnees.js?v=20261102165126"></script>
-<script src="js/07-zombies.js?v=20261102165126"></script>
-<script src="js/08-tir.js?v=20261102165126"></script>
-<script src="js/09-vagues.js?v=20261102165126"></script>
-<script src="js/10-boutique.js?v=20261102165126"></script>
-<script src="js/11-hud.js?v=20261102165126"></script>
-<script src="js/12-souris.js?v=20261102165126"></script>
-<script src="js/13-tactile.js?v=20261102165126"></script>
-<script src="js/14-menus.js?v=20261102165126"></script>
-<script src="js/15-boucle.js?v=20261102165126"></script>
-<script src="js/16-atelier.js?v=20261102165126"></script>
-<script src="js/17-defenses.js?v=20261102165126"></script>
-<script src="js/18-zombies-types.js?v=20261102165126"></script>
-<script src="js/19-boss.js?v=20261102165126"></script>
-<script src="js/20-armes.js?v=20261102165126"></script>
-<script src="js/22-ambiance.js?v=20261102165126"></script>
-<script src="js/21-pouvoirs.js?v=20261102165126"></script>
-<script src="js/23-rue.js?v=20261102165126"></script>
-<script src="js/25-defi.js?v=20261102165126"></script>
-<script src="js/26-combos.js?v=20261102165126"></script>
-<script src="js/24-compagnon.js?v=20261102165126"></script>
-<script src="js/27-perf.js?v=20261102165126"></script>
-<script src="js/28-infini.js?v=20261102165126"></script>
-<script src="js/29-reperes.js?v=20261102165126"></script>
-<script src="js/30-missions.js?v=20261102165126"></script>
-<script src="js/31-punch.js?v=20261102165126"></script>
+<script src="js/00-base.js?v=20261103004804"></script>
+<script src="js/01-son.js?v=20261103004804"></script>
+<script src="js/02-villes.js?v=20261103004804"></script>
+<script src="js/03-scene.js?v=20261103004804"></script>
+<script src="js/04-arme-en-main.js?v=20261103004804"></script>
+<script src="js/05-particules.js?v=20261103004804"></script>
+<script src="js/06-donnees.js?v=20261103004804"></script>
+<script src="js/07-zombies.js?v=20261103004804"></script>
+<script src="js/08-tir.js?v=20261103004804"></script>
+<script src="js/09-vagues.js?v=20261103004804"></script>
+<script src="js/10-boutique.js?v=20261103004804"></script>
+<script src="js/11-hud.js?v=20261103004804"></script>
+<script src="js/12-souris.js?v=20261103004804"></script>
+<script src="js/13-tactile.js?v=20261103004804"></script>
+<script src="js/14-menus.js?v=20261103004804"></script>
+<script src="js/15-boucle.js?v=20261103004804"></script>
+<script src="js/16-atelier.js?v=20261103004804"></script>
+<script src="js/17-defenses.js?v=20261103004804"></script>
+<script src="js/18-zombies-types.js?v=20261103004804"></script>
+<script src="js/19-boss.js?v=20261103004804"></script>
+<script src="js/20-armes.js?v=20261103004804"></script>
+<script src="js/22-ambiance.js?v=20261103004804"></script>
+<script src="js/21-pouvoirs.js?v=20261103004804"></script>
+<script src="js/23-rue.js?v=20261103004804"></script>
+<script src="js/25-defi.js?v=20261103004804"></script>
+<script src="js/26-combos.js?v=20261103004804"></script>
+<script src="js/24-compagnon.js?v=20261103004804"></script>
+<script src="js/27-perf.js?v=20261103004804"></script>
+<script src="js/28-infini.js?v=20261103004804"></script>
+<script src="js/29-reperes.js?v=20261103004804"></script>
+<script src="js/30-missions.js?v=20261103004804"></script>
+<script src="js/31-punch.js?v=20261103004804"></script>
+<script src="js/32-sauvegarde.js?v=20261103004804"></script>
 </body>
 </html>

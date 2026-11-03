@@ -31,6 +31,7 @@
       for (var i = 0; i < 30 * 40; i++) __amb.frame(1 / 30); // 40 s
       var n = __amb.strikes - s0;
       var B = __amb.AMB.base, cur = __amb.AMB.cur.hemi;
+      __amb.AMB.stormT = 1e9; // pas d'éclair naturel pendant la mesure (sinon le test échoue au hasard)
       __amb.strike(); __amb.frame(.01);
       var flash = B.hemi ? B.hemi.o.intensity : 0;
       for (var k = 0; k < 60; k++) __amb.frame(1 / 30);

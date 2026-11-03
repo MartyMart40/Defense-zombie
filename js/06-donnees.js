@@ -138,8 +138,8 @@ const wReload = id => WEAPONS[id].reload * Math.max(.4, 1 - .12 * wl(id, 'reload
 const wPierce = id => WEAPONS[id].pierce + wl(id, 'pierce') + (typeof accAdd === 'function' ? accAdd(id, 'pierce') : 0);
 const wPellets = id => WEAPONS[id].pellets + 2 * wl(id, 'pellets');
 const wSpread = id => WEAPONS[id].spread * Math.max(.2, 1 - .2 * wl(id, 'spread')) * accK(id, 'spread');
-const wBurn = id => (WEAPONS[id].burn || 0) * (1 + .3 * wl(id, 'burn'));
-const wBurnDps = id => (WEAPONS[id].burnDps || 0) * (1 + .15 * wl(id, 'burn')) * (1 + .15 * wl(id, 'dmg')) * dmgMult();
+const wBurn = id => (WEAPONS[id].burn || 0) * (1 + .3 * wl(id, 'burn')) * accK(id, 'burn');
+const wBurnDps = id => (WEAPONS[id].burnDps || 0) * (1 + .15 * wl(id, 'burn')) * (1 + .15 * wl(id, 'dmg')) * dmgMult() * accK(id, 'burnDps');
 const wSpin = id => (WEAPONS[id].spin || 0) * Math.max(.2, 1 - .18 * wl(id, 'spin'));
 const wRadius = id => (WEAPONS[id].radius || 0) * (1 + .12 * wl(id, 'radius'));
 const dmgMult = () => (1 + .12 * S.upg.dmg) * (1 + .06 * T('marksman'));

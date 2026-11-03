@@ -139,7 +139,8 @@
     };
     Object.keys(jamais).forEach(k => jamais[k].forEach(id => ok(r[k].indexOf(id) < 0, k + ' ne devrait pas aller sur ' + id)));
     egal(r.nomSniper, 'Bipied', 'Nom sur le sniper'); egal(r.nomMg, 'Trépied', 'Nom sur la .50');
-    ok(Object.keys(r).every(k => typeof r[k] === 'string' || r[k].indexOf('flamer') < 0), 'Aucun accessoire sur le lance-flammes');
+    ['ftank', 'fwide', 'flong', 'fnapalm', 'fpump'].forEach(k => egal((r[k] || []).join(','), 'flamer', k + ' : seulement sur le lance-flammes'));
+    ['reddot', 'scope', 'bipod', 'laserp', 'drum', 'grip', 'barrel'].forEach(k => ok(r[k].indexOf('flamer') < 0, k + ' ne va pas sur le lance-flammes'));
   });
 
   test('Arsenal : les grosses armes secouent l’écran, plus que les petites', () => {
@@ -156,5 +157,33 @@
     ['minigun', 'mg50', 'gl', 'rocket', 'railgun'].forEach(id => ok(r[id] >= .25, id + ' : secousse ' + r[id]));
     ok(r.railgun > r.mg50 && r.rocket > r.minigun, 'Plus l’arme est grosse, plus ça secoue');
     ok(r.trepied < r.mg50, 'Le trépied calme la secousse');
+  });
+
+  test('Arsenal : accessoires du lance-flammes (réservoir, buses, napalm, pompe) avec leurs effets', () => {
+    exiger(); partie();
+    const r = J(function(){
+      var o = {}, id = 'flamer', W = WEAPONS[id];
+      var mag0 = magSize(id), b0 = wBurn(id), bd0 = wBurnDps(id), d0 = wDmg(id), tris0 = vmStats(id).tris;
+      ['ftank', 'fnapalm', 'fpump'].forEach(function(k){ o[k] = __ars.accBuy(id, k); });
+      o.mag = magSize(id) / mag0; o.burn = wBurn(id) / b0; o.bdps = wBurnDps(id) / bd0; o.dmg = wDmg(id) / d0;
+      o.large = __ars.accBuy(id, 'fwide'); o.cone = accK(id, 'cone'); o.rangeL = accK(id, 'range');
+      o.longue = __ars.accBuy(id, 'flong'); o.buses = ['fwide', 'flong'].filter(function(k){ return __ars.accOwned(id, k); }).join(',');
+      o.range = accK(id, 'range');
+      equip(id); var st = vmStats(id); o.tris = st.tris - tris0; o.appels = st.calls; o.muz = VMS[id].userData.muzzle < VMS[id].userData.muzzleBase;
+      // Buse longue : un zombie à 36 m de la barricade (hors de portée normale, 30 m) est touché
+      clearZombies(); var z = __t.placer('walker', 0, BAR_Z - 36); z.hp = z.maxHp = 1e6; z.speed = 0; z.g.updateMatrixWorld(true);
+      camera.position.copy(EYE); camera.lookAt(0, 1, BAR_Z - 36); camera.updateMatrixWorld(true);
+      reloadT = 0; cool = 0; S.ammo[id] = magSize(id); fire(); o.loin = z.hp < 1e6;
+      return o;
+    });
+    ok(r.ftank && r.fnapalm && r.fpump, 'Achats');
+    ok(Math.abs(r.mag - 1.6) < .02, 'Réservoir dorsal : carburant ×' + r.mag);
+    ok(Math.abs(r.burn - 1.5) < 1e-9 && Math.abs(r.bdps - 1.3) < 1e-9, 'Napalm : brûlure ×' + r.burn + ', dégâts de brûlure ×' + r.bdps);
+    ok(Math.abs(r.dmg - 1.2) < 1e-9, 'Pompe : dégâts ×' + r.dmg);
+    ok(r.large && Math.abs(r.cone - 1.4) < 1e-9 && r.rangeL < 1, 'Buse large : cône ×' + r.cone + ', portée ×' + r.rangeL);
+    ok(r.longue, 'Achat de la buse longue'); egal(r.buses, 'flong', 'Une seule buse à la fois');
+    ok(Math.abs(r.range - 1.4) < 1e-9, 'Buse longue : portée ×' + r.range);
+    ok(r.tris > 100 && r.appels <= 7 && r.muz, 'Accessoires visibles sur le lance-flammes (' + r.tris + ' triangles, ' + r.appels + ' appels)');
+    ok(r.loin, 'Buse longue : un zombie à 36 m doit brûler');
   });
 })();

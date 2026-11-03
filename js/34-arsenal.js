@@ -48,10 +48,16 @@ const ACC = {
   grip:   { name:'Poignée avant',    desc:'Recul −30 %, recharge 15 % plus vite.', k:.9, fx:{ recoil:.7, reload:.85 },
             on:['shotgun', 'rifle', 'laser', 'arc', 'gl'] },
   barrel: { name:'Canon long',       desc:'Dégâts +15 %, traverse 1 zombie de plus.', k:1.3, fx:{ dmg:1.15, pierce:1 },
-            on:['pistol', 'shotgun', 'rifle', 'sniper', 'mg50'] }
+            on:['pistol', 'shotgun', 'rifle', 'sniper', 'mg50'] },
+  // Propres au lance-flammes (une seule buse à la fois)
+  ftank:  { name:'Réservoir dorsal', desc:'Un second réservoir sur le dos, relié par un tuyau : carburant +60 %.', k:1, fx:{ mag:1.6 }, on:['flamer'] },
+  fwide:  { name:'Buse large',       desc:'Nappe de feu plus large : cône +40 %, portée −15 %.', k:.9, grp:'nozzle', fx:{ cone:1.4, range:.85 }, on:['flamer'] },
+  flong:  { name:'Buse longue portée', desc:'Jet serré qui porte loin : portée +40 %, cône −20 %.', k:1, grp:'nozzle', fx:{ range:1.4, cone:.8 }, on:['flamer'] },
+  fnapalm:{ name:'Mélange au napalm', desc:'Le feu colle : brûlure 50 % plus longue et 30 % plus forte.', k:1.2, fx:{ burn:1.5, burnDps:1.3 }, on:['flamer'] },
+  fpump:  { name:'Pompe haute pression', desc:'Plus de débit : dégâts directs +20 %.', k:1.1, fx:{ dmg:1.2 }, on:['flamer'] }
 };
 const accName = (k, id) => (ACC[k].alt && ACC[k].alt[id]) || ACC[k].name;
-const ACC_ORDER = ['reddot', 'scope', 'bipod', 'laserp', 'drum', 'grip', 'barrel'];
+const ACC_ORDER = ['reddot', 'scope', 'bipod', 'laserp', 'drum', 'grip', 'barrel', 'ftank', 'fwide', 'flong', 'fnapalm', 'fpump'];
 const accOwned = (id, k) => !!(S && S.acc && S.acc[id] && S.acc[id][k]);
 const accCost = (id, k) => Math.round((120 + (WEAPONS[id].price || 0) * .2) * ACC[k].k / 10) * 10;
 // Effet multiplicatif cumulé des accessoires montés (spread, dmg, mag, reload, recoil, zoom)
@@ -264,6 +270,33 @@ function accSync(id){
         vmCyl(b, .016, .14, VC.blue, 0, my, mz - .07, 0, 0, 0, 8);
         vmCyl(b, .02, .04, VC.park, 0, my, mz - .13, 0, 0, 0, 8);
         ud.muzzle = ud.muzzleBase - .15;
+      } else if (k === 'ftank'){
+        vmCylAB(b, [-.03, -.06, .02], [-.12, -.16, .2], .009, VC.rubber, 6);                       // tuyau vers le dos
+        vmCylAB(b, [-.12, -.16, .2], [-.2, -.24, .34], .009, VC.rubber, 6);
+        vmCyl(b, .07, .2, VC.red, -.24, -.3, .42, .5, -.3, 0, 12);                                 // réservoir sur le dos (on en voit le haut)
+        vmCyl(b, .072, .014, VC.steel, -.24, -.3, .42, .5, -.3, 0, 12);
+        vmCyl(b, .018, .03, VC.light, -.2, -.24, .34, .5, -.3, 0, 8);                              // valve
+      } else if (k === 'fwide'){
+        vmRing(b, .05, .04, .05, VC.park, 0, my, mz - .04, 0, 0, 0, 12);                          // pavillon évasé
+        vmRing(b, .04, .022, .03, VC.steel, 0, my, mz - .01, 0, 0, 0, 12);
+        for (let i = 0; i < 4; i++) vmBox(b, .006, .02, .05, VC.park, Math.cos(i * 1.571) * .046, my + Math.sin(i * 1.571) * .046, mz - .04, 0, 0, i * 1.571, 0);
+        ud.muzzle = ud.muzzleBase - .07;
+      } else if (k === 'flong'){
+        vmCyl(b, .011, .2, VC.steel, 0, my, mz - .1, 0, 0, 0, 8);                                // tube allongé
+        vmCyl(b, .016, .03, VC.park, 0, my, mz - .015, 0, 0, 0, 8);
+        vmCyl(b, .014, .03, VC.park, 0, my, mz - .2, 0, 0, 0, 8);
+        vmCyl(b, .005, .16, VC.steel, 0, my - .028, mz - .1, 0, 0, 0, 6);                        // allumeur prolongé
+        ud.muzzle = ud.muzzleBase - .21;
+      } else if (k === 'fnapalm'){
+        vmCyl(b, .026, .1, [1, .45, .08], .07, -.05, -.22, 0, 0, 0, 10);                          // bidon orange
+        for (let i = 0; i < 2; i++) vmCyl(b, .027, .012, VC.rubber, .07, -.05, -.25 + i * .06, 0, 0, 0, 10);
+        vmCyl(b, .008, .02, VC.steel, .07, -.05, -.28, 0, 0, 0, 6);
+        vmCylAB(b, [.06, -.05, -.17], [.03, -.06, -.12], .005, VC.rubber, 5);
+      } else if (k === 'fpump'){
+        vmBox(b, .04, .04, .08, VC.park, -.045, .03, -.32, 0, 0, 0, .006);                        // pompe sur le côté
+        vmCyl(b, .012, .1, VC.steel, -.045, .062, -.32, 0, 0, 0, 8);                              // piston
+        vmCyl(b, .016, .008, VC.steel, -.07, .03, -.29, 0, Math.PI / 2, 0, 10);                   // manomètre
+        vmCyl(b, .012, .001, VC.face, -.075, .03, -.29, 0, Math.PI / 2, 0, 10);
       }
     });
     ud.accMesh = vmMesh(g, b);

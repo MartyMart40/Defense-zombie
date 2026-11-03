@@ -84,7 +84,7 @@ function armLaunch(id){
 
 /* ---------- Lance-flammes : cône court, dégâts directs et brûlure ---------- */
 function armFlame(id){
-  const W = WEAPONS[id], range = W.range, cone = W.cone, dmg = wDmg(id);
+  const W = WEAPONS[id], range = W.range * accK(id, 'range'), cone = W.cone * accK(id, 'cone'), dmg = wDmg(id); // buses (34-arsenal.js)
   fwd.set(0, 0, -1).applyQuaternion(camera.quaternion);
   const minZ = BAR_Z - range; // jusqu'à environ 30 m de la barricade
   let any = false;

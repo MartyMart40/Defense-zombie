@@ -412,7 +412,7 @@ function rueClear(){
 /* ---------- Lance-flammes : il fait aussi sauter les barils et attrape les caisses (et brûle le civil) ---------- */
 function rueFlameCone(id){
   const W = WEAPONS[id]; if (!W) return;
-  const minZ = BAR_Z - W.range, cone = W.cone;
+  const minZ = BAR_Z - W.range * accK(id, 'range'), cone = W.cone * accK(id, 'cone');
   fwd.set(0, 0, -1).applyQuaternion(camera.quaternion);
   const inCone = (x, y, z, big) => {
     if (z < minZ) return false;

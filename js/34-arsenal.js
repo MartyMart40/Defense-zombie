@@ -128,18 +128,19 @@ function arsBuild(){
     vmCyl(b, .014, .48, VC.blue, 0, .02, -.44, 0, 0, 0, 8);                                      // canon
     vmCyl(b, .024, .07, VC.park, 0, .02, -.7, 0, 0, 0, 8);                                       // frein de bouche
     for (i = 0; i < 3; i++) vmBox(b, .052, .008, .012, VC.port, 0, .02, -.68 - i * .02, 0, 0, 0, 0);
-    vmBox(b, .02, .05, .02, VC.park, 0, .085, -.05, 0, 0, 0, 0);                                 // poignée de transport
-    vmBox(b, .018, .012, .14, VC.park, 0, .115, -.05, 0, 0, 0, .004);
+    vmBox(b, .03, .02, .02, VC.park, -.045, .045, -.05, 0, 0, 0, 0);                              // poignée de transport, sur le côté gauche
+    vmBox(b, .018, .04, .02, VC.park, -.062, .062, -.05, 0, 0, 0, 0);                            // (hors de la ligne de visée)
+    vmBox(b, .018, .014, .14, VC.park, -.062, .085, -.05, 0, 0, 0, .004);
     vmBox(b, .08, .1, .1, VC.oliveD, -.085, -.03, -.08, 0, 0, 0, .008);                          // caisse de munitions
     vmBox(b, .082, .012, .102, VC.olive, -.085, .025, -.08, 0, 0, 0, 0);
     for (i = 0; i < 5; i++) vmBox(b, .012, .02, .012, VC.brass, -.044, .02 - i * .006, -.06 - i * .012, 0, 0, .6, 0); // bande
     vmCyl(b, .018, .2, VC.park, 0, .0, .19, 0, 0, 0, 8);                                         // tube de crosse
     vmBox(b, .05, .08, .14, VC.oliveD, 0, -.01, .25, 0, 0, 0, .012);
     vmBox(b, .054, .1, .02, VC.rubber, 0, -.01, .33, 0, 0, 0, .008);
-    arsSights(b, SY, -.6, .06);
+    const ir = vmNew(); arsSights(ir, SY, -.6, .06);
     arsHands(b, .05, -.3, .0, .034);
-    vmMesh(g, b);
-    g.userData = { muzzle: -.74, muzzleY: .02, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.6), V3(0, SY, .06)], eject: V3(.036, .02, -.05), shell: 5 };
+    vmMesh(g, b); const irons = vmMesh(g, ir);                                                    // mires métalliques (rabattues sous une optique)
+    g.userData = { irons, muzzle: -.74, muzzleY: .02, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.6), V3(0, SY, .06)], eject: V3(.036, .02, -.05), shell: 5 };
   }
   out.mg50 = g;
   /* ===== Fusil laser ===== */
@@ -158,10 +159,10 @@ function arsBuild(){
     vmBox(b, .052, .01, .03, ARS_C.cyan, 0, -.02, -.1, 0, 0, 0, 0);
     vmBox(b, .046, .075, .16, ARS_C.white, 0, -.005, .2, 0, 0, 0, .014);                         // crosse
     vmBox(b, .05, .09, .02, VC.rubber, 0, -.005, .29, 0, 0, 0, .008);
-    arsSights(b, SY, -.34, .02);
+    const ir = vmNew(); arsSights(ir, SY, -.34, .02);
     arsHands(b, .05, -.28, .0, .034);
-    vmMesh(g, b);
-    g.userData = { muzzle: -.53, muzzleY: .015, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.34), V3(0, SY, .02)] };
+    vmMesh(g, b); const irons = vmMesh(g, ir);                                                    // mires métalliques (rabattues sous une optique)
+    g.userData = { irons, muzzle: -.53, muzzleY: .015, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.34), V3(0, SY, .02)] };
   }
   out.laser = g;
   /* ===== Canon électromagnétique ===== */
@@ -179,10 +180,10 @@ function arsBuild(){
     vmBox(b, .05, .02, .3, VC.park, 0, .06, -.2, 0, 0, 0, .004);                                 // rail supérieur
     vmBox(b, .046, .08, .16, VC.poly, 0, -.01, .2, 0, 0, 0, .014);
     vmBox(b, .05, .1, .02, VC.rubber, 0, -.01, .29, 0, 0, 0, .008);
-    arsSights(b, SY, -.48, .05);
+    const ir = vmNew(); arsSights(ir, SY, -.48, .05);
     arsHands(b, .06, -.22, -.02, .04);
-    vmMesh(g, b);
-    g.userData = { muzzle: -.68, muzzleY: .02, sightY: SY, adsZ: -.22, sight: [V3(0, SY, -.48), V3(0, SY, .05)], eject: V3(.045, .01, .02), shell: 7 };
+    vmMesh(g, b); const irons = vmMesh(g, ir);                                                    // mires métalliques (rabattues sous une optique)
+    g.userData = { irons, muzzle: -.68, muzzleY: .02, sightY: SY, adsZ: -.22, sight: [V3(0, SY, -.48), V3(0, SY, .05)], eject: V3(.045, .01, .02), shell: 7 };
   }
   out.railgun = g;
   /* ===== Lance-grenades automatique ===== */
@@ -199,10 +200,10 @@ function arsBuild(){
     vmBox(b, .04, .06, .18, VC.poly, 0, .0, .18, 0, 0, 0, .012);                                 // crosse
     vmBox(b, .044, .09, .02, VC.rubber, 0, -.01, .27, 0, 0, 0, .008);
     vmBox(b, .03, .1, .03, VC.poly, 0, -.07, -.26, 0, 0, 0, .006);                               // poignée avant
-    arsSights(b, SY, -.42, .04);
+    const ir = vmNew(); arsSights(ir, SY, -.42, .04);
     arsHands(b, .06, -.3, .02, .036);
-    vmMesh(g, b);
-    g.userData = { muzzle: -.47, muzzleY: .02, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.42), V3(0, SY, .04)], eject: V3(.06, -.02, -.06), shell: 6 };
+    vmMesh(g, b); const irons = vmMesh(g, ir);                                                    // mires métalliques (rabattues sous une optique)
+    g.userData = { irons, muzzle: -.47, muzzleY: .02, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.42), V3(0, SY, .04)], eject: V3(.06, -.02, -.06), shell: 6 };
   }
   out.gl = g;
   /* ===== Fusil à arc électrique ===== */
@@ -219,10 +220,10 @@ function arsBuild(){
     vmBox(b, .052, .012, .05, ARS_C.violet, 0, -.03, -.05, 0, 0, 0, 0);
     vmBox(b, .04, .07, .16, VC.woodD, 0, -.01, .17, 0, 0, 0, .014);                              // crosse en bois
     vmBox(b, .044, .085, .02, VC.rubber, 0, -.01, .255, 0, 0, 0, .008);
-    arsSights(b, SY, -.2, .04);
+    const ir = vmNew(); arsSights(ir, SY, -.2, .04);
     arsHands(b, .05, -.15, .0, .032);
-    vmMesh(g, b);
-    g.userData = { muzzle: -.56, muzzleY: .02, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.2), V3(0, SY, .04)] };
+    vmMesh(g, b); const irons = vmMesh(g, ir);                                                    // mires métalliques (rabattues sous une optique)
+    g.userData = { irons, muzzle: -.56, muzzleY: .02, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.2), V3(0, SY, .04)] };
   }
   out.arc = g;
   Object.keys(out).forEach(k => {
@@ -239,6 +240,7 @@ function accSync(id){
   if (ud.accMesh){ g.remove(ud.accMesh); ud.accMesh.geometry.dispose(); ud.accMesh = null; }
   ud.muzzle = ud.muzzleBase;
   const own = (S && S.acc && S.acc[id]) || {}, keys = ACC_ORDER.filter(k => own[k]);
+  if (ud.irons) ud.irons.visible = !(own.reddot || own.scope); // mires rabattues : rien ne cache l'optique
   if (keys.length){
     const b = vmNew(), SY = ud.sightY || .1, mz = ud.muzzleBase, my = ud.muzzleY || .02;
     const zr = ud.sight && ud.sight[1] ? ud.sight[1].z : .02, zf = ud.sight && ud.sight[0] ? ud.sight[0].z : mz * .8;

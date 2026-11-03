@@ -9,9 +9,9 @@
 // Les ombres et la fumée ne coûtent presque rien : pas de calcul d'ombre, pas d'effet plein écran.
 
 const GFX_Q = {
-  bas:   { nom:'basse',   pr:1,    clouds:0,  mist:0, puddles:0,  shadows:false, smoke:0,  fireSmoke:0 },
-  moyen: { nom:'moyenne', pr:1.25, clouds:6,  mist:5, puddles:6,  shadows:true,  smoke:16, fireSmoke:.55 },
-  haut:  { nom:'haute',   pr:2,    clouds:12, mist:9, puddles:10, shadows:true,  smoke:30, fireSmoke:.3 }
+  bas:   { nom:'basse',   pr:1,    clouds:0,  mist:0, puddles:0,  shadows:false, smoke:0,  fireSmoke:0, debris:0, halos:false, embers:0 },
+  moyen: { nom:'moyenne', pr:1.25, clouds:6,  mist:5, puddles:6,  shadows:true,  smoke:16, fireSmoke:.55, debris:45, halos:true, embers:10 },
+  haut:  { nom:'haute',   pr:2,    clouds:12, mist:9, puddles:10, shadows:true,  smoke:30, fireSmoke:.3,  debris:90, halos:true, embers:24 }
 };
 const GFX_ORDER = ['auto', 'bas', 'moyen', 'haut'];
 const GFX = { pref: store.get('dt_gfx', 'auto'), wet:0, t:0, smokeN:0, fireT:0 };
@@ -127,6 +127,74 @@ function gfxSmokeStep(dt){
   }
 }
 
+/* ---------- Débris dans la rue (3 InstancedMesh : planches et briques, sacs poubelle, pneus) ---------- */
+// Placés au hasard à chaque ville, surtout près des trottoirs (le milieu de la rue reste dégagé pour viser).
+const GFX_DEB_N = GFX_Q.haut.debris;
+const gfxDebMat = new THREE.MeshLambertMaterial({ color:0xffffff });
+const gfxDeb = {
+  box: new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), gfxDebMat, GFX_DEB_N),
+  bag: new THREE.InstancedMesh(new THREE.SphereGeometry(.5, 7, 5), new THREE.MeshLambertMaterial({ color:0x1e2a20 }), Math.ceil(GFX_DEB_N / 4)),
+  tire: new THREE.InstancedMesh(new THREE.TorusGeometry(.32, .13, 5, 10), new THREE.MeshLambertMaterial({ color:0x1a1a1c }), Math.ceil(GFX_DEB_N / 6))
+};
+Object.keys(gfxDeb).forEach(k => { gfxDeb[k].count = 0; gfxDeb[k].frustumCulled = false; gfxRoot.add(gfxDeb[k]); });
+const GFX_DEB_COL = [0x6a4a2a, 0x8a6a40, 0x7a3a2a, 0x8a3a28, 0x5a5a56, 0xd8d0b8, 0xc8c0a0]; // bois, briques, béton, papiers
+const gfxE = new THREE.Euler();
+function gfxPlaceDebris(){
+  const n = gfxQ().debris, side = () => (Math.random() < .5 ? -1 : 1) * rand(5.5, 12.5);
+  let nb = 0, ng = 0, nt = 0;
+  for (let i = 0; i < n; i++){
+    const r = Math.random(), x = Math.random() < .8 ? side() : rand(-5, 5), z = rand(-120, -14);
+    if (r < .66 && nb < GFX_DEB_N){
+      const paper = Math.random() < .3, c = paper ? pick(GFX_DEB_COL.slice(5)) : pick(GFX_DEB_COL.slice(0, 5));
+      gfxP.set(x, paper ? .012 : rand(.04, .12), z); gfxE.set(paper ? 0 : rand(-.2, .2), rand(0, 6.3), paper ? 0 : rand(-.15, .15)); gfxQt.setFromEuler(gfxE);
+      if (paper) gfxS.set(rand(.25, .4), .01, rand(.3, .45)); else if (Math.random() < .5) gfxS.set(rand(.9, 1.8), rand(.06, .1), rand(.14, .22)); else gfxS.set(.22, .1, .1);
+      gfxM.compose(gfxP, gfxQt, gfxS); gfxDeb.box.setMatrixAt(nb, gfxM); gfxDeb.box.setColorAt(nb, gfxC.setHex(c)); nb++;
+    } else if (r < .86 && ng < gfxDeb.bag.instanceMatrix.count){
+      const k = rand(.7, 1.1); gfxP.set(Math.sign(x || 1) * rand(9, 13), .3 * k, z); gfxE.set(0, rand(0, 6), 0); gfxQt.setFromEuler(gfxE); gfxS.set(.9 * k, .7 * k, .8 * k);
+      gfxM.compose(gfxP, gfxQt, gfxS); gfxDeb.bag.setMatrixAt(ng++, gfxM);
+    } else if (nt < gfxDeb.tire.instanceMatrix.count){
+      gfxP.set(x, .13, z); gfxE.set(Math.PI / 2, 0, rand(0, 6)); gfxQt.setFromEuler(gfxE); gfxS.set(1, 1, 1);
+      gfxM.compose(gfxP, gfxQt, gfxS); gfxDeb.tire.setMatrixAt(nt++, gfxM);
+    }
+  }
+  gfxDeb.box.count = Math.min(nb, GFX_DEB_N); gfxDeb.bag.count = ng; gfxDeb.tire.count = nt;
+  Object.keys(gfxDeb).forEach(k => { gfxDeb[k].instanceMatrix.needsUpdate = true; if (gfxDeb[k].instanceColor) gfxDeb[k].instanceColor.needsUpdate = true; });
+}
+/* ---------- Halos des lampadaires (forts la nuit, très légers le jour) ---------- */
+const gfxHalos = [];
+const gfxHaloMat = new THREE.SpriteMaterial({ map:glowTex, color:0xffc870, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, opacity:0 });
+for (let i = 0; i < 12; i++){ const s = new THREE.Sprite(gfxHaloMat); s.scale.set(5, 5, 1); s.visible = false; gfxRoot.add(s); gfxHalos.push(s); }
+function gfxPlaceHalos(){
+  let n = 0;
+  if (typeof world !== 'undefined' && world) world.children.forEach(o => {
+    if (n < gfxHalos.length && o.isMesh && Math.abs(o.position.y - 6.9) < .01 && Math.abs(Math.abs(o.position.x) - 12.7) < .01){ gfxHalos[n].position.set(o.position.x, 6.75, o.position.z); gfxHalos[n].userData.on = true; n++; }
+  });
+  for (let i = n; i < gfxHalos.length; i++) gfxHalos[i].userData.on = false;
+}
+/* ---------- Braises qui montent des feux ---------- */
+const gfxEmberMat = new THREE.SpriteMaterial({ map:glowTex, color:0xff8a30, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending });
+const gfxEmbers = [];
+for (let i = 0; i < GFX_Q.haut.embers; i++){ const s = new THREE.Sprite(gfxEmberMat); s.scale.set(.16, .16, 1); s.visible = false; gfxRoot.add(s); gfxEmbers.push({ s, life:0, vx:0, vy:0 }); }
+let gfxEmberT = 0, gfxEmberI = 0;
+function gfxEmberStep(dt){
+  const cap = gfxQ().embers;
+  if (cap && typeof fires !== 'undefined' && fires.length && state === 'playing'){
+    gfxEmberT -= dt;
+    while (gfxEmberT <= 0){
+      gfxEmberT += .12;
+      const f = fires[Math.floor(Math.random() * fires.length)], g = f.cones && f.cones[0] && f.cones[0].parent; if (!g) break;
+      const o = gfxEmbers[gfxEmberI++ % cap]; g.getWorldPosition(gfxP);
+      o.s.position.set(gfxP.x + rand(-.4, .4), gfxP.y + rand(.6, 1.2), gfxP.z + rand(-.4, .4)); o.vx = rand(-.3, .6); o.vy = rand(1.5, 3); o.life = rand(1.2, 2.2); o.s.visible = true;
+    }
+  }
+  for (const o of gfxEmbers){
+    if (!o.s.visible) continue;
+    o.life -= dt; if (o.life <= 0){ o.s.visible = false; continue; }
+    o.s.position.x += (o.vx + Math.sin(o.life * 6) * .4) * dt; o.s.position.y += o.vy * dt;
+    const k = .1 + .1 * Math.min(1, o.life); o.s.scale.set(k, k, 1);
+  }
+}
+
 /* ---------- Teintes selon la météo ---------- */
 const gfxC = new THREE.Color();
 function gfxWeather(){ return (typeof __amb === 'object' && __amb.weather) || 'clair'; }
@@ -162,6 +230,12 @@ function gfxStep(dt){
   gfxPuddles.forEach((m, i) => { m.visible = live && i < Q.puddles && GFX.wet > .02; });
   gfxShadowStep();
   gfxSmokeStep(dt);
+  gfxEmberStep(dt);
+  // Débris et halos
+  const deb = live && Q.debris > 0; Object.keys(gfxDeb).forEach(k => { gfxDeb[k].visible = deb; });
+  const night = !!W.night, hop = night ? .55 : W.storm || W.rain || w === 'brouillard' ? .18 : .05;
+  gfxHaloMat.opacity = hop;
+  gfxHalos.forEach(h => { h.visible = live && Q.halos && !!h.userData.on && hop > .1; /* le jour : rien à dessiner */ if (h.visible){ const k = night ? 6 + Math.sin(GFX.t * 3 + h.position.z) * .3 : 4; h.scale.set(k, k, 1); } });
 }
 
 /* ---------- Réglage dans l'écran Pause ---------- */
@@ -172,6 +246,8 @@ function gfxApply(){
     if (typeof resize === 'function') resize();
   } catch (e) {}
   gfxSmoke.forEach((o, i) => { if (i >= gfxQ().smoke){ o.s.visible = false; o.life = 0; } });
+  gfxEmbers.forEach((o, i) => { if (i >= gfxQ().embers){ o.s.visible = false; o.life = 0; } });
+  try { gfxPlaceDebris(); } catch (e) {}
   gfxBtn();
 }
 function gfxSet(p){ if (GFX_ORDER.indexOf(p) < 0) p = 'auto'; GFX.pref = p; store.set('dt_gfx', p); gfxApply(); }
@@ -191,11 +267,11 @@ function gfxBtn(){
 
 /* ---------- Crochets ---------- */
 try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); try { gfxStep(dt || 0); } catch (e) {} return r; }; } catch (e) {}
-try { const _b = buildWorld; buildWorld = function(){ const r = _b.apply(this, arguments); gfxPlacePuddles(); GFX.wet = 0; gfxSmoke.forEach(o => { o.s.visible = false; o.life = 0; }); return r; }; } catch (e) {}
+try { const _b = buildWorld; buildWorld = function(){ const r = _b.apply(this, arguments); gfxPlacePuddles(); gfxPlaceDebris(); gfxPlaceHalos(); GFX.wet = 0; gfxSmoke.forEach(o => { o.s.visible = false; o.life = 0; }); return r; }; } catch (e) {}
 // Explosions : un panache de fumée noire
 try { if (typeof rueBoom === 'function'){ const _b = rueBoom; rueBoom = function(x, y, z, size){ const r = _b.apply(this, arguments); if (size >= 10) gfxBoomSmoke(x, y, z, size / 3); return r; }; } } catch (e) {}
 try { if (typeof armExplode === 'function'){ const _b = armExplode; armExplode = function(pos, id){ const r = _b.apply(this, arguments); gfxBoomSmoke(pos.x, pos.y, pos.z, wRadius(id) * .8); return r; }; } } catch (e) {}
 try { if (typeof pwBoom === 'function'){ const _b = pwBoom; pwBoom = function(x, y, z, size){ const r = _b.apply(this, arguments); gfxBoomSmoke(x, y, z, (size || 6) / 3); return r; }; } } catch (e) {}
 
 // Accès pour les tests automatiques
-window.__gfx = { GFX, GFX_Q, gfxLevel, gfxSet, gfxStep, gfxPuff, gfxClouds, gfxMist, gfxPuddles, gfxShadows, gfxSmoke, gfxPuddleMat };
+window.__gfx = { gfxDeb, gfxHalos, gfxEmbers, GFX, GFX_Q, gfxLevel, gfxSet, gfxStep, gfxPuff, gfxClouds, gfxMist, gfxPuddles, gfxShadows, gfxSmoke, gfxPuddleMat };

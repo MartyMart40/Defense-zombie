@@ -19,6 +19,8 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 | # | Tâche | Date |
 |---|-------|------|
+| 44 | Vibrations du cellulaire : tirs selon l'arme, explosions, gros coups sur la barricade ; réglage dans Pause (js/38-vibrations.js) | 2026-11-03 |
+| 43 | Graphismes niveau 3 : débris dans la rue, halos des lampadaires, braises des feux ; .50 : poignée sur le côté et mires rabattues sous une optique | 2026-11-03 |
 | 42 | Bruitages : son placé gauche-droite et selon la distance (grognements, coups sur la barricade), douilles qui tintent, corps qui tombent, craquement à la tête, murmure de la horde, barricade qui craque (js/37-bruitages.js) | 2026-11-03 |
 | 41 | Graphismes : réglage de qualité (auto, basse, moyenne, haute) ; nuages, brume au sol, flaques à la pluie, ombres sous les zombies (un appel de dessin), fumée des feux et des explosions (js/36-rendu.js) | 2026-11-03 |
 | 40 | 5 nouveaux monstres : rampant (meute de 5), gonflé (explose), gargouille (volant de pierre), corbeaux (nuée), bouclier anti-émeute (js/35-monstres.js) | 2026-11-03 |

@@ -238,3 +238,28 @@
     ok(r.cap >= 40, 'Capacité du pool : ' + r.cap);
   });
 })();
+(function(){
+  if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
+  test('Arsenal : avec une optique, les mires de la .50 se rabattent et la poignée est hors de la ligne de visée', () => {
+    if (lire('typeof __ars === "object"') !== true) ignorer('Arsenal absent');
+    reset(); J('startLocation(0)');
+    const r = J(function(){
+      __t.geler(); S.money = 1e7; S.owned.mg50 = true; S.acc = {}; __ars.accSync('mg50'); equip('mg50');
+      var ud = VMS.mg50.userData, o = { avant: ud.irons && ud.irons.visible };
+      __ars.accBuy('mg50', 'reddot'); o.dot = ud.irons.visible;
+      __ars.accBuy('mg50', 'scope'); o.scope = ud.irons.visible;
+      // Rien de l'arme ne coupe la ligne de visée entre l'œil et l'optique (rayon le long de l'axe de visée)
+      VMS.mg50.updateMatrixWorld(true);
+      var a = new THREE.Vector3(0, ud.sightY, .2).applyMatrix4(VMS.mg50.matrixWorld), b = new THREE.Vector3(0, ud.sightY, -.18).applyMatrix4(VMS.mg50.matrixWorld);
+      var rc = new THREE.Raycaster(a, b.clone().sub(a).normalize(), 0, a.distanceTo(b));
+      var hits = rc.intersectObjects(VMS.mg50.children.filter(function(m){ return m.isMesh && m.visible && m !== ud.accMesh; }), false);
+      o.bloque = hits.length;
+      S.acc = {}; __ars.accSync('mg50'); o.apres = ud.irons.visible;
+      return o;
+    });
+    ok(r.avant, 'Mires visibles sans optique');
+    ok(!r.dot && !r.scope, 'Mires rabattues avec le point rouge ou la lunette');
+    egal(r.bloque, 0, 'Pièces qui cachent l’optique');
+    ok(r.apres, 'Mires remises sans optique');
+  });
+})();

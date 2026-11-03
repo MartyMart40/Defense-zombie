@@ -59,7 +59,7 @@
       var p0 = __gfx.GFX.pref; __gfx.gfxSet('haut'); __t.geler(); clearZombies();
       for (var i = 0; i < 150; i++) __t.placer('walker', rand(-11, 11), rand(-90, -20));
       visuals(1 / 30);
-      var n = 0; __gfx.gfxShadows.parent.children.forEach(function(o){ if (o.isInstancedMesh) n++; });
+      var n = __gfx.gfxShadows.isInstancedMesh ? 1 : 0; // un seul maillage, dessiné en une fois
       var o = { count: __gfx.gfxShadows.count, maillages: n };
       clearZombies(); visuals(1 / 30); o.vide = __gfx.gfxShadows.count; __gfx.gfxSet(p0);
       return o;
@@ -99,5 +99,33 @@
       ok(r.horde > .3, 'Murmure de la horde : ' + r.horde);
       egal(r.craque, 1, 'La barricade abîmée craque');
     }
+  });
+})();
+(function(){
+  if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
+  test('Rendu : débris dans la rue, halos des lampadaires la nuit, braises des feux (rien en qualité basse)', () => {
+    if (lire('typeof __gfx === "object" && !!__gfx.gfxDeb') !== true) ignorer('Débris absents');
+    reset(); J('startLocation(0)');
+    const r = J(function(){
+      var p0 = __gfx.GFX.pref, o = {};
+      __gfx.gfxSet('haut'); buildWorld(curLoc); __amb.set('nuitClaire'); state = 'playing'; __t.geler();
+      for (var i = 0; i < 60; i++) visuals(1 / 30);
+      var D = __gfx.gfxDeb; o.debris = D.box.count + D.bag.count + D.tire.count; o.debVis = D.box.visible;
+      o.milieu = 0; var m = new THREE.Matrix4(), p = new THREE.Vector3();
+      for (var k = 0; k < D.bag.count; k++){ D.bag.getMatrixAt(k, m); p.setFromMatrixPosition(m); if (Math.abs(p.x) < 5) o.milieu++; }
+      o.halos = __gfx.gfxHalos.filter(function(h){ return h.visible; }).length;
+      o.braises = __gfx.gfxEmbers.filter(function(e){ return e.s.visible; }).length;
+      __amb.set('soleil'); visuals(1 / 30); o.halosJour = __gfx.gfxHalos.filter(function(h){ return h.visible; }).length;
+      __gfx.gfxSet('bas'); visuals(1 / 30);
+      o.bas = { d: D.box.visible, e: __gfx.gfxEmbers.filter(function(e){ return e.s.visible; }).length };
+      __gfx.gfxSet(p0); __amb.set('clair'); state = 'test';
+      return o;
+    });
+    ok(r.debris >= 60 && r.debVis, 'Débris en qualité haute : ' + r.debris);
+    egal(r.milieu, 0, 'Sacs poubelle au milieu de la rue');
+    ok(r.halos >= 2, 'Halos des lampadaires la nuit : ' + r.halos);
+    ok(r.braises >= 3, 'Braises des feux : ' + r.braises);
+    egal(r.halosJour, 0, 'Pas de halo au grand soleil');
+    ok(!r.bas.d && !r.bas.e, 'Qualité basse : ni débris ni braises');
   });
 })();

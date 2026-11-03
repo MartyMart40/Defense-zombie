@@ -19,6 +19,7 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 | # | Tâche | Date |
 |---|-------|------|
+| 40 | 5 nouveaux monstres : rampant (meute de 5), gonflé (explose), gargouille (volant de pierre), corbeaux (nuée), bouclier anti-émeute (js/35-monstres.js) | 2026-11-03 |
 | 39 | Accessoires du lance-roquettes (ogive tandem ou à fragmentation, propulseur, tube jumelé, guidage laser) ; douilles éjectées vers la droite pour toutes les armes à balles (pool de 48, douilles de .50, de grenade et sabot du canon) | 2026-11-03 |
 | 38 | Accessoires du lance-flammes : réservoir dorsal, buse large ou buse longue portée, mélange au napalm, pompe haute pression | 2026-11-03 |
 | 37 | Secousse de l'écran par arme (grosses armes plus fortes) ; minigun plus intense : environ 70 coups/s, coup grave, deux lectures gauche-droite, compresseur, grognement grave | 2026-11-03 |

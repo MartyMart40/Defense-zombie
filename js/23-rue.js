@@ -504,7 +504,7 @@ window.__rue = { RUE, RUE_CFG, RUE_BONUS, rueRoot, rueWave, rueStep, rueClear, r
 // entre son point d'apparition et la barricade. Rendu là : si un poursuivant vit encore, il l'attrape ;
 // sinon il est sauvé et reste sur le toit pour le reste de la partie. Un tir du joueur le tue toujours (pénalité).
 // Chaque survivant sur le toit rapporte SURV_CFG.income $ par minute (versé à la minute).
-const SURV_CFG = { chasers:[2, 3], mark:.75, spd0:.78, spd1:.94, income:1, period:60, maxShown:8 };
+const SURV_CFG = { chasers:[2, 3], mark:.75, spd0:.78, spd1:.94, income:10, period:60, maxShown:8 };
 const SURV = { chasers:[], chasing:false, roof:[], payT:0 };
 function survHUDEl(id){ return document.getElementById(id); }
 // Mètres qui restent avant le point des trois quarts

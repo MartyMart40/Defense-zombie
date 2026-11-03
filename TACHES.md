@@ -19,6 +19,7 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 | # | Tâche | Date |
 |---|-------|------|
+| 29 | Survivants : revenu passé de 1 $ à 10 $ par minute chacun (js/23-rue.js) | 2026-11-03 |
 | 28 | Sauvegarde dans un fichier (OneDrive) : écran Sauvegarde sur l'écran titre, enregistrer (partage sur cell, téléchargement sur ordi) et charger avec vérification (js/32-sauvegarde.js) | 2026-11-03 |
 | 25 | Survivant : invincible jusqu'aux trois quarts du trajet, attrapé là seulement si un poursuivant vit encore ; poursuivants plus lents au départ ; flèche et halo verts visibles de loin (js/23-rue.js) | 2026-11-03 |
 | 26 | Sons : vraie pluie (bruit rose et brun longs, filtres qui dérivent, gouttes au hasard), tirs en couches différents à chaque coup et par arme, ambiances météo (js/01-son.js) | 2026-11-03 |

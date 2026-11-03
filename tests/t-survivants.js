@@ -1,5 +1,5 @@
 'use strict';
-// Survivants : poursuivants à abattre en 5 s, survivant qui reste et rapporte 1 $ par minute
+// Survivants : poursuivants à abattre avant les trois quarts, survivant qui reste et rapporte 10 $ par minute
 (function(){
   if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
   function pret(){ return lire('typeof __surv === "object" && typeof __rue === "object"') === true; }
@@ -25,7 +25,7 @@
     ok(r.safe, 'Survivant hors de danger après les poursuivants abattus');
     egal(r.st, 'saved', 'État du survivant');
     egal(r.survivors, 1, 'Survivants sur le toit');
-    ok(r.gain >= 1, 'Revenu passif après une minute : ' + r.gain);
+    egal(r.gain, 10, 'Revenu passif après une minute (10 $ par survivant)');
     egal(r.roof, 1, 'Silhouette sur le toit');
     egal(r.reset, 0, 'Nouvelle partie : survivants remis à zéro');
   });

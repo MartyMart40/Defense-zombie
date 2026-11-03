@@ -135,7 +135,7 @@ const Snd = {
       const f1 = c.createBiquadFilter(); f1.type = 'bandpass'; f1.frequency.value = rand(450, 700); f1.Q.value = 4;
       const f2 = c.createBiquadFilter(); f2.type = 'bandpass'; f2.frequency.value = rand(950, 1300); f2.Q.value = 6;
       const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(.16, t + .18); g.gain.exponentialRampToValueAtTime(0.001, t + d);
-      o.connect(f1); o.connect(f2); f1.connect(g); f2.connect(g); g.connect(this.master);
+      o.connect(f1); o.connect(f2); f1.connect(g); f2.connect(g); g.connect(this._out || this.master);
       o.start(t); lfo.start(t); o.stop(t + d + .05); lfo.stop(t + d + .05);
       this._nz(t, 'bandpass', rand(600, 900), 1.5, d * .8, .035, null, 300, .15);
     } catch (e) {}

@@ -340,7 +340,7 @@ function updateFx(dt){
     m.smk -= dt; if (m.smk <= 0){ m.smk = .05; burst(m.m.position, 'dust', 1, .3); }
     const near = m.tgt && m.m.position.distanceTo(zc(m.tgt)) < 1.4;
     if (near || m.m.position.y < .25 || m.age > 5){
-      m.m.visible = false; splash(m.m.position.x, m.m.position.z, m.r, m.dmg); Snd.burst(500, .6, .45);
+      m.m.visible = false; splash(m.m.position.x, m.m.position.z, m.r, m.dmg); if (Snd.boom) Snd.boom(.6); else Snd.burst(500, .6, .45);
       shake = Math.max(shake, .12);
     }
   }
@@ -361,7 +361,7 @@ function updateFx(dt){
       fallouts.push({ x:n.x, z:n.z, r:n.r, dps:n.dps, t:FALLOUT_T });
       NFX.t = 0; NFX.x = n.x; NFX.z = n.z; NFX.r = n.r;
       flashScreen(); shake = Math.max(shake, 1.4);
-      Snd.burst(260, 2.6, 1); Snd.tone(60, 2.2, 'sine', .6, 25);
+      if (Snd.boom) Snd.boom(2.5); else { Snd.burst(260, 2.6, 1); Snd.tone(60, 2.2, 'sine', .6, 25); }
     }
   }
   if (NFX.t >= 0){

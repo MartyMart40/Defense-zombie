@@ -65,9 +65,13 @@ function aliveCap(w, L){
   return Math.round(Math.min(DEV_CAP, BASE_ALIVE * (1 + k * .5) * (1 + .25 * (Math.max(1, w) - 1)) * Math.sqrt(INT())));
 }
 const ECO = .35; // part de l'argent et de l'XP par zombie (il y en a environ 5 fois plus qu'avant)
+// Chaque ville est CITY_SCALE fois plus dure que la précédente (vie et dégâts des zombies), en plus de L.diff :
+// à partir de la deuxième ville, le joueur a déjà talents, défenses et compagnon.
+const CITY_SCALE = 1.2;
+const cityScale = L => Math.pow(CITY_SCALE, (L && L.off) || 0);
 function wavePlan(w, L){
   L = L || curLoc;
-  const ew = w + L.off, k = L.diff - 1;
+  const ew = w + L.off, k = L.diff - 1, cs = cityScale(L);
   const mult = 1 + .15 * L.off; // chaque ville : +15 % de zombies
   const total = Math.round(30 * w * mult); // vague 1 : 30, vague 2 : 60, etc.
   const brutes = ew >= 4 ? Math.round((Math.floor((ew - 2) / 2) + (ew % 5 === 0 ? 2 : 0)) * (1 + (mult - 1) * .5)) : 0;
@@ -88,10 +92,10 @@ function wavePlan(w, L){
   for (let i = 0; i < room; i++) q.push('walker');
   add.forEach(a => { for (let i = 0; i < a[1]; i++) q.push(a[0]); });
   for (let i = q.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [q[i], q[j]] = [q[j], q[i]]; }
-  return { queue: q, total: q.length, hpMult: (1 + .1 * (w - 1)) * (1 + k * .6), spdMult: Math.min(1.7, (1 + .03 * (w - 1)) * (1 + k * .12)),
+  return { queue: q, total: q.length, hpMult: (1 + .1 * (w - 1)) * (1 + k * .6) * cs, spdMult: Math.min(1.7, (1 + .03 * (w - 1)) * (1 + k * .12)),
     interval: Math.max(.12, 1.2 / Math.sqrt(w) / (1 + k * .5)),
     maxAlive: aliveCap(w, L),
-    dmgMult: 1 + k * .6, cashMult: 1 + k * .5, xp: L.xp };
+    dmgMult: (1 + k * .6) * cs, cashMult: 1 + k * .5, xp: L.xp };
 }
 // Pour un futur mode (infini, « horde ») : une vague énorme avec le mélange de types et la force de la vague w de la ville L.
 //   total : nombre de zombies (des milliers possibles : ils attendent leur tour au bout de la rue)

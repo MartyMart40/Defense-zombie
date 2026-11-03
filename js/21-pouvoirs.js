@@ -183,7 +183,7 @@ function pwExplodeFx(x, y, z, r, big){
   pwBoom(x, Math.max(.8, y), z, r * 2.3);
   tmpV.set(x, Math.max(.3, y), z); burst(tmpV, 'dust', big ? 10 : 7, 3.5); burst(tmpV, pwEmber(), 5, 4);
   shake = Math.max(shake, big ? .45 : .3);
-  if (typeof Snd === 'object'){ Snd.burst(650, .7, big ? .7 : .55); Snd.tone(75, .55, 'sine', .4, 30); }
+  if (typeof Snd === 'object'){ if (Snd.boom) Snd.boom(big ? 1 : .8); else { Snd.burst(650, .7, big ? .7 : .55); Snd.tone(75, .55, 'sine', .4, 30); } }
 }
 
 /* ---------- Lancer (grenade, Molotov) ---------- */

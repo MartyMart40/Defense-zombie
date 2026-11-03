@@ -41,7 +41,7 @@ const Snd = {
     sniper:  { crack:[6000, .05, .55], body:[900, .5, .9],    thump:[95, 28, .34, .95],  echo:[.18, 1.4, .26, 800], echo2:.5, mech:'bolt' },
     crossbow:{ twang:true },
     flamer:  { flame:true },
-    minigun: { crack:[4800, .022, .2], body:[2000, .065, .22], thump:[140, 60, .06, .16], echo:[.07, .25, .05, 1400], light:true, buzz:true },
+    minigun: { cont:true }, // son continu : mgTick
     rocket:  { crack:[1800, .06, .3], body:[700, .6, .6],     thump:[80, 30, .5, .55],   echo:[.2, 1.2, .18, 700], mech:'whoosh' }
   },
   lastShot: 0, shotN: 0,
@@ -53,13 +53,13 @@ const Snd = {
     const g = c.createGain();
     if (atk){ g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + atk); } else g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.0005, t + dur);
-    s.connect(f); f.connect(g); g.connect(out || this.master); s.start(t, Math.random() * 1.8); s.stop(t + dur + .05);
+    s.connect(f); f.connect(g); g.connect(out || this._out || this.master); s.start(t, Math.random() * 1.8); s.stop(t + dur + .05);
   },
   _osc(t, type, f0, f1, dur, vol, out){
     const c = this.ctx, o = c.createOscillator(), g = c.createGain(); o.type = type;
     o.frequency.setValueAtTime(f0, t); if (f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
     g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0005, t + dur);
-    o.connect(g); g.connect(out || this.master); o.start(t); o.stop(t + dur + .05);
+    o.connect(g); g.connect(out || this._out || this.master); o.start(t); o.stop(t + dur + .05);
   },
   // Rend true quand l'arme est connue (le son est joué), false sinon
   shot(kind){
@@ -76,7 +76,9 @@ const Snd = {
       if (P.flame){ // lance-flammes : souffle grondant (appelé très souvent : une seule couche)
         this._nz(t, 'lowpass', 700 * tim, 0, .16, .1 * vol, null, 300); return true;
       }
+      if (P.cont){ if (gap > .25) this._nz(t, 'highpass', 4000 * tim, 0, .02, .12 * vol); return true; } // minigun : le son continu vient de mgTick
       const busy = gap < .09; // tir rapide : on allège (moins de nœuds audio par seconde)
+      this._out = this._fx();
       const cr = P.crack, bo = P.body, th = P.thump, ec = P.echo;
       this._nz(t, 'highpass', cr[0] * tim, 0, cr[1] * rand(.8, 1.25), cr[2] * vol);
       this._nz(t, 'lowpass', bo[0] * tim, rand(.5, 2.5), bo[1] * rand(.85, 1.2), bo[2] * vol, null, 140);
@@ -91,20 +93,133 @@ const Snd = {
       else if (P.mech === 'bolt'){ this._nz(t + .55, 'bandpass', 3200, 5, .035, .1); this._nz(t + .72, 'bandpass', 2600, 5, .04, .11); }
       else if (P.mech === 'whoosh') this._nz(t, 'bandpass', 900, 1.2, .9, .3 * vol, null, 2600, .05);
     }catch(e){}
+    this._out = null;
     return true;
   },
-  hit(){ this.tone(1100, .05, 'square', .05, 600); },
-  reload(){ this.tone(1500, .04, 'square', .07, 900); this.tone(900, .05, 'square', .08, 500, .28); },
-  empty(){ this.tone(2000, .03, 'square', .05); },
-  thud(){ this.burst(400, .22, .45); },
-  buy(){ this.tone(700, .08, 'triangle', .12); this.tone(1050, .12, 'triangle', .12, null, .08); },
+  /* ---------- Effets du jeu ---------- */
+  // Impact sur un zombie : choc mat dans la chair, petit claquement
+  hit(){
+    if (!this.ctx) return;
+    try { const t = this.ctx.currentTime, p = rand(.85, 1.15);
+      this._nz(t, 'lowpass', 1400 * p, 1, .06, .14); this._osc(t, 'sine', 190 * p, 80, .07, .1); this._nz(t, 'bandpass', 3200 * p, 4, .02, .05);
+    } catch (e) {}
+  },
+  // Recharge : déclic du chargeur, chargeur qui glisse, claque en place, culasse armée
+  reload(){
+    if (!this.ctx) return;
+    try { const t = this.ctx.currentTime, p = rand(.92, 1.08);
+      this._nz(t, 'bandpass', 3400 * p, 6, .025, .12);
+      this._nz(t + .12, 'bandpass', 1500 * p, 2, .14, .06, null, 900);
+      this._nz(t + .5, 'bandpass', 2300 * p, 5, .04, .16); this._osc(t + .5, 'sine', 160 * p, 90, .06, .08);
+      this._nz(t + .72, 'bandpass', 2800 * p, 6, .03, .12); this._nz(t + .82, 'bandpass', 2000 * p, 6, .04, .14);
+    } catch (e) {}
+  },
+  // Chargeur vide : percuteur qui claque à sec
+  empty(){ if (!this.ctx) return; try { const t = this.ctx.currentTime; this._nz(t, 'bandpass', 4200, 9, .02, .1); this._nz(t + .012, 'bandpass', 1800, 6, .02, .05); } catch (e) {} },
+  // Coup sur la barricade : bois qui craque, choc sourd
+  thud(){
+    if (!this.ctx) return;
+    try { const t = this.ctx.currentTime, p = rand(.85, 1.15);
+      this._nz(t, 'lowpass', 700 * p, 1, .25, .4, null, 150); this._osc(t, 'sine', 95 * p, 45, .2, .3); this._nz(t, 'bandpass', 1700 * p, 3, .06, .15);
+      if (Math.random() < .4) this._nz(t + rand(.03, .08), 'bandpass', rand(2200, 3200), 5, .05, .08); // éclat de bois
+    } catch (e) {}
+  },
+  buy(){ this.tone(700, .08, 'triangle', .12); this.tone(1050, .12, 'triangle', .12, null, .08); this.tone(1580, .14, 'sine', .05, null, .16); },
+  // Grognement : voix rauque (dent de scie avec vibrato) passée dans deux formants, et un souffle
   groan(){
-    if (!this.ctx) return; const c = this.ctx, t = c.currentTime, d = rand(.8, 1.5);
-    const o = c.createOscillator(); o.type = 'sawtooth'; const f0 = rand(70, 120);
-    o.frequency.setValueAtTime(f0, t); o.frequency.linearRampToValueAtTime(f0 * .7, t + d);
-    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420;
-    const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(.09, t + .2); g.gain.exponentialRampToValueAtTime(0.001, t + d);
-    o.connect(lp); lp.connect(g); g.connect(this.master); o.start(t); o.stop(t + d + .05);
+    if (!this.ctx) return; const c = this.ctx, t = c.currentTime, d = rand(.8, 1.6);
+    try {
+      const o = c.createOscillator(); o.type = 'sawtooth'; const f0 = rand(65, 115);
+      o.frequency.setValueAtTime(f0, t); o.frequency.linearRampToValueAtTime(f0 * rand(.6, .8), t + d);
+      const lfo = c.createOscillator(), lg = c.createGain(); lfo.frequency.value = rand(5, 9); lg.gain.value = f0 * .06; lfo.connect(lg); lg.connect(o.frequency);
+      const f1 = c.createBiquadFilter(); f1.type = 'bandpass'; f1.frequency.value = rand(450, 700); f1.Q.value = 4;
+      const f2 = c.createBiquadFilter(); f2.type = 'bandpass'; f2.frequency.value = rand(950, 1300); f2.Q.value = 6;
+      const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(.16, t + .18); g.gain.exponentialRampToValueAtTime(0.001, t + d);
+      o.connect(f1); o.connect(f2); f1.connect(g); f2.connect(g); g.connect(this.master);
+      o.start(t); lfo.start(t); o.stop(t + d + .05); lfo.stop(t + d + .05);
+      this._nz(t, 'bandpass', rand(600, 900), 1.5, d * .8, .035, null, 300, .15);
+    } catch (e) {}
+  },
+  // Explosion : claquement, boule de feu grave, grondement qui roule dans la rue, débris qui retombent
+  boom(power, delay){
+    if (!this.ctx) return; const p = power || 1;
+    try { const t = this.ctx.currentTime + (delay || 0), o = this._fx();
+      this._nz(t, 'highpass', 2500, 0, .06, .5 * Math.min(p, 1.5), o);
+      this._nz(t, 'lowpass', 1600, 1, .9 + .4 * p, .9 * Math.min(p, 1.6), o, 90);
+      this._osc(t, 'sine', 70, 22, .8 + .4 * p, .8 * Math.min(p, 1.5), o);
+      this._nz(t + .05, 'lowpass', 400, 1, 1.6 + p, .45 * Math.min(p, 1.6), o, 60, .1);
+      for (let i = 0; i < 4; i++) this._nz(t + rand(.25, .9), 'bandpass', rand(1500, 4000), 6, rand(.03, .08), rand(.03, .08), o);
+    } catch (e) {}
+  },
+  /* ---------- Réverbération de rue (tirs et explosions) ----------
+     Bus fxBus : son direct vers master + envoi dans une réverbération (réponse générée : échos sur les façades, queue de 1,5 s). */
+  fxBus: null, rev: null,
+  _fx(){
+    if (!this.ctx || !this.master) return null;
+    if (this.fxBus && this.fxBus.context === this.ctx) return this.fxBus;
+    try {
+      const c = this.ctx, sr = c.sampleRate, n = Math.floor(sr * 1.5), ir = c.createBuffer(2, n, sr);
+      for (let ch = 0; ch < 2; ch++){
+        const d = ir.getChannelData(ch);
+        for (let i = 0; i < n; i++){ const tt = i / sr; d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.2) * (tt < .02 ? tt / .02 : 1) * .5; }
+        [[.055, .6], [.09, .45], [.15, .35], [.23, .25]].forEach(e => { const k = Math.floor((e[0] + ch * .007) * sr); for (let j = 0; j < 300; j++) d[k + j] += (Math.random() * 2 - 1) * e[1] * (1 - j / 300); });
+      }
+      const bus = c.createGain(), cv = c.createConvolver(), send = c.createGain(), lp = c.createBiquadFilter();
+      cv.buffer = ir; send.gain.value = .32; lp.type = 'lowpass'; lp.frequency.value = 3800;
+      bus.connect(this.master); bus.connect(send); send.connect(lp); lp.connect(cv); cv.connect(this.master);
+      this.fxBus = bus; this.rev = cv;
+    } catch (e) { this.fxBus = this.master; }
+    return this.fxBus;
+  },
+  /* ---------- Minigun : vrai son continu ----------
+     Moteur électrique qui siffle en montant en régime (suit spin de 0 à 1), puis « brrrrt » continu pendant le tir :
+     tampon d'une seconde de coups très rapprochés (environ 55 par seconde, irréguliers), en boucle, avec écho de rue à l'arrêt.
+     mgTick(spin, tir) est appelé à chaque image par 20-armes.js ; sans appel depuis 0,25 s, tout se coupe (pause, menu). */
+  mg: null, mgLast: 0, mgFiring: false,
+  _mgBuf(){
+    if (this._mgB && this._mgB.sampleRate === this.ctx.sampleRate) return this._mgB;
+    const sr = this.ctx.sampleRate, n = sr, b = this.ctx.createBuffer(1, n, sr), d = b.getChannelData(0);
+    let tt = 0;
+    while (tt < 1){
+      const k0 = Math.floor(tt * sr), a = rand(.65, 1), f = rand(95, 135);
+      for (let j = 0; j < sr * .03 && k0 + j < n; j++){
+        const u = j / sr;
+        d[k0 + j] += (Math.random() * 2 - 1) * a * Math.exp(-u / .0035) + Math.sin(u * f * 6.283) * .55 * a * Math.exp(-u / .012);
+      }
+      tt += rand(.016, .02);
+    }
+    for (let i = 0; i < n; i++) d[i] = Math.max(-1, Math.min(1, d[i] * .7));
+    return (this._mgB = b);
+  },
+  mgTick(sp, firing){
+    if (!this.ctx || !this.master) return;
+    const c = this.ctx, t = c.currentTime; this.mgLast = t;
+    sp = Math.max(0, Math.min(1, +sp || 0)); firing = !!firing;
+    try {
+      if (!this.mg && (sp > 0 || firing)){
+        const mo = c.createOscillator(), m2 = c.createOscillator(), mf = c.createBiquadFilter(), mgn = c.createGain();
+        mo.type = 'sawtooth'; m2.type = 'triangle'; mf.type = 'lowpass'; mf.frequency.value = 1600; mgn.gain.value = 0.0001;
+        mo.connect(mf); m2.connect(mf); mf.connect(mgn); mgn.connect(this.master);
+        const bs = c.createBufferSource(); bs.buffer = this._mgBuf(); bs.loop = true;
+        const bf = c.createBiquadFilter(); bf.type = 'lowpass'; bf.frequency.value = 4500;
+        const bg = c.createGain(); bg.gain.value = 0.0001; bs.connect(bf); bf.connect(bg); bg.connect(this._fx() || this.master);
+        mo.start(t); m2.start(t); bs.start(t, Math.random());
+        this.mg = { mo, m2, mgn, bs, bg, idle:0 };
+      }
+      const M = this.mg; if (!M) return;
+      M.mo.frequency.setTargetAtTime(90 + 520 * sp, t, .05); M.m2.frequency.setTargetAtTime(180 + 1500 * sp, t, .05);
+      M.mgn.gain.setTargetAtTime(sp > 0 ? .02 + .05 * sp : 0.0001, t, .06);
+      M.bg.gain.setTargetAtTime(firing ? .5 : 0.0001, t, firing ? .006 : .03);
+      if (firing && Math.random() < .05) M.bs.playbackRate.setTargetAtTime(rand(.96, 1.05), t, .2);
+      if (this.mgFiring && !firing) this._nz(t + .02, 'bandpass', 800, .8, .7, .16, this._fx(), 200, .02); // écho de la rafale
+      this.mgFiring = firing;
+      if (sp <= 0 && !firing){ M.idle += 1; if (M.idle > 90) this._mgStop(); } else M.idle = 0;
+    } catch (e) { this.mg = null; }
+  },
+  _mgStop(){
+    const M = this.mg; this.mg = null; this.mgFiring = false; if (!M || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    try { M.mgn.gain.setTargetAtTime(0.0001, t, .05); M.bg.gain.setTargetAtTime(0.0001, t, .02); M.mo.stop(t + .4); M.m2.stop(t + .4); M.bs.stop(t + .4); } catch (e) {}
   },
   // Tonnerre : grondement grave, un peu après l'éclair (delay en secondes)
   thunder(delay, power){
@@ -156,6 +271,7 @@ const Snd = {
     v = Math.max(0, +v || 0);
     if (!this.ctx){ this.rainLvl = 0; return; }
     this.rainLvl = v;
+    if (this.mg && this.ctx.currentTime - this.mgLast > .25) this._mgStop(); // minigun lâchée (pause, menu, autre arme)
     try { this._rainTick(); this._ambTick(); } catch (e) { this.rainNodes = null; this.rainSrc = null; this.rainGain = null; }
   },
   _rainTick(){

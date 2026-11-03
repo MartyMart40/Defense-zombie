@@ -402,6 +402,11 @@ try {
     if (r === false) return r;
     const rm = accMul(id, 'recoil'); if (rm < 1) recoilAcc = Math.max(0, recoilAcc - W.recoil * (zoomed ? .6 : 1) * (1 - rm));
     if (W.beam){ armMuzzle(arsA); arsBeam(arsA, arsEnd(arsB), W.beam.c, W.beam.w, W.beam.life); }
+    else if (!W.kind && !W.chain && W.pellets === 1 && Math.random() < (W.rate >= 8 ? .45 : .8)){
+      // Traçante : trait lumineux très bref du canon vers la cible (balles)
+      armMuzzle(arsA); arsEnd(arsB); arsT.copy(arsB).sub(arsA).multiplyScalar(rand(.35, .7)).add(arsA);
+      arsBeam(arsA, arsT, 0xffd890, .025, .045);
+    }
     if (W.chain) arsChain(id, first);
     return r;
   };

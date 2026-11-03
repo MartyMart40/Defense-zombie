@@ -172,7 +172,7 @@ function rueBarrelBlow(b, byPlayer){
   rueLight.position.set(x, 3, z0); rueLight.intensity = 7;
   const near = clamp(1 - camera.position.distanceTo(RUE_V) / 60, 0, 1);
   shake = Math.max(shake, .35 + .6 * near);
-  if (typeof Snd === 'object'){ Snd.burst(450, 1.1, .9); Snd.tone(55, .9, 'sine', .7, 22); }
+  if (typeof Snd === 'object'){ if (Snd.boom) Snd.boom(1.1); else { Snd.burst(450, 1.1, .9); Snd.tone(55, .9, 'sine', .7, 22); } }
   if (kills >= 2){ RUE_V.y = 2.5; rueFloat('Baril ! +' + kills, RUE_V, '#ffb040', true); }
   RUE.active = true;
   // Réaction en chaîne et ce qui est autour (caisse, civil)

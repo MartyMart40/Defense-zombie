@@ -19,6 +19,9 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 | # | Tâche | Date |
 |---|-------|------|
+| 35 | Sons : minigun en continu (moteur qui monte en régime, rafale d'environ 55 coups/s, écho), réverbération de rue, explosions, impacts, recharge, grognements (js/01-son.js) | 2026-11-03 |
+| 34 | Armes en main : reflets métalliques, éclairage en trois points, éclair de bouche en étoile, traçantes (js/04-arme-en-main.js, js/34-arsenal.js) | 2026-11-03 |
+| 33 | Difficulté : chaque ville 20 % plus dure que la précédente, vie et dégâts des zombies (CITY_SCALE, js/06-donnees.js) | 2026-11-03 |
 | 32 | Arsenal : 5 armes lourdes (mitrailleuse .50, fusil laser, canon électromagnétique, lance-grenades auto, fusil à arc électrique) et 7 accessoires visibles sur l'arme (point rouge, lunette ×4, trépied, pointeur laser, chargeur tambour, poignée avant, canon long) (js/34-arsenal.js) | 2026-11-03 |
 | 31 | Écritures du jeu (Tête !, +15 $, Point faible...) dans une colonne à gauche au lieu d'au-dessus du viseur (js/33-ecritures.js) | 2026-11-03 |
 | 30 | Chaque survivant devient un tireur sur le rebord du toit (js/23-rue.js) | 2026-11-03 |

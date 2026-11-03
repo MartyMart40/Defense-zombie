@@ -9,14 +9,34 @@
 const vmScene = new THREE.Scene();
 const vmCam = new THREE.PerspectiveCamera(55, 1, 0.01, 10);
 vmScene.add(vmCam);
-vmScene.add(new THREE.HemisphereLight(0xffb070, 0x2a1a14, 0.9));
-vmScene.add(new THREE.AmbientLight(0x503020, 0.45));
+vmScene.add(new THREE.HemisphereLight(0xffb070, 0x2a1a14, 0.75));
+vmScene.add(new THREE.AmbientLight(0x503020, 0.35));
 const vmSun = new THREE.DirectionalLight(0xff9a50, 0.5); vmSun.position.set(-1, 1, -2); vmScene.add(vmSun);
+// Éclairage en trois points : lumière principale chaude en haut à droite (reflets sur le métal), lumière de contour
+// froide derrière (découpe la silhouette), petite lumière d'appoint en bas à gauche
+const vmKey = new THREE.DirectionalLight(0xffe2c0, .42); vmKey.position.set(1.2, 1.6, .6); vmScene.add(vmKey);
+const vmRim = new THREE.DirectionalLight(0x9ab8ff, .45); vmRim.position.set(-.6, .4, -2.2); vmScene.add(vmRim);
+const vmFill = new THREE.DirectionalLight(0xffa060, .2); vmFill.position.set(-1, -.8, .5); vmScene.add(vmFill);
 const vmRoot = new THREE.Group(); vmCam.add(vmRoot);
 const VM_POS = new THREE.Vector3(0.22, -0.22, -0.48);
 const VM_SCALE = .8;
 vmRoot.position.copy(VM_POS); vmRoot.scale.setScalar(VM_SCALE);
-const flashMat = new THREE.SpriteMaterial({ map: glowTex, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, fog: false, color: 0xffd090 });
+// Éclair de bouche : étoile à branches irrégulières avec un cœur blanc (plus vrai qu'une simple lueur ronde)
+const vmFlashTex = canvasTex(128, 128, (g, w, h) => {
+  const cx = w / 2, cy = h / 2;
+  const gr = g.createRadialGradient(cx, cy, 0, cx, cy, w / 2);
+  gr.addColorStop(0, 'rgba(255,255,240,1)'); gr.addColorStop(.18, 'rgba(255,220,140,.95)'); gr.addColorStop(.45, 'rgba(255,140,40,.35)'); gr.addColorStop(1, 'rgba(255,90,20,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 9; i++){
+    const a = i / 9 * Math.PI * 2 + Math.random() * .3, L = w * (.28 + Math.random() * .2), wd = .07 + Math.random() * .06;
+    g.beginPath(); g.moveTo(cx, cy);
+    g.lineTo(cx + Math.cos(a - wd) * L * .35, cy + Math.sin(a - wd) * L * .35); g.lineTo(cx + Math.cos(a) * L, cy + Math.sin(a) * L);
+    g.lineTo(cx + Math.cos(a + wd) * L * .35, cy + Math.sin(a + wd) * L * .35); g.closePath();
+    g.fillStyle = 'rgba(255,190,90,.55)'; g.fill();
+  }
+});
+const flashMat = new THREE.SpriteMaterial({ map: vmFlashTex, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, fog: false, color: 0xffe0b0 });
 const flash = new THREE.Sprite(flashMat); flash.visible = false; flash.renderOrder = 1001;
 const muzzleLight = new THREE.PointLight(0xffb060, 0, 30, 2); camera.add(muzzleLight); muzzleLight.position.set(0.2, -0.1, -1.2);
 const vmFlashLight = new THREE.PointLight(0xffb060, 0, 2, 2); vmCam.add(vmFlashLight); vmFlashLight.position.set(0, 0, -.7);
@@ -31,7 +51,8 @@ const vmTex = canvasTex(128, 128, (g, w, h) => {
   for (let i = 0; i < 14; i++) g.fillRect(Math.random() * w, Math.random() * h, 4 + Math.random() * 14, 1);
 });
 vmTex.wrapS = vmTex.wrapT = THREE.RepeatWrapping;
-const vmMat = new THREE.MeshLambertMaterial({ vertexColors: true, map: vmTex, fog: false, emissive: 0x0d0805 });
+// Phong : reflets spéculaires (métal bleui, polymère satiné) ; la texture d'usure module aussi les reflets
+const vmMat = new THREE.MeshPhongMaterial({ vertexColors: true, map: vmTex, specularMap: vmTex, fog: false, emissive: 0x0d0805, specular: 0x3a3632, shininess: 48 });
 const vmFlameMat = new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
 const vmShellMat = new THREE.MeshLambertMaterial({ color: 0xffffff, fog: false, emissive: 0x0d0805 });
 

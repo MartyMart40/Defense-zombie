@@ -97,4 +97,40 @@
     egal(r.err.length, 0, 'Erreurs : ' + r.err.join(' | ') + '\nNombre');
     if (r.audio){ ok(r.vent, 'Le vent doit démarrer'); ok(r.arret, 'L’ambiance doit s’arrêter'); ok(r.zero, 'Niveaux remis à zéro'); }
   });
+
+  test('Sons : minigun en continu (moteur qui monte, rafale en boucle, arrêt quand on lâche)', () => {
+    exiger(); avecAudio();
+    const r = J(function(){
+      var o = {};
+      Snd._mgStop();
+      Snd.mgTick(.3, false); o.moteur = !!Snd.mg && !!Snd.mg.mo; o.boucle = Snd.mg ? Snd.mg.bs.loop : false;
+      Snd.mgTick(1, true); o.tir = Snd.mgFiring;
+      var b = Snd._mgBuf(); o.duree = b.duration;
+      var d = b.getChannelData(0), pics = 0, haut = false;
+      for (var i = 0; i < d.length; i++){ var v = Math.abs(d[i]) > .5; if (v && !haut) pics++; haut = v; }
+      o.pics = pics;
+      var n0 = Snd.shotN; Snd.shot('minigun'); o.shotRend = Snd.shotN === n0 + 1;
+      for (var k = 0; k < 95; k++) Snd.mgTick(0, false);
+      o.arret = !Snd.mg;
+      return o;
+    });
+    ok(r.moteur && r.boucle, 'Moteur et rafale en boucle');
+    ok(r.tir, 'La rafale doit jouer pendant le tir');
+    ok(r.duree >= .9, 'Tampon de rafale : ' + r.duree + ' s');
+    ok(r.pics >= 40, 'Coups par seconde dans la rafale : ' + r.pics);
+    ok(r.shotRend, 'Snd.shot(minigun) compte le coup');
+    ok(r.arret, 'Le son s’arrête une fois les canons arrêtés');
+  });
+
+  test('Sons : explosions, impacts, recharge et réverbération de rue sans erreur', () => {
+    exiger(); avecAudio();
+    const r = J(function(){
+      var err = [];
+      ['boom', 'hit', 'reload', 'empty', 'thud', 'groan', 'buy'].forEach(function(k){ try { if (typeof Snd[k] !== 'function') err.push(k + ' absent'); else Snd[k](1); } catch (e) { err.push(k + ' : ' + e.message); } });
+      var fx = Snd._fx();
+      return { err: err, rev: !!Snd.rev, fx: !!fx };
+    });
+    egal(r.err.join(' | '), '', 'Erreurs');
+    ok(r.fx && r.rev, 'Réverbération de rue créée');
+  });
 })();

@@ -136,7 +136,7 @@ function armExplode(pos, id){
   burst(pos, 'dust', 16, 5); burst(pos, 'wood', 6, 4);
   const near = clamp(1 - pos.distanceTo(camera.position) / 60, 0, 1);
   shake = Math.max(shake, .25 + .7 * near);
-  Snd.burst(500, 1, .95); Snd.tone(70, .8, 'sine', .7, 25);
+  if (Snd.boom) Snd.boom(id === 'gl' ? .75 : 1); else { Snd.burst(500, 1, .95); Snd.tone(70, .8, 'sine', .7, 25); }
   hitmT = .12;
   ARM.active = true;
 }
@@ -149,8 +149,9 @@ function armStep(dt){
     const was = spin;
     if (want) spin = Math.min(1, spin + dt / Math.max(.05, wSpin('minigun')));
     else spin = Math.max(0, spin - dt / 1.2);
-    if (want && was === 0) Snd.tone(70, wSpin('minigun'), 'sawtooth', .06, 320);
-  } else spin = 0;
+    if (Snd.mgTick) Snd.mgTick(spin, want && spin >= 1); // moteur et rafale continue (01-son.js)
+    else if (want && was === 0) Snd.tone(70, wSpin('minigun'), 'sawtooth', .06, 320);
+  } else { spin = 0; if (Snd.mg) Snd.mgTick(0, false); }
   if (!ARM.active) return;
   let busy = false;
   // Carreaux

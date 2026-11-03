@@ -74,7 +74,7 @@ function armLaunch(id){
   armDir.copy(armPt).sub(o.m.position);
   if (armDir.lengthSq() < 1) armDir.set(0, 0, -1).applyQuaternion(camera.quaternion);
   armDir.normalize();
-  o.v.copy(armDir).multiplyScalar(W.speed);
+  o.v.copy(armDir).multiplyScalar(W.speed * accK(id, 'speed')); // propulseur (34-arsenal.js)
   armTmp.copy(o.m.position).add(armDir); o.m.lookAt(armTmp); o.m.rotateY(Math.PI); // l'avant du modèle (z négatif) vers la cible
   o.m.visible = true; o.life = 0; o.id = id;
   if (W.kind === 'bolt'){ o.stuck = 0; o.left = wPierce(id); o.seen.length = 0; }

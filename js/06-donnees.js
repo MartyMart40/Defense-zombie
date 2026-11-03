@@ -141,7 +141,7 @@ const wSpread = id => WEAPONS[id].spread * Math.max(.2, 1 - .2 * wl(id, 'spread'
 const wBurn = id => (WEAPONS[id].burn || 0) * (1 + .3 * wl(id, 'burn')) * accK(id, 'burn');
 const wBurnDps = id => (WEAPONS[id].burnDps || 0) * (1 + .15 * wl(id, 'burn')) * (1 + .15 * wl(id, 'dmg')) * dmgMult() * accK(id, 'burnDps');
 const wSpin = id => (WEAPONS[id].spin || 0) * Math.max(.2, 1 - .18 * wl(id, 'spin'));
-const wRadius = id => (WEAPONS[id].radius || 0) * (1 + .12 * wl(id, 'radius'));
+const wRadius = id => (WEAPONS[id].radius || 0) * (1 + .12 * wl(id, 'radius')) * accK(id, 'radius');
 const dmgMult = () => (1 + .12 * S.upg.dmg) * (1 + .06 * T('marksman'));
 const reloadMult = () => Math.max(.3, (1 - .12 * S.upg.reload) * (1 - .07 * T('hands')));
 const headMult = () => 2.5 * (1 + .15 * T('headhunter'));

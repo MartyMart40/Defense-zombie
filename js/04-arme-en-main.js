@@ -654,9 +654,10 @@ function buildVM(){
 function vmTris(o){ let n = 0; o.traverse(m => { if (m.isMesh && m.geometry) n += (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3; }); return n; }
 
 /* ---------- Douilles éjectées : petit pool fixe, un seul appel de dessin (InstancedMesh) ---------- */
-const VM_SHELL_N = 12;
-// Types : 0 pistolet, 1 cartouche rouge, 2 assaut, 3 sniper, 4 minigun (rayon, longueur, couleur)
-const VM_SHELL_T = [[1, 1, 0xb08a3a], [2.1, 2.6, 0x9a2418], [.95, 1.7, 0xb08a3a], [1.25, 2.7, 0xb8923e], [1, 1.7, 0xa8823a]];
+const VM_SHELL_N = 48; // assez pour une rafale de minigun (environ 20 douilles en l'air à la fois)
+// Types : 0 pistolet, 1 cartouche rouge, 2 assaut, 3 sniper, 4 minigun, 5 calibre .50, 6 douille de grenade 40 mm, 7 sabot du canon électromagnétique
+// (rayon, longueur, couleur)
+const VM_SHELL_T = [[1, 1, 0xb08a3a], [2.1, 2.6, 0x9a2418], [.95, 1.7, 0xb08a3a], [1.25, 2.7, 0xb8923e], [1, 1.7, 0xa8823a], [1.7, 3.6, 0xc09440], [4.2, 2.6, 0x8a8a7a], [2.2, 2.2, 0x3a4048]];
 const vmShells = (function(){
   const sb = vmNew(); vmCyl(sb, .0045, .016, 0xffffff, 0, 0, 0, 0, 0, 0, 6);
   const geo = vmGeo(sb); geo.deleteAttribute('color'); geo.deleteAttribute('uv');
@@ -673,10 +674,12 @@ function vmEject(id){
   const P = vmShells, s = P.list[P.next]; P.next = (P.next + 1) % VM_SHELL_N; // le plus vieux est réutilisé
   VMS[id].updateWorldMatrix(true, false);
   s.p.copy(ud.eject).applyMatrix4(VMS[id].matrixWorld); vmCam.updateWorldMatrix(true, false); vmCam.worldToLocal(s.p);
-  if (ud.ejectDown) s.v.set(rand(.15, .4), rand(-.6, -.3), rand(-.05, .1));
-  else s.v.set(rand(.7, 1.1), rand(.55, .9), rand(.05, .3));
+  // Vers la droite, bien visible : en arc vers le haut (armes à culasse), en gerbe plus basse pour la minigun
+  // (l'arme est déjà à droite de l'écran : les douilles montent d'abord en arc pour rester visibles un instant)
+  if (ud.ejectDown) s.v.set(rand(.35, .65), rand(.75, 1.05), rand(-.05, .12));
+  else s.v.set(rand(.4, .7), rand(.7, 1), rand(.02, .2));
   s.r.set(rand(0, 6), rand(0, 6), 0); s.w.set(rand(-25, 25), rand(-25, 25), rand(-8, 8));
-  s.life = .7; s.t = ud.shell || 0;
+  s.life = 1; s.t = ud.shell || 0;
   P.col.setHex(VM_SHELL_T[s.t][2]); P.mesh.setColorAt(P.list.indexOf(s), P.col); P.mesh.instanceColor.needsUpdate = true;
 }
 function vmShellStep(dt){
@@ -689,7 +692,7 @@ function vmShellStep(dt){
     s.v.y -= 3.2 * dt; s.p.addScaledVector(s.v, dt);
     s.r.x += s.w.x * dt; s.r.y += s.w.y * dt; s.r.z += s.w.z * dt;
     const T = VM_SHELL_T[s.t], d = P.dummy;
-    d.position.copy(s.p); d.rotation.copy(s.r); d.scale.set(T[0], T[0], T[1]); d.updateMatrix();
+    d.position.copy(s.p); d.rotation.copy(s.r); d.scale.set(T[0] * 1.35, T[0] * 1.35, T[1] * 1.35); d.updateMatrix(); // un peu plus grosses : bien visibles
     P.mesh.setMatrixAt(i, d.matrix);
   }
   if (any || P.mesh.visible) P.mesh.instanceMatrix.needsUpdate = true; // rien à envoyer quand le pool dort
@@ -706,7 +709,7 @@ function vmShot(){
   if (ud.slide) VMA.slideK = 1;
   if (id === 'shotgun') VMA.pumpT = 0;
   else if (id === 'sniper') VMA.boltT = 0;
-  else if (ud.eject && (id !== 'minigun' || Math.random() < .7)) vmEject(id);
+  else if (ud.eject) vmEject(id);
 }
 function vmHook(){
   VMA.hooked = true;

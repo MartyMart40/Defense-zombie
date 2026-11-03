@@ -140,6 +140,7 @@
     Object.keys(jamais).forEach(k => jamais[k].forEach(id => ok(r[k].indexOf(id) < 0, k + ' ne devrait pas aller sur ' + id)));
     egal(r.nomSniper, 'Bipied', 'Nom sur le sniper'); egal(r.nomMg, 'Trépied', 'Nom sur la .50');
     ['ftank', 'fwide', 'flong', 'fnapalm', 'fpump'].forEach(k => egal((r[k] || []).join(','), 'flamer', k + ' : seulement sur le lance-flammes'));
+    ['rtandem', 'rfrag', 'rboost', 'rtwin', 'rguide'].forEach(k => egal((r[k] || []).join(','), 'rocket', k + ' : seulement sur le lance-roquettes'));
     ['reddot', 'scope', 'bipod', 'laserp', 'drum', 'grip', 'barrel'].forEach(k => ok(r[k].indexOf('flamer') < 0, k + ' ne va pas sur le lance-flammes'));
   });
 
@@ -185,5 +186,55 @@
     ok(Math.abs(r.range - 1.4) < 1e-9, 'Buse longue : portée ×' + r.range);
     ok(r.tris > 100 && r.appels <= 7 && r.muz, 'Accessoires visibles sur le lance-flammes (' + r.tris + ' triangles, ' + r.appels + ' appels)');
     ok(r.loin, 'Buse longue : un zombie à 36 m doit brûler');
+  });
+
+  test('Arsenal : accessoires du lance-roquettes (ogives, propulseur, tube jumelé, guidage)', () => {
+    exiger(); partie();
+    const r = J(function(){
+      var o = {}, id = 'rocket', d0 = wDmg(id), r0 = wRadius(id), m0 = magSize(id), tris0 = vmStats(id).tris;
+      o.tandem = __ars.accBuy(id, 'rtandem'); o.dmgT = wDmg(id) / d0;
+      o.frag = __ars.accBuy(id, 'rfrag'); o.ogives = ['rtandem', 'rfrag'].filter(function(k){ return __ars.accOwned(id, k); }).join(',');
+      o.rad = wRadius(id) / r0; o.dmgF = wDmg(id) / d0;
+      __ars.accBuy(id, 'rtwin'); o.mag = magSize(id) - m0;
+      __ars.accBuy(id, 'rboost'); __ars.accBuy(id, 'rguide');
+      equip(id); var st = vmStats(id); o.tris = st.tris - tris0; o.appels = st.calls;
+      // Vitesse au départ et guidage : un zombie à 5 m à droite de la ligne de tir doit être atteint
+      clearZombies(); var z = __t.placer('walker', 5, -40); z.hp = z.maxHp = 1e7; z.speed = 0; z.g.updateMatrixWorld(true);
+      camera.position.set(0, 1.3, -6); camera.lookAt(0, 1.3, -60); camera.updateMatrixWorld(true);
+      reloadT = 0; cool = 0; S.ammo[id] = magSize(id); var g0 = __ars.guided;
+      fire();
+      var rk = __armes.ARM.rockets.filter(function(x){ return x.m.visible; })[0]; o.vit = rk ? rk.v.length() : 0;
+      __t.sim(3, 1 / 30, function(){ return !__armes.ARM.rockets.some(function(x){ return x.m.visible; }); });
+      o.touche = z.hp < 1e7; o.guide = __ars.guided - g0;
+      return o;
+    });
+    ok(r.tandem && Math.abs(r.dmgT - 1.35) < 1e-9, 'Ogive tandem : dégâts ×' + r.dmgT);
+    egal(r.ogives, 'rfrag', 'Une seule ogive à la fois');
+    ok(Math.abs(r.rad - 1.35) < 1e-9 && Math.abs(r.dmgF - .9) < 1e-9, 'Fragmentation : rayon ×' + r.rad + ', dégâts ×' + r.dmgF);
+    egal(r.mag, 1, 'Tube jumelé : une roquette de plus');
+    ok(r.tris > 100 && r.appels <= 7, 'Accessoires visibles (' + r.tris + ' triangles, ' + r.appels + ' appels)');
+    ok(Math.abs(r.vit - 42 * 1.7) < .5, 'Propulseur : vitesse ' + r.vit);
+    ok(r.guide > 0, 'Le guidage doit corriger la trajectoire');
+    ok(r.touche, 'La roquette guidée doit atteindre le zombie décalé');
+  });
+
+  test('Arsenal : les armes à balles éjectent leurs douilles vers la droite, en rafale pour la minigun', () => {
+    exiger(); partie();
+    const r = J(function(){
+      var o = { types: {} };
+      ['pistol', 'rifle', 'minigun', 'mg50', 'gl', 'railgun'].forEach(function(id){
+        equip(id); vmAnim(1 / 60); vmShellClear();
+        var n0 = vmShells.next; vmShot(); vmAnim(1 / 60);
+        var s = vmShells.list[n0]; o.types[id] = { t: s.t, vx: s.v.x, vie: s.life > 0 };
+      });
+      equip('minigun'); vmShellClear();
+      for (var i = 0; i < 20; i++){ vmShot(); vmAnim(1 / 20); }
+      o.rafale = vmShells.list.filter(function(s){ return s.life > 0; }).length; o.cap = vmShells.mesh.count;
+      return o;
+    });
+    Object.keys(r.types).forEach(id => { ok(r.types[id].vie, id + ' : pas de douille'); ok(r.types[id].vx > .3, id + ' : douille pas vers la droite (' + r.types[id].vx + ')'); });
+    egal(r.types.mg50.t, 5, '.50 : grosse douille'); egal(r.types.gl.t, 6, 'Douille de grenade'); egal(r.types.railgun.t, 7, 'Sabot du canon');
+    ok(r.rafale >= 15, 'Minigun : douilles en l’air pendant une seconde de rafale : ' + r.rafale);
+    ok(r.cap >= 40, 'Capacité du pool : ' + r.cap);
   });
 })();

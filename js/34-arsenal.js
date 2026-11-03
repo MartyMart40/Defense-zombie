@@ -54,10 +54,16 @@ const ACC = {
   fwide:  { name:'Buse large',       desc:'Nappe de feu plus large : cône +40 %, portée −15 %.', k:.9, grp:'nozzle', fx:{ cone:1.4, range:.85 }, on:['flamer'] },
   flong:  { name:'Buse longue portée', desc:'Jet serré qui porte loin : portée +40 %, cône −20 %.', k:1, grp:'nozzle', fx:{ range:1.4, cone:.8 }, on:['flamer'] },
   fnapalm:{ name:'Mélange au napalm', desc:'Le feu colle : brûlure 50 % plus longue et 30 % plus forte.', k:1.2, fx:{ burn:1.5, burnDps:1.3 }, on:['flamer'] },
-  fpump:  { name:'Pompe haute pression', desc:'Plus de débit : dégâts directs +20 %.', k:1.1, fx:{ dmg:1.2 }, on:['flamer'] }
+  fpump:  { name:'Pompe haute pression', desc:'Plus de débit : dégâts directs +20 %.', k:1.1, fx:{ dmg:1.2 }, on:['flamer'] },
+  // Propres au lance-roquettes (une seule ogive à la fois)
+  rtandem:{ name:'Ogive tandem',     desc:'Double charge perforante : dégâts +35 %.', k:1.1, grp:'warhead', fx:{ dmg:1.35 }, on:['rocket'] },
+  rfrag:  { name:'Ogive à fragmentation', desc:'Éclats partout : rayon d’explosion +35 %, dégâts −10 %.', k:1, grp:'warhead', fx:{ radius:1.35, dmg:.9 }, on:['rocket'] },
+  rboost: { name:'Propulseur renforcé', desc:'La roquette file 70 % plus vite : plus facile de toucher ce qui bouge.', k:.9, fx:{ speed:1.7 }, on:['rocket'] },
+  rtwin:  { name:'Tube jumelé',      desc:'Un second tube : une roquette de plus par chargeur.', k:1.3, fx:{ mag:1.5 }, on:['rocket'] },
+  rguide: { name:'Guidage laser',    desc:'La roquette tourne vers le zombie le plus près de ta visée.', k:1.4, fx:{ guide:1 }, on:['rocket'] }
 };
 const accName = (k, id) => (ACC[k].alt && ACC[k].alt[id]) || ACC[k].name;
-const ACC_ORDER = ['reddot', 'scope', 'bipod', 'laserp', 'drum', 'grip', 'barrel', 'ftank', 'fwide', 'flong', 'fnapalm', 'fpump'];
+const ACC_ORDER = ['reddot', 'scope', 'bipod', 'laserp', 'drum', 'grip', 'barrel', 'ftank', 'fwide', 'flong', 'fnapalm', 'fpump', 'rtandem', 'rfrag', 'rboost', 'rtwin', 'rguide'];
 const accOwned = (id, k) => !!(S && S.acc && S.acc[id] && S.acc[id][k]);
 const accCost = (id, k) => Math.round((120 + (WEAPONS[id].price || 0) * .2) * ACC[k].k / 10) * 10;
 // Effet multiplicatif cumulé des accessoires montés (spread, dmg, mag, reload, recoil, zoom)
@@ -133,7 +139,7 @@ function arsBuild(){
     arsSights(b, SY, -.6, .06);
     arsHands(b, .05, -.3, .0, .034);
     vmMesh(g, b);
-    g.userData = { muzzle: -.74, muzzleY: .02, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.6), V3(0, SY, .06)], eject: V3(.036, .02, -.05), shell: 3 };
+    g.userData = { muzzle: -.74, muzzleY: .02, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.6), V3(0, SY, .06)], eject: V3(.036, .02, -.05), shell: 5 };
   }
   out.mg50 = g;
   /* ===== Fusil laser ===== */
@@ -176,7 +182,7 @@ function arsBuild(){
     arsSights(b, SY, -.48, .05);
     arsHands(b, .06, -.22, -.02, .04);
     vmMesh(g, b);
-    g.userData = { muzzle: -.68, muzzleY: .02, sightY: SY, adsZ: -.22, sight: [V3(0, SY, -.48), V3(0, SY, .05)] };
+    g.userData = { muzzle: -.68, muzzleY: .02, sightY: SY, adsZ: -.22, sight: [V3(0, SY, -.48), V3(0, SY, .05)], eject: V3(.045, .01, .02), shell: 7 };
   }
   out.railgun = g;
   /* ===== Lance-grenades automatique ===== */
@@ -196,7 +202,7 @@ function arsBuild(){
     arsSights(b, SY, -.42, .04);
     arsHands(b, .06, -.3, .02, .036);
     vmMesh(g, b);
-    g.userData = { muzzle: -.47, muzzleY: .02, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.42), V3(0, SY, .04)] };
+    g.userData = { muzzle: -.47, muzzleY: .02, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.42), V3(0, SY, .04)], eject: V3(.06, -.02, -.06), shell: 6 };
   }
   out.gl = g;
   /* ===== Fusil à arc électrique ===== */
@@ -292,6 +298,24 @@ function accSync(id){
         for (let i = 0; i < 2; i++) vmCyl(b, .027, .012, VC.rubber, .07, -.05, -.25 + i * .06, 0, 0, 0, 10);
         vmCyl(b, .008, .02, VC.steel, .07, -.05, -.28, 0, 0, 0, 6);
         vmCylAB(b, [.06, -.05, -.17], [.03, -.06, -.12], .005, VC.rubber, 5);
+      } else if (k === 'rtandem'){
+        vmCyl(b, .008, .13, VC.steel, 0, my, mz - .07, 0, 0, 0, 6);                               // sonde de l'ogive tandem
+        vmCyl(b, .014, .02, VC.red, 0, my, mz - .13, 0, 0, 0, 8);
+        vmRing(b, .056, .052, .03, VC.red, 0, my, mz + .1, 0, 0, 0, 12);                         // bande rouge
+      } else if (k === 'rfrag'){
+        vmRing(b, .062, .052, .05, VC.park, 0, my, mz + .08, 0, 0, 0, 12);                       // manchon à éclats
+        for (let i = 0; i < 8; i++){ const a = i / 8 * 6.283; vmBox(b, .012, .012, .04, VC.steel, Math.cos(a) * .062, my + Math.sin(a) * .062, mz + .08, 0, 0, a, 0); }
+      } else if (k === 'rboost'){
+        vmRing(b, .08, .05, .1, VC.oliveD, 0, my, .33, 0, 0, 0, 12);                            // grosse tuyère arrière
+        vmRing(b, .082, .07, .02, [2.4, 1, .3], 0, my, .29, 0, 0, 0, 12);                          // bague chauffée
+      } else if (k === 'rtwin'){
+        vmCyl(b, .048, .86, VC.olive, -.11, my, -.21, 0, 0, 0, 12);                               // second tube à gauche
+        vmRing(b, .058, .044, .05, VC.oliveD, -.11, my, -.66, 0, 0, 0, 10);
+        for (const z of [-.45, -.1, .12]) vmBox(b, .07, .016, .03, VC.park, -.055, my, z, 0, 0, 0, 0); // attaches
+      } else if (k === 'rguide'){
+        vmBox(b, .04, .045, .1, VC.poly, .075, my + .04, -.35, 0, 0, 0, .006);                    // désignateur laser
+        vmCyl(b, .012, .004, ARS_C.redG, .075, my + .04, -.402, 0, 0, 0, 8);
+        vmBox(b, .0025, .0025, 3, ARS_C.redG, .075, my + .04, -1.9, 0, 0, 0, 0);
       } else if (k === 'fpump'){
         vmBox(b, .04, .04, .08, VC.park, -.045, .03, -.32, 0, 0, 0, .006);                        // pompe sur le côté
         vmCyl(b, .012, .1, VC.steel, -.045, .062, -.32, 0, 0, 0, 8);                              // piston
@@ -435,6 +459,33 @@ try { const _b = wupgHTML; wupgHTML = function(){ const h = _b.apply(this, argum
   });
 })();
 
+/* ---------- Guidage laser des roquettes ---------- */
+// Chaque image, la roquette tourne (au plus ARS_TURN rad/s) vers le zombie vivant le plus près de son axe,
+// dans un cône de 30° devant elle et à moins de 90 m.
+const ARS_TURN = 2.6, arsG1 = new THREE.Vector3(), arsG2 = new THREE.Vector3();
+let arsGuided = 0;
+function arsGuide(dt){
+  if (!S || !accOwned('rocket', 'rguide') || typeof ARM !== 'object') return;
+  for (const o of ARM.rockets){
+    if (!o.m.visible || o.id !== 'rocket') continue;
+    const sp = o.v.length(); if (sp < .1) continue;
+    arsG1.copy(o.v).divideScalar(sp);
+    let best = null, bc = Math.cos(.52);
+    for (const z of zombies){
+      if (z.dead) continue;
+      arsCenter(z, arsG2).sub(o.m.position); const d = arsG2.length(); if (d < .5 || d > 90) continue;
+      const c = arsG2.dot(arsG1) / d; if (c > bc){ bc = c; best = z; }
+    }
+    if (!best) continue;
+    arsCenter(best, arsG2).sub(o.m.position).normalize();
+    const ang = Math.acos(clamp(arsG1.dot(arsG2), -1, 1)), k = ang > 1e-4 ? Math.min(1, ARS_TURN * dt / ang) : 1;
+    arsG1.lerp(arsG2, k).normalize(); o.v.copy(arsG1).multiplyScalar(sp);
+    arsT.copy(o.m.position).add(arsG1); o.m.lookAt(arsT); o.m.rotateY(Math.PI);
+    arsGuided++;
+  }
+}
+try { if (typeof armStep === 'function'){ const _b = armStep; armStep = function(dt){ try { arsGuide(dt || 0); } catch (e) {} return _b.apply(this, arguments); }; } } catch (e) {}
+
 /* ---------- Secousse de l'écran par arme (les grosses armes secouent plus) ---------- */
 // Valeur de shake (15-boucle.js : décalage de la caméra, amorti en environ 0,2 s). Un peu moins en visée.
 const ARS_SHAKE = { shotgun:.25, sniper:.3, minigun:.28, rocket:.6, mg50:.32, laser:.06, railgun:.7, gl:.42, arc:.2 };
@@ -464,5 +515,5 @@ try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, argum
 try { const _b = clearZombies; clearZombies = function(){ const r = _b.apply(this, arguments); arsFxClear(); return r; }; } catch (e) {}
 
 // Accès pour les tests automatiques
-window.__ars = { ARS_SHAKE, ARS_W, ACC, ACC_ORDER, accName, accMul, accAdd, accBuy, accCost, accOwned, accSync, arsChain, arsFirst,
+window.__ars = { get guided(){ return arsGuided; }, ARS_SHAKE, ARS_W, ACC, ACC_ORDER, accName, accMul, accAdd, accBuy, accCost, accOwned, accSync, arsChain, arsFirst,
   get beams(){ return arsBeamsN; }, get arcs(){ return arsArcN; } };

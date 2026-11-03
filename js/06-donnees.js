@@ -124,14 +124,16 @@ function newGame(){
 }
 // Niveau d'une amélioration propre à une arme
 const wl = (id, k) => (S && S.wupg && S.wupg[id] && S.wupg[id][k]) || 0;
-const magSize = id => { const W = WEAPONS[id], l = wl(id, 'mag'); return Math.round((W.magStep ? W.mag + W.magStep * l : W.mag * (1 + .25 * l)) * (1 + .2 * S.upg.mag)); };
+// Accessoires (34-arsenal.js) : accK(id, clé) multiplie la statistique, 1 sans accessoire
+const accK = (id, k) => (typeof accMul === 'function' ? accMul(id, k) : 1);
+const magSize = id => { const W = WEAPONS[id], l = wl(id, 'mag'); return Math.round((W.magStep ? W.mag + W.magStep * l : W.mag * (1 + .25 * l)) * (1 + .2 * S.upg.mag) * accK(id, 'mag')); };
 // Statistiques finales d'une arme (améliorations générales, de l'arme et talents)
-const wDmg = id => WEAPONS[id].dmg * (1 + .15 * wl(id, 'dmg')) * dmgMult();
+const wDmg = id => WEAPONS[id].dmg * (1 + .15 * wl(id, 'dmg')) * dmgMult() * accK(id, 'dmg');
 const wRate = id => WEAPONS[id].rate * (1 + .1 * wl(id, 'rate')) * (1 + .05 * T('trigger'));
-const wReload = id => WEAPONS[id].reload * Math.max(.4, 1 - .12 * wl(id, 'reload')) * reloadMult();
-const wPierce = id => WEAPONS[id].pierce + wl(id, 'pierce');
+const wReload = id => WEAPONS[id].reload * Math.max(.4, 1 - .12 * wl(id, 'reload')) * reloadMult() * accK(id, 'reload');
+const wPierce = id => WEAPONS[id].pierce + wl(id, 'pierce') + (typeof accAdd === 'function' ? accAdd(id, 'pierce') : 0);
 const wPellets = id => WEAPONS[id].pellets + 2 * wl(id, 'pellets');
-const wSpread = id => WEAPONS[id].spread * Math.max(.2, 1 - .2 * wl(id, 'spread'));
+const wSpread = id => WEAPONS[id].spread * Math.max(.2, 1 - .2 * wl(id, 'spread')) * accK(id, 'spread');
 const wBurn = id => (WEAPONS[id].burn || 0) * (1 + .3 * wl(id, 'burn'));
 const wBurnDps = id => (WEAPONS[id].burnDps || 0) * (1 + .15 * wl(id, 'burn')) * (1 + .15 * wl(id, 'dmg')) * dmgMult();
 const wSpin = id => (WEAPONS[id].spin || 0) * Math.max(.2, 1 - .18 * wl(id, 'spin'));

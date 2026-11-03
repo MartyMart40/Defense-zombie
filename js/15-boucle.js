@@ -40,7 +40,7 @@ function visuals(dt){
   if (hitmT > 0) hitmT -= dt;
   kick *= Math.exp(-14 * dt);
   shake *= Math.exp(-6 * dt);
-  const targetFov = (zoomed && state === 'playing') ? baseFov * (WEAPONS[S ? S.cur : 'pistol'].zoomFov / 70) : baseFov;
+  const targetFov = (zoomed && state === 'playing') ? baseFov * (WEAPONS[S ? S.cur : 'pistol'].zoomFov * (S ? accK(S.cur, 'zoom') : 1) / 70) : baseFov;
   if (Math.abs(camera.fov - targetFov) > .05){ camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 14); camera.updateProjectionMatrix(); }
   const sx = (Math.random() - .5) * shake * .05, sy = (Math.random() - .5) * shake * .05;
   camera.rotation.set(pitch + recoilAcc + sy, yaw + sx, 0);

@@ -19,6 +19,7 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 | # | Tâche | Date |
 |---|-------|------|
+| 32 | Arsenal : 5 armes lourdes (mitrailleuse .50, fusil laser, canon électromagnétique, lance-grenades auto, fusil à arc électrique) et 7 accessoires visibles sur l'arme (point rouge, lunette ×4, trépied, pointeur laser, chargeur tambour, poignée avant, canon long) (js/34-arsenal.js) | 2026-11-03 |
 | 31 | Écritures du jeu (Tête !, +15 $, Point faible...) dans une colonne à gauche au lieu d'au-dessus du viseur (js/33-ecritures.js) | 2026-11-03 |
 | 30 | Chaque survivant devient un tireur sur le rebord du toit (js/23-rue.js) | 2026-11-03 |
 | 29 | Survivants : revenu passé de 1 $ à 10 $ par minute chacun (js/23-rue.js) | 2026-11-03 |
@@ -78,5 +79,7 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 - Sons : écouter les tirs, la pluie, le vent, la grêle, les oiseaux et les cigales sur le cell (le volume des ambiances n'a pas été réglé à l'oreille).
 
 - Tireurs survivants : 30 % d'un tireur d'élite de base, soit 1 tir aux 2,5 s, 33 dégâts × force de la vague, sans tir à la tête, portée 75 m.
+
+- Arsenal : prix de 12 000 $ à 35 000 $ ; dans les villes courtes, ces armes seront surtout accessibles en mode infini. Accessoires achetés dans la boutique pour la partie (comme les améliorations de l'arme), à rendre permanents si Martin préfère.
 
 ## Idées en vrac

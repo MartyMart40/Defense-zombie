@@ -529,7 +529,12 @@ function survIncomeTxt(){
 }
 // Tireurs sur le toit : chaque survivant sauvé se poste sur le rebord, de part et d'autre de toi, et tire sur les zombies.
 // Au-delà de SURV_CFG.maxShown, les survivants en plus renforcent les tirs des tireurs visibles.
-const SURV_GUN = { rate:1.5, dmg:22, range:-75, spread:.5 }; // s entre deux tirs, dégâts (× force de la vague), portée (z), écart du rythme
+// Chaque tireur vaut 30 % d'un tireur d'élite de base (24-compagnon.js) : même cadence (un tir aux 2,5 s), 30 % de ses dégâts,
+// sans tir à la tête. Valeurs de secours si le compagnon n'est pas chargé.
+const SURV_GUN = { part:.3, rate:2.5, dmg:33, range:-75, spread:.4 }; // part du tireur d'élite, s entre deux tirs, dégâts (× force de la vague), portée (z), écart du rythme
+function survGunSync(){
+  try { if (typeof cpnStats === 'function'){ const c = cpnStats('sniper', {}); if (c && c.rate > 0){ SURV_GUN.rate = 1 / c.rate; SURV_GUN.dmg = c.dmg * SURV_GUN.part; } } } catch (e) {}
+}
 const SURV_X = [4.2, -5.6, 6.4, -7.6, 8.6, -9.6, 10.6, -11.6];
 const survRoofMat = [lam(0xd8d0b8), lam(0x6a8ab0), lam(0x3a3a44), lam(0xc8a080), lam(0x2a2826)];
 const survRoot = new THREE.Group(); scene.add(survRoot);
@@ -565,6 +570,7 @@ function survTarget(){
 let survShots = 0;
 function survShoot(dt){
   const n = (S && S.survivors) || 0; if (!n || !SURV.roof.length) return;
+  if (!SURV_GUN.synced){ survGunSync(); SURV_GUN.synced = true; }
   const shown = Math.min(n, SURV_CFG.maxShown), boost = n / shown; // survivants en plus : tirs renforcés
   for (let i = 0; i < shown && i < SURV.roof.length; i++){
     const g = SURV.roof[i], u = g.userData;

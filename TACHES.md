@@ -77,6 +77,6 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 - Météo : beau temps environ 70 % du temps, pluie et orage environ 7 à 10 %, tornade environ 1 à 2 %. À ajuster en jouant.
 - Sons : écouter les tirs, la pluie, le vent, la grêle, les oiseaux et les cigales sur le cell (le volume des ambiances n'a pas été réglé à l'oreille).
 
-- Tireurs survivants : 1 tir toutes les 1,5 s environ, 22 dégâts × force de la vague, portée 75 m. À ajuster en jouant.
+- Tireurs survivants : 30 % d'un tireur d'élite de base, soit 1 tir aux 2,5 s, 33 dégâts × force de la vague, sans tir à la tête, portée 75 m.
 
 ## Idées en vrac

@@ -128,8 +128,22 @@
     });
     egal(r.n, 2, 'Tireurs visibles sur le toit');
     ok(r.devant, 'Les tireurs doivent être sur le rebord, de chaque côté');
-    ok(r.tirs >= 4, 'Tirs en 4 s pour 2 survivants : ' + r.tirs);
+    ok(r.tirs >= 2 && r.tirs <= 6, 'Tirs en 4 s pour 2 survivants (un tir aux 2,5 s environ) : ' + r.tirs);
     ok(r.degats > 0, 'Les tirs doivent blesser le zombie');
     egal(r.sansCible, 0, 'Pas de tir sans zombie');
+  });
+  test('Survivants : un tireur vaut 30 % d’un tireur d’élite de base', () => {
+    if (!pret()) ignorer('Survivants absents');
+    if (lire('typeof cpnStats === "function"') !== true) ignorer('Compagnon absent (js/24-compagnon.js)');
+    partie();
+    const r = J(function(){
+      S.survivors = 1; __surv.survRoofSync(); update(1 / 30);
+      var c = cpnStats('sniper', {}), G = __surv.SURV_GUN;
+      S.survivors = 0; __surv.survRoofSync();
+      return { dps: G.dmg / G.rate, sniper: c.dmg * c.rate, dmg: G.dmg, sdmg: c.dmg, rate: G.rate, srate: 1 / c.rate };
+    });
+    ok(Math.abs(r.dmg / r.sdmg - .3) < 1e-6, 'Dégâts par tir : ' + r.dmg + ' contre ' + r.sdmg);
+    ok(Math.abs(r.rate - r.srate) < 1e-6, 'Cadence : un tir aux ' + r.rate + ' s');
+    ok(r.dps <= r.sniper * .3 + 1e-6, 'Dégâts par seconde : ' + r.dps.toFixed(1) + ' contre ' + r.sniper.toFixed(1));
   });
 })();

@@ -25,22 +25,32 @@ const ARS_W = {
 Object.keys(ARS_W).forEach(id => { WEAPONS[id] = ARS_W[id]; if (WORDER.indexOf(id) < 0) WORDER.push(id); });
 
 /* ---------- Accessoires ---------- */
+// Compatibilité réaliste : chaque accessoire ne se monte que sur les armes où il sert vraiment.
+//   Point rouge : armes qu'on épaule ou qu'on tient à vue (pas le lance-flammes, ni le sniper qui a déjà sa lunette).
+//   Lunette ×4 : armes précises à longue portée seulement (pas de lunette sur un fusil à pompe, un pistolet ou un lance-flammes).
+//   Trépied : armes lourdes qu'on pose (mitrailleuse .50, minigun, canon électromagnétique) ; bipied du sniper.
+//     Rien sur les armes légères (pistolet, fusil d'assaut, fusil à pompe) : ça n'y sert à rien.
+//   Pointeur laser : armes de poing et d'épaule légères, au tir rapide de près.
+//   Chargeur tambour : armes à chargeur (pas les armes à bande, à batterie, à barillet ou à réservoir).
+//   Poignée avant : armes d'épaule qu'on tient à deux mains par l'avant (pas celles qui ont déjà leurs poignées).
+//   Canon long : armes à canon rayé ou lisse qu'on peut rallonger.
 const ACC = {
   reddot: { name:'Point rouge',      desc:'Dispersion −35 %, zoom un peu plus fort.', k:.8, grp:'optic', fx:{ spread:.65, zoom:.88 },
             on:['pistol', 'shotgun', 'rifle', 'crossbow', 'minigun', 'mg50', 'laser', 'arc', 'gl', 'rocket'] },
   scope:  { name:'Lunette ×4',       desc:'Zoom bien plus fort, dispersion −25 %, dégâts +10 %.', k:1.4, grp:'optic', fx:{ zoom:.55, spread:.75, dmg:1.1 },
             on:['rifle', 'crossbow', 'mg50', 'laser', 'railgun'] },
-  bipod:  { name:'Trépied',          desc:'Recul −50 %, dispersion −30 %.', k:1, fx:{ recoil:.5, spread:.7 },
-            on:['rifle', 'sniper', 'minigun', 'mg50', 'railgun'] },
+  bipod:  { name:'Trépied',          desc:'Arme posée : recul −50 %, dispersion −30 %.', alt:{ sniper:'Bipied' }, k:1, fx:{ recoil:.5, spread:.7 },
+            on:['sniper', 'minigun', 'mg50', 'railgun'] },
   laserp: { name:'Pointeur laser',   desc:'Dispersion −25 %. Un trait rouge montre où tu tires.', k:.7, fx:{ spread:.75 },
-            on:['pistol', 'shotgun', 'rifle', 'crossbow', 'mg50', 'arc', 'gl'] },
+            on:['pistol', 'shotgun', 'rifle', 'crossbow'] },
   drum:   { name:'Chargeur tambour', desc:'Chargeur +50 %.', k:1.1, fx:{ mag:1.5 },
-            on:['pistol', 'shotgun', 'rifle', 'mg50', 'laser', 'arc', 'gl'] },
+            on:['pistol', 'shotgun', 'rifle'] },
   grip:   { name:'Poignée avant',    desc:'Recul −30 %, recharge 15 % plus vite.', k:.9, fx:{ recoil:.7, reload:.85 },
-            on:['shotgun', 'rifle', 'minigun', 'mg50', 'laser', 'arc', 'gl', 'rocket'] },
+            on:['shotgun', 'rifle', 'laser', 'arc', 'gl'] },
   barrel: { name:'Canon long',       desc:'Dégâts +15 %, traverse 1 zombie de plus.', k:1.3, fx:{ dmg:1.15, pierce:1 },
             on:['pistol', 'shotgun', 'rifle', 'sniper', 'mg50'] }
 };
+const accName = (k, id) => (ACC[k].alt && ACC[k].alt[id]) || ACC[k].name;
 const ACC_ORDER = ['reddot', 'scope', 'bipod', 'laserp', 'drum', 'grip', 'barrel'];
 const accOwned = (id, k) => !!(S && S.acc && S.acc[id] && S.acc[id][k]);
 const accCost = (id, k) => Math.round((120 + (WEAPONS[id].price || 0) * .2) * ACC[k].k / 10) * 10;
@@ -373,12 +383,12 @@ try {
 function accHTML(id){
   const W = WEAPONS[id]; if (!W) return '';
   const list = ACC_ORDER.filter(k => ACC[k].on.indexOf(id) >= 0);
-  if (!list.length) return '';
   let h = '<h4 class="wuh">Accessoires : ' + W.name + '</h4>';
+  if (!list.length) return h + '<div class="ds">Aucun accessoire ne sert sur cette arme.</div>';
   list.forEach(k => {
     const A = ACC[k], own = accOwned(id, k), c = accCost(id, k);
     const swap = A.grp && !own && ACC_ORDER.some(o => o !== k && ACC[o].grp === A.grp && accOwned(id, o));
-    h += '<div class="row"><div class="info"><div class="nm">' + A.name + (own ? ' ✓' : '') + '</div><div class="ds">' + A.desc + (swap ? ' Remplace l’optique montée.' : '') + '</div></div>'
+    h += '<div class="row"><div class="info"><div class="nm">' + accName(k, id) + (own ? ' ✓' : '') + '</div><div class="ds">' + A.desc + (swap ? ' Remplace l’optique montée.' : '') + '</div></div>'
       + '<button data-act="acc" data-id="' + id + '" data-k="' + k + '"' + (own || S.money < c ? ' disabled' : '') + '>' + (own ? 'Monté' : fmt(c)) + '</button></div>';
   });
   return h;
@@ -417,5 +427,5 @@ try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, argum
 try { const _b = clearZombies; clearZombies = function(){ const r = _b.apply(this, arguments); arsFxClear(); return r; }; } catch (e) {}
 
 // Accès pour les tests automatiques
-window.__ars = { ARS_W, ACC, ACC_ORDER, accMul, accAdd, accBuy, accCost, accOwned, accSync, arsChain, arsFirst,
+window.__ars = { ARS_W, ACC, ACC_ORDER, accName, accMul, accAdd, accBuy, accCost, accOwned, accSync, arsChain, arsFirst,
   get beams(){ return arsBeamsN; }, get arcs(){ return arsArcN; } };

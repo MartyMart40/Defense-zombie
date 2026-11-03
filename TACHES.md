@@ -19,6 +19,7 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 | # | Tâche | Date |
 |---|-------|------|
+| 36 | Accessoires : compatibilité réaliste (pas de trépied sur les armes légères, pas de lunette sur une arme de près, pas de tambour sur une arme à bande, rien sur le lance-flammes ; bipied du sniper) | 2026-11-03 |
 | 35 | Sons : minigun en continu (moteur qui monte en régime, rafale d'environ 55 coups/s, écho), réverbération de rue, explosions, impacts, recharge, grognements (js/01-son.js) | 2026-11-03 |
 | 34 | Armes en main : reflets métalliques, éclairage en trois points, éclair de bouche en étoile, traçantes (js/04-arme-en-main.js, js/34-arsenal.js) | 2026-11-03 |
 | 33 | Difficulté : chaque ville 20 % plus dure que la précédente, vie et dégâts des zombies (CITY_SCALE, js/06-donnees.js) | 2026-11-03 |

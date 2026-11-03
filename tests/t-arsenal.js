@@ -76,7 +76,8 @@
       o.dot = __ars.accBuy('rifle', 'reddot'); o.cout = m0 - S.money; o.sp = wSpread('rifle') / sp0; o.zoom = accK('rifle', 'zoom');
       o.scope = __ars.accBuy('rifle', 'scope'); o.optiques = ['reddot', 'scope'].filter(function(k){ return __ars.accOwned('rifle', k); });
       o.deux = __ars.accBuy('rifle', 'scope');
-      ['bipod', 'laserp', 'drum', 'grip', 'barrel'].forEach(function(k){ __ars.accBuy('rifle', k); });
+      o.bipodFusil = __ars.accBuy('rifle', 'bipod');
+      ['laserp', 'drum', 'grip', 'barrel'].forEach(function(k){ __ars.accBuy('rifle', k); });
       o.mag = magSize('rifle') / mag0; o.pierce = wPierce('rifle') - p0; o.dmg = wDmg('rifle') / d0; o.reload = wReload('rifle') / rl0;
       equip('rifle'); var st = vmStats('rifle'); o.tris = st.tris - tris0; o.appels = st.calls;
       o.pasCompat = __ars.accBuy('pistol', 'scope');
@@ -98,6 +99,7 @@
     ok(r.tris > 100, 'Accessoires visibles sur le modèle (' + r.tris + ' triangles de plus)');
     ok(r.appels <= 7, 'Appels de dessin avec accessoires : ' + r.appels);
     ok(!r.pasCompat, 'Lunette refusée sur le pistolet');
+    ok(!r.bipodFusil, 'Pas de trépied sur le fusil d’assaut');
     ok(r.muz && r.flash, 'Canon long : l’éclair part du bout du nouveau canon');
     ok(!r.pauvre, 'Achat refusé sans argent');
     ok(!r.apres.acc && !r.apres.mesh && r.apres.muz, 'Nouvelle partie : accessoires enlevés ' + JSON.stringify(r.apres));
@@ -111,15 +113,32 @@
       state = 'shop'; shopWSel = 'mg50'; renderShop();
       var btns = Array.prototype.slice.call(document.querySelectorAll('#shopUpg button[data-act="acc"]'));
       var o = { sans: sans, avec: avec, n: btns.length, monte: btns.some(function(b){ return b.dataset.k === 'bipod' && b.disabled; }) };
-      var grip = btns.filter(function(b){ return b.dataset.k === 'grip'; })[0], m0 = S.money;
+      var grip = btns.filter(function(b){ return b.dataset.k === 'barrel'; })[0], m0 = S.money;
       if (grip) grip.click();
-      o.clic = __ars.accOwned('mg50', 'grip') && S.money < m0;
+      o.clic = __ars.accOwned('mg50', 'barrel') && S.money < m0;
       state = 'test';
       return o;
     });
     ok(r.avec < r.sans * .6, 'Recul avec trépied : ' + r.avec + ' contre ' + r.sans);
-    ok(r.n >= 5, 'Accessoires de la .50 dans la boutique : ' + r.n);
+    egal(r.n, 4, 'Accessoires de la .50 dans la boutique (point rouge, lunette, trépied, canon long)');
     ok(r.monte, 'Le trépied acheté est marqué « Monté »');
     ok(r.clic, 'Un clic dans la boutique achète l’accessoire');
+  });
+
+  test('Arsenal : chaque accessoire seulement là où il sert dans la vraie vie', () => {
+    exiger();
+    const r = J(function(){ var o = {}; __ars.ACC_ORDER.forEach(function(k){ o[k] = __ars.ACC[k].on.slice(); }); o.nomSniper = __ars.accName('bipod', 'sniper'); o.nomMg = __ars.accName('bipod', 'mg50'); return o; });
+    const jamais = {
+      bipod: ['pistol', 'shotgun', 'rifle', 'crossbow', 'flamer', 'rocket', 'laser', 'arc', 'gl'],   // armes légères ou portées à l'épaule
+      scope: ['pistol', 'shotgun', 'flamer', 'minigun', 'rocket', 'gl', 'arc', 'sniper'],           // pas de lunette sur une arme de près (le sniper a la sienne)
+      reddot: ['flamer', 'sniper'],
+      drum: ['mg50', 'minigun', 'laser', 'arc', 'gl', 'flamer', 'rocket', 'crossbow', 'railgun', 'sniper'], // bande, batterie, barillet, réservoir
+      laserp: ['flamer', 'minigun', 'mg50', 'railgun', 'rocket'],
+      grip: ['pistol', 'minigun', 'mg50', 'rocket', 'flamer'],
+      barrel: ['flamer', 'rocket', 'gl', 'laser', 'arc', 'railgun', 'crossbow', 'minigun']
+    };
+    Object.keys(jamais).forEach(k => jamais[k].forEach(id => ok(r[k].indexOf(id) < 0, k + ' ne devrait pas aller sur ' + id)));
+    egal(r.nomSniper, 'Bipied', 'Nom sur le sniper'); egal(r.nomMg, 'Trépied', 'Nom sur la .50');
+    ok(Object.keys(r).every(k => typeof r[k] === 'string' || r[k].indexOf('flamer') < 0), 'Aucun accessoire sur le lance-flammes');
   });
 })();

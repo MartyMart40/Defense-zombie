@@ -66,7 +66,7 @@ const RTS_UPG_SPEC = {
   }
 };
 // Arme d'appoint achetée en amélioration (tir rapide) et missile lourd
-const RTS_GUNS = { bomber:{ k:'g25', dmg:22, rate:10, snd:'minigun' }, tank:{ k:'coax', dmg:14, rate:8, snd:'rifle' }, heli:{ k:'chaingun', dmg:30, rate:10, snd:'mg50', base:true } }; // base : l'Apache a son canon dès l'achat
+const RTS_GUNS = { bomber:{ k:'g25', dmg:22, rate:10, snd:'minigun' }, tank:{ k:'coax', dmg:14, rate:8, snd:'rifle' }, heli:{ k:'chaingun', dmg:26, rate:26, snd:'mg50', base:true } }; // base : l'Apache a son canon dès l'achat
 const rtsUpgDef = (type, k) => RTS_UPG[k] || (RTS_UPG_SPEC[type] || {})[k];
 const RTS_BLD = {
   hq:       { name:'QG',                     hp:6000, size:6,   cost:0,    fixed:true },

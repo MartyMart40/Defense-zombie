@@ -225,13 +225,13 @@ function rtsHellfire(u, dt, tgt, pilot){
   const l = rtsLv(u.type, 'hellfire') + (u.type === 'heli' ? 1 : 0); if (!l) return; // l'Apache a ses Hellfire dès l'achat
   u.cd4 = (u.cd4 || 0) - dt; if (u.cd4 > 0 || !tgt) return;
   u.cd4 = 3; const S4 = { dmg:300 * (1 + .4 * (l - 1)) * (1 + RTS_UPG.arm.k * rtsLv(u.type, 'arm')), splash:4, snd:'rocket', range:rtsStat(u, 'range') + 8 };
-  if (pilot){ rtsPilotShot(u, S4, 1.5); if (typeof rtsPosteShot === 'function') rtsPosteShot(u, 'w2'); } else rtsHit(rtsMuzzle(u, new THREE.Vector3()), tgt, tgt.g ? 'z' : 'nest', S4);
+  if (pilot){ rtsPilotShot(u, S4, 1.5, 'w2'); if (typeof rtsPosteShot === 'function') rtsPosteShot(u, 'w2'); } else rtsHit(rtsMuzzle(u, new THREE.Vector3()), tgt, tgt.g ? 'z' : 'nest', S4);
 }
 function rtsGat(u, dt, tgt, pilot){
   const G = RTS_GUNS[u.type]; if (!G || !(rtsLv(u.type, G.k) + (G.base ? 1 : 0))) return;
   u.cd3 = (u.cd3 || 0) - dt; if (u.cd3 > 0 || !tgt) return;
-  u.cd3 = 1 / (G.rate * (1 + RTS_UPG.rate.k * rtsLv(u.type, 'rate')));
-  if (pilot) rtsPilotShot(u, rtsS25(u), -1); else rtsHit(rtsMuzzle(u, new THREE.Vector3()), tgt, tgt.g ? 'z' : 'nest', rtsS25(u));
+  const iv = 1 / (G.rate * (1 + RTS_UPG.rate.k * rtsLv(u.type, 'rate'))); u.cd3 = Math.max(u.cd3, -iv) + iv; // le reste d'une image passe à la suivante (cadence élevée)
+  if (pilot){ const S5 = rtsS25(u); if (u.type === 'heli') S5.snd = null; /* le grondement continu vient de rtsApacheGun */ rtsPilotShot(u, S5, -1, 'gat'); } else rtsHit(rtsMuzzle(u, new THREE.Vector3()), tgt, tgt.g ? 'z' : 'nest', rtsS25(u));
 }
 // Choix de la cible : tireur d'élite = le plus gros ; explosifs = là où ils sont le plus serrés ; sinon le plus proche
 function rtsPickTarget(u, r, splash){
@@ -312,7 +312,8 @@ function rtsGunship(u, dt, cx, cz){
   const gp = u.g.position, from = rtsMuzzle(u, new THREE.Vector3());
   u.scanT = (u.scanT || 0) - dt;
   if (u.scanT <= 0){ u.scanT = .3; u.tgt = rtsPickTarget(u, rtsStat(u, 'range'), 6); }
-  const t = u.tgt && !u.tgt.dead ? u.tgt : null, n = u.nest && !u.nest.dead && Math.hypot(u.nest.x - gp.x, u.nest.z - gp.z) < rtsStat(u, 'range') ? u.nest : null;
+  const flanc = q => typeof rtsAcFlanc !== 'function' || rtsAcFlanc(u, q.g ? q.g.position.x : q.x, q.g ? q.g.position.z : q.z); // seulement du côté des canons
+  const t = u.tgt && !u.tgt.dead && flanc(u.tgt) ? u.tgt : null, n = u.nest && !u.nest.dead && Math.hypot(u.nest.x - gp.x, u.nest.z - gp.z) < rtsStat(u, 'range') && flanc(u.nest) ? u.nest : null;
   const am = k => typeof rtsAmmoUse !== 'function' || rtsAmmoUse(u, k);
   if (u.cd <= 0 && (t || n) && am('w1')){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(from, t || n, t ? 'z' : 'nest', rtsS2(u)); }
   if (u.cd2 <= 0 && (t || n) && am('w2')){ u.cd2 = 1 / rtsRate2(u); rtsHit(from, t || n, t ? 'z' : 'nest', rtsS2b(u)); }

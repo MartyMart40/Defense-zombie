@@ -79,6 +79,7 @@ const PTC = { olive:0x4a5236, oliveD:0x343a26, dark:0x1d1f22, steel:0x5a5d64, sa
     vmCyl(c, .035, .9, PTC.dark, .38, -.66, -1.7, 0, 0, 0, 8);                 // coaxiale
     vmMesh(canon, c);
     PT.fTank = ptFlash(g, 0, -.55, -5.95, 1.6);
+    PT.mCoax = new THREE.Object3D(); PT.mCoax.position.set(.38, -.66, -2.2); canon.add(PT.mCoax);
   }
   // Apache : vue du casque du pilote (place avant), verrière, écrans, canon rotatif sous le nez, Hellfire sur les ailes
   { const g = ptGroup('heli'), b = vmNew();
@@ -94,7 +95,8 @@ const PTC = { olive:0x4a5236, oliveD:0x343a26, dark:0x1d1f22, steel:0x5a5d64, sa
     const bar = new THREE.Group(); bar.position.set(0, 0, -.25); tur.add(bar); PT.heliBar = bar;
     const br = vmNew(); for (let i = 0; i < 6; i++){ const a = i / 6 * Math.PI * 2; vmCyl(br, .028, 1.1, PTC.steel, Math.cos(a) * .07, Math.sin(a) * .07, -.55, 0, 0, 0, 7); }
     vmCyl(br, .1, .05, PTC.dark, 0, 0, -.1, 0, 0, 0, 10); vmCyl(br, .1, .05, PTC.dark, 0, 0, -.95, 0, 0, 0, 10); vmMesh(bar, br);
-    PT.fHeli = ptFlash(tur, 0, 0, -1.45, .7);
+    PT.fHeli = ptFlash(tur, 0, 0, -1.45, 1.1); PT.fHeli2 = ptFlash(tur, 0, 0, -1.7, .6);
+    PT.mPod = [-1, 1].map(s => { const o = new THREE.Object3D(); o.position.set(s * 1.3, -1.05, -2.0); g.add(o); return o; }); PT.podI = 0;
     // Ailettes avec deux Hellfire de chaque côté (un missile tiré disparaît, il revient au rechargement)
     for (const s of [-1, 1]){
       const w = vmNew(); vmBox(w, .9, .06, .3, PTC.olive, s * 1.55, -1.05, -1.45, 0, 0, 0, .02); vmBox(w, .06, .24, .9, PTC.dark, s * 1.75, -1.18, -1.5, 0, 0, 0, .01); vmMesh(g, w);
@@ -176,10 +178,14 @@ function rtsPosteFrame(dt){
   const firing = RTS.pv.fire || (isTouch && RTS.pv.aim.id !== null);
   if (PT.cur === 'tank'){ PT.canon.position.z = PT.k.tank * .7; PT.canon.rotation.x = PT.k.tank * .05; PT.fTank.visible = PT.k.tank > .85; if (PT.fTank.visible) PT.fTank.material.rotation = Math.random() * 6; }
   if (PT.cur === 'heli'){
-    PT.spin = clamp(PT.spin + (firing ? dt * 3 : -dt), 0, 1); PT.heliBar.rotation.z += dt * 30 * PT.spin;
+    PT.heliBar.rotation.z += dt * 75 * PT.spin;                                        // les canons tournent à toute vitesse
     PT.heliGun.rotation.y = 0; PT.heliGun.rotation.x = clamp(-RTS.pv.pitch * .3, -.3, .5) - .15;
-    PT.fHeli.visible = firing && PT.spin > .6 && Math.random() < .7; if (PT.fHeli.visible) PT.fHeli.material.rotation = Math.random() * 6;
-    PT.g.heli.position.y = Math.sin(RTS.t * 2.3) * .02;
+    const feu = firing && PT.spin >= .35;
+    PT.fHeli.visible = feu && Math.random() < .9; PT.fHeli2.visible = feu && Math.random() < .6;
+    if (feu){ const k = 1 + Math.random() * .8; PT.fHeli.scale.set(1.1 * k, 1.1 * k, 1); PT.fHeli.material.rotation = Math.random() * 6; PT.fHeli2.material.rotation = Math.random() * 6; }
+    const vib = feu ? .012 * PT.spin : 0;                                              // tout le poste vibre quand il tire
+    PT.g.heli.position.set((Math.random() - .5) * vib, Math.sin(RTS.t * 2.3) * .02 + (Math.random() - .5) * vib, 0);
+    PT.heliGun.position.z = -1.9 + (feu ? (Math.random() - .5) * .05 : 0);
   }
   if (PT.cur === 'jet'){ PT.fJet.visible = PT.k.jet > .3 && Math.random() < .8; if (PT.fJet.visible) PT.fJet.material.rotation = Math.random() * 6; PT.g.jet.rotation.z = -(u.g.rotation.z || 0) * .15; }
   if (PT.cur === 'ac40'){ PT.c40.position.z = -1.0 + PT.k.ac40 * .35; PT.f40.visible = PT.k.ac40 > .6; }
@@ -194,6 +200,58 @@ function rtsPosteCam(u){
   camera.rotation.order = 'YXZ'; camera.rotation.set(-.16, f + Math.PI, -(u.g.rotation.z || 0) * .6);
 }
 function rtsPosteFov(u){ if (!u.U.gunship) return null; return PT.acPost === 'ck' ? 62 : PT.acPost === 'c105' ? 26 : 38; }
+
+/* ---------- AC-130 : les canons sont sur le flanc gauche ---------- */
+// Le champ de tir est fixé à l'avion : 34° de chaque côté de la perpendiculaire gauche, et une plage de hauteur.
+// La visée reste là où on l'a mise (au sol) pendant que l'avion tourne ; au bord du champ, elle est entraînée avec lui.
+const AC_CONE = { yaw:.6, pMin:-1.25, pMax:-.28, flanc:.34 };
+// Direction du flanc gauche (vers le centre du virage à gauche) : forward = (sin h, cos h), gauche = (-cos h, sin h)
+const rtsAcLeft = u => [-Math.cos(u.head), Math.sin(u.head)];
+function rtsAcCone(u){
+  if (PT.acPost === 'ck') return;
+  const P2 = RTS.pv, L = rtsAcLeft(u), b = Math.atan2(-L[0], -L[1]);
+  const off = clamp(Math.atan2(Math.sin(P2.yaw - b), Math.cos(P2.yaw - b)), -AC_CONE.yaw, AC_CONE.yaw);
+  P2.yaw = b + off; P2.pitch = clamp(P2.pitch, AC_CONE.pMin, AC_CONE.pMax);
+}
+// L'ordinateur ne tire que sur ce qui est du côté des canons (à moins de 70° du flanc gauche)
+function rtsAcFlanc(u, x, z){
+  const gp = u.g.position, L = rtsAcLeft(u), dx = x - gp.x, dz = z - gp.z, d = Math.hypot(dx, dz) || 1;
+  return (dx * L[0] + dz * L[1]) / d > AC_CONE.flanc;
+}
+
+/* ---------- Les tirs partent du bout du canon qu'on voit ---------- */
+// Le bout du canon est dessiné dans la caméra de l'arme : on prend sa place à l'écran, puis le point du monde
+// qui est à cette place, à 4 m devant les yeux (assez loin pour que la traînée reste visible).
+const ptV = new THREE.Vector3(), ptD = new THREE.Vector3();
+function ptEcran(obj, depth){
+  obj.updateMatrixWorld(true); obj.getWorldPosition(ptV);
+  vmCam.updateMatrixWorld(); ptV.project(vmCam); if (ptV.z > 1 || !isFinite(ptV.x)) return null;
+  camera.updateMatrixWorld(); ptD.set(ptV.x, ptV.y, .5).unproject(camera).sub(camera.position).normalize();
+  return camera.position.clone().addScaledVector(ptD, depth || 4);
+}
+function rtsPosteMuzzle(u, kind){
+  if (!u || RTS.pilot !== u || !PT.cur) return null;
+  let o = null;
+  if (PT.cur === 'tank') o = kind === 'gat' ? PT.mCoax : PT.fTank;
+  else if (PT.cur === 'heli'){
+    if (kind === 'gat') o = PT.fHeli;
+    else if (kind === 'w2'){ const m = PT.mis.find(x => x.visible) || PT.mis[0]; o = m; }
+    else { PT.podI = 1 - PT.podI; o = PT.mPod[PT.podI]; } // roquettes : une nacelle puis l'autre
+  }
+  else if (PT.cur === 'jet') o = PT.fJet;
+  else if (PT.cur === 'ac40') o = PT.f40;
+  else if (PT.cur === 'ac105') o = PT.f105;
+  return o ? ptEcran(o, PT.cur === 'ac105' || PT.cur === 'ac40' ? 6 : 4) : null;
+}
+
+/* ---------- Apache : le canon rotatif ---------- */
+// Il monte en régime (les canons tournent de plus en plus vite), puis crache 26 obus par seconde avec le grondement
+// continu du minigun du robot ; l'écran et le poste vibrent, les éclairs se suivent.
+function rtsApacheGun(u, dt, firing){
+  PT.spin = clamp(PT.spin + (firing ? dt / .4 : -dt / .9), 0, 1);
+  try { if (typeof Snd === 'object' && Snd.mgTick) Snd.mgTick(PT.spin, firing && PT.spin >= .35); } catch (e) { errNote(e); }
+  if (firing && PT.spin >= .35){ shake = Math.max(shake, .16 * PT.spin); if (navigator.vibrate && Math.random() < .08) try { navigator.vibrate(18); } catch (e) { errNote(e); } }
+}
 
 /* ---------- Viseur (texte du poste) ---------- */
 const rtsPosteHudEl = document.createElement('div'); rtsPosteHudEl.id = 'rtrpHud'; rtsPilotUI.appendChild(rtsPosteHudEl);
@@ -219,4 +277,4 @@ function rtsPosteHud(now, dt){
 }
 
 // Accès pour les tests automatiques
-window.__rtsPostes = { RTS_AMMO, RTS_AIR_CAP, PT, rtsAmmoUse, rtsAmmoInit, rtsAmmoFill, rtsAirRoom, rtsRearmAI, rtsRearmPilot, rtsNearAirfield, rtsPosteId, rtsPosteOn, rtsPosteOff, rtsPosteSet, rtsPosteNext, rtsPosteShot, rtsPosteFrame, rtsPosteFov };
+window.__rtsPostes = { AC_CONE, rtsAcCone, rtsAcFlanc, rtsAcLeft, rtsPosteMuzzle, rtsApacheGun, RTS_AMMO, RTS_AIR_CAP, PT, rtsAmmoUse, rtsAmmoInit, rtsAmmoFill, rtsAirRoom, rtsRearmAI, rtsRearmPilot, rtsNearAirfield, rtsPosteId, rtsPosteOn, rtsPosteOff, rtsPosteSet, rtsPosteNext, rtsPosteShot, rtsPosteFrame, rtsPosteFov };

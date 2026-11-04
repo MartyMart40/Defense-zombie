@@ -51,6 +51,9 @@ Les prix exacts sont dans `RTS_UNITS` et `RTS_BLD` (`js/41-rts.js`) : si un chif
 - Apache (l'hélicoptère) : canon rotatif de 30 mm sous le nez et missiles Hellfire dès l'achat (les améliorations les renforcent), roquettes Hydra. Poste : vue du casque, verrière, écrans, canon qui tourne quand il tire, Hellfire sur les ailettes qui disparaissent quand ils partent.
 - Chasseur : canon de 20 mm (75 dégâts, 10 coups/s), 200 obus ; Warthog : canon de 30 mm, 660 obus. AC-130 : 100 obus de 40 mm et 20 de 105 mm. À sec, l'avion retourne à l'aérodrome le plus proche refaire le plein (3 à 6 s au-dessus). Piloté : on y retourne soi-même, le viseur donne la distance.
 - 2 avions par aérodrome : pour plus d'avions, il faut plus d'aérodromes.
+- Les tirs du joueur partent du bout du canon qu'on voit à l'écran (canon du tank, coaxiale, canon rotatif et nacelles de l'Apache, canon du chasseur, 40 mm et 105 mm).
+- Apache : canon rotatif de 30 mm à 26 coups/s, montée en régime, grondement continu du minigun, poste et écran qui vibrent.
+- AC-130 : il ne tire que par son flanc gauche (aussi quand l'ordinateur le pilote). En pilotage, la visée reste fixée au sol pendant que l'avion tourne, dans un champ de 34° de chaque côté du flanc ; au bord du champ, elle est entraînée avec l'avion.
 - AC-130 : 3 postes. Tirer le 40 mm amène à son poste (caméra noir et blanc), tirer le 105 mm au sien (thermique « blanc chaud », plus de zoom), le bouton « Vue » (touche V) passe aussi au cockpit. Le 105 mm : 1 100 dégâts, zone de 11 m, grosse boule de feu, fumée et secousse.
 
 ## Décisions prises

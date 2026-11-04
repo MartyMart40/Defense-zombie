@@ -87,6 +87,7 @@ function rtsUnpilot(){
     return;
   }
   RTS.pv.fire = RTS.pv.fire2 = false; RTS.pv.joy.id = RTS.pv.aim.id = null; RTS.pv.joy.dx = RTS.pv.joy.dy = 0; RTS.spin = 0;
+  if (u && u.U && u.type === 'heli'){ try { if (typeof Snd === 'object' && Snd.mgTick) Snd.mgTick(0, false); } catch (e) { errNote(e); } }
   if (u && u.U.big){ try { if (typeof Snd === 'object' && Snd.mg) Snd.mgTick(0, false); if (typeof mechCk !== 'undefined') mechCk.visible = false; if (typeof mechArms === 'function') mechArms(); } catch (e) { errNote(e); } }
   if (u && !u.dead){
     u.m.visible = true; if (u.rotor) u.rotor.visible = true; if (u.g.userData.tail) u.g.userData.tail.visible = true;
@@ -112,10 +113,9 @@ function rtsPilotStep(dt){
     const C = RTS.acC, sy = Math.sin(P2.yaw), cy = Math.cos(P2.yaw), mv = 14 * dt;
     C.x += (-sy * fwdIn + cy * sideIn) * mv; C.z += (-cy * fwdIn - sy * sideIn) * mv;
     C.x = clamp(C.x, -160, 160); C.z = clamp(C.z, RTS.zMin, 20);
-    const b0 = Math.atan2(-(C.x - gp.x), -(C.z - gp.z));
     rtsGunshipFly(u, dt, C.x, C.z);
-    // La vue reste accrochée au sol pendant que l'avion tourne
-    const b1 = Math.atan2(-(C.x - gp.x), -(C.z - gp.z)); P2.yaw += Math.atan2(Math.sin(b1 - b0), Math.cos(b1 - b0));
+    // Les canons sont sur le flanc gauche : la visée reste où on l'a mise, dans un champ fixé à l'avion (js/54-rts-postes.js)
+    if (typeof rtsAcCone === 'function') rtsAcCone(u);
   } else if (U.kind === 'air'){
     P2.yaw -= sideIn * U.turn * dt * 1.3;                                       // on vire
     const k = 1 + Math.max(0, fwdIn) * .4 - Math.max(0, -fwdIn) * .4;           // un peu plus ou moins vite
@@ -135,10 +135,11 @@ function rtsPilotStep(dt){
   // Tir : vers ce qui est au centre de l'écran (zombie, nid, sinon le sol)
   const firing = P2.fire || (isTouch && P2.aim.id !== null);
   const trig = (P2.fire || (isTouch && P2.aim.id !== null)) ? true : null;
-  if (U.gunship || u.type === 'tank' || u.type === 'heli') rtsGat(u, dt, trig, true);
+  if (u.type === 'heli' && typeof rtsApacheGun === 'function') rtsApacheGun(u, dt, firing); // canon rotatif : montée en régime, grondement, secousses
+  if (U.gunship || u.type === 'tank' || (u.type === 'heli' && (typeof rtsApacheGun !== 'function' || PT.spin >= .35))) rtsGat(u, dt, trig, true);
   if (U.gunship && (firing || P2.fire2) && typeof rtsPosteSet === 'function') rtsPosteSet(P2.fire2 ? 'c105' : 'c40'); // AC-130 : le poste de l'arme qui tire
   if (u.type === 'heli') rtsHellfire(u, dt, P2.fire2 ? true : null, true); // Apache : Hellfire sur le 2e bouton
-  if (U.gunship && P2.fire2 && u.cd2 <= 0 && (typeof rtsAmmoUse !== 'function' || rtsAmmoUse(u, 'w2'))){ u.cd2 = 1 / rtsRate2(u); rtsPilotShot(u, rtsS2b(u)); shake = Math.max(shake, .25); if (typeof rtsPosteShot === 'function') rtsPosteShot(u, 'w2'); }
+  if (U.gunship && P2.fire2 && u.cd2 <= 0 && (typeof rtsAmmoUse !== 'function' || rtsAmmoUse(u, 'w2'))){ u.cd2 = 1 / rtsRate2(u); rtsPilotShot(u, rtsS2b(u), 0, 'w2'); shake = Math.max(shake, .25); if (typeof rtsPosteShot === 'function') rtsPosteShot(u, 'w2'); }
   if (U.big){ // minigun : elle monte en régime avant de tirer, avec le vrai son continu du mode robot
     RTS.spin = clamp(RTS.spin + (firing ? dt / .35 : -dt / .8), 0, 1);
     try { if (typeof Snd === 'object' && Snd.mgTick) Snd.mgTick(RTS.spin, firing && RTS.spin >= 1); } catch (e) { errNote(e); }
@@ -151,17 +152,19 @@ function rtsPilotStep(dt){
   if (typeof rtsPosteShot === 'function') rtsPosteShot(u, 'w1');
   const S2 = rtsS2(u);
   if (U.bomb){ rtsHit(rtsMuzzle(u, new THREE.Vector3()), { x:gp.x + rand(-1, 1), z:gp.z + rand(-1, 1) }, 'pt', S2); return; }
-  if (U.gunship){ rtsPilotShot(u, S2); return; }
+  if (U.gunship){ rtsPilotShot(u, S2, 0, 'w1'); return; }
   if (U.big) S2.snd = null; // le son vient de mgTick
-  rtsPilotShot(u, S2, U.big ? -1.8 : 0);
+  rtsPilotShot(u, S2, U.big ? -1.8 : 0, U.big ? null : 'w1');
 }
 // Un tir du joueur vers le centre de l'écran : zombie visé, nid, aide à la visée, sinon le sol
-function rtsPilotShot(u, S2, side){
+function rtsPilotShot(u, S2, side, kind){
   // Le départ du tir est devant et sous les yeux (sinon la traînée passe dans la caméra) ; bras gauche ou droit pour le Mech
   rtsPilotCam(); camera.updateMatrixWorld();
   const from = new THREE.Vector3(), fw = new THREE.Vector3(); camera.getWorldDirection(fw);
   from.copy(camera.position).addScaledVector(fw, 2.5); from.y -= u.U.big ? 1.2 : .8;
-  if (side) from.add(rtsV3.set(-fw.z, 0, fw.x).normalize().multiplyScalar(side)); camera.updateMatrixWorld(); rtsRay.setFromCamera(new THREE.Vector2(0, 0), camera); rtsRay.far = 240;
+  if (side) from.add(rtsV3.set(-fw.z, 0, fw.x).normalize().multiplyScalar(side));
+  if (kind && typeof rtsPosteMuzzle === 'function'){ const m = rtsPosteMuzzle(u, kind); if (m) from.copy(m); } // le tir part du bout du canon qu'on voit
+  camera.updateMatrixWorld(); rtsRay.setFromCamera(new THREE.Vector2(0, 0), camera); rtsRay.far = 240;
   const hz = rtsRay.intersectObjects(hitMeshes, false).find(h => h.object.userData.z && !h.object.userData.z.dead);
   if (hz){ rtsHit(from, hz.object.userData.z, 'z', S2); return; }
   rtsRoot.updateMatrixWorld(true);

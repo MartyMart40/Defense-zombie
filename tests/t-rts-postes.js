@@ -87,4 +87,51 @@
     fin();
     ok(r.centre >= 1000, 'Au centre : ' + Math.round(r.centre)); ok(r.loin > 0, 'À 9,5 m : touché aussi (' + Math.round(r.loin) + ')'); ok(r.secousse, 'L’écran tremble');
   });
+  test('RTS postes : AC-130, canons du flanc gauche, visée fixée au sol dans un champ qui suit l’avion', () => {
+    exiger(); reset();
+    const r = J(new Function(calme + `
+      var R = calme(), P = __rtsPostes, o = {};
+      var a = __rts.rtsSpawnUnit('bomber', 0, -40); __rts.rtsPilot(a);
+      for (var i = 0; i < 30 * 8; i++) visuals(1 / 30); // il entre dans son virage
+      var L = P.rtsAcLeft(a), gp = a.g.position, C = R.acC, dx = C.x - gp.x, dz = C.z - gp.z;
+      o.centre = (dx * L[0] + dz * L[1]) / Math.hypot(dx, dz) > .5;
+      var b0 = Math.atan2(-P.rtsAcLeft(a)[0], -P.rtsAcLeft(a)[1]); R.pv.yaw = b0; visuals(1 / 30); // au milieu du champ
+      var y0 = R.pv.yaw; for (var k = 0; k < 6; k++) visuals(1 / 30); o.fixe = Math.abs(Math.atan2(Math.sin(R.pv.yaw - y0), Math.cos(R.pv.yaw - y0))) < .05;
+      R.pv.yaw += 3; visuals(1 / 30); var b = Math.atan2(-P.rtsAcLeft(a)[0], -P.rtsAcLeft(a)[1]);
+      o.bord = Math.abs(Math.atan2(Math.sin(R.pv.yaw - b), Math.cos(R.pv.yaw - b))) <= P.AC_CONE.yaw + 1e-6;
+      R.pv.pitch = 1; visuals(1 / 30); o.haut = R.pv.pitch <= P.AC_CONE.pMax + 1e-6;
+      o.droite = !P.rtsAcFlanc(a, gp.x - L[0] * 30, gp.z - L[1] * 30) && P.rtsAcFlanc(a, gp.x + L[0] * 30, gp.z + L[1] * 30);
+      // le tir part du bout du 40 mm : même place à l'écran
+      var m = P.rtsPosteMuzzle(a, 'w1'), v = m.clone().project(camera), w = new THREE.Vector3(); P.PT.f40.getWorldPosition(w); w.project(vmCam);
+      o.bout = Math.hypot(v.x - w.x, v.y - w.y) < .02 && m.distanceTo(camera.position) > 2.5;
+      __rts.rtsUnpilot();
+      return o;
+    `));
+    fin();
+    ok(r.centre, 'Le flanc gauche regarde le centre du virage'); ok(r.fixe, 'La visée reste au sol quand l’avion tourne');
+    ok(r.bord, 'La visée ne dépasse pas le bord du champ'); ok(r.haut, 'Ni trop haut'); ok(r.droite, 'Rien du côté droit');
+    ok(r.bout, 'Le tir part du bout du canon de 40 mm');
+  });
+
+  test('RTS postes : canon rotatif de l’Apache (régime, cadence) et tirs qui partent du canon', () => {
+    exiger(); reset();
+    const r = J(new Function(calme + `
+      var R = calme(), P = __rtsPostes, o = {};
+      var h = __rts.rtsSpawnUnit('heli', 0, -30); __rts.rtsPilot(h); visuals(1 / 30);
+      var z = __t.placer('walker', 0, -60); z.hp = z.maxHp = 1e6; z.speed = 0;
+      var n = 0, c0; R.pv.fire = true;
+      for (var i = 0; i < 60; i++){ c0 = h.cd3; visuals(1 / 30); if (h.cd3 > (c0 || 0)) n++; }
+      R.pv.fire = false; o.regime = P.PT.spin > .9; o.cadence = n; o.vibre = shake > .05;
+      var m = P.rtsPosteMuzzle(h, 'gat'), v = m.clone().project(camera), w = new THREE.Vector3(); P.PT.fHeli.getWorldPosition(w); w.project(vmCam);
+      o.bout = Math.hypot(v.x - w.x, v.y - w.y) < .02;
+      var t = __rts.rtsSpawnUnit('tank', 10, -20); __rts.rtsPilot(t); visuals(1 / 30);
+      var m2 = P.rtsPosteMuzzle(t, 'w1'), v2 = m2.clone().project(camera), w2 = new THREE.Vector3(); P.PT.fTank.getWorldPosition(w2); w2.project(vmCam);
+      o.tank = Math.hypot(v2.x - w2.x, v2.y - w2.y) < .02;
+      __rts.rtsUnpilot();
+      return o;
+    `));
+    fin();
+    ok(r.regime, 'Le canon monte en régime'); ok(r.cadence >= 30, 'Rafale dense : ' + r.cadence + ' tirs en 2 s'); ok(r.vibre, 'L’écran vibre');
+    ok(r.bout, 'Les obus partent du canon rotatif'); ok(r.tank, 'L’obus du tank part du bout du canon');
+  });
 })();

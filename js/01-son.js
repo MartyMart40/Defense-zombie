@@ -78,7 +78,7 @@ const Snd = {
       }
       if (P.cont){ if (gap > .25) this._nz(t, 'highpass', 4000 * tim, 0, .02, .12 * vol); return true; } // minigun : le son continu vient de mgTick
       const busy = gap < .09; // tir rapide : on allège (moins de nœuds audio par seconde)
-      this._out = this._fx();
+      this._out = this.quiet ? this._qbus() : this._fx(); // silencieux : plus faible et plus sourd
       const cr = P.crack, bo = P.body, th = P.thump, ec = P.echo;
       this._nz(t, 'highpass', cr[0] * tim, 0, cr[1] * rand(.8, 1.25), cr[2] * vol);
       this._nz(t, 'lowpass', bo[0] * tim, rand(.5, 2.5), bo[1] * rand(.85, 1.2), bo[2] * vol, null, 140);
@@ -170,6 +170,13 @@ const Snd = {
       this.fxBus = bus; this.rev = cv;
     } catch (e) { this.fxBus = this.master; }
     return this.fxBus;
+  },
+  quiet: false, qb: null,
+  _qbus(){
+    if (this.qb && this.qb.context === this.ctx) return this.qb;
+    try { const g = this.ctx.createGain(), f = this.ctx.createBiquadFilter(); g.gain.value = .3; f.type = 'lowpass'; f.frequency.value = 1500; g.connect(f); f.connect(this._fx() || this.master); this.qb = g; }
+    catch (e) { return this._fx(); }
+    return this.qb;
   },
   /* ---------- Minigun : vrai son continu ----------
      Moteur électrique qui siffle en montant en régime (suit spin de 0 à 1), puis « brrrrt » continu pendant le tir :

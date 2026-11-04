@@ -57,6 +57,8 @@ function mnSnd(kind){
 // Fait apparaître les petits d'une meute ou d'une nuée autour du chef (sans qu'ils en créent d'autres)
 function mnSpawnGroup(lead, type, n, spread){
   const out = []; if (typeof spawnZombie !== 'function') return out;
+  // Jamais au-delà du plafond de zombies en vie à la fois (performances : plan.maxAlive, DEV_CAP)
+  if (plan && plan.maxAlive > 0){ let alive = 0; for (const o of zombies) if (!o.dead) alive++; n = Math.max(0, Math.min(n, plan.maxAlive - alive)); }
   MN.child = true;
   try {
     for (let i = 0; i < n; i++){

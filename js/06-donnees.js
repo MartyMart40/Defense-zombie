@@ -17,20 +17,21 @@ const WEAPONS = {
 };
 const WORDER = ['pistol', 'shotgun', 'rifle', 'sniper', 'crossbow', 'flamer', 'minigun', 'rocket'];
 // Améliorations propres à chaque arme (WEAPONS[id].upg donne les 4 lignes de l'arme).
-// Prix : WEAPONS[id].ucost × 1,55 par niveau. Elles repartent à zéro à chaque partie (S.wupg).
+// Prix : WEAPONS[id].ucost × 1,55 par niveau, puis × 1,25 de plus par niveau au-delà de l'ancien plafond (cap0).
+// Sans plafond (max: Infinity) : en mode infini, une arme ne bloque jamais. Elles repartent à zéro à chaque partie (S.wupg).
 const WUPG = {
-  dmg:    { name:'Dégâts',        max:6, desc:W => '+15 % de dégâts par niveau.' },
-  rate:   { name:'Cadence',       max:5, desc:W => '+10 % de cadence par niveau.' },
-  mag:    { name:'Chargeur',      max:4, desc:W => W.magStep ? '+' + W.magStep + ' roquette par chargeur.' : (W.kind === 'flame' ? '+25 % de carburant par réservoir.' : '+25 % de munitions par chargeur.') },
-  reload: { name:'Recharge',      max:4, desc:W => 'Recharge 12 % plus vite par niveau.' },
-  pierce: { name:'Perforation',   max:3, desc:W => 'Traverse 1 zombie de plus par niveau.' },
-  pellets:{ name:'Plombs',        max:3, desc:W => '+2 plombs par cartouche.' },
-  spread: { name:'Précision',     max:4, desc:W => '20 % de dispersion en moins par niveau.' },
-  burn:   { name:'Brûlure',       max:4, desc:W => 'La brûlure dure 30 % plus longtemps et fait 15 % plus mal.' },
-  spin:   { name:'Montée en régime', max:4, desc:W => 'Prêt à tirer 18 % plus vite.' },
-  radius: { name:'Rayon d’explosion', max:4, desc:W => '+12 % de rayon d’explosion.' }
+  dmg:    { name:'Dégâts',        max:Infinity, cap0:6, desc:W => '+15 % de dégâts par niveau.' },
+  rate:   { name:'Cadence',       max:Infinity, cap0:5, desc:W => '+10 % de cadence par niveau.' },
+  mag:    { name:'Chargeur',      max:Infinity, cap0:4, desc:W => W.magStep ? '+' + W.magStep + ' roquette par chargeur.' : (W.kind === 'flame' ? '+25 % de carburant par réservoir.' : '+25 % de munitions par chargeur.') },
+  reload: { name:'Recharge',      max:Infinity, cap0:4, desc:W => 'Recharge 12 % plus vite par niveau.' },
+  pierce: { name:'Perforation',   max:Infinity, cap0:3, desc:W => 'Traverse 1 zombie de plus par niveau.' },
+  pellets:{ name:'Plombs',        max:Infinity, cap0:3, desc:W => '+2 plombs par cartouche.' },
+  spread: { name:'Précision',     max:Infinity, cap0:4, desc:W => '20 % de dispersion en moins par niveau.' },
+  burn:   { name:'Brûlure',       max:Infinity, cap0:4, desc:W => 'La brûlure dure 30 % plus longtemps et fait 15 % plus mal.' },
+  spin:   { name:'Montée en régime', max:Infinity, cap0:4, desc:W => 'Prêt à tirer 18 % plus vite.' },
+  radius: { name:'Rayon d’explosion', max:Infinity, cap0:4, desc:W => '+12 % de rayon d’explosion.' }
 };
-const wupgCost = (id, k, l) => Math.round(WEAPONS[id].ucost * Math.pow(1.55, l) * (k === 'dmg' ? 1 : .9));
+const wupgCost = (id, k, l) => { const c0 = (WUPG[k] && WUPG[k].cap0) || 4; return Math.round(WEAPONS[id].ucost * Math.pow(1.55, l) * Math.pow(1.25, Math.max(0, l - c0)) * (k === 'dmg' ? 1 : .9)); };
 const UPG = {
   dmg:    { name:'Dégâts',             desc:'+12 % de dégâts par niveau, toutes les armes.', max:10, cost:l => Math.round(160 * Math.pow(1.45, l)) },
   reload: { name:'Recharge rapide',    desc:'Recharge 12 % plus vite par niveau.',          max:5,  cost:l => Math.round(140 * Math.pow(1.5, l)) },
@@ -132,15 +133,18 @@ const wl = (id, k) => (S && S.wupg && S.wupg[id] && S.wupg[id][k]) || 0;
 const accK = (id, k) => (typeof accMul === 'function' ? accMul(id, k) : 1);
 const magSize = id => { const W = WEAPONS[id], l = wl(id, 'mag'); return Math.round((W.magStep ? W.mag + W.magStep * l : W.mag * (1 + .25 * l)) * (1 + .2 * S.upg.mag) * accK(id, 'mag')); };
 // Statistiques finales d'une arme (améliorations générales, de l'arme et talents)
-const wDmg = id => WEAPONS[id].dmg * (1 + .15 * wl(id, 'dmg')) * dmgMult() * accK(id, 'dmg');
-const wRate = id => WEAPONS[id].rate * (1 + .1 * wl(id, 'rate')) * (1 + .05 * T('trigger'));
-const wReload = id => WEAPONS[id].reload * Math.max(.4, 1 - .12 * wl(id, 'reload')) * reloadMult() * accK(id, 'reload');
+// Plombs au-delà de 6 niveaux : plus de plombs (trop de rayons), mais +8 % de dégâts par niveau
+const wDmg = id => WEAPONS[id].dmg * (1 + .15 * wl(id, 'dmg')) * (1 + .08 * Math.max(0, wl(id, 'pellets') - 6)) * dmgMult() * accK(id, 'dmg');
+const wRate = id => WEAPONS[id].rate * (1 + .1 * wl(id, 'rate')) * (1 + .05 * T('trigger')) * accK(id, 'rate');
+// Au-delà de l'ancien plafond, les gains continuent en diminuant (jamais zéro)
+const wSoft = (l, step, cap, floor, k) => (l <= cap ? Math.max(floor, 1 - step * l) : Math.max(floor, 1 - step * cap) * Math.pow(k, l - cap));
+const wReload = id => WEAPONS[id].reload * wSoft(wl(id, 'reload'), .12, 4, .4, .93) * reloadMult() * accK(id, 'reload');
 const wPierce = id => WEAPONS[id].pierce + wl(id, 'pierce') + (typeof accAdd === 'function' ? accAdd(id, 'pierce') : 0);
-const wPellets = id => WEAPONS[id].pellets + 2 * wl(id, 'pellets');
-const wSpread = id => WEAPONS[id].spread * Math.max(.2, 1 - .2 * wl(id, 'spread')) * accK(id, 'spread');
+const wPellets = id => WEAPONS[id].pellets + 2 * Math.min(6, wl(id, 'pellets'));
+const wSpread = id => WEAPONS[id].spread * wSoft(wl(id, 'spread'), .2, 4, .2, .9) * accK(id, 'spread');
 const wBurn = id => (WEAPONS[id].burn || 0) * (1 + .3 * wl(id, 'burn')) * accK(id, 'burn');
 const wBurnDps = id => (WEAPONS[id].burnDps || 0) * (1 + .15 * wl(id, 'burn')) * (1 + .15 * wl(id, 'dmg')) * dmgMult() * accK(id, 'burnDps');
-const wSpin = id => (WEAPONS[id].spin || 0) * Math.max(.2, 1 - .18 * wl(id, 'spin'));
+const wSpin = id => (WEAPONS[id].spin || 0) * wSoft(wl(id, 'spin'), .18, 4, .2, .9) * accK(id, 'spin');
 const wRadius = id => (WEAPONS[id].radius || 0) * (1 + .12 * wl(id, 'radius')) * accK(id, 'radius');
 const dmgMult = () => (1 + .12 * S.upg.dmg) * (1 + .06 * T('marksman'));
 const reloadMult = () => Math.max(.3, (1 - .12 * S.upg.reload) * (1 - .07 * T('hands')));

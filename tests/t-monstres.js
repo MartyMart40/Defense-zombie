@@ -159,3 +159,19 @@
     ok(r.bar > 0, 'Coups de bec sur la barricade');
   });
 })();
+(function(){
+  if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
+  test('Monstres : meutes et nuées ne dépassent jamais le plafond de zombies en vie (performances)', () => {
+    if (lire('typeof __mn === "object"') !== true) ignorer('Nouveaux monstres absents');
+    reset(); J('startLocation(2)');
+    const r = J(function(){
+      __t.geler(); clearZombies(); plan.maxAlive = 8;
+      for (var i = 0; i < 6; i++) __t.placer('walker', 0, -60);
+      spawnZombie('crawler'); var a = zombies.filter(function(z){ return !z.dead; }).length;
+      spawnZombie('crow'); var b = zombies.filter(function(z){ return !z.dead; }).length;
+      return { a: a, b: b };
+    });
+    ok(r.a <= 8, 'Après une meute de rampants : ' + r.a + ' en vie (plafond 8)');
+    ok(r.b <= 9, 'Après une nuée de corbeaux : ' + r.b + ' en vie');
+  });
+})();

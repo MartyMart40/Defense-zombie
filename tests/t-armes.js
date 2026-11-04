@@ -187,12 +187,16 @@
       };
       res.clics = [['pistol', 'dmg'], ['pistol', 'rate'], ['rifle', 'mag'], ['rocket', 'mag'], ['sniper', 'reload'], ['crossbow', 'pierce'], ['flamer', 'burn'], ['minigun', 'spin'], ['rocket', 'radius'], ['shotgun', 'pellets']].map(function(p){ return clic(p[0], p[1]); });
       res.apres = stats();
-      // Plafond : on achète jusqu'au maximum, le bouton devient « Max »
-      for (var i = 0; i < 20; i++) wupgBuy('pistol', 'dmg');
-      res.niveauMax = wl('pistol', 'dmg'); res.max = WUPG.dmg.max;
+      // Sans plafond : 20 niveaux achetés, le bouton reste un prix, « niv. N » au lieu des pastilles
+      S.money = 1e15; for (var i = 0; i < 20; i++) wupgBuy('pistol', 'dmg');
+      res.niveauMax = wl('pistol', 'dmg'); res.max = 20;
       shopWSel = 'pistol'; renderShop();
       var bm = document.querySelector('#shopUpg button[data-act="wupg"][data-id="pistol"][data-k="dmg"]');
-      res.btnMax = bm ? bm.disabled && bm.textContent.trim() === 'Max' : 'absent';
+      res.btnMax = bm ? !bm.disabled && bm.textContent.trim() !== 'Max' : 'absent';
+      res.niv = !!(bm && bm.closest('.row').querySelector('.inf-lv'));
+      res.saut = wupgCost('pistol', 'dmg', 8) / wupgCost('pistol', 'dmg', 7) > wupgCost('pistol', 'dmg', 3) / wupgCost('pistol', 'dmg', 2);
+      S.wupg.sniper = { reload: 12 }; res.rel12 = wReload('sniper'); S.wupg.sniper.reload = 4; res.rel4 = wReload('sniper');
+      S.wupg.shotgun = { pellets: 12 }; res.pel12 = wPellets('shotgun'); res.dmgPel = wDmg('shotgun'); S.wupg.shotgun.pellets = 6; res.pel6 = wPellets('shotgun'); res.dmgPel6 = wDmg('shotgun');
       // Prix croissants
       res.prix = [0, 1, 2, 3].map(function(l){ return wupgCost('minigun', 'dmg', l); });
       // Nouvelle partie : tout repart à zéro
@@ -206,8 +210,12 @@
     ok(b.rate > a.rate, 'Cadence du pistolet'); ok(b.magR > a.magR, 'Chargeur du fusil d’assaut'); egal(b.magRk, a.magRk + 1, 'Roquettes par chargeur');
     ok(b.rel < a.rel, 'Recharge du sniper'); egal(b.pierce, a.pierce + 1, 'Perforation de l’arbalète');
     ok(b.burn > a.burn, 'Durée de brûlure'); ok(b.spinT < a.spinT, 'Montée en régime du minigun'); ok(b.rad > a.rad, 'Rayon d’explosion'); egal(b.pel, a.pel + 2, 'Plombs du fusil à pompe');
-    egal(r.niveauMax, r.max, 'Plafond des dégâts du pistolet');
-    egal(r.btnMax, true, 'Bouton « Max » désactivé au plafond');
+    ok(r.niveauMax >= r.max, 'Dégâts du pistolet : plus de plafond (niveau ' + r.niveauMax + ')');
+    egal(r.btnMax, true, 'Le bouton reste un achat (pas de « Max »)');
+    ok(r.niv, '« niv. N » affiché au-delà des pastilles');
+    ok(r.saut, 'Le prix monte plus vite au-delà de l’ancien plafond');
+    ok(r.rel12 < r.rel4 && r.rel12 > 0, 'Recharge : encore plus rapide au niveau 12 (' + r.rel12.toFixed(3) + ' contre ' + r.rel4.toFixed(3) + ')');
+    egal(r.pel12, r.pel6, 'Plombs plafonnés à 6 niveaux (trop de rayons)'); ok(r.dmgPel > r.dmgPel6, 'Au-delà : dégâts en plus');
     for (let i = 1; i < r.prix.length; i++) ok(r.prix[i] > r.prix[i - 1], 'Prix des améliorations croissants : ' + r.prix.join(', '));
     const c = r.apresNouvelle;
     ok(r.wupgVide, 'Les améliorations des armes ne repartent pas à zéro');

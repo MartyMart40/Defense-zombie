@@ -21,7 +21,8 @@ function wupgHTML(){
   h += '</div>';
   (W.upg || []).forEach(k => {
     const U = WUPG[k], l = wl(id, k), max = l >= U.max, c = max ? 0 : wupgCost(id, k, l);
-    h += '<div class="row"><div class="info"><div class="nm">' + U.name + pips(l, U.max) + '</div><div class="ds">' + W.name + ' : ' + U.desc(W) + '</div></div><button data-act="wupg" data-id="' + id + '" data-k="' + k + '"' + (max || S.money < c ? ' disabled' : '') + '>' + (max ? 'Max' : fmt(c)) + '</button></div>';
+    const lv = isFinite(U.max) ? pips(l, U.max) : l < (U.cap0 || 4) ? pips(l, U.cap0 || 4) : '<span class="inf-lv">niv. ' + l + '</span>'; // sans plafond : « niv. N » après les pastilles
+    h += '<div class="row"><div class="info"><div class="nm">' + U.name + lv + '</div><div class="ds">' + W.name + ' : ' + U.desc(W) + '</div></div><button data-act="wupg" data-id="' + id + '" data-k="' + k + '"' + (max || S.money < c ? ' disabled' : '') + '>' + (max ? 'Max' : fmt(c)) + '</button></div>';
   });
   return h;
 }

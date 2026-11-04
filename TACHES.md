@@ -19,6 +19,8 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 | # | Tâche | Date |
 |---|-------|------|
+| 46 | Améliorations des armes sans plafond (coût qui monte plus vite après l'ancien maximum, gains qui diminuent pour recharge, précision, montée en régime ; plombs plafonnés puis +8 % de dégâts) | 2026-11-04 |
+| 45 | 22 accessoires propres aux autres armes (2 par arme), visibles ; un seul accessoire au bout du canon ; silencieux qui étouffe le tir ; meutes et nuées sous le plafond de zombies en vie | 2026-11-04 |
 | 44 | Vibrations du cellulaire : tirs selon l'arme, explosions, gros coups sur la barricade ; réglage dans Pause (js/38-vibrations.js) | 2026-11-03 |
 | 43 | Graphismes niveau 3 : débris dans la rue, halos des lampadaires, braises des feux ; .50 : poignée sur le côté et mires rabattues sous une optique | 2026-11-03 |
 | 42 | Bruitages : son placé gauche-droite et selon la distance (grognements, coups sur la barricade), douilles qui tintent, corps qui tombent, craquement à la tête, murmure de la horde, barricade qui craque (js/37-bruitages.js) | 2026-11-03 |

@@ -47,7 +47,7 @@ const ACC = {
             on:['pistol', 'shotgun', 'rifle'] },
   grip:   { name:'Poignée avant',    desc:'Recul −30 %, recharge 15 % plus vite.', k:.9, fx:{ recoil:.7, reload:.85 },
             on:['shotgun', 'rifle', 'laser', 'arc', 'gl'] },
-  barrel: { name:'Canon long',       desc:'Dégâts +15 %, traverse 1 zombie de plus.', k:1.3, fx:{ dmg:1.15, pierce:1 },
+  barrel: { name:'Canon long',       desc:'Dégâts +15 %, traverse 1 zombie de plus.', k:1.3, grp:'muzzle', fx:{ dmg:1.15, pierce:1 },
             on:['pistol', 'shotgun', 'rifle', 'sniper', 'mg50'] },
   // Propres au lance-flammes (une seule buse à la fois)
   ftank:  { name:'Réservoir dorsal', desc:'Un second réservoir sur le dos, relié par un tuyau : carburant +60 %.', k:1, fx:{ mag:1.6 }, on:['flamer'] },
@@ -60,10 +60,33 @@ const ACC = {
   rfrag:  { name:'Ogive à fragmentation', desc:'Éclats partout : rayon d’explosion +35 %, dégâts −10 %.', k:1, grp:'warhead', fx:{ radius:1.35, dmg:.9 }, on:['rocket'] },
   rboost: { name:'Propulseur renforcé', desc:'La roquette file 70 % plus vite : plus facile de toucher ce qui bouge.', k:.9, fx:{ speed:1.7 }, on:['rocket'] },
   rtwin:  { name:'Tube jumelé',      desc:'Un second tube : une roquette de plus par chargeur.', k:1.3, fx:{ mag:1.5 }, on:['rocket'] },
-  rguide: { name:'Guidage laser',    desc:'La roquette tourne vers le zombie le plus près de ta visée.', k:1.4, fx:{ guide:1 }, on:['rocket'] }
+  rguide: { name:'Guidage laser',    desc:'La roquette tourne vers le zombie le plus près de ta visée.', k:1.4, fx:{ guide:1 }, on:['rocket'] },
+  // Propres à chaque autre arme (look : forme visible, dessinée par accLook)
+  pcomp:  { name:'Compensateur',     desc:'Les gaz poussent le canon vers le bas : recul −40 %, dispersion −15 %.', k:.8, grp:'muzzle', look:'comp', fx:{ recoil:.6, spread:.85 }, on:['pistol'] },
+  pburst: { name:'Kit rafale',       desc:'Sélecteur de tir modifié : cadence +40 %.', k:1, look:'selector', fx:{ rate:1.4 }, on:['pistol'] },
+  schoke: { name:'Choke serré',      desc:'Plombs plus groupés, qui portent plus loin : dispersion −40 %.', k:.9, grp:'muzzle', look:'choke', fx:{ spread:.6 }, on:['shotgun'] },
+  sauto:  { name:'Kit semi-automatique', desc:'Plus besoin de pomper : cadence +60 %.', k:1.2, look:'gastube', fx:{ rate:1.6 }, on:['shotgun'] },
+  rsupp:  { name:'Silencieux',       desc:'Tir étouffé, gaz mieux brûlés : dégâts +10 %, recul −20 %.', k:1, grp:'muzzle', look:'supp', fx:{ dmg:1.1, recoil:.8, quiet:1 }, on:['rifle', 'sniper'] },
+  rheavy: { name:'Canon lourd',      desc:'Canon épais qui chauffe moins : dégâts +20 %, cadence −10 %.', k:1.1, look:'heavy', fx:{ dmg:1.2, rate:.9 }, on:['rifle'] },
+  snbolt: { name:'Culasse rapide',   desc:'Levier allongé et culasse polie : cadence +35 %.', k:1.1, look:'bolt', fx:{ rate:1.35 }, on:['sniper'] },
+  cxquiver:{ name:'Carquois',        desc:'Carquois sur le côté : carreaux +50 %.', k:.9, look:'quiver', fx:{ mag:1.5 }, on:['crossbow'] },
+  cxlimbs:{ name:'Branches renforcées', desc:'Arc plus puissant : dégâts +25 %, carreaux 40 % plus rapides.', k:1.2, look:'limbs', fx:{ dmg:1.25, speed:1.4 }, on:['crossbow'] },
+  mbox:   { name:'Caisse de munitions XXL', desc:'Bande plus longue : munitions +50 %.', k:1, look:'ammobox', fx:{ mag:1.5 }, on:['minigun'] },
+  mmotor: { name:'Moteur renforcé',  desc:'Les canons tournent à plein régime deux fois plus vite.', k:1.1, look:'motor', fx:{ spin:.5 }, on:['minigun'] },
+  m50box: { name:'Caisse double',    desc:'Deux caisses reliées : munitions +50 %.', k:1, look:'ammobox', fx:{ mag:1.5 }, on:['mg50'] },
+  m50ap:  { name:'Bande perforante', desc:'Balles à pointe dure : dégâts +15 %, traverse 1 zombie de plus.', k:1.2, look:'apbelt', fx:{ dmg:1.15, pierce:1 }, on:['mg50'] },
+  lcap:   { name:'Condensateur',     desc:'Recharge le cristal plus vite : cadence +30 %.', k:1, look:'capa', fx:{ rate:1.3 }, on:['laser'] },
+  lfocus: { name:'Lentille focalisée', desc:'Rayon plus fin et plus chaud : dégâts +25 %.', k:1.1, look:'lens', fx:{ dmg:1.25 }, on:['laser'] },
+  rgcap:  { name:'Condensateurs rapides', desc:'Les bobines se rechargent plus vite : cadence +40 %.', k:1.1, look:'capa', fx:{ rate:1.4 }, on:['railgun'] },
+  rgcool: { name:'Refroidissement liquide', desc:'Tuyaux et radiateur : recharge 30 % plus rapide.', k:1, look:'cooler', fx:{ reload:.7 }, on:['railgun'] },
+  gl18:   { name:'Barillet 18 coups', desc:'Gros barillet : grenades +50 %.', k:1, look:'drum18', fx:{ mag:1.5 }, on:['gl'] },
+  glfrag: { name:'Grenades à fragmentation', desc:'Éclats partout : rayon d’explosion +30 %.', k:1.1, look:'frag', fx:{ radius:1.3 }, on:['gl'] },
+  arcoil: { name:'Bobine Tesla',     desc:'L’éclair saute sur 2 zombies de plus.', k:1.2, look:'coil', fx:{ chain:2 }, on:['arc'] },
+  arcap:  { name:'Condensateur',     desc:'Décharges plus fortes : dégâts +20 %.', k:1, look:'capa', fx:{ dmg:1.2 }, on:['arc'] }
 };
 const accName = (k, id) => (ACC[k].alt && ACC[k].alt[id]) || ACC[k].name;
-const ACC_ORDER = ['reddot', 'scope', 'bipod', 'laserp', 'drum', 'grip', 'barrel', 'ftank', 'fwide', 'flong', 'fnapalm', 'fpump', 'rtandem', 'rfrag', 'rboost', 'rtwin', 'rguide'];
+const ACC_ORDER = ['reddot', 'scope', 'bipod', 'laserp', 'drum', 'grip', 'barrel', 'ftank', 'fwide', 'flong', 'fnapalm', 'fpump', 'rtandem', 'rfrag', 'rboost', 'rtwin', 'rguide',
+  'pcomp', 'pburst', 'schoke', 'sauto', 'rsupp', 'rheavy', 'snbolt', 'cxquiver', 'cxlimbs', 'mbox', 'mmotor', 'm50box', 'm50ap', 'lcap', 'lfocus', 'rgcap', 'rgcool', 'gl18', 'glfrag', 'arcoil', 'arcap'];
 const accOwned = (id, k) => !!(S && S.acc && S.acc[id] && S.acc[id][k]);
 const accCost = (id, k) => Math.round((120 + (WEAPONS[id].price || 0) * .2) * ACC[k].k / 10) * 10;
 // Effet multiplicatif cumulé des accessoires montés (spread, dmg, mag, reload, recoil, zoom)
@@ -233,6 +256,61 @@ function arsBuild(){
 try { arsBuild(); } catch (e) { console.error('Arsenal : modèles', e); }
 
 /* ---------- Accessoires visibles sur l'arme en main (une géométrie fusionnée par arme) ---------- */
+// Formes des accessoires propres aux armes (ajoutées à la géométrie fusionnée de l'arme)
+function accLook(b, look, ud, SY, mz, my){
+  const X = ud.muzzleBase;
+  if (look === 'comp'){
+    vmBox(b, .036, .036, .07, VC.park, 0, my, X - .03, 0, 0, 0, .004);
+    for (let i = 0; i < 3; i++) vmBox(b, .02, .006, .01, VC.port, 0, my + .019, X - .01 - i * .02, 0, 0, 0, 0); // évents
+    ud.muzzle = X - .07;
+  } else if (look === 'selector'){
+    vmBox(b, .008, .02, .03, VC.light, .032, -.005, -.02, .4, 0, 0, 0); vmBox(b, .01, .01, .01, [2.2, .6, .2], .036, .005, -.03, 0, 0, 0, 0);
+  } else if (look === 'choke'){
+    vmCyl(b, .026, .06, VC.park, 0, my, X - .03, 0, 0, 0, 10); vmRing(b, .028, .02, .015, VC.steel, 0, my, X - .055, 0, 0, 0, 10);
+    ud.muzzle = X - .06;
+  } else if (look === 'gastube'){
+    vmCyl(b, .012, .3, VC.steel, 0, my - .035, X * .62, 0, 0, 0, 8); vmBox(b, .03, .02, .03, VC.park, 0, my - .03, X * .9, 0, 0, 0, .004);
+  } else if (look === 'supp'){
+    vmCyl(b, .026, .22, VC.poly, 0, my, X - .11, 0, 0, 0, 12);
+    for (let i = 0; i < 3; i++) vmRing(b, .028, .024, .012, VC.park, 0, my, X - .03 - i * .08, 0, 0, 0, 12);
+    ud.muzzle = X - .22;
+  } else if (look === 'heavy'){
+    vmCyl(b, .02, .26, VC.blue, 0, my, X * .78, 0, 0, 0, 10);
+    for (let i = 0; i < 4; i++) vmRing(b, .022, .018, .01, VC.park, 0, my, X * .68 - i * .05, 0, 0, 0, 10); // ailettes
+  } else if (look === 'bolt'){
+    vmCylAB(b, [.03, .03, -.02], [.09, .0, .02], .006, VC.steel, 6); vmCyl(b, .016, .02, VC.light, .095, -.003, .025, 0, Math.PI / 2, 0, 8);
+  } else if (look === 'quiver'){
+    vmBox(b, .05, .05, .2, VC.woodD, .075, -.04, -.1, 0, 0, 0, .008);
+    for (let i = 0; i < 4; i++) vmCyl(b, .004, .26, VC.light, .062 + (i % 2) * .02, -.005 + Math.floor(i / 2) * .012, -.12, 0, 0, 0, 5);
+  } else if (look === 'limbs'){
+    for (const sd of [-1, 1]) vmBox(b, .2, .02, .03, VC.park, sd * .12, my + .01, X * .82, 0, sd * -.35, 0, .004);
+    vmBox(b, .05, .03, .04, VC.steel, 0, my + .01, X * .82, 0, 0, 0, .004);
+  } else if (look === 'ammobox'){
+    vmBox(b, .09, .1, .14, VC.oliveD, -.1, -.08, -.02, 0, 0, 0, .008); vmBox(b, .092, .014, .142, VC.olive, -.1, -.025, -.02, 0, 0, 0, 0);
+    for (let i = 0; i < 4; i++) vmBox(b, .012, .02, .012, VC.brass, -.05, -.04 + i * .008, -.03 - i * .012, 0, 0, .6, 0);
+  } else if (look === 'motor'){
+    vmCyl(b, .035, .09, VC.park, .065, .0, .05, 0, 0, 0, 10);
+    for (let i = 0; i < 4; i++) vmRing(b, .04, .035, .006, VC.steel, .065, .0, .015 + i * .022, 0, 0, 0, 10);
+  } else if (look === 'apbelt'){
+    for (let i = 0; i < 6; i++){ vmBox(b, .012, .022, .012, VC.brass, -.05 - i * .004, .0 - i * .008, -.03 - i * .014, 0, 0, .6, 0); vmBox(b, .013, .006, .013, VC.red, -.05 - i * .004, .014 - i * .008, -.03 - i * .014, 0, 0, .6, 0); }
+  } else if (look === 'capa'){
+    for (const sd of [-1, 1]){ vmCyl(b, .014, .09, ARS_C.blueG, sd * .05, -.02, -.12, 0, 0, 0, 8); vmCyl(b, .016, .015, VC.park, sd * .05, -.02, -.07, 0, 0, 0, 8); }
+  } else if (look === 'lens'){
+    vmRing(b, .032, .018, .02, VC.park, 0, my, X - .01, 0, 0, 0, 12); vmCyl(b, .018, .004, ARS_C.cyan, 0, my, X - .015, 0, 0, 0, 10);
+  } else if (look === 'cooler'){
+    vmBox(b, .07, .02, .16, VC.steel, 0, .1, -.12, 0, 0, 0, .003);
+    for (let i = 0; i < 6; i++) vmBox(b, .074, .016, .006, VC.park, 0, .118, -.05 - i * .028, 0, 0, 0, 0);
+    vmCylAB(b, [-.04, .1, -.2], [-.05, .02, -.3], .006, ARS_C.blueG, 5);
+  } else if (look === 'drum18'){
+    vmCyl(b, .1, .1, VC.oliveD, 0, -.03, -.06, 0, 0, 0, 14); vmRing(b, .102, .09, .02, VC.park, 0, -.03, -.02, 0, 0, 0, 14);
+  } else if (look === 'frag'){
+    vmRing(b, .046, .036, .03, VC.park, 0, my, X + .03, 0, 0, 0, 10);
+    for (let i = 0; i < 6; i++){ const a = i / 6 * 6.283; vmBox(b, .01, .01, .03, VC.steel, Math.cos(a) * .046, my + Math.sin(a) * .046, X + .03, 0, 0, a, 0); }
+  } else if (look === 'coil'){
+    for (let i = 0; i < 5; i++) vmRing(b, .05, .038, .012, ARS_C.copper, 0, my, X + .12 + i * .025, 0, 0, 0, 10);
+    vmCyl(b, .008, .02, ARS_C.violet, 0, my + .055, X + .17, Math.PI / 2, 0, 0, 6);
+  }
+}
 function accSync(id){
   const g = VMS[id]; if (!g) return;
   const ud = g.userData;
@@ -300,6 +378,7 @@ function accSync(id){
         for (let i = 0; i < 2; i++) vmCyl(b, .027, .012, VC.rubber, .07, -.05, -.25 + i * .06, 0, 0, 0, 10);
         vmCyl(b, .008, .02, VC.steel, .07, -.05, -.28, 0, 0, 0, 6);
         vmCylAB(b, [.06, -.05, -.17], [.03, -.06, -.12], .005, VC.rubber, 5);
+      } else if (ACC[k].look){ accLook(b, ACC[k].look, ud, SY, mz, my);
       } else if (k === 'rtandem'){
         vmCyl(b, .008, .13, VC.steel, 0, my, mz - .07, 0, 0, 0, 6);                               // sonde de l'ogive tandem
         vmCyl(b, .014, .02, VC.red, 0, my, mz - .13, 0, 0, 0, 8);
@@ -382,7 +461,7 @@ function arsChain(id, first){
   armMuzzle(arsA);
   if (first) arsBolt(arsA, arsCenter(first, arsB)); else { arsBolt(arsA, arsEnd(arsB)); return 0; }
   let cur = first, n = 0;
-  for (let k = 0; k < W.chain; k++){
+  for (let k = 0; k < W.chain + accAdd(id, 'chain'); k++){
     let best = null, bd = W.chainR * W.chainR;
     for (const z of zombies){
       if (z.dead || hit.indexOf(z) >= 0) continue;
@@ -436,6 +515,12 @@ try {
     } catch (e) {}
     return true;
   };
+} catch (e) {}
+
+/* ---------- Silencieux : tir étouffé ---------- */
+try {
+  const _s = Snd.shot;
+  Snd.shot = function(kind){ const q = !!(S && accOwned(kind, 'rsupp')); this.quiet = q; try { return _s.apply(this, arguments); } finally { this.quiet = false; } };
 } catch (e) {}
 
 /* ---------- Boutique : section Accessoires sous les améliorations de l'arme ---------- */

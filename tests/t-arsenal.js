@@ -120,7 +120,7 @@
       return o;
     });
     ok(r.avec < r.sans * .6, 'Recul avec trépied : ' + r.avec + ' contre ' + r.sans);
-    egal(r.n, 4, 'Accessoires de la .50 dans la boutique (point rouge, lunette, trépied, canon long)');
+    egal(r.n, 6, 'Accessoires de la .50 dans la boutique (point rouge, lunette, trépied, canon long, caisse double, bande perforante)');
     ok(r.monte, 'Le trépied acheté est marqué « Monté »');
     ok(r.clic, 'Un clic dans la boutique achète l’accessoire');
   });
@@ -261,5 +261,38 @@
     ok(!r.dot && !r.scope, 'Mires rabattues avec le point rouge ou la lunette');
     egal(r.bloque, 0, 'Pièces qui cachent l’optique');
     ok(r.apres, 'Mires remises sans optique');
+  });
+})();
+
+(function(){
+  if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
+  test('Arsenal : chaque arme a au moins 2 accessoires à elle, visibles, avec leurs effets', () => {
+    if (lire('typeof __ars === "object"') !== true) ignorer('Arsenal absent');
+    reset(); J('startLocation(0)');
+    const r = J(function(){
+      __t.geler(); S.money = 1e12; WORDER.forEach(function(id){ S.owned[id] = true; S.ammo[id] = magSize(id); });
+      var o = { propres: {}, vis: {}, err: [] };
+      WORDER.forEach(function(id){
+        var mine = __ars.ACC_ORDER.filter(function(k){ var on = __ars.ACC[k].on; return on.length <= 2 && on.indexOf(id) >= 0; });
+        o.propres[id] = mine.length;
+        S.acc = {}; __ars.accSync(id); equip(id); var t0 = vmStats(id).tris;
+        mine.forEach(function(k){ if (!__ars.accBuy(id, k)) o.err.push(id + ':' + k); });
+        var st = vmStats(id); o.vis[id] = { plus: st.tris - t0, appels: st.calls };
+      });
+      // Effets
+      S.acc = {}; var r0 = wRate('pistol'); __ars.accBuy('pistol', 'pburst'); o.rafale = wRate('pistol') / r0;
+      var s0 = wSpin('minigun'); __ars.accBuy('minigun', 'mmotor'); o.moteur = wSpin('minigun') / s0;
+      o.chaine = WEAPONS.arc.chain + __ars.accAdd('arc', 'arcoil') ;
+      S.acc = {}; __ars.accBuy('arc', 'arcoil'); o.chaine = __ars.accAdd('arc', 'chain');
+      __ars.accBuy('rifle', 'barrel'); __ars.accBuy('rifle', 'rsupp'); o.bouche = ['barrel', 'rsupp'].filter(function(k){ return __ars.accOwned('rifle', k); }).join(',');
+      return o;
+    });
+    egal(r.err.join(', '), '', 'Achats refusés');
+    Object.keys(r.propres).forEach(id => ok(r.propres[id] >= 2, id + ' : ' + r.propres[id] + ' accessoires propres'));
+    Object.keys(r.vis).forEach(id => { ok(r.vis[id].plus > 60, id + ' : accessoires pas visibles (' + r.vis[id].plus + ' triangles)'); ok(r.vis[id].appels <= 7, id + ' : ' + r.vis[id].appels + ' appels de dessin'); });
+    ok(Math.abs(r.rafale - 1.4) < 1e-9, 'Kit rafale : cadence ×' + r.rafale);
+    ok(Math.abs(r.moteur - .5) < 1e-9, 'Moteur renforcé : montée en régime ×' + r.moteur);
+    egal(r.chaine, 2, 'Bobine Tesla : 2 sauts de plus');
+    egal(r.bouche, 'rsupp', 'Un seul accessoire au bout du canon (silencieux ou canon long)');
   });
 })();

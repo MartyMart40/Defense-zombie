@@ -214,6 +214,7 @@ function gfxStep(dt){
   gfxClouds.forEach((s, i) => {
     const on = live && i < nC; s.visible = on; if (!on) return;
     s.material.color.setHex(cc); s.material.opacity = cop;
+    if (cc === 0xffffff && w !== 'soleil') s.material.color.lerp(scene.fog.color, .45); // temps normal : nuages teintés par le ciel de la ville
     s.position.x += s.userData.v * dt; if (s.position.x > 260) s.position.x = -260;
   });
   // Brume au sol : couleur du brouillard de la ville

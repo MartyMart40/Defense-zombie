@@ -1,5 +1,5 @@
 'use strict';
-/* Tests du style graphique (js/57-graphismes.js) : Actuel et Amélioré */
+/* Tests du style graphique (js/57-graphismes.js, js/58-graphismes-hd.js) : Actuel, Amélioré, Haute définition */
 (function(){
   if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
   const ex = () => { if (lire('typeof __style === "object"') !== true) ignorer('Style absent (js/57-graphismes.js)'); };
@@ -9,6 +9,7 @@
     const r = J(function(){
       var b = document.getElementById('btnStyle'), o = { btn: !!b && !!b.closest('#scrPause'), p0: __style.STY.pref };
       __style.styleSet('actuel'); b.click(); o.apres = __style.STY.pref; o.sauve = store.get('dt_style', null); o.txt = b.textContent;
+      b.click(); o.hd = __style.STY.pref; o.txtHd = b.textContent;
       b.click(); o.retour = __style.STY.pref;
       __style.styleSet('nimporte'); o.mauvais = __style.STY.pref;
       return o;
@@ -18,7 +19,9 @@
     egal(r.apres, 'ameliore', 'Un clic passe à Amélioré');
     egal(r.sauve, 'ameliore', 'Choix sauvegardé (dt_style)');
     ok(/Amélioré/.test(r.txt), 'Libellé : ' + r.txt);
-    egal(r.retour, 'actuel', 'Deuxième clic : retour à Actuel');
+    egal(r.hd, 'hd', 'Deuxième clic : Haute définition');
+    ok(/Haute définition/.test(r.txtHd), 'Libellé : ' + r.txtHd);
+    egal(r.retour, 'actuel', 'Troisième clic : retour à Actuel');
     egal(r.mauvais, 'actuel', 'Valeur inconnue ramenée à Actuel');
   });
 
@@ -90,5 +93,49 @@
     egal(r.eclatBas, false, 'Pas d\'éclat en qualité basse');
     egal(r.carteMoy, 1024, 'Carte d\'ombre en qualité moyenne');
     egal(r.eclatMoy, true, 'Éclat en qualité moyenne');
+  });
+})();
+
+/* Haute définition (séance 1 : la lumière) */
+(function(){
+  if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
+  test('Style Haute définition : matériaux physiques, lumière HDR, ACES et SSAO ; retour à Amélioré et Actuel sans trace', async () => {
+    if (lire('typeof __style === "object" && typeof __styleHD === "object"') !== true) ignorer('Haute définition absente (js/58-graphismes-hd.js)');
+    reset(); J('startLocation(0)');
+    J(function(){ window.__hdMats = []; world.traverse(function(m){ if (m.isMesh) __hdMats.push([m, m.material]); }); __style.styleSet('hd'); });
+    await J('__styleHD.styleHDCharger()');
+    await J('__styleHD.HD.envProm || null');
+    const r = J(function(){
+      var H = __styleHD.HD, o = { pret: H.pret, casse: H.casse, env: !!H.env };
+      var std = 0, rel = 0, vitres = 0;
+      world.traverse(function(m){ if (!m.isMesh || !m.material.isMeshStandardMaterial) return; std++; if (m.material.normalMap && m.material.roughnessMap) rel++; if (m.material.emissiveMap) vitres++; });
+      o.std = std; o.rel = rel; o.vitres = vitres;
+      for (var i = 0; i < 3; i++) visuals(1 / 30);
+      o.cielAv = scene.fog.color.getHex(); o.rendu = __style.styleRendu(); o.casse2 = H.casse;
+      o.envSur = scene.environment === H.env && !!H.env;
+      o.ssao = !!(H.ssao && (H.ssao.enabled || __gfx.gfxLevel() === 'bas'));
+      o.ciel = scene.fog.color.getHex(); // les couleurs sont remises en sRGB après le dessin
+      var sun = world.children.find(function(c){ return c.isDirectionalLight; });
+      o.carte = sun.shadow.mapSize.x; o.niv = __gfx.gfxLevel(); o.touch = isTouch;
+      o.enc = H.tex.size;
+      __style.styleSet('ameliore'); visuals(1 / 30); __style.styleRendu();
+      o.lambert = 0; world.traverse(function(m){ if (m.isMesh && m.material.isMeshStandardMaterial) o.lambert++; });
+      o.enc2 = H.tex.size; o.envOff = scene.environment === null;
+      __style.styleSet('actuel'); visuals(1 / 30);
+      o.pareil = __hdMats.every(function(p){ return p[0].material === p[1]; });
+      return o;
+    });
+    ok(r.pret && !r.casse, 'Morceaux de Three.js chargés (lib/three-hd.js)');
+    ok(r.env, 'Image HDR chargée et filtrée (hdri/)');
+    ok(r.std >= 40 && r.rel >= 40, 'Matériaux physiques avec relief et rugosité : ' + r.std + ' / ' + r.rel);
+    ok(r.vitres >= 10, 'Façades physiques (vitres allumées) : ' + r.vitres);
+    ok(r.rendu === true && !r.casse2, 'Rendu HDR (SSAO, éclat, ACES, FXAA) dessiné sans erreur');
+    ok(r.envSur && r.ssao, 'Lumière d\'ambiance HDR posée et ombres de contact actives');
+    ok(r.enc > 0, 'Textures de couleur lues en sRGB : ' + r.enc);
+    if (r.niv === 'haut' && !r.touch) egal(r.carte, 4096, 'Carte d\'ombre 4096 en Haute définition (ordi, qualité haute)');
+    egal(r.lambert, 0, 'Retour à Amélioré : plus de matériaux physiques');
+    ok(r.enc2 === 0 && r.envOff, 'Retour à Amélioré : textures et lumière remises comme avant');
+    ok(r.pareil, 'Actuel : les matériaux d\'origine sont remis');
+    egal(r.ciel, r.cielAv, 'Couleurs remises en sRGB après le dessin (brume)');
   });
 })();

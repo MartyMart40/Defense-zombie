@@ -1,5 +1,5 @@
 'use strict';
-/* ================= Style graphique : Actuel, Amélioré (plus tard : Haute définition, Ultra) ================= */
+/* ================= Style graphique : Actuel, Amélioré, Haute définition (plus tard : Ultra) ================= */
 // Réglage « Style » dans l'écran Pause (dt_style). Feuille de route : docs/graphismes.md.
 //   Actuel   : le jeu tel qu'il était (couleurs unies, pas d'effet plein écran).
 //   Amélioré : visée « jeu 3D des années 2005 à 2010 » sur le toit :
@@ -8,15 +8,18 @@
 //       planches à clin sur les façades, cadres et allèges des fenêtres, saleté au pied des murs, bois, crasse ;
 //     - effets d'image : éclat lumineux (fenêtres, feux, soleil), lissage des bords (FXAA), couleurs plus
 //       contrastées (ombres froides, lumières chaudes), coins assombris et grain de film.
+//   Haute définition : par-dessus Amélioré, voir js/58-graphismes-hd.js (matériaux physiques, lumière HDR, ACES, SSAO).
 // Ne s'applique qu'au toit pour l'instant (pas au robot ni au RTS). Revenir à « Actuel » remet les matériaux d'origine.
 // Branché : Jeu.on('monde') (fin de buildWorld) pour habiller chaque nouvelle rue, styleRendu() appelé par la boucle
 // (js/15-boucle.js) pour dessiner la scène avec les effets, Jeu.on('image') pour les ombres des zombies.
 
-const STYLES = ['actuel', 'ameliore'];
-const STYLE_NOM = { actuel:'Actuel', ameliore:'Amélioré' };
+const STYLES = ['actuel', 'ameliore', 'hd'];
+const STYLE_NOM = { actuel:'Actuel', ameliore:'Amélioré', hd:'Haute définition' };
 const STY = { pref: store.get('dt_style', 'actuel'), L:null, orig:[], neufs:[], comp:null, bloom:null, grade:null, fxaa:null, w:0, h:0, t:0, ombreT:0, ombres:false, casse:false, v2:new THREE.Vector2() };
 if (STYLES.indexOf(STY.pref) < 0) STY.pref = 'actuel';
-const styleOn = () => STY.pref === 'ameliore';
+const styleOn = () => STY.pref === 'ameliore' || STY.pref === 'hd'; // Haute définition part de la rue d'Amélioré
+const styleHD = () => STY.pref === 'hd';
+const styleHDMajSur = () => { if (typeof styleHDMaj === 'function') styleHDMaj(); }; // js/58-graphismes-hd.js
 const styleToit = () => styleOn() && !Jeu.actif();
 
 /* ---------- Hasard propre (ne touche pas Math.random : les tests à graine restent pareils) ---------- */
@@ -132,7 +135,9 @@ function styleFacade(m, briques){
     fen.forEach(f => { if (!f[2]) return; g.drawImage(em, f[0] / 2, f[1] / 2, 18, 20, f[0], f[1], 36, 40); g.fillStyle = '#000'; g.fillRect(f[0] + 17, f[1], 2, 40); g.fillRect(f[0], f[1] + 19, 36, 2); });
   });
   [col, emi].forEach(t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.copy(m.map.repeat); t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); });
-  return new THREE.MeshLambertMaterial({ map:col, emissiveMap:emi, emissive:0xffffff, emissiveIntensity:m.emissiveIntensity });
+  const fm = new THREE.MeshLambertMaterial({ map:col, emissiveMap:emi, emissive:0xffffff, emissiveIntensity:m.emissiveIntensity });
+  fm.userData.fac = { fen, briques }; // pour la Haute définition (relief et reflets des vitres)
+  return fm;
 }
 
 /* ---------- Habiller la rue (et la déshabiller) ---------- */
@@ -162,7 +167,7 @@ function styleOmbreSoleil(on){
   sun.target.position.copy(cible); if (!sun.target.parent) world.add(sun.target);
   sun.position.copy(cible).addScaledVector(dir, 150);
   const niv = typeof gfxLevel === 'function' ? gfxLevel() : 'haut';
-  const S2 = sun.shadow, cam = S2.camera, n = niv === 'bas' ? 512 : (niv === 'haut' && !isTouch) ? 2048 : 1024; // suit le réglage Graphismes
+  const S2 = sun.shadow, cam = S2.camera, n = niv === 'bas' ? 512 : (niv === 'haut' && !isTouch) ? (styleHD() ? 4096 : 2048) : 1024; // suit le réglage Graphismes (4096 en Haute définition)
   cam.left = -48; cam.right = 48; cam.top = 32; cam.bottom = -32; cam.near = 40; cam.far = 270; cam.updateProjectionMatrix();
   if (S2.mapSize.x !== n){ S2.mapSize.set(n, n); if (S2.map){ S2.map.dispose(); S2.map = null; } }
   S2.bias = -.0006; S2.normalBias = .04; S2.radius = 2;
@@ -201,6 +206,7 @@ function styleMonde(L){
   STY.orig = []; STY.neufs = [];
   STY.L = L;
   if (styleOn()) styleAppliquer();
+  styleHDMajSur();
 }
 
 /* ---------- Ombres (le moteur) : seulement sur le toit en style Amélioré ---------- */
@@ -251,6 +257,7 @@ function styleComposer(){
 // Appelée par la boucle (js/15-boucle.js) : vrai si la scène a été dessinée ici, avec les effets
 function styleRendu(){
   if (!styleToit() || STY.casse) return false;
+  if (styleHD() && typeof styleHDRendu === 'function'){ const r = styleHDRendu(); if (r !== null) return r; } // null : pas encore prêt, on dessine en Amélioré
   try {
     const c = styleComposer(); if (!c) return false;
     const v = renderer.getDrawingBufferSize(STY.v2);
@@ -281,7 +288,7 @@ Jeu.on('monde', L => styleMonde(L));
 function styleSet(p){
   if (STYLES.indexOf(p) < 0) p = 'actuel';
   const avant = STY.pref; STY.pref = p; store.set('dt_style', p);
-  if (avant !== p){ if (styleOn()) styleAppliquer(); else styleRetirer(); }
+  if (avant !== p){ if (styleOn()) styleAppliquer(); else styleRetirer(); styleOmbreSoleil(styleOn() && STY.orig.length > 0); styleHDMajSur(); }
   styleBtn();
 }
 function styleBtn(){ const b = $('btnStyle'); if (b) b.textContent = 'Style : ' + STYLE_NOM[STY.pref]; }
@@ -299,4 +306,4 @@ function styleBtn(){ const b = $('btnStyle'); if (b) b.textContent = 'Style : ' 
 })();
 
 // Accès pour les tests automatiques
-window.__style = { STY, STYLES, styleOn, styleToit, styleSet, styleRendu, styleTex, styleMonde };
+window.__style = { STY, STYLES, styleOn, styleHD, styleToit, styleSet, styleRendu, styleTex, styleMonde };

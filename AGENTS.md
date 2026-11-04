@@ -20,7 +20,7 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 
 ## Carte du code
 - `index.html` : écrans, HUD, boutons et la liste des scripts, dans l'ordre. `css/style.css` : tout le style.
-- `lib/three.min.js` : Three.js r128 (ne pas modifier ; secours sur cdnjs si absent). `lib/three-effets.js` : effets d'image de r128 (éclat, FXAA), ne pas modifier.
+- `lib/three.min.js` : Three.js r128 (ne pas modifier ; secours sur cdnjs si absent). `lib/three-effets.js` : effets d'image de r128 (éclat, FXAA), ne pas modifier. `lib/three-hd.js` : EXRLoader et SSAO de r128 pour la Haute définition, ne pas modifier. `hdri/` : images HDR (Poly Haven, CC0).
 - `manifest.webmanifest`, `sw.js`, `icones/` : application installable. `sw.js` sert la copie en cache seulement sans réseau.
 - `outils/` : `lancer-tests.js` (toute la suite dans Chromium), `version.sh` (change les ?v= avant une mise en ligne), `simulateur.js` et `sim-bot.js` (simulateur d'équilibrage, rapport dans `docs/equilibrage.md`). `.github/workflows/tests.yml` lance les tests sur GitHub à chaque push.
 - `js/NN-nom.js`, chargés dans l'ordre du numéro :
@@ -65,7 +65,8 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 54 postes RTS | Postes de pilotage des véhicules (tank, Apache, chasseur, AC-130 à 3 postes), munitions des avions, 2 avions par aérodrome |
 | 55 niveaux RTS | Les armes des véhicules embellissent avec leurs améliorations : traînée, son, explosion, recul, éclair, détails du modèle (3 paliers) |
 | 56 postes des robots | Poste de pilotage des petits robots : visière et bras avec l'arme de chaque robot, détails selon les améliorations |
-| 57 graphismes | Style graphique (Pause, dt_style) : Actuel ou Amélioré (textures, vraies ombres, éclat, couleurs) sur le toit (`docs/graphismes.md`) |
+| 57 graphismes | Style graphique (Pause, dt_style) : Actuel, Amélioré (textures, vraies ombres, éclat, couleurs) ou Haute définition sur le toit (`docs/graphismes.md`) |
+| 58 graphismes HD | Style Haute définition : matériaux physiques, lumière HDR (`hdri/`), couleurs linéaires, ACES, SSAO (`lib/three-hd.js` chargé au besoin) |
 | 90 branchements | Branche le registre `Jeu` sur le jeu commun ; toujours le dernier |
 
 Les const, let et function de haut niveau sont partagés entre tous les fichiers (portée globale). Un fichier peut appeler une fonction d'un fichier plus loin **seulement à l'intérieur d'une fonction**, jamais au chargement. Chaque fichier commence par `'use strict';`.

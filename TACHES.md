@@ -20,6 +20,7 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 | # | Tâche | Date |
 |---|-------|------|
+| 82 | Graphismes, Haute définition séance 1 (la lumière) : 3e choix du bouton Style. Matériaux physiques (relief et rugosité tirés des textures : flaques d’huile et vitres qui reflètent, briques en relief), lumière d’ambiance tirée d’une vraie image HDR par ville (Poly Haven, CC0, dossier `hdri/`), rendu en couleurs linéaires et étendues avec exposition et courbe ACES, ombres de contact (SSAO), ombre du soleil 4096 sur ordi (js/58-graphismes-hd.js, lib/three-hd.js, tests/t-style.js) | 2026-11-04 |
 | 81 | Robot de combat ouvert dès le départ (plus besoin de tomber en mode infini ni de finir les villes). Style : bouton « Style » monté en haut de la pause (visible au cell couché sans défiler) ; en qualité basse, pas d’éclat et ombres moins fines (moins de lag sur un petit ordi) | 2026-11-04 |
 | 80 | Graphismes, phase 1 : réglage « Style » dans Pause (Actuel, Amélioré ; dt_style). Amélioré sur le toit : vraies ombres du soleil (bâtiments, autos, zombies), textures dessinées par le code (asphalte fissuré, dalles, gazon, briques ou planches, cadres et allèges des fenêtres, bois, crasse), effets d’image (éclat lumineux, lissage FXAA, couleurs, coins assombris, grain). Effets de Three.js r128 dans `lib/three-effets.js`. Feuille de route : `docs/graphismes.md` | 2026-11-04 |
 | 79 | RTS, petits robots : jambes qui font des pas en marchant ; poste de pilotage pour chaque robot (visière, bras et sa propre arme, recul, éclair, 3 paliers de détails avec Armes et Cadence, « ARME n % » dans le viseur) ; défaut corrigé : les mains et l’arme du toit restaient visibles pendant le pilotage (js/41-rts.js, js/42-rts-*.js, js/56-rts-postes-robots.js, tests/t-rts-robots.js) | 2026-11-04 |
@@ -29,9 +30,10 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 | 75 | Tutoriel du toit facultatif : proposé une fois à un nouveau joueur (« Première partie ? » Oui / Non merci), 6 bulles au bon moment (viser, tirer, recharger, barricade, boutique, grenade) avec « Passer le tutoriel », « Revoir le tutoriel » dans Comment jouer ; rien n’est mis en pause (js/53-tutoriel.js, tests/t-tutoriel.js) | 2026-11-04 |
 | 74 | RTS : groupes d’unités enregistrés (5 au plus) : pastille « ＋ Groupe » et « G1 »... dans la rangée Unités, appui long ou clic droit pour remplacer, Ctrl+1 à 5 et Maj+1 à 5 à l’ordi, gardés dans la sauvegarde ; astuce ajoutée | 2026-11-04 |
 | 73 | Armes neuves plus fortes au départ (leurs améliorations repartent toujours à zéro) : fusil d’assaut 30 dégâts et traverse 2 zombies, sniper 240 dégâts, 1 tir/s, traverse 5, minigun 24 dégâts et traverse 2, lance-roquettes 800 dégâts et recharge 2,6 s, canon électromagnétique 1 300, arc électrique 260. Défaut corrigé : les explosions (roquettes, grenades, pouvoirs, mortier) ne blessaient presque pas le boss ni le colosse (distance mesurée jusqu’au centre de leur gros corps). Test de la vieille route réparé (seul le trajet compte, pas l’arrivée près du QG) | 2026-11-04 |
-| 72 | Statistiques à vie : bouton « 📊 Statistiques » sur l’écran titre (temps de jeu par mode, zombies, têtes, boss, survivants, vagues, records de chaque mode, arme préférée avec barres) ; temps et zombies par arme comptés par le registre Jeu (P.vie) (js/52-statistiques.js, tests/t-statistiques.js) | 2026-11-04 |
 
 ## À valider par Martin
+
+- Style Haute définition (tâche 82) : à essayer sur l’ordi (Pause, « Style » deux fois). Dire combien d’images par seconde, et si c’est trop sombre, trop clair ou trop « délavé » (réglages `HD_REGL`). Les zombies et les textures photo viennent aux séances 2 et 3.
 
 - Style Amélioré (tâche 80) : à essayer sur le S24 et l’ordi (Pause, « Style »). Dire si c’est trop sombre, trop flou ou trop granuleux, et combien d’images par seconde au cell.
 

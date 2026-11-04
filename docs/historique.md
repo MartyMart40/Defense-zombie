@@ -4,6 +4,7 @@ Les tâches plus anciennes que les 10 dernières (les récentes sont dans `TACHE
 
 | # | Tâche | Date |
 |---|-------|------|
+| 72 | Statistiques à vie : bouton « 📊 Statistiques » sur l’écran titre (temps de jeu par mode, zombies, têtes, boss, survivants, vagues, records de chaque mode, arme préférée avec barres) ; temps et zombies par arme comptés par le registre Jeu (P.vie) (js/52-statistiques.js, tests/t-statistiques.js) | 2026-11-04 |
 | 71 | Code : trois gros fichiers coupés sans rien changer (04-arme-en-main en 3 : base, modèles, animations ; 23-rue en 2 : rue, survivants ; 42-rts-unites en 2 : unités et partie, combat) ; crochets d’image des repères, du rendu et des bruitages passés au registre Jeu.on('image') ; les erreurs des écouteurs vont au journal | 2026-11-04 |
 | 70 | Journal des erreurs cachées : les 227 `catch (e) {}` du jeu notent maintenant les vraies erreurs de programmation dans JOURNAL (errNote, js/00-base.js) ; les refus du navigateur et les sauvegardes illisibles sont ignorés ; tests/t-journal.js (chargé en dernier) échoue s’il y en a. Aucune trouvée dans les tests ni dans une partie de chaque mode | 2026-11-04 |
 | 69 | Robot : course gardée au début de chaque rue, « ▶ Continuer le robot (rue N) » sur l’écran titre (js/50-robot-sauvegarde.js) ; 5 succès pour le robot et le RTS : Briseur de rues, Broyeur, Démolisseur de nids, Tenir le fort, Chasseur de colosses (js/51-succes-modes.js) ; le point de ralliement vise toujours le sol ; tests t-robot-sauvegarde.js et t-succes-modes.js | 2026-11-04 |

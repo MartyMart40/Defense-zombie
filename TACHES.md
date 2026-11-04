@@ -19,6 +19,7 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 | # | Tâche | Date |
 |---|-------|------|
+| 49 | Robot : débloqué en tombant en mode infini ; Garage du robot (9 améliorations permanentes en ferraille : blindage, dégâts et refroidissement de la minigun, dégâts, cadence et salve des roquettes, jambes, réparation, nanorobots) | 2026-11-04 |
 | 48 | Mode robot : mech à deux pattes, vue du cockpit, minigun à gauche et roquettes à droite, marche de rue en rue (villes à la suite), blindage, surchauffe, boss toutes les 3 rues, commandes ordi et cell (js/39-robot.js) | 2026-11-04 |
 | 47 | Mode infini plus dur : vie +18 % et dégâts +14 % par vague (argent +10 %), spéciaux plus tôt, apparitions plus rapides | 2026-11-04 |
 | 46 | Améliorations des armes sans plafond (coût qui monte plus vite après l'ancien maximum, gains qui diminuent pour recharge, précision, montée en régime ; plombs plafonnés puis +8 % de dégâts) | 2026-11-04 |

@@ -20,6 +20,46 @@ const MECH_ROCKET_CD = .65;    // secondes entre deux roquettes
 const MECH = { on:false, paused:false, x:0, dist:0, street:1, heat:0, hot:0, rcd:0, kills:0, step:0, stepSide:0, mv:{ f:0, b:0, l:0, r:0 },
   joy:{ id:null, x:0, y:0, dx:0, dy:0 }, aim:{ id:null, lx:0, ly:0 }, mini:false, rocket:false, fade:0, fadeTo:null, pow:1, xp0:0, scr0:0, best:+store.get('dt_mech_best', 0) || 0 };
 
+/* ---------- Déblocage et améliorations permanentes (Garage, payées en ferraille) ---------- */
+// Le robot se débloque en tombant une première fois en mode infini (partie infinie terminée).
+// Sauvegarde : P.mech = { unlocked, lv:{ clé: niveau } } (valeurs par défaut au chargement).
+const MECH_UPG = {
+  armor:  { name:'Blindage',             max:10, base:80,  desc:'+15 % de blindage par niveau.' },
+  mdmg:   { name:'Minigun : dégâts',     max:10, base:90,  desc:'+12 % de dégâts de la minigun par niveau.' },
+  cool:   { name:'Minigun : refroidissement', max:8, base:70, desc:'La minigun chauffe 8 % moins vite par niveau.' },
+  rdmg:   { name:'Roquettes : dégâts',   max:10, base:100, desc:'+12 % de dégâts des roquettes par niveau.' },
+  rrate:  { name:'Roquettes : cadence',  max:8,  base:90,  desc:'Roquettes 8 % plus souvent par niveau.' },
+  salvo:  { name:'Roquettes : salve',    max:2,  base:400, desc:'+1 roquette par tir (2 puis 3 roquettes à la fois).' },
+  legs:   { name:'Jambes renforcées',    max:6,  base:70,  desc:'Marche 8 % plus vite par niveau.' },
+  repair: { name:'Équipe de réparation', max:5,  base:90,  desc:'+8 % de blindage réparé à chaque nouvelle rue, par niveau.' },
+  regen:  { name:'Nanorobots',           max:5,  base:150, desc:'Répare 0,4 % du blindage par seconde, par niveau.' }
+};
+const MECH_UPG_ORDER = Object.keys(MECH_UPG);
+function mechNorm(){
+  const o = P.mech && typeof P.mech === 'object' ? P.mech : {}, lv = {};
+  MECH_UPG_ORDER.forEach(k => { const v = Math.floor(+((o.lv || {})[k]) || 0); lv[k] = clamp(v, 0, MECH_UPG[k].max); });
+  const infDone = !!(P.inf && P.inf.best && Object.keys(P.inf.best).some(k => P.inf.best[k] > 0)); // déjà tombé en infini avant cette mise à jour
+  P.mech = { unlocked: !!o.unlocked || infDone, lv };
+  return P.mech;
+}
+mechNorm();
+const mUp = k => ((P.mech && P.mech.lv && P.mech.lv[k]) || 0);
+const mechUpgCost = (k, l) => Math.round(MECH_UPG[k].base * Math.pow(1.55, l));
+const mechUnlocked = () => !!(P.mech && P.mech.unlocked);
+function mechUpgBuy(k){
+  const U = MECH_UPG[k]; if (!U) return false;
+  const l = mUp(k), c = mechUpgCost(k, l);
+  if (l >= U.max || (P.scrap || 0) < c) return false;
+  P.scrap -= c; P.mech.lv[k] = l + 1; saveP();
+  return true;
+}
+function mechUnlock(){
+  if (mechUnlocked()) return false;
+  P.mech.unlocked = true; saveP(); mechBtn();
+  setTimeout(() => { if (typeof toast === 'function') toast('🤖 Robot de combat débloqué ! Il t’attend sur l’écran titre.'); }, 1500);
+  return true;
+}
+
 /* ---------- Cockpit (dans la scène de l'arme en main, mêmes outils de dessin) ---------- */
 const mechCk = new THREE.Group(); mechCk.visible = false; vmCam.add(mechCk);
 const mechBarrels = new THREE.Group();
@@ -80,7 +120,7 @@ const mechFade = document.createElement('div'); mechFade.id = 'mechFade'; docume
 const mechPanel = document.createElement('div'); mechPanel.id = 'mechPanel'; mechPanel.className = 'hide'; document.body.appendChild(mechPanel);
 function mechShowPanel(html, btns){
   mechPanel.innerHTML = '<div class="panel">' + html + '<div class="mk-btns">' + btns.map((b, i) => '<button class="' + (i ? 'ghost' : 'big') + '" data-i="' + i + '" type="button">' + b[0] + '</button>').join('') + '</div></div>';
-  mechPanel.querySelectorAll('button').forEach(el => el.addEventListener('click', () => { const f = btns[+el.dataset.i][1]; if (f) f(); }));
+  mechPanel.querySelectorAll('button[data-i]').forEach(el => el.addEventListener('click', () => { const f = btns[+el.dataset.i][1]; if (f) f(); }));
   mechPanel.classList.remove('hide');
 }
 function mechHUD(){
@@ -121,7 +161,7 @@ function mechStreet(first){
   clearZombies();
   plan = mechPlan(); spawnT = 1.5;
   MECH.pow = 2.4 * Math.pow(1.16, MECH.street - 1);       // les armes du robot montent avec les rues
-  if (!first){ S.barMax += 250; S.bar = Math.min(S.barMax, S.bar + S.barMax * .35); } // réparation à chaque rue
+  if (!first){ S.barMax += 250; S.bar = Math.min(S.barMax, S.bar + S.barMax * (.35 + .08 * mUp('repair'))); } // réparation à chaque rue
   if (typeof saveP === 'function') saveP();
   banner('Rue ' + MECH.street, L.name + (first ? ' : avance et nettoie la rue' : ' · blindage réparé'), 2200);
 }
@@ -133,7 +173,7 @@ function mechStart(){
   MECH.mini = MECH.rocket = false; Object.keys(MECH.mv).forEach(k => { MECH.mv[k] = 0; });
   MECH.xp0 = P.xp || 0; MECH.scr0 = P.scrap || 0;
   S.owned.minigun = S.owned.rocket = true; S.ammo.minigun = magSize('minigun'); S.ammo.rocket = magSize('rocket');
-  S.barMax = S.bar = MECH_ARMOR; S.cur = 'minigun'; S.wave = 1;
+  S.barMax = S.bar = Math.round(MECH_ARMOR * (1 + .15 * mUp('armor'))); S.cur = 'minigun'; S.wave = 1;
   yaw = 0; pitch = -.2; firing = false; zoomed = false; cool = 0; reloadT = 0;
   mechStreet(true);
   state = 'mech';
@@ -177,7 +217,7 @@ function mechOver(){
     + '<span>Rues traversées : <strong>' + (MECH.street - 1) + '</strong>' + (rec ? ' · nouveau record !' : ' · record : ' + MECH.best) + '</span>'
     + '<span>Zombies abattus : <strong>' + fmtN(MECH.kills) + '</strong></span>'
     + '<span>Expérience : <strong>+' + fmtN(xp) + '</strong> · Ferraille : <strong>+' + fmtN(scr) + ' ⚙</strong></span></div>',
-    [['Recommencer', mechStart], ['Menu', mechQuit]]), 1200);
+    [['Recommencer', mechStart], ['Garage', () => { mechQuit(); mechGarage(); }], ['Menu', mechQuit]]), 1200);
 }
 
 /* ---------- Chaque image ---------- */
@@ -201,7 +241,8 @@ function mechStep(dt){
   recoilAcc *= Math.exp(-7 * dt);
   // Déplacements (manette tactile ou clavier)
   const fwdIn = clamp(MECH.mv.f - MECH.mv.b - MECH.joy.dy, -1, 1), sideIn = clamp(MECH.mv.r - MECH.mv.l + MECH.joy.dx, -1, 1);
-  const walk = fwdIn > 0 ? fwdIn * MECH_WALK : fwdIn * MECH_WALK * .5;
+  const spd = MECH_WALK * (1 + .08 * mUp('legs')), walk = fwdIn > 0 ? fwdIn * spd : fwdIn * spd * .5;
+  if (mUp('regen') && S.bar > 0) S.bar = Math.min(S.barMax, S.bar + S.barMax * .004 * mUp('regen') * dt); // nanorobots
   if (walk > 0){ const d = walk * dt; mechTread(d); MECH.dist += d; }
   else if (walk < 0 && MECH.dist > 0){ const d = Math.max(walk * dt, -MECH.dist); mechTread(d); MECH.dist += d; }
   MECH.x = clamp(MECH.x + sideIn * MECH_STRAFE * dt, -9, 9);
@@ -217,14 +258,14 @@ function mechStep(dt){
   S.ammo.minigun = magSize('minigun'); S.ammo.rocket = magSize('rocket'); reloadT = 0;
   if (MECH.rocket && MECH.rcd <= 0){
     S.cur = 'rocket'; const c0 = cool; cool = 0;
-    try { fire(); } finally { S.cur = 'minigun'; cool = c0; recoilAcc = Math.min(recoilAcc, .015); } // le robot absorbe le recul
-    MECH.rcd = MECH_ROCKET_CD; mechFlashR.visible = true; setTimeout(() => { mechFlashR.visible = false; }, 70);
+    try { fire(); for (let i = 0; i < mUp('salvo'); i++) mechExtraRocket(); } finally { S.cur = 'minigun'; cool = c0; recoilAcc = Math.min(recoilAcc, .015); } // le robot absorbe le recul
+    MECH.rcd = MECH_ROCKET_CD * Math.max(.3, 1 - .08 * mUp('rrate')); mechFlashR.visible = true; setTimeout(() => { mechFlashR.visible = false; }, 70);
   }
   S.cur = 'minigun';
   firing = MECH.mini && MECH.hot <= 0;
   if (typeof armStep === 'function') armStep(dt); // montée en régime, roquettes en vol
   if (firing && cool <= 0 && (typeof spin === 'undefined' || spin >= 1)){
-    fire(); MECH.heat += MECH_HEAT.shot; recoilAcc = Math.min(recoilAcc, .012); // le robot absorbe le recul
+    fire(); MECH.heat += MECH_HEAT.shot * Math.max(.3, 1 - .08 * mUp('cool')); recoilAcc = Math.min(recoilAcc, .012); // le robot absorbe le recul
     if (MECH.heat >= 1){ MECH.heat = 1; MECH.hot = MECH_HEAT.lock; banner('Surchauffe !', 'La minigun refroidit', 1200); }
     mechFlashL.visible = true; mechFlashL.material.rotation = Math.random() * 6;
   } else if (!firing) mechFlashL.visible = false;
@@ -274,6 +315,35 @@ function mechFrame(dt){
   mechCk.visible = state === 'mech' || state === 'mechover';
   mechCk.position.y = -bob * .3;
   mechHUD();
+}
+
+// Salve : roquettes en plus, légèrement écartées
+function mechExtraRocket(){
+  if (typeof armLaunch !== 'function' || typeof ARM !== 'object') return;
+  armLaunch('rocket');
+  let o = null; for (const r of ARM.rockets) if (r.m.visible && r.life === 0) o = r;
+  if (o){ const sp = o.v.length(); o.v.x += rand(-.05, .05) * sp; o.v.y += rand(-.02, .04) * sp; o.v.setLength(sp); o.m.position.x += rand(-.3, .3); }
+}
+/* ---------- Garage : améliorations et départ ---------- */
+function mechGarage(){
+  if (!mechUnlocked()){ if (typeof toast === 'function') toast('Tombe une première fois en mode infini pour débloquer le robot'); return; }
+  showScreen(null);
+  let h = '<h2 class="title sm">Garage du robot</h2><div class="stats"><span>Ferraille : <strong>' + fmtN(Math.floor(P.scrap || 0)) + ' ⚙</strong></span>'
+    + '<span>Record : <strong>' + MECH.best + ' rue' + (MECH.best > 1 ? 's' : '') + '</strong></span></div><div class="mk-upg">';
+  MECH_UPG_ORDER.forEach(k => {
+    const U = MECH_UPG[k], l = mUp(k), max = l >= U.max, c = mechUpgCost(k, l);
+    h += '<div class="row"><div class="info"><div class="nm">' + U.name + ' <span class="inf-lv">' + l + ' / ' + U.max + '</span></div><div class="ds">' + U.desc + '</div></div>'
+      + '<button type="button" data-k="' + k + '"' + (max || (P.scrap || 0) < c ? ' disabled' : '') + '>' + (max ? 'Max' : fmtN(c) + ' ⚙') + '</button></div>';
+  });
+  h += '</div>';
+  mechShowPanel(h, [['Partir au combat', mechStart], ['Retour', () => { mechPanel.classList.add('hide'); showScreen('scrTitle'); }]]);
+  mechPanel.querySelectorAll('button[data-k]').forEach(b => b.addEventListener('click', () => { if (mechUpgBuy(b.dataset.k)){ if (typeof Snd === 'object' && Snd.buy) Snd.buy(); mechGarage(); } }));
+}
+function mechBtn(){
+  const b = $('btnMech'); if (!b) return;
+  const on = mechUnlocked();
+  b.textContent = on ? '🤖 Robot de combat' : '🔒 Robot de combat (tombe en mode infini)';
+  b.classList.toggle('locked', !on);
 }
 
 /* ---------- Entrées ---------- */
@@ -339,7 +409,8 @@ document.addEventListener('pointerlockchange', () => { if (state === 'mech' && !
   if (after && after.parentNode && !$('btnMech')){
     const b = document.createElement('button'); b.className = 'ghost mech-btn'; b.id = 'btnMech'; b.type = 'button'; b.textContent = '🤖 Robot de combat';
     after.parentNode.insertBefore(b, after.nextSibling);
-    b.addEventListener('click', () => mechStart());
+    mechBtn();
+    b.addEventListener('click', () => { if (typeof Snd === 'object') Snd.init(); mechGarage(); });
   }
 })();
 
@@ -359,7 +430,11 @@ try {
 // Pas de douilles de l'arme en main (cachée) dans le cockpit
 try { const _e = vmEject; vmEject = function(){ if (MECH.on) return; return _e.apply(this, arguments); }; } catch (e) {}
 // Les armes du robot frappent fort (et de plus en plus fort à chaque rue)
-try { const _d = damage; damage = function(z, amt){ if (MECH.on && state === 'mech') amt *= MECH.pow; arguments[1] = amt; return _d.apply(this, arguments); }; } catch (e) {}
+try { const _d = damage; damage = function(z, amt){ if (MECH.on && state === 'mech') amt *= MECH.pow * (1 + .12 * mUp(MECH.src === 'rocket' ? 'rdmg' : 'mdmg')); arguments[1] = amt; return _d.apply(this, arguments); }; } catch (e) {}
+// Les explosions des roquettes comptent pour l'amélioration « Roquettes : dégâts »
+try { if (typeof armExplode === 'function'){ const _x = armExplode; armExplode = function(){ const s0 = MECH.src; MECH.src = 'rocket'; try { return _x.apply(this, arguments); } finally { MECH.src = s0; } }; } } catch (e) {}
+// Tomber en mode infini débloque le robot
+try { const _g = gameOver; gameOver = function(){ const inf = typeof infActive === 'function' && infActive(); const r = _g.apply(this, arguments); if (inf) mechUnlock(); return r; }; } catch (e) {}
 // Un zombie qui frappe « la barricade » frappe le robot, s'il est devant lui
 try {
   const _h = hitBarricade;
@@ -370,4 +445,4 @@ try { const _k = kill; kill = function(){ const r = _k.apply(this, arguments); i
 try { if (typeof ambMusicState === 'function'){ const _a = ambMusicState; ambMusicState = function(){ if (state === 'mech') return typeof liveBoss === 'function' && liveBoss() ? 'boss' : 'wave'; if (state === 'mechover') return 'menu'; return _a.apply(this, arguments); }; } } catch (e) {}
 
 // Accès pour les tests automatiques
-window.__mech = { MECH, MECH_LEN, MECH_HEAT, mechStart, mechQuit, mechStep, mechStreet, mechPause, mechResume, mechOver, mechPlan, mechCk };
+window.__mech = { MECH_UPG, mUp, mechUpgBuy, mechUpgCost, mechUnlocked, mechUnlock, mechGarage, mechNorm, mechBtn, MECH, MECH_LEN, MECH_HEAT, mechStart, mechQuit, mechStep, mechStreet, mechPause, mechResume, mechOver, mechPlan, mechCk };

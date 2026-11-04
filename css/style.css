@@ -427,3 +427,5 @@ body.mech #hud, body.mech #touch{ display:none !important; }
 #mechPanel .stats{ display:flex; flex-direction:column; gap:6px; margin:10px 0; }
 .mk-btns{ display:flex; flex-direction:column; gap:6px; }
 .mech-btn{ border-color:#9aff70 !important; color:#9aff70 !important; }
+.mech-btn.locked{ opacity:.6; border-color:#888 !important; color:#bbb !important; }
+#mechPanel .mk-upg{ max-height:52vh; overflow:auto; margin:6px 0 10px; text-align:left; }

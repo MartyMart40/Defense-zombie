@@ -8,7 +8,7 @@
   test('Robot : démarre depuis l’écran titre, cockpit visible, armes en main cachées, barricade retirée', () => {
     exiger(); reset();
     const r = J(function(){
-      var b = document.getElementById('btnMech'), o = { btn: !!b && !!b.closest('#scrTitle') };
+      var b = document.getElementById('btnMech'), o = { btn: !!b && !!b.closest('#scrTitle') }; P.mech.unlocked = true;
       __mech.mechStart(); for (var i = 0; i < 5; i++) visuals(1 / 30);
       var M = __mech.MECH;
       o.state = state; o.ck = __mech.mechCk.visible; o.vms = Object.keys(VMS).filter(function(k){ return VMS[k].visible; }).length;
@@ -97,5 +97,60 @@
     // La partie normale marche encore
     const n = J(function(){ startLocation(0); equip('pistol'); visuals(1 / 30); return { st: state, vis: VMS.pistol.visible, bar: world.children.some(function(g){ return g.isGroup && g.children.length >= 6 && g.visible && g.children.every(function(c){ return Math.abs(c.position.z - BAR_Z) < 1.4; }); }) }; });
     ok(n.vis, 'Pistolet visible dans une partie normale'); ok(n.bar, 'Barricade revenue');
+  });
+})();
+(function(){
+  if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
+  const exiger = () => { if (lire('typeof __mech === "object" && typeof __mech.mechGarage === "function"') !== true) ignorer('Garage du robot absent'); };
+
+  test('Robot : verrouillé au départ, débloqué en tombant en mode infini', () => {
+    exiger(); reset();
+    const r = J(function(){
+      var o = {}; P.mech.unlocked = false; __mech.mechBtn();
+      var b = document.getElementById('btnMech'); o.txt = b.textContent; b.click();
+      o.state = state; o.panneau = !document.getElementById('mechPanel').classList.contains('hide');
+      __inf.infStart(0, true); __t.geler(); gameOver();
+      o.debloque = __mech.mechUnlocked(); o.sauve = JSON.parse(localStorage.getItem('dt_prof')).mech.unlocked; o.txt2 = b.textContent;
+      // Une partie normale perdue ne débloque rien
+      P.mech.unlocked = false; startLocation(0); __t.geler(); gameOver(); o.normal = __mech.mechUnlocked();
+      return o;
+    });
+    ok(/🔒/.test(r.txt), 'Bouton verrouillé : ' + r.txt);
+    ok(r.state !== 'mech' && !r.panneau, 'Le robot ne doit pas démarrer verrouillé');
+    ok(r.debloque && r.sauve, 'Débloqué et sauvegardé après une chute en infini');
+    ok(!/🔒/.test(r.txt2), 'Bouton déverrouillé');
+    ok(!r.normal, 'Une partie normale perdue ne débloque pas le robot');
+  });
+
+  test('Robot : garage (améliorations payées en ferraille, sauvegardées) et leurs effets', () => {
+    exiger(); reset();
+    const r = J(function(){
+      var o = {}; P.mech.unlocked = true; P.scrap = 1e6;
+      document.getElementById('btnMech').click();
+      var P2 = document.getElementById('mechPanel'); o.ouvert = !P2.classList.contains('hide'); o.lignes = P2.querySelectorAll('button[data-k]').length;
+      var s0 = P.scrap, c = __mech.mechUpgCost('armor', 0); P2.querySelector('button[data-k="armor"]').click();
+      o.niv = __mech.mUp('armor'); o.paye = s0 - P.scrap === c; o.sauve = JSON.parse(localStorage.getItem('dt_prof')).mech.lv.armor;
+      ['cool', 'salvo', 'salvo', 'legs', 'regen', 'mdmg'].forEach(function(k){ __mech.mechUpgBuy(k); });
+      o.salveMax = __mech.mechUpgBuy('salvo');
+      P.scrap = 0; o.pauvre = __mech.mechUpgBuy('rdmg');
+      __mech.mechStart(); var M = __mech.MECH; plan.queue = []; spawnT = 1e9; clearZombies();
+      o.blindage = S.barMax;
+      // Salve : 3 roquettes d'un coup
+      var n0 = __armes.ARM.rockets.filter(function(x){ return x.m.visible; }).length; M.rocket = true; M.rcd = 0; visuals(1 / 30); M.rocket = false;
+      o.salve = __armes.ARM.rockets.filter(function(x){ return x.m.visible; }).length - n0;
+      // Jambes : plus de distance en 1 s
+      var d0 = M.dist; M.mv.f = 1; for (var i = 0; i < 30; i++) visuals(1 / 30); M.mv.f = 0; o.marche = M.dist - d0;
+      // Nanorobots
+      S.bar = S.barMax * .5; var b0 = S.bar; for (var k = 0; k < 30; k++) visuals(1 / 30); o.regen = S.bar - b0;
+      __mech.mechQuit();
+      return o;
+    });
+    ok(r.ouvert && r.lignes === 9, 'Garage ouvert avec 9 améliorations (' + r.lignes + ')');
+    ok(r.niv === 1 && r.paye && r.sauve === 1, 'Achat payé en ferraille et sauvegardé');
+    ok(!r.salveMax, 'Salve plafonnée à 2'); ok(!r.pauvre, 'Achat refusé sans ferraille');
+    egal(r.blindage, Math.round(1500 * 1.15), 'Blindage +15 %');
+    egal(r.salve, 3, 'Salve de 3 roquettes');
+    ok(r.marche > 5.5 * 1.05, 'Jambes renforcées : ' + r.marche.toFixed(2) + ' m en 1 s');
+    ok(r.regen > 0, 'Les nanorobots réparent');
   });
 })();

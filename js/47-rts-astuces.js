@@ -12,11 +12,14 @@ const rtsTipBld = t => RTS.blds.some(o => !o.dead && o.type === t);
 // cond(R) : le moment est venu ; cell / ordi : texte selon l'appareil
 const RTS_TIPS = [
   { id:'choisir', cond: R => R.t > 2,
-    cell:'Touche un robot pour le choisir (un rond vert l’entoure), puis touche la carte pour l’y envoyer. Touche un nid pour l’attaquer.',
-    ordi:'Clic gauche sur un robot pour le choisir (glisse pour en encadrer plusieurs), clic droit sur la carte pour l’y envoyer, clic droit sur un nid pour l’attaquer.' },
+    cell:'Touche un robot pour le choisir (un rond vert l’entoure), puis touche la carte pour l’y envoyer, ou un nid pour l’attaquer. Garde le doigt sur un autre robot pour l’ajouter au groupe.',
+    ordi:'Clic gauche sur un robot pour le choisir (glisse pour en encadrer plusieurs, Maj+clic pour en ajouter), clic droit sur la carte pour l’y envoyer, ou sur un nid pour l’attaquer.' },
   { id:'carte', cond: R => R.t > 12,
     cell:'Glisse un doigt pour te promener sur la carte, pince avec deux doigts pour zoomer. Le bouton ▾ cache le menu du bas.',
     ordi:'ZQSD ou les flèches pour te promener sur la carte, molette pour zoomer. Espace choisit toutes tes unités, 1 à 9 achète un robot.' },
+  { id:'liste', cond: R => R.t > 8 && R.units.filter(u => !u.dead).length >= 2,
+    cell:'La rangée « Unités » en bas : touche une unité pour la choisir seule et y aller, même si elle est loin.',
+    ordi:'La rangée « Unités » en bas : clique une unité pour la choisir seule et y aller. Tab passe à l’unité suivante, double-clic sur une unité choisit toutes celles du même type à l’écran.' },
   { id:'tourelle', cond: R => R.t > 26,
     cell:'Touche une tourelle : tu peux l’améliorer (6 niveaux), la vendre ou la contrôler toi-même avec « 🎮 Contrôler ».',
     ordi:'Clique sur une tourelle : tu peux l’améliorer (6 niveaux), la vendre ou la contrôler toi-même avec « 🎮 Contrôler ».' },

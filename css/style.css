@@ -549,3 +549,14 @@ canvas.rt-ac{ filter:grayscale(1) contrast(1.35) brightness(1.1); }
 #rtTip button{ padding:6px 12px; border-radius:6px; border:0; background:#ffd060; color:#2a1a08; font-weight:800; font-size:13px; }
 #rtTip #rtTipOff{ background:transparent; border:1px solid #c8b890; color:#eef4ea; font-weight:600; }
 @media (max-height:520px){ #rtTip{ top:calc(78px + env(safe-area-inset-top,0px)); font-size:13px; padding:7px 10px; } }
+/* RTS : rangée « Unités » (js/48-rts-liste.js) */
+#rtRoster{ display:flex; gap:5px; max-width:100%; overflow-x:auto; overflow-y:hidden; pointer-events:auto; padding:0 calc(8px + env(safe-area-inset-right,0px)) 2px calc(8px + env(safe-area-inset-left,0px)); scrollbar-width:none; -webkit-overflow-scrolling:touch; touch-action:pan-x; }
+#rtRoster::-webkit-scrollbar{ display:none; }
+#rtRoster.hide, #rtsUI.fold #rtRoster{ display:none; }
+#rtRoster > :first-child{ margin-left:auto; } #rtRoster > :last-child{ margin-right:auto; }
+#rtRoster .rt-u{ flex:0 0 auto; display:flex; flex-direction:column; gap:3px; padding:5px 8px 4px; border-radius:7px; border:1px solid rgba(154,255,112,.45); background:rgba(10,20,14,.78); color:#eef4ea; font-size:12px; font-weight:700; white-space:nowrap; }
+#rtRoster .rt-u.on{ border-color:#9aff70; background:rgba(60,110,40,.9); box-shadow:0 0 0 1px #9aff70; }
+#rtRoster .rt-u i{ display:block; height:3px; background:rgba(255,255,255,.18); border-radius:2px; overflow:hidden; }
+#rtRoster .rt-u b{ display:block; height:100%; width:100%; background:#7ee05a; }
+#rtRoster .rt-u b.bas{ background:#ff6a4a; }
+@media (max-height:520px){ #rtRoster .rt-u{ padding:3px 6px; font-size:11px; } }

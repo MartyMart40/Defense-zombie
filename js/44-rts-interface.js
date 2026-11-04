@@ -183,12 +183,27 @@ function rtsPlaceAt(x, z){ const t = RTS.place; if (!t) return false; const o = 
 
 /* ---------- Commandes ---------- */
 function rtsNdc(cx, cy){ return new THREE.Vector2(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1); }
+const RTS_LONG_MS = 450; // appui long (ms) : ajouter au groupe
+const RTS_TAP_R = 34; // rayon (pixels) autour du doigt pour prendre une unité
+function rtsUnitNear(cx, cy, r){
+  camera.updateMatrixWorld(); let best = null, bd = r;
+  for (const u of RTS.units){
+    if (u.dead) continue;
+    rtsV.copy(u.g.position).project(camera); if (rtsV.z > 1) continue;
+    const d = Math.hypot((rtsV.x + 1) / 2 * innerWidth - cx, (1 - rtsV.y) / 2 * innerHeight - cy);
+    if (d < bd){ bd = d; best = u; }
+  }
+  return best;
+}
 function rtsPick(cx, cy){
   camera.updateMatrixWorld(); rtsRoot.updateMatrixWorld(true); rtsRay.setFromCamera(rtsNdc(cx, cy), camera); rtsRay.far = Infinity;
   const meshes = []; RTS.units.forEach(u => { if (!u.dead) meshes.push(u.m); }); RTS.nests.forEach(n => { if (!n.dead) meshes.push(n.m); });
   RTS.blds.forEach(o => { if (!o.dead){ meshes.push(o.m); if (o.head) meshes.push(o.head); } });
   const h = rtsRay.intersectObjects(meshes, false)[0];
   if (h && h.object.userData.rtsUnit) return { unit:h.object.userData.rtsUnit };
+  // Pas besoin de toucher le modèle exactement : l'unité la plus proche du doigt (ou du pointeur) à l'écran
+  // (rayon plus petit quand des unités sont déjà choisies : toucher juste à côté d'elles doit les déplacer)
+  const near = rtsUnitNear(cx, cy, (isTouch ? RTS_TAP_R : RTS_TAP_R * .65) * (RTS.sel.length ? .55 : 1)); if (near) return { unit:near };
   if (h && h.object.userData.rtsNest) return { nest:h.object.userData.rtsNest };
   if (h && h.object.userData.rtsBld) return { bld:h.object.userData.rtsBld, x:h.object.userData.rtsBld.x, z:h.object.userData.rtsBld.z };
   const o = rtsRay.ray.origin, d = rtsRay.ray.direction; if (d.y >= -1e-4) return {};
@@ -211,10 +226,23 @@ function rtsOrder(p){
   if (typeof Snd === 'object' && Snd.tone) Snd.tone(600, .06, 'triangle', .05, 800);
   return true;
 }
-function rtsTap(cx, cy, add){
+// Toucher (ou cliquer) : une unité est choisie SEULE ; au doigt, un appui long (long) l'ajoute au groupe ou l'en retire.
+// Toucher de nouveau la seule unité choisie la relâche. Toucher la carte envoie les unités choisies.
+// Une unité touchée ou cliquée. mode : 'tap' (doigt), 'long' (appui long), 'click' (souris), 'add' (Maj+clic)
+function rtsTapUnit(u, mode){
+  const i = RTS.sel.indexOf(u);
+  if (mode === 'long' || mode === 'add'){
+    if (i >= 0){ RTS.sel.splice(i, 1); rtsInfoShow(); } else rtsSelect([u], true);
+    if (mode === 'long' && navigator.vibrate) try { navigator.vibrate(25); } catch (e) {}
+  }
+  else if (mode === 'tap' && i >= 0 && RTS.sel.length === 1){ RTS.sel.length = 0; rtsInfoShow(); }
+  else rtsSelect([u], false);
+  return RTS.sel.slice();
+}
+function rtsTap(cx, cy, add, long){
   const p = rtsPick(cx, cy);
   if (RTS.place){ if (p.x != null){ if (isTouch) rtsGhostAt(p.x, p.z); else rtsPlaceAt(p.x, p.z); } return; }
-  if (p.unit){ if (isTouch){ const i = RTS.sel.indexOf(p.unit); if (i >= 0){ RTS.sel.splice(i, 1); rtsInfoShow(); } else rtsSelect([p.unit], true); } else rtsSelect([p.unit], add); return; }
+  if (p.unit){ rtsTapUnit(p.unit, isTouch ? (long ? 'long' : 'tap') : (add ? 'add' : 'click')); return; }
   if (p.bld && !RTS.sel.length){ RTS.bsel = p.bld; rtsInfoShow(); return; }
   if (isTouch && RTS.sel.length) rtsOrder(p);
   else if (!add){ RTS.sel.length = 0; RTS.bsel = null; rtsInfoShow(); }
@@ -276,7 +304,7 @@ document.addEventListener('keyup', e => { if (RTS_KEYS[e.code]){ RTS.keys[RTS_KE
     e.preventDefault(); if (typeof Snd === 'object') Snd.init();
     for (const t of e.changedTouches) pts.set(t.identifier, { x:t.clientX, y:t.clientY });
     if (pts.size === 1){
-      const t = e.changedTouches[0]; tap = { x:t.clientX, y:t.clientY, moved:false };
+      const t = e.changedTouches[0]; tap = { x:t.clientX, y:t.clientY, moved:false, t0:performance.now() };
       // Pose d'un bâtiment : un doigt posé près du fantôme le fait glisser (au lieu de déplacer la carte)
       RTS.ghostDrag = false;
       if (RTS.place && rtsGhost){ camera.updateMatrixWorld(); rtsV.copy(rtsGhost.position).project(camera); const sx = (rtsV.x + 1) / 2 * innerWidth, sy = (1 - rtsV.y) / 2 * innerHeight; if (Math.hypot(sx - t.clientX, sy - t.clientY) < 80) RTS.ghostDrag = true; }
@@ -302,7 +330,7 @@ document.addEventListener('keyup', e => { if (RTS_KEYS[e.code]){ RTS.keys[RTS_KE
     if (state !== 'rts') return;
     for (const t of e.changedTouches) pts.delete(t.identifier);
     if (pts.size < 2) RTS.pinch = null;
-    if (tap && !tap.moved && pts.size === 0 && e.changedTouches.length && !RTS.pilot){ const t = e.changedTouches[0]; rtsTap(t.clientX, t.clientY, true); }
+    if (tap && !tap.moved && pts.size === 0 && e.changedTouches.length && !RTS.pilot){ const t = e.changedTouches[0]; rtsTap(t.clientX, t.clientY, true, performance.now() - tap.t0 > RTS_LONG_MS); }
     if (pts.size === 0){ tap = null; RTS.ghostDrag = false; }
   };
   canvas.addEventListener('touchend', end); canvas.addEventListener('touchcancel', end);
@@ -381,4 +409,4 @@ document.addEventListener('pointerlockchange', () => { if (state === 'rts' && RT
 // Accès pour les tests automatiques
 window.__rts = { RTS, RTS_UNITS, RTS_CFG, RTS_BLD, RTS_UPG, RTS_ROAD, RTS_BOSS, rtsStart, rtsQuit, rtsBuy, rtsStep, rtsSelect, rtsOrder, rtsPick, rtsSpawnUnit, rtsSpawnAt, rtsNestDie, rtsEnd, rtsPause,
   rtsBuild, rtsBldOk, rtsPlaceBld, rtsTurretUp, rtsSell, rtsUpgBuy, rtsUpgCost, rtsStat, rtsTStat, rtsStartPlace, rtsPlaceAt, rtsTap, rtsTab, rtsInfoShow,
-  rtsGhostAt, rtsSnap, rtsRotate, rtsFold, rtsCamHome, RTS_FLAT_R, rtsGunship, RTS_UPG_SPEC, rtsUpgPanel, rtsTurretPilot, rtsMortarSpot, rtsPilot, rtsUnpilot, rtsPilotSel, rtsPilotStep, rtsValleyX, rtsRoadDist, rtsClampValley, rtsRoadNext, rtsRoadX, rtsAddNest, rtsFront, rtsPickTarget, RTS_KITE };
+  rtsGhostAt, rtsSnap, rtsRotate, rtsUnitNear, rtsTapUnit, RTS_TAP_R, RTS_LONG_MS, rtsFold, rtsCamHome, RTS_FLAT_R, rtsGunship, RTS_UPG_SPEC, rtsUpgPanel, rtsTurretPilot, rtsMortarSpot, rtsPilot, rtsUnpilot, rtsPilotSel, rtsPilotStep, rtsValleyX, rtsRoadDist, rtsClampValley, rtsRoadNext, rtsRoadX, rtsAddNest, rtsFront, rtsPickTarget, RTS_KITE };

@@ -429,3 +429,7 @@ body.mech #hud, body.mech #touch{ display:none !important; }
 .mech-btn{ border-color:#9aff70 !important; color:#9aff70 !important; }
 .mech-btn.locked{ opacity:.6; border-color:#888 !important; color:#bbb !important; }
 #mechPanel .mk-upg{ max-height:52vh; overflow:auto; margin:6px 0 10px; text-align:left; }
+#mkBoss{ position:absolute; left:50%; top:calc(54px + env(safe-area-inset-top,0px)); transform:translateX(-50%); width:min(70vw, 460px); text-align:center; font-size:15px; color:#ffb0a0; }
+#mkBoss.hide{ display:none; }
+#mkBoss .mk-bar{ height:12px; border-color:rgba(255,90,70,.7); }
+#mkBoss .mk-bar i{ background:linear-gradient(90deg,#a01810,#ff5a3a); }

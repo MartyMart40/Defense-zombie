@@ -81,8 +81,11 @@
       var pres = __t.placer('walker', -8, -10); hitBarricade(pres, 50, .1, 1); o.pres = b0 - S.bar;
       // Rue suivante
       var a0 = S.barMax, ville0 = curLoc.id; M.dist = __mech.MECH_LEN;
+      visuals(1 / 30);
+      var route = typeof __mb === 'object' && __mb.MB.routes ? __mb.MB.routes[0] : null; // carrefour (40-robot-monstres.js)
+      if (route) __mb.mbGo(route);
       for (var i = 0; i < 60; i++) visuals(1 / 30);
-      o.rue = M.street; o.monde = world.position.z; o.blindage = S.barMax - a0; o.ville = curLoc.id !== ville0;
+      o.rue = M.street; o.monde = world.position.z; o.blindage = S.barMax - a0; o.ville = route ? curLoc.id === route.loc.id : curLoc.id !== ville0;
       // Fin
       S.bar = 0; visuals(1 / 30); o.fin = state;
       return o;

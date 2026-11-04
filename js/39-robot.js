@@ -218,10 +218,12 @@ function mechPlan(){
   return p;
 }
 function mechStreet(first){
-  const L = LOCS[(MECH.street - 1) % LOCS.length];
+  // MECH.route : rue choisie au carrefour (40-robot-monstres.js) ; sinon la ville suivante
+  const RT = !first && MECH.route ? MECH.route : null;
+  const L = (RT && RT.loc) || LOCS[(MECH.street - 1) % LOCS.length];
   curLoc = L;
   buildWorld(L);
-  try { if (typeof __amb === 'object') __amb.set(first ? 'soleil' : __amb.pick(L, MECH.street + 1)); } catch (e) {}
+  try { if (typeof __amb === 'object') __amb.set(RT && RT.weather ? RT.weather : first ? 'soleil' : __amb.pick(L, MECH.street + 1)); } catch (e) {}
   mechHideBarricade();
   world.position.z = 0; MECH.dist = 0; MECH.x = 0; MECH.bossDone = false;
   clearZombies();
@@ -229,7 +231,7 @@ function mechStreet(first){
   MECH.pow = 2.4 * Math.pow(1.16, MECH.street - 1);       // les armes du robot montent avec les rues
   if (!first){ S.barMax += 250; S.bar = Math.min(S.barMax, S.bar + S.barMax * (.35 + .08 * mUp('repair'))); } // réparation à chaque rue
   if (typeof saveP === 'function') saveP();
-  banner('Rue ' + MECH.street, L.name + (first ? ' : avance et nettoie la rue' : ' · blindage réparé'), 2200);
+  banner('Rue ' + MECH.street, (RT && RT.title ? RT.title + ' · ' : '') + L.name + (first ? ' : avance et nettoie la rue' : ' · blindage réparé'), 2200);
 }
 function mechStart(){
   if (typeof Snd === 'object') Snd.init();

@@ -15,7 +15,7 @@
       var R = __rts.RTS;
       o.state = state; o.nids = R.nests.length; o.robots = R.units.length; o.argent = S.money;
       o.types = R.blds.map(function(x){ return x.type; }).sort().join(',');
-      o.nord = R.nests.every(function(n){ return n.z < -30 && Math.abs(Math.atan2(n.x, -n.z)) < Math.PI / 4 + .1; });
+      o.nord = R.nests.every(function(n){ return n.z < -70 && Math.abs(Math.atan2(n.x, -n.z)) < Math.PI / 4 + .1; });
       o.route = R.nests.every(function(n){ return __rts.rtsRoadDist(n.x, n.z) < 26; });
       o.dalle = !!R.pad && R.pad.scale.x === R.baseR;
       o.barricade = world.children.some(function(g){ return g.isGroup && g.children.length >= 6 && g.children.every(function(c){ return Math.abs(c.position.z - BAR_Z) < 1.4; }); });
@@ -39,7 +39,7 @@
       R.units.forEach(function(u){ u.g.position.set(0, 0, 20); u.U = Object.assign({}, u.U, { range:0, dmg:0 }); });
       R.blds.filter(function(b){ return b.type === 't_mg'; }).forEach(function(b){ __rts.rtsSell(b); });
       var E = __rts.RTS_ROAD[__rts.RTS_ROAD.length - 1], z = __t.placer('walker', E[0], E[1]); z.speed = 6; z.hp = z.maxHp = 1e9;
-      var maxD = 0; for (var i = 0; i < 30 * 25; i++){ visuals(1 / 30); maxD = Math.max(maxD, __rts.rtsRoadDist(z.g.position.x, z.g.position.z)); }
+      var maxD = 0; for (var i = 0; i < 30 * 55; i++){ visuals(1 / 30); maxD = Math.max(maxD, __rts.rtsRoadDist(z.g.position.x, z.g.position.z)); }
       o.route = maxD; o.base = Math.hypot(z.g.position.x, z.g.position.z);
       return o;
     }, calme);
@@ -106,13 +106,13 @@
       var z = __t.placer('walker', u.g.position.x, u.g.position.z - 14); z.hp = z.maxHp = 1e6; z.speed = 0;
       R.pv.fire = true; for (var k = 0; k < 30; k++) visuals(1 / 30); R.pv.fire = false;
       o.tir = z.hp < 1e6;
-      __rts.rtsUnpilot(); visuals(1 / 30); o.retour = !R.pilot && u.m.visible && camera.position.y > 20;
+      var bt = document.getElementById('rtrpExit'); o.bouton = !!bt && !!bt.closest('#rtPilot'); bt.click(); visuals(1 / 30); o.retour = !R.pilot && u.m.visible && camera.position.y > 20;
       // Un avion aussi
       var j = __rts.rtsSpawnUnit('jet', 0, -40); o.jet = __rts.rtsPilot(j); var p0 = j.g.position.clone(); visuals(1 / 30); o.jetAv = j.g.position.distanceTo(p0) > .5;
       return o;
     }, calme);
     fin();
-    ok(r.pil && r.cache, 'Pilotage'); ok(r.cam, 'Caméra dans l’unité'); ok(r.avance, 'Il avance'); ok(r.tir, 'Il tire sur le zombie visé'); ok(r.retour, 'Retour à la carte');
+    ok(r.pil && r.cache, 'Pilotage'); ok(r.cam, 'Caméra dans l’unité'); ok(r.avance, 'Il avance'); ok(r.tir, 'Il tire sur le zombie visé'); ok(r.bouton && r.retour, 'Bouton Retour à la carte');
     ok(r.jet && r.jetAv, 'On pilote aussi un avion (il avance toujours)');
   });
 
@@ -185,7 +185,7 @@
       R.blds.filter(function(b){ return b.type === 't_mg'; }).forEach(function(b){ __rts.rtsSell(b); });
       // Horde : du bord du désert
       R.hordeT = 0; visuals(1 / 30); R.hordeT = 1e9;
-      var zs = zombies.filter(function(z){ return !z.dead; }); o.horde = zs.length; o.bord = zs.every(function(z){ return z.g.position.z < -125; });
+      var zs = zombies.filter(function(z){ return !z.dead; }); o.horde = zs.length; o.bord = zs.every(function(z){ return z.g.position.z < -260; });
       clearZombies();
       // Une barricade entre le zombie et le QG : il l'attaque d'abord
       var w = __rts.rtsBuild('wall', 0, -16); var z = __t.placer('walker', 0, -26); var h0 = w.hp, q0 = R.base.hp;

@@ -19,6 +19,7 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 | # | Tâche | Date |
 |---|-------|------|
+| 55 | RTS : nids et route deux fois plus loin de la base (vallée allongée jusqu'à 300 m) ; bouton « Retour à la carte » réparé au cell (la zone de visée le cachait), Échap ramène aussi à la carte, et la pause offre « Retour à la carte » | 2026-11-04 |
 | 54 | RTS : vallée fermée par des montagnes au sud et sur les côtés, zombies qui arrivent du nord (90°) en suivant une vieille route d'asphalte à moitié détruite, nids le long de la route ; boss avec les hordes (Titan qui piétine, Mère pondeuse, Béhémoth ailé qui crache) et barre de vie ; nouveaux robots (tireur d'élite, lance-flammes) ; tank, hélicoptère, chasseur, Warthog et bombardier avec garage de blindés, héliport et aérodrome, tous améliorables ; pilotage à la première personne de n'importe quelle unité (ordi et cell) | 2026-11-04 |
 | 53 | RTS : base militaire dans le désert (ruines, épaves, nids tout autour, hordes de partout), bâtiments à acheter et placer (usines, usine lourde, récupérateur, atelier de réparation, barricades), 5 tourelles améliorables (6 niveaux), améliorations des robots, base qui s'agrandit à chaque nid | 2026-11-04 |
 | 52 | Mode RTS « Guerre des robots » : vue de dessus, QG, 4 robots à acheter (fantassin, mitrailleur, lance-roquettes, mech lourd), sélection et ordres, 5 bâtiments infectés à détruire, menace qui monte, hordes, victoire ou défaite (js/41-rts.js) | 2026-11-04 |

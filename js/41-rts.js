@@ -308,6 +308,7 @@ function rtsRoadDist(x, z){
   }
   return best;
 }
+const RTS_FLAT_R = 74; // rayon du sable plat autour de la base (la base va jusqu'à 70 m)
 function rtsDesert(){
   disposeWorld(); fires.length = 0;
   world = new THREE.Group(); scene.add(world);
@@ -340,7 +341,9 @@ function rtsChunk(k){
   const pos = gg.attributes.position, col = new Float32Array(pos.count * 3), c1 = new THREE.Color(0xb08a52), c2 = new THREE.Color(0x8e6c3e), cc = new THREE.Color();
   for (let i = 0; i < pos.count; i++){
     const x = pos.getX(i), z = pos.getZ(i) + zc;
-    pos.setY(i, Math.sin(x * .05) * Math.cos(z * .043) * .12 + Math.sin((x + z) * .11) * .08);
+    // Sable bosselé, mais plat sous la base (rayon max 70 m) : sinon les bosses passent par-dessus la dalle
+    const flat = clamp((Math.hypot(x, z) - RTS_FLAT_R) / 12, 0, 1);
+    pos.setY(i, flat ? (Math.sin(x * .05) * Math.cos(z * .043) * .12 + Math.sin((x + z) * .11) * .08) * flat : -.03);
     cc.copy(c1).lerp(c2, .5 + .5 * Math.sin(x * .07 + z * .05)); col[i * 3] = cc.r; col[i * 3 + 1] = cc.g; col[i * 3 + 2] = cc.b;
   }
   gg.setAttribute('color', new THREE.BufferAttribute(col, 3)); gg.computeVertexNormals();
@@ -545,7 +548,7 @@ function rtsStart(){
   Object.assign(RTS, { on:true, paused:false, t:0, kills:0, threat:1, hordeT:RTS_CFG.hordeEvery, hordeN:0, bossN:0, bossKills:0, nestN:0, lost:0, upg:{}, baseR:RTS_CFG.baseR0, incT:5, tab:'rob', xp0:P.xp || 0, scr0:P.scrap || 0, zMin:-300, spin:0, shells:[] });
   rtsRoadReset(); rtsDesert(); rtsMakeNests(); rtsBaseSize();
   S.money = RTS_CFG.money; S.wave = 1;
-  RTS.cam.x = 0; RTS.cam.z = -10; RTS.cam.h = isTouch ? 64 : 56;
+  rtsCamHome();
   plan = { queue:[], total:0, hpMult:1, spdMult:1, dmgMult:1, cashMult:1.6, xp:1.5, maxAlive:isTouch ? RTS_CFG.maxZTouch : RTS_CFG.maxZ, interval:1 };
   rtsPlaceBld('hq', 0, 0, true);
   rtsPlaceBld('factory', -12, 6, true);
@@ -555,9 +558,15 @@ function rtsStart(){
   showScreen(null); rtsPanel.classList.add('hide');
   $('hud').classList.add('hide'); $('touch').classList.add('hide'); $('cross').classList.add('hide');
   document.body.classList.add('rts');
-  rtsUI.classList.remove('hide'); rtsUI.classList.toggle('touch', isTouch); rtsTab('rob');
+  rtsUI.classList.remove('hide'); rtsUI.classList.toggle('touch', isTouch); rtsTab('rob'); rtsFold(!!store.get('dt_rtsFold', false));
   if (typeof unlockPointer === 'function') unlockPointer();
   banner('Base assiégée', 'Ils arrivent de partout au nord : défends tout l’avant de la base. Chaque nid détruit en fait apparaître un plus fort, plus loin.', 3200);
+}
+// Caméra de départ : la base au centre de la partie visible (au-dessus du menu du bas).
+// Cell couché : écran bas et large, donc caméra plus proche et un peu plus au sud.
+function rtsCamHome(){
+  const land = isTouch && innerWidth > innerHeight;
+  RTS.cam.x = 0; RTS.cam.z = land ? -2 : -10; RTS.cam.h = land ? 46 : isTouch ? 64 : 56;
 }
 function rtsQuit(){
   RTS.on = false; RTS.paused = false;
@@ -1251,7 +1260,7 @@ rtsUI.innerHTML = '<div id="rtTop"><span id="rtMoney"></span><span id="rtThreat"
   + '<div id="rtBoss" class="hide"><span id="rtBossName"></span><div class="mk-bar"><i id="rtBossFill"></i></div></div>'
   + '<button id="rtPause" type="button" aria-label="Pause">❚❚</button>'
   + '<div id="rtPlace" class="hide"><span id="rtPlaceTxt"></span><button type="button" id="rtRot">↻ Tourner</button><button type="button" id="rtOk">Poser ici</button><button type="button" id="rtCancel">Annuler</button></div>'
-  + '<div id="rtDock"><div id="rtTabs"><button type="button" data-tab="rob">Robots</button><button type="button" data-tab="veh">Véhicules</button><button type="button" data-tab="bat">Bâtiments</button><button type="button" data-tab="tour">Tourelles</button><button type="button" data-tab="upg">Améliorations</button></div><div id="rtBar"></div></div>';
+  + '<div id="rtDock"><div id="rtTabs"><button type="button" id="rtFold" aria-label="Cacher le menu">▾</button><button type="button" data-tab="rob">Robots</button><button type="button" data-tab="veh">Véhicules</button><button type="button" data-tab="bat">Bâtiments</button><button type="button" data-tab="tour">Tourelles</button><button type="button" data-tab="upg">Améliorations</button></div><div id="rtBar"></div></div>';
 document.body.appendChild(rtsUI);
 const rtsPilotUI = document.createElement('div'); rtsPilotUI.id = 'rtPilot'; rtsPilotUI.className = 'hide';
 rtsPilotUI.innerHTML = '<div id="rtrpTop"><span id="rtrpName"></span><button type="button" id="rtrpExit">Retour à la carte</button></div>'
@@ -1267,10 +1276,18 @@ function rtsShowPanel(html, btns){
   rtsPanel.querySelectorAll('button[data-i]').forEach(el => el.addEventListener('click', () => { const f = btns[+el.dataset.i][1]; if (f) f(); }));
   rtsPanel.classList.remove('hide');
 }
+// Menu du bas repliable (pour voir la carte, surtout au cell couché) ; le choix est gardé pour la prochaine fois
+function rtsFold(v){
+  RTS.fold = v === undefined ? !RTS.fold : !!v;
+  rtsUI.classList.toggle('fold', RTS.fold);
+  const b = $('rtFold'); if (b){ b.textContent = RTS.fold ? '▴ Menu' : '▾'; b.setAttribute('aria-label', RTS.fold ? 'Montrer le menu' : 'Cacher le menu'); }
+  store.set('dt_rtsFold', RTS.fold);
+  return RTS.fold;
+}
 function rtsTab(t){
   if (RTS.tab !== t){ rtsCancelPlace(); if (RTS.bsel){ RTS.bsel = null; rtsInfoShow(); } }
   RTS.tab = t;
-  rtsUI.querySelectorAll('#rtTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  rtsUI.querySelectorAll('#rtTabs button[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   const bar = $('rtBar'); let h = '';
   if (t === 'rob' || t === 'veh'){
     h = RTS_ORDER.filter(k => RTS_UNITS[k].cat === t).map(k => { const i = RTS_HOTKEY.indexOf(k); return '<button type="button" class="rt-buy' + (RTS_UNITS[k].big ? ' rt-star' : '') + '" data-t="' + k + '">' + RTS_UNITS[k].name + '<b>' + fmt(RTS_UNITS[k].cost) + '</b><em></em>' + (isTouch || i < 0 ? '' : '<i>' + (i + 1) + '</i>') + '</button>'; }).join('')
@@ -1566,7 +1583,8 @@ document.addEventListener('keyup', e => { if (RTS_KEYS[e.code]){ RTS.keys[RTS_KE
   const ex = $('rtrpExit'), out = e => { if (e){ e.preventDefault(); e.stopPropagation(); } if (RTS.pilot) rtsUnpilot(); };
   ex.addEventListener('touchstart', out, { passive:false }); ex.addEventListener('pointerdown', out); ex.addEventListener('click', out);
 })();
-rtsUI.querySelectorAll('#rtTabs button').forEach(b => b.addEventListener('click', () => rtsTab(b.dataset.tab)));
+rtsUI.querySelectorAll('#rtTabs button[data-tab]').forEach(b => b.addEventListener('click', () => rtsTab(b.dataset.tab)));
+$('rtFold').addEventListener('click', () => rtsFold());
 $('rtPause').addEventListener('click', () => rtsPause());
 $('rtCancel').addEventListener('click', () => rtsCancelPlace());
 $('rtRot').addEventListener('click', () => rtsRotate());
@@ -1599,4 +1617,4 @@ document.addEventListener('pointerlockchange', () => { if (state === 'rts' && RT
 // Accès pour les tests automatiques
 window.__rts = { RTS, RTS_UNITS, RTS_CFG, RTS_BLD, RTS_UPG, RTS_ROAD, RTS_BOSS, rtsStart, rtsQuit, rtsBuy, rtsStep, rtsSelect, rtsOrder, rtsPick, rtsSpawnUnit, rtsSpawnAt, rtsNestDie, rtsEnd, rtsPause,
   rtsBuild, rtsBldOk, rtsPlaceBld, rtsTurretUp, rtsSell, rtsUpgBuy, rtsUpgCost, rtsStat, rtsTStat, rtsStartPlace, rtsPlaceAt, rtsTap, rtsTab, rtsInfoShow,
-  rtsGhostAt, rtsSnap, rtsRotate, rtsGunship, RTS_UPG_SPEC, rtsUpgPanel, rtsTurretPilot, rtsMortarSpot, rtsPilot, rtsUnpilot, rtsPilotSel, rtsPilotStep, rtsValleyX, rtsRoadDist, rtsClampValley, rtsRoadNext, rtsRoadX, rtsAddNest, rtsFront, rtsPickTarget, RTS_KITE };
+  rtsGhostAt, rtsSnap, rtsRotate, rtsFold, rtsCamHome, RTS_FLAT_R, rtsGunship, RTS_UPG_SPEC, rtsUpgPanel, rtsTurretPilot, rtsMortarSpot, rtsPilot, rtsUnpilot, rtsPilotSel, rtsPilotStep, rtsValleyX, rtsRoadDist, rtsClampValley, rtsRoadNext, rtsRoadX, rtsAddNest, rtsFront, rtsPickTarget, RTS_KITE };

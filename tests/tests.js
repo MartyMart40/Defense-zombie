@@ -212,6 +212,13 @@ function outilsJeu(){
   };
   o.visible = function(id){ var el = document.getElementById(id); return !!el && !el.classList.contains('hide') && !el.closest('.hide'); };
   o.vivants = function(){ return zombies.filter(function(z){ return !z.dead; }).length; };
+  // Lance fn avec un hasard fixé (même suite de nombres à chaque fois), puis remet le vrai hasard.
+  // Sert aux tests qui dépendent du hasard (précision, dispersion) pour qu'ils donnent toujours le même résultat.
+  o.graine = function(n, fn){
+    var R0 = Math.random, s = (n || 1) % 2147483647; if (s <= 0) s += 2147483646;
+    Math.random = function(){ s = s * 16807 % 2147483647; return (s - 1) / 2147483646; };
+    try { return fn(); } finally { Math.random = R0; }
+  };
   window.__t = o;
 }
 

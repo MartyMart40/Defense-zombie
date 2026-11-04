@@ -122,7 +122,7 @@
 
   test('Compagnon : le mitrailleur arrose, recharge sa bande, et les effets sont rangés', () => {
     exiger(); partie(tousGagnes);
-    const r = J(function(){
+    const r = J(function(){ return __t.graine(7, function(){
       var C = __compagnon; C.cpnBuy('gunner'); C.cpnSelect('gunner'); C.cpnReset();
       var zs = []; for (var i = 0; i < 10; i++) zs.push(__t.placer('walker', -9 + i * 2, -12 - i * 2));
       var belt = C.cpnS.belt;
@@ -133,7 +133,7 @@
       C.cpnUpdate(1 / 30); gameOver(); visuals(1 / 30);
       a.after = C.cpnTracers.some(function(t){ return t.m.visible; }) || C.cpnHalos.some(function(h){ return h.m.visible; });
       return a;
-    });
+    }); });
     ok(r.belt > 10, 'Bande trop courte : ' + r.belt);
     ok(r.dead >= 6, 'Mitrailleur : seulement ' + r.dead + ' zombies abattus sur 10');
     egal(r.pool, lire('__compagnon.cpnTracers.length'), 'Pool de traçantes');

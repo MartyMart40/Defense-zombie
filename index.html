@@ -48,7 +48,6 @@
   <div class="panel">
     <h1 class="title">Dernier toit</h1>
     <p class="lead">Tu es posté sur le toit, la rue en bas est pleine de zombies. Libère les villes une à une, de plus en plus dangereuses. Chaque zombie te rapporte de l’argent pour tes armes et de l’expérience pour des talents permanents.</p>
-    <div class="ctrl" id="ctrlHelp"></div>
     <button class="big" id="btnStart">Jouer</button>
     <button class="ghost" id="btnMapTitle">Carte des villes</button>
     <button class="ghost defi-btn" id="btnDefiTitle">Défi du jour</button>
@@ -56,6 +55,7 @@
     <button class="ghost" id="btnSuccesTitle">Succès</button>
     <button class="ghost" id="btnSaveTitle">Sauvegarde (OneDrive)</button>
     <button class="ghost" id="btnFullTitle">Plein écran</button>
+    <details class="aide" id="aideJeu"><summary>Comment jouer</summary><div class="ctrl" id="ctrlHelp"></div></details>
     <div class="best" id="bestTxt"></div>
   </div>
 </section>
@@ -168,7 +168,9 @@
 </section>
 <div id="msNote" aria-live="polite"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- Three.js r128 : copie locale (marche même si internet est lent), sinon secours sur cdnjs -->
+<script src="lib/three.min.js"></script>
+<script>window.THREE || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');</script>
 <script src="js/00-base.js?v=20261104032758"></script>
 <script src="js/01-son.js?v=20261104032758"></script>
 <script src="js/02-villes.js?v=20261104032758"></script>

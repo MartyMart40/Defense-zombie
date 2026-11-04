@@ -15,11 +15,11 @@ const ARS_W = {
              desc:'Grosses balles qui traversent 3 zombies. Chargeur de 100, gros recul.' },
   laser:   { id:'laser',   name:'Fusil laser',       price:16000, dmg:60,  rate:12,  mag:60,  reload:2.5, pellets:1, spread:0,    pierce:99, zoomFov:40, recoil:.004, kick:.2, beam:{ c:0x50f0ff, w:.05, life:.06 }, ucost:780, upg:['dmg', 'rate', 'mag', 'reload'],
              desc:'Rayon instantané qui traverse toute la file, sans dispersion.' },
-  railgun: { id:'railgun', name:'Canon électromagnétique', price:22000, dmg:900, rate:.6, mag:4, reload:3, pellets:1, spread:0, pierce:99, zoomFov:20, recoil:.14, beam:{ c:0x60c8ff, w:.22, life:.3 }, ucost:950, upg:['dmg', 'rate', 'mag', 'reload'],
+  railgun: { id:'railgun', name:'Canon électromagnétique', price:22000, dmg:1300, rate:.6, mag:4, reload:3, pellets:1, spread:0, pierce:99, zoomFov:20, recoil:.14, beam:{ c:0x60c8ff, w:.22, life:.3 }, ucost:950, upg:['dmg', 'rate', 'mag', 'reload'],
              desc:'Projectile à vitesse folle : 900 de dégâts à tout ce qui est dans la ligne.' },
   gl:      { id:'gl',      name:'Lance-grenades auto', price:28000, dmg:300, rate:3, mag:12, reload:3.4, pellets:1, spread:0, pierce:1, zoomFov:50, recoil:.06, kind:'rocket', speed:55, radius:4.5, ucost:1100, upg:['dmg', 'mag', 'reload', 'radius'],
              desc:'Trois grenades explosives par seconde, barillet de 12.' },
-  arc:     { id:'arc',     name:'Fusil à arc électrique', price:35000, dmg:180, rate:4, mag:30, reload:2.6, pellets:1, spread:0, pierce:1, zoomFov:48, recoil:.02, kick:.3, chain:5, chainR:8, ucost:1300, upg:['dmg', 'rate', 'mag', 'reload'],
+  arc:     { id:'arc',     name:'Fusil à arc électrique', price:35000, dmg:260, rate:4, mag:30, reload:2.6, pellets:1, spread:0, pierce:1, zoomFov:48, recoil:.02, kick:.3, chain:5, chainR:8, ucost:1300, upg:['dmg', 'rate', 'mag', 'reload'],
              desc:'L’éclair frappe un zombie puis saute sur 5 autres autour.' }
 };
 Object.keys(ARS_W).forEach(id => { WEAPONS[id] = ARS_W[id]; if (WORDER.indexOf(id) < 0) WORDER.push(id); });

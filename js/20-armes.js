@@ -126,7 +126,9 @@ function armExplode(pos, id){
     // distance au corps entier (pieds à tête), pas seulement au centre
     const gp = z.g.position, top = gp.y + 2 * (z.aimY != null ? z.aimY : 1.1);
     const dy = pos.y < gp.y ? gp.y - pos.y : pos.y > top ? pos.y - top : 0;
-    const dx = gp.x - pos.x, dz = gp.z - pos.z, d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    // largeur du corps retirée : un boss ou un colosse (7 fois plus gros) est touché quand l'explosion est contre lui
+    const rad = (z.aimY != null ? z.aimY : 1.1) * .35;
+    const dx = gp.x - pos.x, dz = gp.z - pos.z, dh = Math.max(0, Math.hypot(dx, dz) - rad), d = Math.sqrt(dh * dh + dy * dy);
     if (d > r) continue;
     damage(z, dmg * (1 - .6 * d / r), false, armCenter(z, armPt));
   }

@@ -167,7 +167,7 @@ function pwBlast(x, y, z0, r, dmg, H){
   let n = 0; const top = Math.max(H, y + 4);
   for (const z of zombies){
     if (z.dead) continue;
-    const dx = z.g.position.x - x, dz = z.g.position.z - z0, d = Math.sqrt(dx * dx + dz * dz);
+    const dx = z.g.position.x - x, dz = z.g.position.z - z0, d = Math.max(0, Math.sqrt(dx * dx + dz * dz) - (z.aimY != null ? z.aimY : 1.1) * .35); // largeur du corps retirée (boss, colosse)
     if (d >= r || pwCY(z) > top) continue;
     damage(z, dmg * (1 - .5 * d / r), false, pwPt(z)); n++;
   }

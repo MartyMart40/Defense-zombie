@@ -164,7 +164,7 @@ function setBurn(z, dps, t){
 function splash(x, z0, r, dmg, burn, burnT){
   for (const z of zombies){
     if (z.dead) continue;
-    const dx = z.g.position.x - x, dz = z.g.position.z - z0, d = Math.sqrt(dx * dx + dz * dz);
+    const dx = z.g.position.x - x, dz = z.g.position.z - z0, d = Math.max(0, Math.sqrt(dx * dx + dz * dz) - (z.aimY != null ? z.aimY : 1.1) * .35); // largeur du corps retirée
     if (d < r){ defHit(z, dmg * (1 - .5 * d / r), true); if (burn > 0 && !z.dead) setBurn(z, burn, burnT); }
   }
   boom(x, 1.2, z0, r * 2.4); tmpV.set(x, .3, z0); burst(tmpV, 'dust', 6, 3);

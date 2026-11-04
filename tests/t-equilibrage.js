@@ -24,6 +24,27 @@
     ok(r.pierce >= 2, 'Les plombs traversent au moins deux zombies');
   });
 
+  test('Équilibrage : les armes neuves sont plus fortes au départ (fusil d’assaut, sniper, minigun, roquettes)', () => {
+    const r = J(function(){ var W = WEAPONS; return { r: W.rifle.dmg >= 30 && W.rifle.pierce >= 2, s: W.sniper.dmg >= 240 && W.sniper.pierce >= 5, m: W.minigun.dmg >= 24 && W.minigun.pierce >= 2, k: W.rocket.dmg >= 800 }; });
+    ok(r.r, 'Fusil d’assaut : 30 dégâts, traverse 2 zombies'); ok(r.s, 'Sniper : 240 dégâts, traverse 5 zombies');
+    ok(r.m, 'Minigun : 24 dégâts, traverse 2 zombies'); ok(r.k, 'Lance-roquettes : 800 dégâts');
+  });
+
+  test('Équilibrage : une explosion contre un boss le blesse (la largeur du corps compte)', () => {
+    reset(); J('startLocation(0)'); J('__t.geler()');
+    const r = J(function(){
+      clearZombies(); spawnZombie('boss'); var b = zombies[zombies.length - 1]; b.g.position.set(0, 0, -40); b.speed = 0; b.hp = b.maxHp = 1e6; b.g.updateMatrixWorld(true);
+      var bord = (b.aimY || 7.7) * .35 + .8; // juste contre son ventre, à 0,8 m de la surface
+      var p = new THREE.Vector3(0, 3, -40 + bord), h0 = b.hp;
+      __armes.armExplode(p, 'rocket'); var roq = h0 - b.hp;
+      var h1 = b.hp; pwBlast(0, 0, -40 + bord, 4.5, 260, 10); var gren = h1 - b.hp;
+      clearZombies();
+      return { roq: roq, gren: gren, att: wDmg('rocket') * .6 * .5 };
+    });
+    ok(r.roq > r.att, 'Roquette contre le ventre du boss : ' + Math.round(r.roq) + ' dégâts (attendu plus de ' + Math.round(r.att) + ')');
+    ok(r.gren > 0, 'Grenade contre le boss : ' + Math.round(r.gren));
+  });
+
   test('Équilibrage : la menace du RTS monte surtout avec le temps et les nids, peu avec les tués', () => {
     if (lire('typeof __rts === "object"') !== true) ignorer('Mode RTS absent');
     reset();

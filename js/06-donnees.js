@@ -3,16 +3,16 @@
 const WEAPONS = {
   pistol:  { id:'pistol',  name:'Pistolet',         price:0,    dmg:30,  rate:3.2, mag:12, reload:1.1, pellets:1, spread:.0015, pierce:1, zoomFov:56, recoil:.03, ucost:70,  upg:['dmg', 'rate', 'reload', 'pierce'], desc:'Précis et rapide à recharger.' },
   shotgun: { id:'shotgun', name:'Fusil à pompe',     price:350,  dmg:30,  rate:1.5, mag:8, reload:1.5, pellets:8, spread:.03, pierce:2, zoomFov:60, recoil:.08, ucost:110, upg:['dmg', 'mag', 'reload', 'pellets'], desc:'Dévastateur de près, bon jusqu’au milieu de la rue. Les plombs traversent deux zombies.' },
-  rifle:   { id:'rifle',   name:'Fusil d’assaut',   price:900,  dmg:24,  rate:9,   mag:30, reload:1.8, pellets:1, spread:.014, pierce:1, zoomFov:50, recoil:.022, ucost:160, upg:['dmg', 'mag', 'reload', 'spread'], desc:'Tir automatique, garde le doigt sur la gâchette.' },
-  sniper:  { id:'sniper',  name:'Sniper',           price:1600, dmg:190, rate:.9,  mag:5,  reload:2.4, pellets:1, spread:0,    pierce:4, zoomFov:18, recoil:.11, ucost:220, upg:['dmg', 'rate', 'reload', 'pierce'], desc:'Énormes dégâts, traverse jusqu’à 4 zombies. Lunette quand tu vises.' },
+  rifle:   { id:'rifle',   name:'Fusil d’assaut',   price:900,  dmg:30,  rate:9,   mag:30, reload:1.8, pellets:1, spread:.014, pierce:2, zoomFov:50, recoil:.022, ucost:160, upg:['dmg', 'mag', 'reload', 'spread'], desc:'Tir automatique, garde le doigt sur la gâchette.' },
+  sniper:  { id:'sniper',  name:'Sniper',           price:1600, dmg:240, rate:1,   mag:5,  reload:2.4, pellets:1, spread:0,    pierce:5, zoomFov:18, recoil:.11, ucost:220, upg:['dmg', 'rate', 'reload', 'pierce'], desc:'Énormes dégâts, traverse jusqu’à 4 zombies. Lunette quand tu vises.' },
   // Nouvelles armes (projectiles, flammes et montée en régime : 20-armes.js)
   crossbow:{ id:'crossbow', name:'Arbalète',        price:2200, dmg:150, rate:1.2, mag:6,  reload:2.2, pellets:1, spread:0,    pierce:3, zoomFov:34, recoil:.05, kind:'bolt', speed:150, headX:1.6, ucost:260, upg:['dmg', 'mag', 'reload', 'pierce'],
              desc:'Silencieuse. Le carreau traverse 3 zombies et fait très mal à la tête.' },
   flamer:  { id:'flamer',  name:'Lance-flammes',    price:3500, dmg:10,   rate:15,  mag:120, reload:3.2, pellets:1, spread:0,   pierce:99, zoomFov:62, recoil:.002, kind:'flame', range:30, cone:.17, burn:3, burnDps:30, kick:.12, ucost:330, upg:['dmg', 'mag', 'reload', 'burn'],
              desc:'Cône de flammes jusqu’à 30 m de la barricade. Ce qui brûle continue de brûler.' },
-  minigun: { id:'minigun', name:'Minigun',          price:5500, dmg:20,  rate:20,  mag:200, reload:5,  pellets:1, spread:.032, pierce:1, zoomFov:56, recoil:.0055, spin:1.1, kick:.35, ucost:420, upg:['dmg', 'mag', 'reload', 'spin'],
+  minigun: { id:'minigun', name:'Minigun',          price:5500, dmg:24,  rate:20,  mag:200, reload:5,  pellets:1, spread:.032, pierce:2, zoomFov:56, recoil:.0055, spin:1.1, kick:.35, ucost:420, upg:['dmg', 'mag', 'reload', 'spin'],
              desc:'Cadence énorme après une seconde de lancement. Chargeur de 200, longue recharge.' },
-  rocket:  { id:'rocket',  name:'Lance-roquettes',  price:8000, dmg:420, rate:.85, mag:2,  reload:3.2, pellets:1, spread:0,    pierce:1, zoomFov:52, recoil:.13, kind:'rocket', speed:42, radius:5.5, magStep:1, ucost:540, upg:['dmg', 'mag', 'reload', 'radius'],
+  rocket:  { id:'rocket',  name:'Lance-roquettes',  price:8000, dmg:800, rate:.85, mag:2,  reload:2.6, pellets:1, spread:0,    pierce:1, zoomFov:52, recoil:.13, kind:'rocket', speed:42, radius:5.5, magStep:1, ucost:540, upg:['dmg', 'mag', 'reload', 'radius'],
              desc:'Roquette lente qui explose et déchire tout autour. Seulement 2 par chargeur.' }
 };
 const WORDER = ['pistol', 'shotgun', 'rifle', 'sniper', 'crossbow', 'flamer', 'minigun', 'rocket'];

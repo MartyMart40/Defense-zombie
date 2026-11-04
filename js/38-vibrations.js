@@ -50,7 +50,7 @@ try { const _b = fire; fire = function(){ const id = S && S.cur; const r = _b.ap
 // Explosions : toutes passent par Snd.boom (barils, roquettes, grenades, gonflés, mortier, ogive)
 try {
   const _b = Snd.boom;
-  Snd.boom = function(power){ const r = _b.apply(this, arguments); if (state === 'playing' || state === 'mech') vibBoom(power, null); return r; };
+  Snd.boom = function(power){ const r = _b.apply(this, arguments); if (state === 'playing' || state === 'mech' || state === 'rts') vibBoom(power, null); return r; };
 } catch (e) {}
 // Gros coups sur la barricade (colosse, boss) : une secousse dans la main
 try {

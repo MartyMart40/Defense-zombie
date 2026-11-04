@@ -433,3 +433,25 @@ body.mech #hud, body.mech #touch{ display:none !important; }
 #mkBoss.hide{ display:none; }
 #mkBoss .mk-bar{ height:12px; border-color:rgba(255,90,70,.7); }
 #mkBoss .mk-bar i{ background:linear-gradient(90deg,#a01810,#ff5a3a); }
+
+/* Mode RTS (41-rts.js) */
+body.rts #hud, body.rts #touch, body.rts #cross, body.rts #rpArrows{ display:none !important; }
+#rtsUI{ position:fixed; inset:0; z-index:7; pointer-events:none; color:#eef4ea; font-weight:700; text-shadow:0 2px 3px #000; }
+#rtsUI.hide{ display:none; }
+#rtTop{ position:absolute; left:calc(12px + env(safe-area-inset-left,0px)); top:calc(10px + env(safe-area-inset-top,0px)); right:70px; display:flex; flex-wrap:wrap; gap:6px 16px; font-size:16px; }
+#rtMoney{ color:#ffd060; }
+#rtThreat{ color:#ff9a7a; }
+#rtBase{ position:absolute; left:50%; top:calc(42px + env(safe-area-inset-top,0px)); transform:translateX(-50%); width:min(50vw, 320px); text-align:center; font-size:12px; }
+#rtPause{ position:absolute; right:calc(12px + env(safe-area-inset-right,0px)); top:calc(10px + env(safe-area-inset-top,0px)); pointer-events:auto; width:44px; height:44px; border-radius:8px; border:1px solid rgba(154,255,112,.5); background:rgba(0,0,0,.45); color:#eef4ea; font-size:18px; }
+#rtBar{ position:absolute; left:0; right:0; bottom:calc(8px + env(safe-area-inset-bottom,0px)); display:flex; flex-wrap:wrap; justify-content:center; gap:6px; padding:0 8px; pointer-events:none; }
+#rtBar button{ pointer-events:auto; position:relative; min-width:86px; padding:8px 10px; border-radius:8px; border:1px solid rgba(154,255,112,.55); background:rgba(10,20,14,.78); color:#eef4ea; font-size:13px; font-weight:700; line-height:1.15; }
+#rtBar button b{ display:block; color:#ffd060; font-size:13px; }
+#rtBar button i{ position:absolute; right:4px; top:2px; font-style:normal; font-size:10px; opacity:.6; }
+#rtBar button.off{ opacity:.45; }
+#rtAll, #rtStop{ background:rgba(40,60,40,.85) !important; }
+#rtsPanel{ position:fixed; inset:0; z-index:9; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.55); }
+#rtsPanel.hide{ display:none; }
+#rtsPanel .panel{ max-width:min(92vw, 440px); }
+#rtsPanel .stats{ display:flex; flex-direction:column; gap:6px; margin:10px 0; }
+#rtsBox{ position:fixed; display:none; z-index:8; border:1px solid #9aff70; background:rgba(154,255,112,.12); pointer-events:none; }
+.rts-btn{ border-color:#ffd060 !important; color:#ffd060 !important; }

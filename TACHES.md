@@ -19,6 +19,7 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 | # | Tâche | Date |
 |---|-------|------|
+| 52 | Mode RTS « Guerre des robots » : vue de dessus, QG, 4 robots à acheter (fantassin, mitrailleur, lance-roquettes, mech lourd), sélection et ordres, 5 bâtiments infectés à détruire, menace qui monte, hordes, victoire ou défaite (js/41-rts.js) | 2026-11-04 |
 | 51 | Robot : bibites monstrueuses (rôdeur, araignée, abomination), 3 boss (Titan, Mère pondeuse, Béhémoth ailé) avec barre de vie, vagues de tous les côtés toutes les 28 s, carrefours pour choisir la rue suivante (6 règles) (js/40-robot-monstres.js) | 2026-11-04 |
 | 50 | Robot : 5 nouvelles armes (lance-flammes lourd, laser lourd ; lance-grenades, arc électrique, canon électromagnétique) achetées et équipées au garage ; demi-tour complet et retour sur ses pas ; zombies passés derrière qui poursuivent ; tir en visant sur cell | 2026-11-04 |
 | 49 | Robot : débloqué en tombant en mode infini ; Garage du robot (9 améliorations permanentes en ferraille : blindage, dégâts et refroidissement de la minigun, dégâts, cadence et salve des roquettes, jambes, réparation, nanorobots) | 2026-11-04 |

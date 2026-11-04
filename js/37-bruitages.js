@@ -74,8 +74,8 @@ function brKill(z, head){
 function brHorde(dt){
   if (typeof Snd !== 'object' || !Snd.ctx || !Snd.master) return;
   let n = 0;
-  if (state === 'playing' || state === 'mech') for (let i = 0; i < zombies.length; i++){ const z = zombies[i]; if (!z.dead && z.g.position.z > -75) n++; }
-  const want = state === 'playing' || state === 'mech' ? clamp(n / (isTouch ? 30 : 45), 0, 1) : 0;
+  if (state === 'playing' || state === 'mech' || state === 'rts') for (let i = 0; i < zombies.length; i++){ const z = zombies[i]; if (!z.dead && z.g.position.z > -75) n++; }
+  const want = state === 'playing' || state === 'mech' || state === 'rts' ? clamp(n / (isTouch ? 30 : 45), 0, 1) : 0;
   BR.hordeLvl += (want - BR.hordeLvl) * Math.min(1, dt * 1.5);
   try {
     if (!BR.horde && BR.hordeLvl > .02 && Snd._ambReady && Snd._ambReady() && Snd.brown){
@@ -92,7 +92,7 @@ function brHorde(dt){
       const t = Snd.ctx.currentTime;
       BR.horde.g.gain.setTargetAtTime(Math.max(0.0001, .11 * BR.hordeLvl), t, .4);
       BR.horde.f1.frequency.setTargetAtTime(330 + 120 * BR.hordeLvl, t, .8);
-      if (BR.hordeLvl <= .01 && state !== 'playing' && state !== 'mech'){ const h = BR.horde; BR.horde = null; h.g.gain.setTargetAtTime(0.0001, t, .2); try { h.s.stop(t + 1); h.lfo.stop(t + 1); } catch (e) {} }
+      if (BR.hordeLvl <= .01 && state !== 'playing' && state !== 'mech' && state !== 'rts'){ const h = BR.horde; BR.horde = null; h.g.gain.setTargetAtTime(0.0001, t, .2); try { h.s.stop(t + 1); h.lfo.stop(t + 1); } catch (e) {} }
     }
   } catch (e) { BR.horde = null; }
 }

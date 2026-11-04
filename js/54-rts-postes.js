@@ -156,7 +156,7 @@ function rtsPosteOn(u){
   const v = $('rtrpView'); if (v) v.classList.toggle('hide', !u.U.gunship);
   rtsPosteHud(true);
 }
-function rtsPosteOff(){ PT.cur = null; Object.keys(PT.g).forEach(k => { PT.g[k].visible = false; }); rtsPilotUI.classList.remove('casque', 'ck'); canvas.classList.remove('rt-ac105'); }
+function rtsPosteOff(){ PT.cur = null; Object.keys(PT.g).forEach(k => { PT.g[k].visible = false; }); if (typeof rtsTierDetails === 'function') rtsTierDetails(); rtsPilotUI.classList.remove('casque', 'ck'); canvas.classList.remove('rt-ac105'); }
 // AC-130 : changer de poste (bouton Vue, touche V) ; tirer une arme y amène aussi
 function rtsPosteSet(p){
   const u = RTS.pilot; if (!u || !u.U || !u.U.gunship || PT.acPost === p) return false;
@@ -166,17 +166,20 @@ function rtsPosteNext(){ const L = ['ck', 'c40', 'c105']; return rtsPosteSet(L[(
 // Un tir du joueur : recul, éclair, missile qui part
 function rtsPosteShot(u, kind){
   if (!u || RTS.pilot !== u) return;
-  if (u.U.gunship){ rtsPosteSet(kind === 'w2' ? 'c105' : 'c40'); PT.k[kind === 'w2' ? 'ac105' : 'ac40'] = 1; if (kind === 'w2') shake = Math.max(shake, .35); return; }
+  if (u.U.gunship){ rtsPosteSet(kind === 'w2' ? 'c105' : 'c40'); PT.k[kind === 'w2' ? 'ac105' : 'ac40'] = 1; if (kind === 'w2') shake = Math.max(shake, .08 + .35 * ptAmp()); return; }
   const id = rtsPosteId(u); if (!id) return;
   if (id === 'heli' && kind === 'w2'){ const m = PT.mis.find(x => x.visible); if (m){ m.visible = false; setTimeout(() => { m.visible = true; }, 2800); } return; }
-  PT.k[id] = 1; if (id === 'tank') shake = Math.max(shake, .3);
+  PT.k[id] = 1; if (id === 'tank') shake = Math.max(shake, .06 + .3 * ptAmp());
 }
 // Chaque image : animations du poste visible
+// Force du recul et de l'éclair : de 0,25 (arme de base) à 1 (arme au maximum)
+const ptAmp = () => .25 + .75 * (typeof rtsPosteTier === 'function' ? rtsPosteTier(RTS.pilot) : 1);
 function rtsPosteFrame(dt){
   const u = RTS.pilot; if (!PT.cur || !u || !u.U) return;
   Object.keys(PT.k).forEach(k => { PT.k[k] = Math.max(0, PT.k[k] - dt * (k === 'tank' || k === 'ac105' ? 2.2 : 9)); });
   const firing = RTS.pv.fire || (isTouch && RTS.pv.aim.id !== null);
-  if (PT.cur === 'tank'){ PT.canon.position.z = PT.k.tank * .7; PT.canon.rotation.x = PT.k.tank * .05; PT.fTank.visible = PT.k.tank > .85; if (PT.fTank.visible) PT.fTank.material.rotation = Math.random() * 6; }
+  const A = ptAmp(); // recul et éclair selon le niveau de l'arme (js/55-rts-niveaux.js)
+  if (PT.cur === 'tank'){ PT.canon.position.z = PT.k.tank * .7 * A; PT.canon.rotation.x = PT.k.tank * .05 * A; PT.fTank.scale.setScalar(.6 + 1.4 * A); PT.fTank.visible = PT.k.tank > .85; if (PT.fTank.visible) PT.fTank.material.rotation = Math.random() * 6; }
   if (PT.cur === 'heli'){
     PT.heliBar.rotation.z += dt * 75 * PT.spin;                                        // les canons tournent à toute vitesse
     PT.heliGun.rotation.y = 0; PT.heliGun.rotation.x = clamp(-RTS.pv.pitch * .3, -.3, .5) - .15;
@@ -188,8 +191,9 @@ function rtsPosteFrame(dt){
     PT.heliGun.position.z = -1.9 + (feu ? (Math.random() - .5) * .05 : 0);
   }
   if (PT.cur === 'jet'){ PT.fJet.visible = PT.k.jet > .3 && Math.random() < .8; if (PT.fJet.visible) PT.fJet.material.rotation = Math.random() * 6; PT.g.jet.rotation.z = -(u.g.rotation.z || 0) * .15; }
-  if (PT.cur === 'ac40'){ PT.c40.position.z = -1.0 + PT.k.ac40 * .35; PT.f40.visible = PT.k.ac40 > .6; }
-  if (PT.cur === 'ac105'){ PT.c105.position.z = -1.0 + PT.k.ac105 * .9; PT.f105.visible = PT.k.ac105 > .8; if (PT.f105.visible) PT.f105.material.rotation = Math.random() * 6; }
+  if (PT.cur === 'ac40'){ PT.c40.position.z = -1.0 + PT.k.ac40 * .35 * A; PT.f40.scale.setScalar(.4 + .9 * A); PT.f40.visible = PT.k.ac40 > .6; }
+  if (PT.cur === 'ac105'){ PT.c105.position.z = -1.0 + PT.k.ac105 * .9 * A; PT.f105.scale.setScalar(.6 + 2.6 * A); PT.f105.visible = PT.k.ac105 > .8; if (PT.f105.visible) PT.f105.material.rotation = Math.random() * 6; }
+  if (typeof rtsTierDetails === 'function') rtsTierDetails(); // détails du modèle selon le niveau
   rtsPosteHud(false, dt);
 }
 // AC-130 : la caméra du poste (appelée par rtsPilotCam) et le champ de vision

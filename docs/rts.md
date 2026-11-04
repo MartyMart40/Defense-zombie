@@ -14,6 +14,7 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | `js/45-rts-sauvegarde.js` | Partie en cours gardée toutes les 30 s, à la pause et quand le cell met le jeu de côté ; reprise par « Continuer la guerre » |
 | `js/47-rts-astuces.js` | Astuces des premières parties : une bulle à la fois, au bon moment, une fois chacune ; « Plus d’astuces » les coupe, la pause permet de les revoir |
 | `js/54-rts-postes.js` | Postes de pilotage (ce qu'on voit quand on pilote un véhicule), munitions des avions et retour à l'aérodrome, 2 avions par aérodrome |
+| `js/55-rts-niveaux.js` | Les armes embellissent avec leurs améliorations (niveau visuel de 0 à 1 par arme) |
 | `js/48-rts-liste.js` | Choisir les unités une par une : rangée « Unités » (pastilles avec la vie), Tab pour la suivante, double-clic pour le même type ; groupes enregistrés (5 au plus) |
 | `js/49-rts-commandement.js` | Mini-carte (toucher pour y aller), point de ralliement, alerte « Base attaquée », « ✋ Tenir » (u.hold), mode photo (dans la pause) |
 | `tests/t-rts.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js` | Tests |
@@ -55,6 +56,12 @@ Les prix exacts sont dans `RTS_UNITS` et `RTS_BLD` (`js/41-rts.js`) : si un chif
 - Apache : canon rotatif de 30 mm à 26 coups/s, montée en régime, grondement continu du minigun, poste et écran qui vibrent.
 - AC-130 : il ne tire que par son flanc gauche (aussi quand l'ordinateur le pilote). En pilotage, la visée reste fixée au sol pendant que l'avion tourne, dans un champ de 34° de chaque côté du flanc ; au bord du champ, elle est entraînée avec l'avion.
 - AC-130 : 3 postes. Tirer le 40 mm amène à son poste (caméra noir et blanc), tirer le 105 mm au sien (thermique « blanc chaud », plus de zoom), le bouton « Vue » (touche V) passe aussi au cockpit. Le 105 mm : 1 100 dégâts, zone de 11 m, grosse boule de feu, fumée et secousse.
+
+## Les armes embellissent avec les améliorations (2026-11-04, demande de Martin)
+- Chaque arme d'une unité a un niveau visuel de 0 à 1 : les améliorations achetées qui la concernent (Armes + ses améliorations propres ; ex. 105 mm : Armes, rechargement, obus incendiaires, capteurs), divisées par leur maximum (`RTS_TIER`).
+- Au début : petit « pew pew », traînée fine, petite explosion, presque pas de recul. En montant : traînée plus large avec un cœur blanc, son plus lourd, explosion plus grosse (poussière, fumée, boule de feu du 105 mm), écran qui tremble plus, recul et éclair plus forts.
+- Dans le poste, le modèle gagne des détails à 1/3, 2/3 et au maximum (frein de bouche, manchons, cylindres de recul, canons en plus sur l'Apache, métal rougi).
+- Les dégâts ne changent pas : seule la mise en scène suit les améliorations.
 
 ## Décisions prises
 - Groupes enregistrés : « ＋ Groupe » enregistre les unités choisies, « G1 »... les choisit (retoucher : la caméra y va), appui long ou clic droit : remplacer (ou supprimer sans choix). Ordi : Ctrl+1 à 5 enregistre, Maj+1 à 5 rappelle ; les chiffres seuls achètent toujours des robots. Gardés dans la sauvegarde.

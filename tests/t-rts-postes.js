@@ -50,7 +50,7 @@
       var R = calme(), P = __rtsPostes, o = {};
       var t = __rts.rtsSpawnUnit('tank', 0, -20); __rts.rtsPilot(t); visuals(1 / 30);
       o.tank = P.PT.cur === 'tank' && P.PT.g.tank.visible;
-      t.cd = 0; R.pv.fire = true; visuals(1 / 30); R.pv.fire = false; o.recul = P.PT.canon.position.z > .3; o.lent = t.cd > 2;
+      t.cd = 0; R.pv.fire = true; visuals(1 / 30); R.pv.fire = false; o.recul = P.PT.canon.position.z > .1; /* arme de base : petit recul, il grossit avec les améliorations (t-rts-niveaux.js) */ o.lent = t.cd > 2; o.cdv = t.cd;
       __rts.rtsUnpilot(); o.cache = !P.PT.g.tank.visible;
       var h = __rts.rtsSpawnUnit('heli', 10, -30); __rts.rtsPilot(h); visuals(1 / 30);
       o.heli = P.PT.cur === 'heli' && document.getElementById('rtPilot').classList.contains('casque');
@@ -69,7 +69,7 @@
       return o;
     `));
     fin();
-    ok(r.tank, 'Poste du tank'); ok(r.recul, 'Le canon recule au tir'); ok(r.lent, 'Le tank recharge lentement'); ok(r.cache, 'Poste caché au retour');
+    ok(r.tank, 'Poste du tank'); ok(r.recul, 'Le canon recule au tir'); ok(r.lent, 'Le tank recharge lentement : ' + r.cdv); ok(r.cache, 'Poste caché au retour');
     ok(r.heli, 'Vue du casque de l’Apache'); ok(r.tourne, 'Le canon rotatif tourne quand il tire'); ok(r.hellfire, 'Hellfire tiré : un missile disparaît de l’aile');
     ok(r.ac40, 'AC-130 : poste du 40 mm'); ok(r.ac105, 'Tirer le 105 mm amène à son poste (thermique blanc chaud)');
     ok(r.ck, 'Touche V : cockpit'); ok(r.retour40, 'Tirer le 40 mm ramène à son poste'); ok(r.hud, 'Viseur : munitions'); ok(r.fin, 'Tout est rangé au retour');

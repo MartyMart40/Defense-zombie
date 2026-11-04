@@ -1,6 +1,8 @@
 'use strict';
 /* ================= RTS : choisir les unités une par une ================= */
-// - Rangée « Unités » au-dessus des onglets (onglets Robots et Véhicules) : une pastille par unité, avec sa vie.
+// - Rangée « Unités » au-dessus des onglets (onglets Robots et Véhicules) : fermée, elle ne montre qu'une pastille
+//   « 👥 Unités · N » (et les groupes) pour ne pas cacher le jeu ; la toucher ouvre la liste, une pastille par unité
+//   avec sa vie (demande de Martin : la liste prenait la moitié de l'écran). Ouverte ou fermée : gardé (dt_rts_liste).
 //   Toucher une pastille choisit cette unité seule et amène la caméra dessus, même si elle est loin.
 //   Retoucher la pastille de l'unité choisie la relâche.
 // - Ordi : double-clic sur une unité = toutes celles du même type visibles à l'écran ; Tab = unité suivante (Maj+Tab : précédente).
@@ -41,7 +43,8 @@ rtsGroupsReset();
 
 const rtsRoster = document.createElement('div'); rtsRoster.id = 'rtRoster'; rtsRoster.className = 'hide'; rtsRoster.setAttribute('aria-label', 'Unités');
 (function(){ const dock = $('rtDock'); if (dock) dock.insertBefore(rtsRoster, dock.firstChild); })();
-const RL = { sig:'', t:0 };
+const RL = { sig:'', t:0, ouvert: store.get('dt_rts_liste', false) === true };
+function rtsRosterOuvrir(on){ RL.ouvert = on == null ? !RL.ouvert : !!on; store.set('dt_rts_liste', RL.ouvert); rtsRosterDraw(true); return RL.ouvert; }
 
 // Unités montrées : celles de l'onglet ouvert (robots ou véhicules), dans l'ordre de la boutique puis d'arrivée
 function rtsRosterList(){
@@ -54,13 +57,14 @@ function rtsRosterDraw(force){
   const grp = []; for (let i = 0; i < RTS_GROUPS; i++){ const g = rtsGrpOf(i); if (g.length) grp.push([i, g]); }
   const show = state === 'rts' && !RTS.pilot && (list.length > 0 || grp.length > 0) && (RTS.tab === 'rob' || RTS.tab === 'veh');
   rtsRoster.classList.toggle('hide', !show); if (!show){ RL.sig = ''; return list; }
-  const sig = grp.map(([i, g]) => i + ':' + g.length + (g.every(u => RTS.sel.indexOf(u) >= 0) && RTS.sel.length === g.length ? '*' : '')).join(',') + '|' + (RTS.sel.length ? 'p' : '') + '|' + list.map(u => rtsId(u) + (RTS.sel.indexOf(u) >= 0 ? '*' : '')).join(',');
+  const sig = (RL.ouvert ? 'o' : 'f') + grp.map(([i, g]) => i + ':' + g.length + (g.every(u => RTS.sel.indexOf(u) >= 0) && RTS.sel.length === g.length ? '*' : '')).join(',') + '|' + (RTS.sel.length ? 'p' : '') + '|' + list.map(u => rtsId(u) + (RTS.sel.indexOf(u) >= 0 ? '*' : '')).join(',');
   if (force || sig !== RL.sig){
     RL.sig = sig;
     const n = {};
-    const gh = grp.map(([i, g]) => '<button type="button" class="rt-g' + (RTS.sel.length === g.length && g.every(u => RTS.sel.indexOf(u) >= 0) ? ' on' : '') + '" data-g="' + i + '" aria-label="Groupe ' + (i + 1) + '"><span>👥 G' + (i + 1) + ' · ' + g.length + '</span></button>').join('')
+    const tog = '<button type="button" class="rt-g rt-tog' + (RL.ouvert ? ' on' : '') + '" data-tog="1" aria-expanded="' + RL.ouvert + '"><span>👥 Unités · ' + list.length + (RL.ouvert ? ' ▾' : ' ▸') + '</span></button>';
+    const gh = tog + grp.map(([i, g]) => '<button type="button" class="rt-g' + (RTS.sel.length === g.length && g.every(u => RTS.sel.indexOf(u) >= 0) ? ' on' : '') + '" data-g="' + i + '" aria-label="Groupe ' + (i + 1) + '"><span>👥 G' + (i + 1) + ' · ' + g.length + '</span></button>').join('')
       + (RTS.sel.length ? '<button type="button" class="rt-g rt-gplus" data-gplus="1"><span>＋ Groupe</span></button>' : '');
-    rtsRoster.innerHTML = gh + list.map(u => {
+    rtsRoster.innerHTML = gh + (RL.ouvert ? list : []).map(u => {
       n[u.type] = (n[u.type] || 0) + 1;
       return '<button type="button" class="rt-u' + (RTS.sel.indexOf(u) >= 0 ? ' on' : '') + '" data-id="' + rtsId(u) + '" aria-label="' + u.U.name.replace(/[⭐ ]+$/, '') + ' ' + n[u.type] + '">'
         + '<span>' + rtsIcon(u) + ' ' + (RTS_SHORT[u.type] || u.U.name) + ' ' + n[u.type] + '</span><i><b></b></i></button>';
@@ -68,7 +72,7 @@ function rtsRosterDraw(force){
   }
   // Barres de vie (après les pastilles de groupe)
   const bs = rtsRoster.querySelectorAll('button[data-id]');
-  for (let i = 0; i < bs.length && i < list.length; i++){ const u = list[i], k = clamp(u.hp / u.maxHp, 0, 1), b = bs[i].querySelector('b'); if (b){ b.style.width = Math.round(k * 100) + '%'; b.className = k < .35 ? 'bas' : ''; } }
+  for (let i = 0; i < bs.length && i < list.length && RL.ouvert; i++){ const u = list[i], k = clamp(u.hp / u.maxHp, 0, 1), b = bs[i].querySelector('b'); if (b){ b.style.width = Math.round(k * 100) + '%'; b.className = k < .35 ? 'bas' : ''; } }
   return list;
 }
 // Choisir une unité de la rangée : seule, et la caméra va la voir
@@ -82,6 +86,7 @@ function rtsRosterPick(id){
 function rtsCamTo(u){ RTS.cam.x = u.g.position.x; RTS.cam.z = u.g.position.z; }
 rtsRoster.addEventListener('click', e => {
   if (RL.long){ RL.long = false; return; } // l'appui long a déjà agi
+  if (e.target.closest('button[data-tog]')){ rtsRosterOuvrir(); return; }
   const g = e.target.closest('button[data-g]'); if (g){ rtsGroupPick(+g.dataset.g); return; }
   if (e.target.closest('button[data-gplus]')){ rtsGroupSave(null); return; }
   const b = e.target.closest('button[data-id]'); if (b) rtsRosterPick(b.dataset.id);
@@ -135,4 +140,4 @@ Jeu.on('image', dt => {
 });
 
 // Accès pour les tests automatiques
-window.__rtsListe = { rtsRosterList, rtsRosterDraw, rtsRosterPick, rtsCycle, rtsSameType, rtsId, RTS_SHORT, RTS_GROUPS, rtsGroupSave, rtsGroupPick, rtsGroupsReset, rtsGrpOf };
+window.__rtsListe = { RL, rtsRosterOuvrir, rtsRosterList, rtsRosterDraw, rtsRosterPick, rtsCycle, rtsSameType, rtsId, RTS_SHORT, RTS_GROUPS, rtsGroupSave, rtsGroupPick, rtsGroupsReset, rtsGrpOf };

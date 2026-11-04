@@ -139,3 +139,33 @@
     egal(r.ciel, r.cielAv, 'Couleurs remises en sRGB après le dessin (brume)');
   });
 })();
+
+/* Haute définition, séance 2 (sans téléchargement) : lampadaires de nuit */
+(function(){
+  if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
+  test('Style Haute définition : la nuit, les lampadaires éclairent la rue et projettent des ombres ; tout part en quittant le style', async () => {
+    if (lire('typeof __styleHD === "object" && typeof __styleHD.styleHDNuit === "function"') !== true) ignorer('Lampadaires HD absents');
+    reset(); J('startLocation(2)'); J("ambSet('nuitClaire', true)");
+    J("__style.styleSet('hd')"); await J('__styleHD.styleHDCharger()');
+    const r = J(function(){
+      var N = __styleHD.HD.nuit, o = {};
+      __styleHD.styleHDNuit();
+      o.lum = N.lum.length; o.ombres = N.lum.filter(function(l){ return l.castShadow; }).length; o.cones = N.cones.length;
+      o.dansRue = N.lum.every(function(l){ return l.parent === world; });
+      o.eteintes = AMB.lamps.length === 0 || AMB.lamps.every(function(l){ return l.intensity === 0; });
+      for (var i = 0; i < 3; i++) visuals(1 / 30);
+      o.rendu = __style.styleRendu();
+      __style.styleSet('ameliore'); __styleHD.styleHDNuit();
+      o.lum2 = N.lum.length; o.rallumees = AMB.lamps.every(function(l){ return l.intensity > 0; });
+      __style.styleSet('actuel');
+      return o;
+    });
+    ok(r.lum >= 8 && r.cones === r.lum, 'Projecteurs et cônes de brume : ' + r.lum + ' / ' + r.cones);
+    ok(r.ombres >= 2 && r.ombres <= 4, 'Ombres des lampadaires les plus proches : ' + r.ombres);
+    ok(r.dansRue && r.eteintes, 'Projecteurs dans la rue, lampes rondes d\'origine éteintes');
+    ok(r.rendu === true, 'Rendu de nuit sans erreur');
+    egal(r.lum2, 0, 'Retour à Amélioré : projecteurs retirés');
+    ok(r.rallumees, 'Retour à Amélioré : lampes d\'origine rallumées');
+  });
+})();
+

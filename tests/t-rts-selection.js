@@ -46,7 +46,7 @@
     exiger(); reset();
     const r = J(new Function(calme + `
       var R = calme(), L = __rtsListe, o = {};
-      S.money = 99999; __rts.rtsBuy('gunner'); __rts.rtsTab('rob'); L.rtsRosterDraw(true);
+      S.money = 99999; __rts.rtsBuy('gunner'); __rts.rtsTab('rob'); (L.rtsRosterOuvrir ? L.rtsRosterOuvrir(true) : L.rtsRosterDraw(true));
       var el = document.getElementById('rtRoster'), btns = el.querySelectorAll('button[data-id]');
       o.visible = !el.classList.contains('hide'); o.n = btns.length; o.robots = R.units.filter(function(u){ return !u.dead && u.U.cat === 'rob'; }).length;
       o.txt = btns[0] ? btns[0].textContent : '';
@@ -115,4 +115,28 @@
     ok(r.camera, 'Retoucher le groupe : la caméra va au milieu du groupe'); ok(r.supprime, 'Sans unité choisie, le groupe est supprimé');
     ok(r.mort, 'Une unité morte sort du groupe'); ok(r.repris, 'Les groupes sont gardés dans la sauvegarde');
   });
+
+  test('RTS sélection : la liste des unités est fermée par défaut et s\'ouvre avec « Unités »', () => {
+    exiger(); reset();
+    if (lire('typeof __rtsListe.rtsRosterOuvrir') !== 'function') ignorer('Liste repliable absente');
+    const r = J(new Function(calme + `
+      var R = calme(), L = __rtsListe, o = {};
+      L.rtsRosterOuvrir(false);
+      S.money = 99999; for (var i = 0; i < 6; i++) __rts.rtsBuy('rifle'); __rts.rtsTab('rob'); L.rtsRosterDraw(true);
+      var el = document.getElementById('rtRoster'), tog = el.querySelector('button[data-tog]');
+      o.tog = !!tog; o.txt = tog && tog.textContent; o.fermee = el.querySelectorAll('button[data-id]').length;
+      tog.click(); o.ouverte = el.querySelectorAll('button[data-id]').length; o.garde = store.get('dt_rts_liste', null);
+      el.querySelector('button[data-id]').click(); o.choisi = R.sel.length === 1; o.resteOuverte = el.querySelectorAll('button[data-id]').length;
+      el.querySelector('button[data-tog]').click(); o.refermee = el.querySelectorAll('button[data-id]').length;
+      return o;
+    `));
+    fin();
+    ok(r.tog && /Unités · \d+/.test(r.txt), 'Pastille « Unités » avec le nombre : ' + r.txt);
+    egal(r.fermee, 0, 'Fermée : aucune pastille d\'unité');
+    ok(r.ouverte >= 6, 'Ouverte : une pastille par unité (' + r.ouverte + ')');
+    egal(r.garde, true, 'Ouverte gardée (dt_rts_liste)');
+    ok(r.choisi && r.resteOuverte >= 6, 'Toucher une unité la choisit, la liste reste ouverte');
+    egal(r.refermee, 0, 'Retoucher « Unités » referme la liste');
+  });
 })();
+

@@ -15,7 +15,8 @@ const HD = {
   mats:[], pour:null,            // matériaux physiques posés, et la liste d'Amélioré pour laquelle ils ont été faits
   tex:new Map(), matsEnc:new Set(), // textures passées en sRGB pendant la Haute définition (pour les remettre)
   comp:null, ssao:null, rendu:null, bloom:null, grade:null, fxaa:null, w:0, h:0,
-  sv:[], vus:new Set(), mVus:new Set(), envSur:false
+  sv:[], vus:new Set(), mVus:new Set(), envSur:false,
+  nuit:{ monde:null, lum:[], cones:[], eteintes:[], t:0 } // lampadaires qui éclairent vraiment (séance 2)
 };
 // Image HDR de chaque ville (toutes de Poly Haven, réduites à 512 x 256), teinte mélangée à la lumière de la ville
 const HD_CIEL = { village:'sunset', ville:'dawn', banlieue:'night', centre:'sunset', port:'city' };
@@ -309,8 +310,59 @@ function styleHDRendu(){
   } catch (e) { errNote(e); HD.casse = true; styleHDApres(); return null; }
 }
 
+/* ---------- Nuit : les lampadaires éclairent vraiment (séance 2, sans téléchargement) ---------- */
+// Quand les lampadaires sont allumés (nuit), chaque lampadaire des 100 premiers mètres devient un projecteur
+// tourné vers la rue ; les 4 plus proches projettent des ombres (zombies, autos, barricade). Un cône de lumière
+// très léger montre la brume éclairée. Les lampes rondes d'origine (js/22-ambiance.js) sont éteintes pendant ce temps.
+const HD_NUIT = { zs:[-20, -46, -72, -98], ombreZ:-50, force:4.5, portee:30, angle:.95, flou:.55, cone:.16 };
+// Cône de brume : plus fort près de la lampe, et s'efface sur les bords (vu de côté) pour ne pas faire de triangle net
+function styleHDConeMat(){
+  return new THREE.ShaderMaterial({
+    uniforms:{ couleur:{ value:new THREE.Color(0xffc870).convertSRGBToLinear() }, force:{ value:HD_NUIT.cone } },
+    vertexShader:'varying vec2 vUv; varying vec3 vN, vV; void main(){ vUv = uv; vec4 p = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-p.xyz); gl_Position = projectionMatrix * p; }',
+    fragmentShader:'uniform vec3 couleur; uniform float force; varying vec2 vUv; varying vec3 vN, vV; void main(){ float bord = pow(abs(dot(vN, vV)), 2.5); float haut = pow(vUv.y, 1.6); gl_FragColor = vec4(couleur * force * bord * haut, 1.0); }',
+    transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide
+  });
+}
+function styleHDNuitVeut(){
+  const L = STY.L;
+  if (!L || !L.lamps || !world || isTouch && typeof gfxLevel === 'function' && gfxLevel() === 'bas') return false;
+  return (typeof AMB !== 'undefined' && AMB.lamps.length > 0) || !!L.lampGlow;
+}
+function styleHDNuitRetirer(){
+  const N = HD.nuit;
+  N.lum.forEach(l => { if (l.parent) l.parent.remove(l); if (l.target && l.target.parent) l.target.parent.remove(l.target); if (l.shadow && l.shadow.map) l.shadow.map.dispose(); });
+  N.cones.forEach(c => { if (c.parent) c.parent.remove(c); c.geometry.dispose(); c.material.dispose(); });
+  N.eteintes.forEach(([l, i]) => { l.intensity = i; });
+  N.lum = []; N.cones = []; N.eteintes = []; N.monde = null;
+}
+function styleHDNuitPoser(){
+  const N = HD.nuit, niv = typeof gfxLevel === 'function' ? gfxLevel() : 'haut', carte = niv === 'haut' && !isTouch ? 1024 : 512;
+  HD_NUIT.zs.forEach(z => [-1, 1].forEach(sd => {
+    const l = new THREE.SpotLight(0xffc870, HD_NUIT.force, HD_NUIT.portee, HD_NUIT.angle, HD_NUIT.flou, 1.6);
+    l.position.set(sd * 12.7, 6.7, z); l.target.position.set(sd * 7.5, 0, z - 1.5);
+    l.castShadow = z > HD_NUIT.ombreZ && niv !== 'bas';
+    if (l.castShadow){ l.shadow.mapSize.set(carte, carte); l.shadow.bias = -.0008; l.shadow.normalBias = .03; l.shadow.camera.near = .5; l.shadow.camera.far = HD_NUIT.portee; }
+    world.add(l); world.add(l.target); N.lum.push(l);
+    const m = styleHDConeMat();
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(.25, 3.6, 6.6, 20, 1, true), m);
+    c.position.set(sd * 11.3, 3.4, z - .6); c.rotation.z = -sd * .4; c.castShadow = c.receiveShadow = false;
+    world.add(c); N.cones.push(c);
+  }));
+  if (typeof AMB !== 'undefined') AMB.lamps.forEach(l => { N.eteintes.push([l, l.intensity]); l.intensity = 0; });
+  N.monde = world;
+}
+function styleHDNuit(){
+  const N = HD.nuit, veut = styleHD() && styleToit() && HD.pret && styleHDNuitVeut();
+  if (!veut){ if (N.lum.length || N.eteintes.length) styleHDNuitRetirer(); return; }
+  if (N.monde !== world || (typeof AMB !== 'undefined' && AMB.lamps.some(l => l.intensity > 0 && !N.eteintes.some(e => e[0] === l)))) styleHDNuitRetirer();
+  if (!N.lum.length) styleHDNuitPoser();
+}
+
 /* ---------- Chaque image ---------- */
-Jeu.on('image', () => {
+Jeu.on('image', dt => {
+  HD.nuit.t -= dt || 0;
+  if (HD.nuit.t <= 0){ HD.nuit.t = .25; try { styleHDNuit(); } catch (e) { errNote(e); styleHDNuitRetirer(); } }
   if (!styleHD() || !styleToit()) { if (HD.tex.size || HD.envSur) styleHDLineaire(false); return; }
   if (!HD.pret && !HD.casse) styleHDCharger();
 });
@@ -318,4 +370,4 @@ Jeu.on('image', () => {
 (function(){ try { if (styleHD()) styleHDCharger(); } catch (e) { errNote(e); } })();
 
 // Accès pour les tests automatiques
-window.__styleHD = { HD, HD_CIEL, HD_REGL, styleHDCharger, styleHDMaj, styleHDRendu };
+window.__styleHD = { HD, HD_CIEL, HD_REGL, HD_NUIT, styleHDNuit, styleHDCharger, styleHDMaj, styleHDRendu };

@@ -7,7 +7,7 @@ Demande de Martin (2026-11-04) : des « degrés » de graphismes au choix, du je
 |--------|-------|----|--------|
 | Actuel | Le jeu tel qu'il était : couleurs unies, formes simples | Partout | Fait |
 | Amélioré | Jeu 3D des années 2005 à 2010 (genre Half-Life 2, en plus simple) : textures, vraies ombres, éclat lumineux | Toit (cell récent et ordi) | Phase 1 faite (tâche 80) |
-| Haute définition | Visée Modern Warfare : matériaux réalistes (rugosité, reflets), lumière HDR, ombres de contact, zombies plus détaillés, modèles téléchargés | Toit, ordi surtout | Séance 1 faite (tâche 82) |
+| Haute définition | Visée Modern Warfare : matériaux réalistes (rugosité, reflets), lumière HDR, ombres de contact, zombies plus détaillés, modèles téléchargés | Toit, ordi surtout | Séance 1 faite (tâche 82), séance 2 en partie (tâche 84) |
 | Ultra | Ce qu'un ordi puissant peut donner : ombres douces partout, reflets, brume volumétrique | Ordi seulement | Plus tard |
 
 Le choix : bouton « Style » dans Pause (clé `dt_style` : `actuel`, `ameliore` ou `hd`), un clic passe au suivant. Il change tout de suite, sans recommencer la partie. Il s'ajoute au réglage « Graphismes » (qualité : résolution et nombre d'effets, `js/36-rendu.js`) : en qualité basse, pas d'éclat et carte d'ombre de 512 ; moyenne (et cell) 1024 ; haute sur ordi 2048. Si un ordi lague en Amélioré, baisser « Graphismes ».
@@ -26,6 +26,7 @@ Le choix : bouton « Style » dans Pause (clé `dt_style` : `actuel`, `ameliore`
 - Ombres de contact : SSAO de Three.js r128 (calculé à demi-résolution puis flouté), seulement les objets solides, effacé entre 30 et 60 m. Coupé en qualité basse, avec l'éclat.
 - Ombre du soleil : carte de 4096 sur ordi en qualité haute.
 - Les morceaux de Three.js (EXRLoader, SSAOPass) sont dans `lib/three-hd.js`, chargé seulement quand on choisit ce style. Tant qu'il n'est pas prêt, la rue est dessinée en Amélioré.
+- Nuit (séance 2, tâche 84) : quand les lampadaires sont allumés (météo de nuit, ou Banlieue Nord), chaque lampadaire des 100 premiers mètres devient un projecteur tourné vers la rue (8 en tout) ; les 4 plus proches projettent des ombres (carte de 1024 sur ordi en qualité haute, 512 sinon). Un cône de brume éclairée, très léger et sans bord net, part de chaque lampe. Les lampes rondes d'origine sont éteintes pendant ce temps et rallumées en quittant le style. Réglages : `HD_NUIT`.
 - Les zombies restent dessinés comme avant (matériau Lambert, couleurs passées en linéaire) : ils changent à la séance 3.
 
 ## Ressources téléchargées
@@ -38,13 +39,14 @@ Avant de commencer : permettre dans les réglages de l'environnement (Network ac
 
 Niveau « Haute définition » (nouveau choix dans le bouton Style, ordi d'abord) :
 1. Séance 1, la lumière (faite, tâche 82) : matériaux physiques (MeshStandardMaterial : rugosité, métal, cartes de relief), ciel et lumière d'ambiance tirés d'une image HDR (Poly Haven), rendu en couleurs étendues avec réglage d'exposition (tone mapping ACES), ombres de contact (SSAO, `SSAOPass` de r128), carte d'ombre 4096.
-2. Séance 2, le décor : textures photo (asphalte, briques, béton, rouille) d'ambientCG, avec relief et rugosité ; débris, poteaux, fils, autos plus détaillées ; nuit : lampadaires et feux qui éclairent vraiment et projettent des ombres.
+2. Séance 2, le décor (en partie, tâche 84 : lampadaires de nuit faits ; textures photo en attente du réseau) : textures photo (asphalte, briques, béton, rouille) d'ambientCG, avec relief et rugosité ; débris, poteaux, fils, autos plus détaillées ; nuit : lampadaires et feux qui éclairent vraiment et projettent des ombres.
 3. Séance 3, les zombies et les effets : modèles téléchargés (glTF, GLTFLoader de r128) avec animations, sang et impacts collés aux murs, fumée et feu plus épais, brume qui prend la lumière, profondeur de champ en visant.
 4. Ensuite, « Ultra » (ordi seulement) et le même style pour le robot et le RTS.
 
 Règles : Actuel et Amélioré ne changent pas ; Haute définition se choisit dans le même bouton ; on garde Three.js r128 (le changer toucherait tout le jeu) ; images par seconde à mesurer sur l'ordi de Martin après chaque séance.
 
 ## À équilibrer en jouant
+- Haute définition, nuit : force des lampadaires (4,5), portée (30 m), cône de brume (0,16) : `HD_NUIT`.
 - Haute définition : exposition (1,15), force de la lumière HDR (`env` 0,55), teinte de la ville (0,6), SSAO (rayon 0,7 m), éclat (0,5, seuil 0,92), lueurs et ciel (`sansOmbre`) : `HD_REGL` dans `js/58-graphismes-hd.js`. Images par seconde à mesurer sur l'ordi de Martin.
 - Force de l'éclat (0,45), seuil (0,86), grain (0,035), coins (0,4) : `STYLE_GRADE` et `styleComposer` dans `js/57-graphismes.js`.
 - Images par seconde au cell : si c'est lent, baisser la carte d'ombre ou retirer l'éclat au cell.

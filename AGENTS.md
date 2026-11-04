@@ -56,7 +56,7 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 45 sauvegarde RTS | Partie RTS en cours gardée (dt_rts_partie), bouton « Continuer la guerre » |
 | 46 application | Jeu installable (avec `manifest.webmanifest`, `sw.js`, `icones/`) : plein écran, marche sans réseau |
 | 47 astuces RTS | Bulles d'astuces des premières parties RTS, une fois chacune (dt_rts_astuces) |
-| 48 liste RTS | Choisir les unités une par une (rangée « Unités », Tab, double-clic) |
+| 48 liste RTS | Choisir les unités une par une (rangée « Unités » repliable, dt_rts_liste ; Tab, double-clic) |
 | 49 commandement RTS | Mini-carte, point de ralliement, alerte « Base attaquée », Tenir la position, mode photo |
 | 50 sauvegarde robot | Course du robot gardée au début de chaque rue (dt_mech_partie), « Continuer le robot » |
 | 51 succès des modes | Succès du robot et du RTS (ajoutés à ACH) |
@@ -66,7 +66,7 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 55 niveaux RTS | Les armes des véhicules embellissent avec leurs améliorations : traînée, son, explosion, recul, éclair, détails du modèle (3 paliers) |
 | 56 postes des robots | Poste de pilotage des petits robots : visière et bras avec l'arme de chaque robot, détails selon les améliorations |
 | 57 graphismes | Style graphique (Pause, dt_style) : Actuel, Amélioré (textures, vraies ombres, éclat, couleurs) ou Haute définition sur le toit (`docs/graphismes.md`) |
-| 58 graphismes HD | Style Haute définition : matériaux physiques, lumière HDR (`hdri/`), couleurs linéaires, ACES, SSAO (`lib/three-hd.js` chargé au besoin) |
+| 58 graphismes HD | Style Haute définition : matériaux physiques, lumière HDR (`hdri/`), couleurs linéaires, ACES, SSAO, lampadaires de nuit qui éclairent (`lib/three-hd.js` chargé au besoin) |
 | 90 branchements | Branche le registre `Jeu` sur le jeu commun ; toujours le dernier |
 
 Les const, let et function de haut niveau sont partagés entre tous les fichiers (portée globale). Un fichier peut appeler une fonction d'un fichier plus loin **seulement à l'intérieur d'une fonction**, jamais au chargement. Chaque fichier commence par `'use strict';`.

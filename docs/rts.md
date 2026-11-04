@@ -16,7 +16,7 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | `js/54-rts-postes.js` | Postes de pilotage (ce qu'on voit quand on pilote un véhicule), munitions des avions et retour à l'aérodrome, 2 avions par aérodrome |
 | `js/55-rts-niveaux.js` | Les armes embellissent avec leurs améliorations (niveau visuel de 0 à 1 par arme) |
 | `js/56-rts-postes-robots.js` | Poste des petits robots : visière, bras et arme propre à chaque robot, recul, éclair, détails selon les améliorations |
-| `js/48-rts-liste.js` | Choisir les unités une par une : rangée « Unités » (pastilles avec la vie), Tab pour la suivante, double-clic pour le même type ; groupes enregistrés (5 au plus) |
+| `js/48-rts-liste.js` | Choisir les unités une par une : rangée « Unités » repliable (fermée : une pastille « 👥 Unités · N » et les groupes ; ouverte : une pastille par unité avec sa vie ; choix gardé dans `dt_rts_liste`), Tab pour la suivante, double-clic pour le même type ; groupes enregistrés (5 au plus) |
 | `js/49-rts-commandement.js` | Mini-carte (toucher pour y aller), point de ralliement, alerte « Base attaquée », « ✋ Tenir » (u.hold), mode photo (dans la pause) |
 | `tests/t-rts.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js` | Tests |
 

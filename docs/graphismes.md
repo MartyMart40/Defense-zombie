@@ -22,11 +22,18 @@ Le choix : bouton « Style » dans Pause (clé `dt_style` : `actuel` ou `amelior
 ## Ressources téléchargées
 Le réseau de cette session ne laisse passer que GitHub et npm : les sites de textures et de modèles libres (polyhaven.com, ambientcg.com, kenney.nl, quaternius.com) sont bloqués. Pour les ajouter : réglages de l'environnement Claude Code, « Network access », ajouter ces domaines aux domaines permis. En attendant, tout est dessiné par le code.
 
-## Prochaines étapes
-1. Martin essaie Amélioré sur le S24 et l'ordi : trop sombre, trop flou, trop de grain ? Images par seconde au cell.
-2. Amélioré, phase 2 : zombies (peau, vêtements déchirés, sang, textures), feux et fumée plus beaux, lampadaires qui éclairent vraiment la nuit, flaques qui reflètent.
-3. Amélioré pour le robot et le RTS (sable, montagnes, unités).
-4. Haute définition : matériaux réalistes (MeshStandard), textures téléchargées si le réseau le permet, modèles de zombies plus fins.
+## Prochaines étapes (plan accepté le 2026-11-04 : on passe au niveau « Haute définition », visée Modern Warfare, ordi puissant)
+Martin a essayé Amélioré : pas de lag au cell (S24) ; sur un petit ordi, « Graphismes : basse » règle le lag.
+
+Avant de commencer : permettre dans les réglages de l'environnement (Network access, domaines permis) `polyhaven.com`, `dl.polyhaven.org`, `ambientcg.com`, `kenney.nl`, `quaternius.com`. Sans eux, tout reste dessiné par le code (moins réaliste).
+
+Niveau « Haute définition » (nouveau choix dans le bouton Style, ordi d'abord) :
+1. Séance 1, la lumière : matériaux physiques (MeshStandardMaterial : rugosité, métal, cartes de relief), ciel et lumière d'ambiance tirés d'une image HDR (Poly Haven), rendu en couleurs étendues avec réglage d'exposition (tone mapping ACES), ombres de contact (SSAO, `SSAOPass` de r128), carte d'ombre 4096.
+2. Séance 2, le décor : textures photo (asphalte, briques, béton, rouille) d'ambientCG, avec relief et rugosité ; débris, poteaux, fils, autos plus détaillées ; nuit : lampadaires et feux qui éclairent vraiment et projettent des ombres.
+3. Séance 3, les zombies et les effets : modèles téléchargés (glTF, GLTFLoader de r128) avec animations, sang et impacts collés aux murs, fumée et feu plus épais, brume qui prend la lumière, profondeur de champ en visant.
+4. Ensuite, « Ultra » (ordi seulement) et le même style pour le robot et le RTS.
+
+Règles : Actuel et Amélioré ne changent pas ; Haute définition se choisit dans le même bouton ; on garde Three.js r128 (le changer toucherait tout le jeu) ; images par seconde à mesurer sur l'ordi de Martin après chaque séance.
 
 ## À équilibrer en jouant
 - Force de l'éclat (0,45), seuil (0,86), grain (0,035), coins (0,4) : `STYLE_GRADE` et `styleComposer` dans `js/57-graphismes.js`.

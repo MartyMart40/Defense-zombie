@@ -19,6 +19,7 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 | # | Tâche | Date |
 |---|-------|------|
+| 50 | Robot : 5 nouvelles armes (lance-flammes lourd, laser lourd ; lance-grenades, arc électrique, canon électromagnétique) achetées et équipées au garage ; demi-tour complet et retour sur ses pas ; zombies passés derrière qui poursuivent ; tir en visant sur cell | 2026-11-04 |
 | 49 | Robot : débloqué en tombant en mode infini ; Garage du robot (9 améliorations permanentes en ferraille : blindage, dégâts et refroidissement de la minigun, dégâts, cadence et salve des roquettes, jambes, réparation, nanorobots) | 2026-11-04 |
 | 48 | Mode robot : mech à deux pattes, vue du cockpit, minigun à gauche et roquettes à droite, marche de rue en rue (villes à la suite), blindage, surchauffe, boss toutes les 3 rues, commandes ordi et cell (js/39-robot.js) | 2026-11-04 |
 | 47 | Mode infini plus dur : vie +18 % et dégâts +14 % par vague (argent +10 %), spéciaux plus tôt, apparitions plus rapides | 2026-11-04 |

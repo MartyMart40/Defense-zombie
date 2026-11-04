@@ -154,3 +154,71 @@
     ok(r.regen > 0, 'Les nanorobots réparent');
   });
 })();
+(function(){
+  if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
+  const exiger = () => { if (lire('typeof __mech === "object" && typeof __mech.mechWeapon === "function"') !== true) ignorer('Armes du robot absentes'); };
+
+  test('Robot : demi-tour, retour sur ses pas, les zombies passés derrière le poursuivent', () => {
+    exiger(); reset();
+    const r = J(function(){
+      __mech.mechStart(); var M = __mech.MECH, o = {}; plan.queue = []; spawnT = 1e9; clearZombies();
+      M.mv.f = 1; for (var i = 0; i < 60; i++) visuals(1 / 30); M.mv.f = 0; o.avant = M.dist;
+      __game.setAim(Math.PI, -.2); M.mv.f = 1; for (var k = 0; k < 30; k++) visuals(1 / 30); M.mv.f = 0; o.retour = M.dist;
+      for (var n = 0; n < 120; n++){ M.mv.f = 1; visuals(1 / 30); } M.mv.f = 0; o.debut = M.dist;
+      // Zombie derrière le robot : il fait demi-tour et l'attaque
+      var z = __t.placer('walker', M.x, -5.5 + 9); z.speed = 2.5; var b0 = S.bar, z0 = z.g.position.z;
+      for (var t = 0; t < 30 * 8; t++) visuals(1 / 30);
+      o.zr = z.g.position.z < z0 - 3; o.tourne = Math.abs(z.g.rotation.y - Math.PI) < .01; o.st = z.st; o.coups = b0 - S.bar;
+      // En avançant, ceux qui attaquent de face restent devant
+      clearZombies(); __game.setAim(0, -.2); var f = __t.placer('walker', M.x, -10); f.st = 'attack'; var fz = f.g.position.z;
+      M.mv.f = 1; for (var q = 0; q < 30; q++) visuals(1 / 30); M.mv.f = 0; o.devant = f.g.position.z < -5.5 && Math.abs(f.g.position.z - fz) < 1;
+      return o;
+    });
+    J(function(){ __mech.mechQuit(); });
+    ok(r.avant > 8, 'Avance : ' + r.avant);
+    ok(r.retour < r.avant - 3, 'Demi-tour puis marche : la distance doit baisser (' + r.avant.toFixed(1) + ' -> ' + r.retour.toFixed(1) + ')');
+    ok(Math.abs(r.debut) < 1e-9, 'On ne recule pas avant le début de la rue : ' + r.debut);
+    ok(r.zr && r.tourne, 'Le zombie derrière doit faire demi-tour et revenir vers le robot');
+    egal(r.st, 'attack', 'Il attaque le robot par derrière'); ok(r.coups > 0, 'Coups reçus par derrière');
+    ok(r.devant, 'Un zombie qui attaque de face reste devant quand le robot avance');
+  });
+
+  test('Robot : sur cell, glisser pour viser tire en même temps (réglable)', () => {
+    exiger(); reset();
+    const r = J(function(){
+      __mech.mechStart(); var M = __mech.MECH, o = {}; plan.queue = []; spawnT = 1e9; clearZombies();
+      M.autoFire = true; M.aim.id = 7; for (var i = 0; i < 45; i++) visuals(1 / 30); o.chaleur = M.heat; M.aim.id = null;
+      M.heat = 0; M.autoFire = false; M.aim.id = 7; for (var k = 0; k < 45; k++) visuals(1 / 30); o.coupe = M.heat; M.aim.id = null; M.autoFire = true;
+      __mech.mechQuit(); return o;
+    });
+    ok(r.chaleur > 0, 'Viser au doigt fait tirer l’arme du bras gauche');
+    egal(r.coupe, 0, 'Réglage coupé : viser ne tire pas');
+  });
+
+  test('Robot : nouvelles armes achetées et équipées au garage, chacune blesse les zombies', () => {
+    exiger(); reset();
+    const r = J(function(){
+      var o = { achats: {}, degats: {}, vis: {} }; P.mech.unlocked = true; P.scrap = 1e6;
+      ['flamer', 'laser', 'gl', 'arc', 'railgun'].forEach(function(id){ o.achats[id] = __mech.mechWeapon(id); });
+      o.paye = P.scrap < 1e6; o.sauve = JSON.parse(localStorage.getItem('dt_prof')).mech.own.railgun === true;
+      [['minigun', 'rocket'], ['flamer', 'gl'], ['laser', 'arc'], ['laser', 'railgun']].forEach(function(pair){
+        __mech.mechWeapon(pair[0]); __mech.mechWeapon(pair[1]);
+        __mech.mechStart(); var M = __mech.MECH; plan.queue = []; spawnT = 1e9; clearZombies();
+        o.vis[pair.join('+')] = __mech.mechArmsG[pair[0]].visible && __mech.mechArmsG[pair[1]].visible && Object.keys(__mech.mechArmsG).filter(function(k){ return __mech.mechArmsG[k].visible; }).length === 2;
+        var z = __t.placer('walker', 0, -22); z.hp = z.maxHp = 1e8; z.speed = 0; var z2 = __t.placer('walker', 2, -24); z2.hp = z2.maxHp = 1e8; z2.speed = 0;
+        visuals(1 / 30); camera.lookAt(0, 1.2, -22); var e = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ'); __game.setAim(e.y, e.x);
+        M.mini = true; for (var i = 0; i < 40; i++) visuals(1 / 30); M.mini = false;
+        o.degats[pair[0]] = Math.max(o.degats[pair[0]] || 0, 1e8 - z.hp); var h = z.hp + z2.hp;
+        M.rocket = true; for (var k = 0; k < 6; k++){ M.rcd = 0; visuals(1 / 30); } M.rocket = false;
+        for (var n = 0; n < 45; n++) visuals(1 / 30);
+        o.degats[pair[1]] = h - (z.hp + z2.hp);
+        __mech.mechQuit();
+      });
+      return o;
+    });
+    Object.keys(r.achats).forEach(id => ok(r.achats[id], id + ' : achat refusé'));
+    ok(r.paye && r.sauve, 'Armes payées en ferraille et sauvegardées');
+    Object.keys(r.vis).forEach(k => ok(r.vis[k], k + ' : les bonnes armes doivent se voir sur les bras'));
+    Object.keys(r.degats).forEach(id => ok(r.degats[id] > 0, id + ' : aucun dégât'));
+  });
+})();

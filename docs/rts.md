@@ -7,7 +7,8 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | Fichier | Contenu |
 |---------|---------|
 | `js/41-rts.js` | Données (unités, bâtiments, améliorations, boss, réglages `RTS_CFG`), modèles 3D, vallée (sable, montagnes, route, ruines, épaves) |
-| `js/42-rts-unites.js` | Unités, bâtiments, nids, début et fin de partie, zombies (route, cibles, boss), IA des unités, boucle `rtsStep` |
+| `js/42-rts-unites.js` | Unités, bâtiments, nids, début et fin de partie |
+| `js/42-rts-combat.js` | Zombies (route, cibles, boss), combat et IA des unités, boucle `rtsStep` |
 | `js/43-rts-pilotage.js` | Pilotage à la première personne de n'importe quelle unité, tourelles et mortier contrôlés, vue du canonnier de l'AC-130 |
 | `js/44-rts-interface.js` | Menus du bas (onglets, menu repliable), panneaux, pose des bâtiments sur quadrillage, commandes (souris, clavier, doigt), inscription du mode (`Jeu.mode('rts')`) |
 | `js/45-rts-sauvegarde.js` | Partie en cours gardée toutes les 30 s, à la pause et quand le cell met le jeu de côté ; reprise par « Continuer la guerre » |

@@ -21,6 +21,8 @@
 | 60 à 89 | Prochains gros modes (une dizaine chacun) |
 | 90 | `90-branchements.js` : branche le registre des modes sur le jeu commun. Toujours le dernier. |
 
+Un fichier coupé garde son numéro : `04-arme-en-main`, `04-arme-modeles`, `04-arme-anim` se chargent dans l'ordre de `index.html` (c'est cet ordre qui compte, pas l'ordre alphabétique).
+
 Un gros ajout prend sa propre dizaine, même s'il n'a besoin que de 2 ou 3 fichiers au départ : il pourra grandir sans renuméroter. Un fichier ne doit pas dépasser environ 700 lignes : au-delà, le couper par thème (comme le RTS : données, unités, pilotage, interface).
 
 ## Registre des modes (`Jeu`, dans `js/00-base.js`)
@@ -52,7 +54,7 @@ Les fichiers 04 à 38 se branchent encore par **réaffectation** : `const _b = v
 
 Les `catch (e) {}` sont devenus `catch (e) { errNote(e); }` (tâche 70) : une erreur de programmation n'est plus avalée en silence, elle va dans `JOURNAL` (`js/00-base.js`) et `tests/t-journal.js` la signale.
 
-Règle : **pas de nouveau crochet par réaffectation pour un mode**. Utiliser `Jeu.mode` et `Jeu.on`. On convertit les vieux crochets petit à petit, quand on touche le fichier, avec les tests comme filet. Les crochets qui changent un calcul (ex. le robot qui multiplie `damage`, ou `hitBarricade`) restent des réaffectations pour l'instant.
+Règle : **pas de nouveau crochet par réaffectation pour un mode**. Utiliser `Jeu.mode` et `Jeu.on`. Déjà convertis à `Jeu.on('image')` : repères (29), rendu (36), bruitages (37). On convertit les autres petit à petit, quand on touche le fichier, avec les tests comme filet. Les crochets qui changent un calcul (ex. le robot qui multiplie `damage`, ou `hitBarricade`) restent des réaffectations pour l'instant.
 
 ## Ajouter un nouveau mode : liste à suivre
 1. Choisir une dizaine libre (ex. 60 à 69) et créer `js/50-nom.js` (données, modèles), puis d'autres fichiers au besoin.

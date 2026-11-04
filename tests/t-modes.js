@@ -44,14 +44,16 @@
     exiger();
     const r = J(function(){
       var vu = [], f1 = function(){ throw new Error('exprès'); }, f2 = function(a, b){ vu.push(a + b); };
-      var ce = console.error; console.error = function(){};
+      var ce = console.error, cw = console.warn, n0 = JOURNAL.length; console.error = console.warn = function(){};
       __jeu.on('essai', f1); __jeu.on('essai', f2); __jeu.emit('essai', 2, 3);
+      var noteJ = JOURNAL.length > n0; JOURNAL.splice(n0); console.warn = cw; // l'erreur exprès est notée dans le journal, puis retirée
       __jeu.off('essai', f1); __jeu.off('essai', f2); __jeu.emit('essai', 1, 1);
       console.error = ce;
       var img = 0, fi = function(){ img++; }; __jeu.on('image', fi); visuals(1 / 30); __jeu.off('image', fi);
-      return { vu: vu.join(','), img: img };
+      return { vu: vu.join(','), img: img, noteJ: noteJ };
     });
     egal(r.vu, '5', 'Écouteurs appelés');
     egal(r.img, 1, 'L’événement image passe à chaque image');
+    ok(r.noteJ, 'L’erreur d’un écouteur est notée dans le journal');
   });
 })();

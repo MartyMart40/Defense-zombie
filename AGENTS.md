@@ -30,7 +30,7 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 01 son | Sons et musique (`Snd`) |
 | 02 villes | Les 5 villes (`LOCS`) |
 | 03 scène | Scène, caméra, rendu, décor de la rue (`buildWorld`) |
-| 04 arme en main | Modèles des armes tenues |
+| 04 arme en main, modèles, anim | Arme tenue : base et mains (`04-arme-en-main`), les 8 modèles (`04-arme-modeles`), douilles et animations (`04-arme-anim`) |
 | 05 particules | Particules |
 | 06 données | Armes, améliorations, difficulté (`WEAPONS`, `WUPG`, `CITY_SCALE`) |
 | 07 zombies | Zombies de base, apparition, `damage`, `kill` |
@@ -44,14 +44,14 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 20 armes, 34 arsenal | Armes spéciales, armes lourdes et accessoires |
 | 21 pouvoirs | Grenade, molotov, frappe aérienne |
 | 22 ambiance, 36 rendu | Météo, musique, qualité graphique |
-| 23 rue, 24 compagnon | Barils, caisses, civils, survivants tireurs ; compagnons |
+| 23 rue, 23 survivants, 24 compagnon | Barils, caisses, civils (`23-rue`) ; survivants tireurs (`23-survivants`) ; compagnons |
 | 25 défi, 26 combos, 28 infini, 30 missions | Défi du jour, combos, mode infini, succès et missions |
 | 27 perf | Rendu des foules, images par seconde |
 | 29 repères, 31 punch, 33 écritures | Repères sans son, ralenti et chiffres, textes à gauche |
 | 32 sauvegarde | Sauvegarde dans un fichier |
 | 37 bruitages, 38 vibrations | Sons placés, vibrations du cell |
 | 39 à 40 | Mode robot (`docs/robot.md`) |
-| 41 à 44 | Mode RTS (`docs/rts.md`) |
+| 41 à 44 | Mode RTS (`docs/rts.md`) : 41 données et vallée, 42 unités et partie, 42-rts-combat zombies, IA et boucle, 43 pilotage, 44 interface |
 | 45 sauvegarde RTS | Partie RTS en cours gardée (dt_rts_partie), bouton « Continuer la guerre » |
 | 46 application | Jeu installable (avec `manifest.webmanifest`, `sw.js`, `icones/`) : plein écran, marche sans réseau |
 | 47 astuces RTS | Bulles d'astuces des premières parties RTS, une fois chacune (dt_rts_astuces) |

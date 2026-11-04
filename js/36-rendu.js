@@ -267,7 +267,7 @@ function gfxBtn(){
 })();
 
 /* ---------- Crochets ---------- */
-try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); try { gfxStep(dt || 0); } catch (e) { errNote(e); } return r; }; } catch (e) { errNote(e); }
+Jeu.on('image', dt => gfxStep(dt || 0)); // chaque image (registre, js/00-base.js)
 try { const _b = buildWorld; buildWorld = function(){ const r = _b.apply(this, arguments); gfxPlacePuddles(); gfxPlaceDebris(); gfxPlaceHalos(); GFX.wet = 0; gfxSmoke.forEach(o => { o.s.visible = false; o.life = 0; }); return r; }; } catch (e) { errNote(e); }
 // Explosions : un panache de fumée noire
 try { if (typeof rueBoom === 'function'){ const _b = rueBoom; rueBoom = function(x, y, z, size){ const r = _b.apply(this, arguments); if (size >= 10) gfxBoomSmoke(x, y, z, size / 3); return r; }; } } catch (e) { errNote(e); }

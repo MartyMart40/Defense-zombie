@@ -244,7 +244,7 @@ function rpSetSubs(on){ RP.subs = !!on; store.set('dt_subs', RP.subs); if (!RP.s
 
 /* ---------- Enveloppes (sans changer les sons ni les règles) ---------- */
 const rpName = z => { const T = z && ZTYPES[z.type]; return (T && T.name ? T.name : 'zombie').toLowerCase(); };
-try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); try { rpFrame(dt); } catch (e) { errNote(e); } return r; }; } catch (e) { errNote(e); }
+Jeu.on('image', dt => rpFrame(dt)); // chaque image (registre, js/00-base.js)
 // Coups sur la barricade (zombies ordinaires, colosse, volant)
 try {
   const _b = hitBarricade;

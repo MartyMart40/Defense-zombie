@@ -141,7 +141,7 @@ try {
     vmEject = function(id){ const r = _e.apply(this, arguments); const ud = VMS[id] && VMS[id].userData; if (ud && ud.eject && (id !== 'minigun' || Math.random() < .5)) brTink(ud.shell || 0); return r; };
   }
 } catch (e) { errNote(e); }
-try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); try { brHorde(dt || 0); brCreak(dt || 0); } catch (e) { errNote(e); } return r; }; } catch (e) { errNote(e); }
+Jeu.on('image', dt => { brHorde(dt || 0); brCreak(dt || 0); }); // chaque image (registre, js/00-base.js)
 
 // Accès pour les tests automatiques
 window.__br = { BR, brSpot, brTink, brKill, brHorde, brCreak };

@@ -62,6 +62,6 @@ const Jeu = {
   off(evt, fn){ const l = this.ecoute[evt]; if (l){ const i = l.indexOf(fn); if (i >= 0) l.splice(i, 1); } },
   emit(evt, a, b, c){
     const l = this.ecoute[evt]; if (!l || !l.length) return;
-    for (const f of l.slice()){ try { f(a, b, c); } catch (e) { if (typeof console === 'object') console.error('Jeu.emit(' + evt + ')', e); } }
+    for (const f of l.slice()){ try { f(a, b, c); } catch (e) { errNote(e, 'Jeu.on ' + evt); } }
   }
 };

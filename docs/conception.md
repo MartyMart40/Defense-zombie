@@ -42,3 +42,5 @@ Je suis dans ma fenêtre de bunker ou sur un toit d'immeuble barricadé et je ti
 - Robot de combat : débloqué en tombant au mode infini. Fiche : `docs/robot.md`.
 - Guerre des robots (RTS) : sur l'écran titre, sans condition. Fiche : `docs/rts.md`.
 - Écran titre : Jouer, Robot de combat et Guerre des robots en haut ; l'aide des commandes est repliée sous « Comment jouer ».
+- Tutoriel (2026-11-04, Martin : « seulement si on veut, et on peut le passer ») : proposé une seule fois à un nouveau joueur, jamais à un joueur qui a déjà joué ; « Revoir le tutoriel » dans Comment jouer.
+- Armes (2026-11-04, Martin) : une arme neuve repart à zéro pour ses propres améliorations, mais elle est plus forte au départ ; les améliorations générales (dégâts, recharge, chargeurs, barricade) restent. Leur force est un autre dossier, à voir.

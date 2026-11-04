@@ -17,7 +17,7 @@
 | 39 à 40 | Mode robot |
 | 41 à 44 | Mode RTS « Guerre des robots » |
 | 45 à 49 | Petits ajouts : 45 sauvegarde de la partie RTS, 46 application installable, 47 astuces du RTS, 48 liste des unités du RTS, 49 commandement du RTS (plage pleine) |
-| 50 à 59 | Ajouts généraux : 50 sauvegarde du robot, 51 succès du robot et du RTS, 52 statistiques à vie ; 53 à 59 libres |
+| 50 à 59 | Ajouts généraux : 50 sauvegarde du robot, 51 succès du robot et du RTS, 52 statistiques à vie, 53 tutoriel du toit ; 54 à 59 libres |
 | 60 à 89 | Prochains gros modes (une dizaine chacun) |
 | 90 | `90-branchements.js` : branche le registre des modes sur le jeu commun. Toujours le dernier. |
 

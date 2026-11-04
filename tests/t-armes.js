@@ -95,12 +95,13 @@
       equip('rocket');
       var f = __t.placer('flyer', 0, -30); f.g.position.y = f.alt || 7; f.speed = 0; f.g.updateMatrixWorld(true);
       var y = f.g.position.y, hp = f.hp;
-      __t.viser(f, false); cool = 0; fire();
-      __t.sim(3, 1 / 30, function(){ return !__armes.ARM.rockets.some(function(o){ return o.m.visible; }); });
-      return { y: y, touche: f.dead || f.hp < hp };
+      __t.viser(f, false); cool = 0; var tir = fire();
+      var dmin = 1e9, vis0 = __armes.ARM.rockets.filter(function(o){ return o.m.visible; }).length, pos = [];
+      __t.sim(3, 1 / 30, function(){ __armes.ARM.rockets.forEach(function(o){ if (o.m.visible){ var d = o.m.position.distanceTo(f.g.position); if (d < dmin) dmin = d; } }); return !__armes.ARM.rockets.some(function(o){ return o.m.visible; }); });
+      return { y: y, touche: f.dead || f.hp < hp, dbg: { tir: tir, vis0: vis0, dmin: dmin, fy: f.g.position.y, fz: f.g.position.z, st: f.st, state: state, amb: __amb.weather, nz: zombies.length, cam: camera.position.toArray().map(function(v){ return +v.toFixed(2); }), hits: hitMeshes.length, acc: JSON.stringify(S.acc || {}), cur: S.cur } };
     });
     ok(r.y > 3, 'Le volant devrait être en hauteur (y = ' + r.y + ')');
-    ok(r.touche, 'Le volant n’a pas été touché par la roquette');
+    ok(r.touche, 'Le volant n’a pas été touché par la roquette ' + JSON.stringify(r.dbg));
   });
 
   test('Armes : le carreau d’arbalète traverse plusieurs zombies', () => {

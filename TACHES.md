@@ -84,6 +84,7 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 - Mesurer les vraies images/s : ouvrir tests/perf.html sur l'ordi et le cell de Martin.
 - Test du mitrailleur parfois instable (90 % de précision au hasard).
+- Test « la roquette touche un volant en hauteur » : échoue environ 1 fois sur 6 séries complètes, jamais seul ; le message d'échec donne maintenant la distance la plus courte entre la roquette et le volant pour trouver la cause.
 
 - Infini : un joueur devrait céder vers les vagues 25 à 35 (dégâts +12 % par niveau contre zombies +10 % composés). À confirmer en jouant.
 - Succès : environ 760 ferrailles d'un coup à la première victoire de Saint-Clou. À baisser si trop.

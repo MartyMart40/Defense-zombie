@@ -13,6 +13,7 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | `js/44-rts-interface.js` | Menus du bas (onglets, menu repliable), panneaux, pose des bâtiments sur quadrillage, commandes (souris, clavier, doigt), inscription du mode (`Jeu.mode('rts')`) |
 | `js/45-rts-sauvegarde.js` | Partie en cours gardée toutes les 30 s, à la pause et quand le cell met le jeu de côté ; reprise par « Continuer la guerre » |
 | `js/47-rts-astuces.js` | Astuces des premières parties : une bulle à la fois, au bon moment, une fois chacune ; « Plus d’astuces » les coupe, la pause permet de les revoir |
+| `js/54-rts-postes.js` | Postes de pilotage (ce qu'on voit quand on pilote un véhicule), munitions des avions et retour à l'aérodrome, 2 avions par aérodrome |
 | `js/48-rts-liste.js` | Choisir les unités une par une : rangée « Unités » (pastilles avec la vie), Tab pour la suivante, double-clic pour le même type ; groupes enregistrés (5 au plus) |
 | `js/49-rts-commandement.js` | Mini-carte (toucher pour y aller), point de ralliement, alerte « Base attaquée », « ✋ Tenir » (u.hold), mode photo (dans la pause) |
 | `tests/t-rts.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js` | Tests |
@@ -35,7 +36,7 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | Mech lourd | 1 500 $ | Usine lourde |
 | Mech de combat | 6 000 $ | Usine lourde |
 | Tank | 1 800 $ | Garage de blindés |
-| Hélicoptère | 2 200 $ | Héliport |
+| Apache | 2 200 $ | Héliport |
 | Chasseur | 3 000 $ | Aérodrome |
 | Warthog | 3 800 $ | Aérodrome |
 | AC-130 | 4 500 $ | Aérodrome |
@@ -44,6 +45,13 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 Usine de robots 500 $, usine lourde 1 200 $, garage de blindés 1 500 $, héliport 1 800 $, aérodrome 3 000 $, récupérateur 400 $, atelier de réparation 700 $, barricade 60 $. Tourelles : mitrailleuse 250 $, lance-flammes 400 $, canon 450 $, mortier 600 $, Tesla 700 $ (6 niveaux chacune).
 
 Les prix exacts sont dans `RTS_UNITS` et `RTS_BLD` (`js/41-rts.js`) : si un chiffre change dans le code, changer ce tableau aussi.
+
+## Véhicules et postes de pilotage (2026-11-04, demande de Martin : « chaque arme représentative de la vraie vie »)
+- Tank : canon de 120 mm, un obus toutes les 3 s, 560 dégâts, grosse explosion ; mitrailleuse coaxiale en amélioration. Poste : le gros canon devant soi, qui recule à chaque tir.
+- Apache (l'hélicoptère) : canon rotatif de 30 mm sous le nez et missiles Hellfire dès l'achat (les améliorations les renforcent), roquettes Hydra. Poste : vue du casque, verrière, écrans, canon qui tourne quand il tire, Hellfire sur les ailettes qui disparaissent quand ils partent.
+- Chasseur : canon de 20 mm (75 dégâts, 10 coups/s), 200 obus ; Warthog : canon de 30 mm, 660 obus. AC-130 : 100 obus de 40 mm et 20 de 105 mm. À sec, l'avion retourne à l'aérodrome le plus proche refaire le plein (3 à 6 s au-dessus). Piloté : on y retourne soi-même, le viseur donne la distance.
+- 2 avions par aérodrome : pour plus d'avions, il faut plus d'aérodromes.
+- AC-130 : 3 postes. Tirer le 40 mm amène à son poste (caméra noir et blanc), tirer le 105 mm au sien (thermique « blanc chaud », plus de zoom), le bouton « Vue » (touche V) passe aussi au cockpit. Le 105 mm : 1 100 dégâts, zone de 11 m, grosse boule de feu, fumée et secousse.
 
 ## Décisions prises
 - Groupes enregistrés : « ＋ Groupe » enregistre les unités choisies, « G1 »... les choisit (retoucher : la caméra y va), appui long ou clic droit : remplacer (ou supprimer sans choix). Ordi : Ctrl+1 à 5 enregistre, Maj+1 à 5 rappelle ; les chiffres seuls achètent toujours des robots. Gardés dans la sauvegarde.

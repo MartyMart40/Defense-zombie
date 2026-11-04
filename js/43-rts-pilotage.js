@@ -14,7 +14,7 @@ function rtsPilot(u){
   rtsInfo.classList.add('hide');
   document.body.classList.add('piloting'); rtsUI.classList.add('piloting'); rtsPilotUI.classList.remove('hide'); rtsPilotUI.classList.toggle('touch', isTouch); $('cross').classList.remove('hide');
   $('rtrpName').textContent = '🎮 ' + u.U.name;
-  rtsPilotUI.classList.toggle('w2', !!u.U.w2); $('rtrpFire').textContent = u.U.w1 || 'Tir'; $('rtrpFire2').textContent = u.U.w2 ? u.U.w2.name : '';
+  rtsPilotUI.classList.toggle('w2', !!u.U.w2 || !!u.U.w2n); $('rtrpFire').textContent = u.U.w1 || 'Tir'; $('rtrpFire2').textContent = u.U.w2 ? u.U.w2.name : (u.U.w2n || '');
   rtsPilotUI.classList.toggle('ac', !!u.U.gunship);
   if (u.U.gunship){
     const c = u.oc || [u.g.position.x, u.g.position.z - 30]; RTS.acC = { x:c[0], z:c[1] };
@@ -23,6 +23,7 @@ function rtsPilot(u){
     RTS.fov0 = camera.fov; camera.fov = 38; camera.updateProjectionMatrix(); canvas.classList.add('rt-ac');
   }
   rtsPilotUI.classList.toggle('rp-mech', !!u.U.big);
+  if (typeof rtsPosteOn === 'function') rtsPosteOn(u); // poste de pilotage (js/54-rts-postes.js)
   if (!isTouch && typeof lockPointer === 'function') lockPointer();
   return true;
 }
@@ -74,6 +75,7 @@ function rtsTurretCam(){
 }
 function rtsUnpilot(){
   const u = RTS.pilot; RTS.pilot = null;
+  if (typeof rtsPosteOff === 'function') rtsPosteOff();
   if (u && u.B){ // c'était une tourelle
     if (RTS.mortRing){ scene.remove(RTS.mortRing); RTS.mortRing.geometry.dispose(); RTS.mortRing = null; }
     rtsPilotUI.classList.remove('tur');
@@ -105,6 +107,7 @@ function rtsPilotStep(dt){
   const U = u.U, gp = u.g.position, spd = rtsStat(u, 'speed');
   P2.pitch = clamp(P2.pitch, -1.2, .5);
   const fwdIn = clamp(P2.mv.f - P2.mv.b - P2.joy.dy, -1, 1), sideIn = clamp(P2.mv.r - P2.mv.l + P2.joy.dx, -1, 1);
+  if (U.kind === 'air' && typeof rtsRearmPilot === 'function') rtsRearmPilot(u, dt); // plein au-dessus d'un aérodrome
   if (U.gunship){
     const C = RTS.acC, sy = Math.sin(P2.yaw), cy = Math.cos(P2.yaw), mv = 14 * dt;
     C.x += (-sy * fwdIn + cy * sideIn) * mv; C.z += (-cy * fwdIn - sy * sideIn) * mv;
@@ -133,8 +136,9 @@ function rtsPilotStep(dt){
   const firing = P2.fire || (isTouch && P2.aim.id !== null);
   const trig = (P2.fire || (isTouch && P2.aim.id !== null)) ? true : null;
   if (U.gunship || u.type === 'tank' || u.type === 'heli') rtsGat(u, dt, trig, true);
-  if (u.type === 'heli') rtsHellfire(u, dt, P2.fire2 || trig ? true : null, true);
-  if (U.gunship && P2.fire2 && u.cd2 <= 0){ u.cd2 = 1 / rtsRate2(u); rtsPilotShot(u, rtsS2b(u)); shake = Math.max(shake, .25); }
+  if (U.gunship && (firing || P2.fire2) && typeof rtsPosteSet === 'function') rtsPosteSet(P2.fire2 ? 'c105' : 'c40'); // AC-130 : le poste de l'arme qui tire
+  if (u.type === 'heli') rtsHellfire(u, dt, P2.fire2 ? true : null, true); // Apache : Hellfire sur le 2e bouton
+  if (U.gunship && P2.fire2 && u.cd2 <= 0 && (typeof rtsAmmoUse !== 'function' || rtsAmmoUse(u, 'w2'))){ u.cd2 = 1 / rtsRate2(u); rtsPilotShot(u, rtsS2b(u)); shake = Math.max(shake, .25); if (typeof rtsPosteShot === 'function') rtsPosteShot(u, 'w2'); }
   if (U.big){ // minigun : elle monte en régime avant de tirer, avec le vrai son continu du mode robot
     RTS.spin = clamp(RTS.spin + (firing ? dt / .35 : -dt / .8), 0, 1);
     try { if (typeof Snd === 'object' && Snd.mgTick) Snd.mgTick(RTS.spin, firing && RTS.spin >= 1); } catch (e) { errNote(e); }
@@ -142,7 +146,9 @@ function rtsPilotStep(dt){
     if (firing && RTS.spin < 1) return;
   }
   if (!firing || u.cd > 0) return;
+  if (U.kind === 'air' && typeof rtsAmmoUse === 'function' && !rtsAmmoUse(u, 'w1')) return; // à sec : retour à l'aérodrome
   u.cd = 1 / rtsStat(u, 'rate');
+  if (typeof rtsPosteShot === 'function') rtsPosteShot(u, 'w1');
   const S2 = rtsS2(u);
   if (U.bomb){ rtsHit(rtsMuzzle(u, new THREE.Vector3()), { x:gp.x + rand(-1, 1), z:gp.z + rand(-1, 1) }, 'pt', S2); return; }
   if (U.gunship){ rtsPilotShot(u, S2); return; }
@@ -183,4 +189,5 @@ function rtsPilotCam(){
   const ey = U.gunship ? gp.y + RTS_EYE.gun : U.big ? RTS_EYE.big + Math.sin(u.step * 2) * .09 : (U.kind === 'ground' ? RTS_EYE[cat] * (cat === 'rob' ? RTS_SC * (u.type === 'heavy' ? 1.5 : 1) : 1) : gp.y + RTS_EYE[cat]) + bob;
   camera.position.set(gp.x - Math.sin(P2.yaw) * .4, ey, gp.z - Math.cos(P2.yaw) * .4);
   camera.rotation.order = 'YXZ'; camera.rotation.set(P2.pitch, P2.yaw, U.gunship ? 0 : U.kind === 'air' ? u.g.rotation.z * .5 : 0);
+  if (U.gunship && typeof rtsPosteCam === 'function') rtsPosteCam(u); // AC-130 au cockpit
 }

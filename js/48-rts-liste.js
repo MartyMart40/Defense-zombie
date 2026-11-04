@@ -11,7 +11,7 @@
 
 const RTS_ICON = { rob:'🤖', veh:'🛡' };
 const RTS_KIND_ICON = { heli:'🚁', air:'✈' };
-const RTS_SHORT = { rifle:'Fantassin', gunner:'Mitrailleur', sniper:'Tireur', flamebot:'Flammes', rocket:'Roquettes', heavy:'Mech lourd', mech:'Mech', tank:'Tank', heli:'Hélico', jet:'Chasseur', warthog:'Warthog', bomber:'AC-130' };
+const RTS_SHORT = { rifle:'Fantassin', gunner:'Mitrailleur', sniper:'Tireur', flamebot:'Flammes', rocket:'Roquettes', heavy:'Mech lourd', mech:'Mech', tank:'Tank', heli:'Apache', jet:'Chasseur', warthog:'Warthog', bomber:'AC-130' };
 const rtsIds = new WeakMap(); let rtsIdN = 0;
 const rtsId = u => { let i = rtsIds.get(u); if (!i){ i = ++rtsIdN; rtsIds.set(u, i); } return i; };
 const rtsIcon = u => RTS_KIND_ICON[u.U.kind] || RTS_ICON[u.U.cat] || '🤖';

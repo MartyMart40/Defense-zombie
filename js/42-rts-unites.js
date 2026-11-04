@@ -16,7 +16,7 @@ function rtsSpawnUnit(type, x, z){
   g.position.set(x, ground ? 0 : U.alt, z); if (robot) g.scale.setScalar(RTS_SC); rtsRoot.add(g);
   const m = new THREE.Mesh(rtsUnitGeo(type), rtsMat); g.add(m);
   let rotor = null;
-  if (type === 'heli'){ rotor = new THREE.Mesh(rtsRotorGeo(true), rtsMat); rotor.position.set(0, 1.3, .6); g.add(rotor); const tr = new THREE.Mesh(rtsRotorGeo(false), rtsMat); tr.rotation.z = Math.PI / 2; tr.position.set(.25, .9, -4.6); g.add(tr); g.userData.tail = tr; }
+  if (type === 'heli'){ rotor = new THREE.Mesh(rtsRotorGeo(true), rtsMat); rotor.position.set(0, 1.3, .4); g.add(rotor); const tr = new THREE.Mesh(rtsRotorGeo(false), rtsMat); tr.rotation.z = Math.PI / 2; tr.position.set(.25, 1.0, -5.6); g.add(tr); g.userData.tail = tr; }
   if (type === 'bomber'){ // 4 hélices et leur disque flou
     g.userData.props = [];
     for (const sd of [-1, 1]) for (const x of [3.6, 7.2]){
@@ -72,6 +72,7 @@ function rtsBuy(type){
   rtsCancelPlace();
   const f = rtsFactoryFor(type);
   if (!f){ if (typeof toast === 'function') toast('Construis d’abord ' + RTS_FAC_NAME[U.fac]); return null; }
+  if (U.kind === 'air' && typeof rtsAirRoom === 'function' && rtsAirRoom() <= 0){ if (typeof toast === 'function') toast('Aérodromes pleins : 2 avions par aérodrome, construis-en un autre'); return null; }
   if (S.money < U.cost){ if (typeof toast === 'function') toast('Pas assez d’argent pour : ' + U.name + ' (' + fmt(U.cost) + ')'); return null; }
   if (RTS.units.filter(u => !u.dead).length >= RTS_CFG.maxUnits){ if (typeof toast === 'function') toast('Plein : ' + RTS_CFG.maxUnits + ' unités au plus'); return null; }
   S.money -= U.cost;

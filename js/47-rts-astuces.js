@@ -38,7 +38,7 @@ const RTS_TIPS = [
     cell:'Manette à gauche pour bouger, glisse à droite pour viser, bouton Tir pour tirer. « Retour à la carte » en haut.',
     ordi:'ZQSD pour bouger, la souris pour viser, clic pour tirer (clic droit : arme lourde). F ou Échap : retour à la carte.' },
   { id:'blindes', cond: R => R.t > 150 && rtsTipBld('heavyfac') && !rtsTipBld('vehdepot') && !rtsTipBld('airfield'),
-    txt:'Plus tard : Garage de blindés (tank), Héliport (hélicoptère) et Aérodrome (chasseur, Warthog, AC-130). Onglet Améliorations pour rendre tes unités plus fortes.' },
+    txt:'Plus tard : Garage de blindés (tank), Héliport (hélicoptère) et Aérodrome (chasseur, Warthog, AC-130 ; 2 avions par aérodrome). Onglet Améliorations pour rendre tes unités plus fortes.' },
   { id:'sauve', cond: R => R.t > 100,
     txt:'La partie se sauve toute seule. Pause, puis « Sauver et quitter » : tu la reprendras avec « Continuer la guerre ».' }
 ];

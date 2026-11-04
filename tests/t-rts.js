@@ -53,6 +53,7 @@
       eval(c); var R = calme(), o = {}; S.money = 1e6; R.baseR = 70;
       o.sans = __rts.rtsBuy('tank') === null && __rts.rtsBuy('jet') === null;
       o.bats = ['vehdepot', 'heliport', 'airfield'].map(function(t, i){ return !!__rts.rtsBuild(t, [20, -20, 25][i], [10, 12, -25][i]); });
+      o.bats.push(!!__rts.rtsBuild('airfield', -28, -22, 0)); // 2 avions par aérodrome : il en faut 2 pour 3 avions
       var U = {}; ['sniper', 'flamebot', 'tank', 'heli', 'jet', 'warthog', 'bomber'].forEach(function(t){ U[t] = __rts.rtsBuy(t); });
       o.tous = Object.keys(U).filter(function(k){ return !!U[k]; }).join(',');
       for (var i = 0; i < 60; i++) visuals(1 / 30);
@@ -69,7 +70,7 @@
       return o;
     }, calme);
     fin();
-    ok(r.sans, 'Refus sans garage ni aérodrome'); egal(r.bats.join(','), 'true,true,true', 'Garage, héliport et aérodrome');
+    ok(r.sans, 'Refus sans garage ni aérodrome'); egal(r.bats.join(','), 'true,true,true,true', 'Garage, héliport et deux aérodromes');
     egal(r.tous, 'sniper,flamebot,tank,heli,jet,warthog,bomber', 'Toutes les nouvelles unités'); ok(r.vol, 'Les appareils volent'); ok(r.avance, 'Le chasseur ne s’arrête jamais');
     ok(r.tankSol, 'Le tank roule au sol'); ok(r.upTank && r.upAvion, 'Améliorations des véhicules et des avions');
     ok(r.ignore, 'Les zombies au sol ignorent l’hélicoptère'); ok(r.vise, 'Les volants s’en prennent à l’hélicoptère ' + r.dbg);

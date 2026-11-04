@@ -140,7 +140,11 @@ function rtsBlast(x, z, S2){
   if (S2.burn) burst(rtsV.set(x, .6, z), PMATS.ember ? 'ember' : 'dust', 10, 3);
   for (const n of RTS.nests){ if (n.dead) continue; if (Math.hypot(n.x - x, n.z - z) < S2.splash + n.r){ n.hp -= S2.dmg * .8; rtsHpSet(n.hpb, n.hp / n.maxHp); if (n.hp <= 0) rtsNestDie(n); } }
   if (typeof rueBoom === 'function') rueBoom(x, 1.2, z, S2.splash * 2.4);
-  if (typeof Snd === 'object' && Snd.boom && Math.random() < .5) Snd.boom(S2.bomb ? 1 : .45);
+  if (S2.big){ // obus de 105 mm : grosse boule de feu, colonne de fumée, la terre tremble
+    if (typeof rueBoom === 'function'){ rueBoom(x, 4, z, S2.splash * 3.2); rueBoom(x, 9, z, S2.splash * 1.8); }
+    burst(rtsV.set(x, 1, z), 'dust', 40, 10); if (typeof gfxBoomSmoke === 'function') gfxBoomSmoke(x, 2, z, S2.splash * .8);
+    shake = Math.max(shake, RTS.pilot ? .9 : .5); if (typeof Snd === 'object' && Snd.boom) Snd.boom(2.4);
+  } else if (typeof Snd === 'object' && Snd.boom && Math.random() < .5) Snd.boom(S2.bomb ? 1 : .45);
 }
 // En pilotage, une traînée qui passe à moins de 2,5 m des yeux boucherait tout l'écran : on ne la dessine pas
 function rtsBeamOk(a, b){
@@ -212,19 +216,19 @@ function rtsNestDie(n){
 const rtsS2 = u => ({ dmg:rtsStat(u, 'dmg'), snd:u.U.snd, beam:u.U.beam, pierce:u.U.pierce, splash:u.U.splash && u.U.splash * (1 + .1 * rtsLv(u.type, 'sensor') + .25 * rtsLv(u.type, 'he')), pierce2:rtsLv(u.type, 'apfsds') > 0, flame:u.U.flame, bomb:u.U.bomb, range:rtsStat(u, 'range') });
 const rtsMuzzle = (u, out) => { const p = u.g.position; return out.set(p.x, u.U.big ? 5.2 : u.U.kind === 'ground' ? (u.U.cat === 'rob' ? (u.type === 'heavy' ? 3.4 : 2.2) * RTS_SC : 2) : p.y - .5, p.z); };
 // Arme secondaire (roquettes du Mech de combat) : mêmes améliorations d'armes et de cadence
-const rtsS2b = u => { const W = u.U.w2, k = 1 + RTS_UPG.arm.k * rtsLv(u.type, 'arm'), se = rtsLv(u.type, 'sensor'); return { dmg:W.dmg * k, snd:W.snd, splash:W.splash * (1 + .1 * se), range:W.range * (1 + .06 * rtsLv(u.type, 'spd') + .15 * se), burn:rtsLv(u.type, 'fire') > 0 }; };
+const rtsS2b = u => { const W = u.U.w2, k = 1 + RTS_UPG.arm.k * rtsLv(u.type, 'arm'), se = rtsLv(u.type, 'sensor'); return { big:!!W.big, dmg:W.dmg * k, snd:W.snd, splash:W.splash * (1 + .1 * se), range:W.range * (1 + .06 * rtsLv(u.type, 'spd') + .15 * se), burn:rtsLv(u.type, 'fire') > 0 }; };
 const rtsRate2 = u => u.U.w2.rate * (1 + RTS_UPG.rate.k * rtsLv(u.type, 'rate')) * (1 + .2 * rtsLv(u.type, 'cal105'));
 // Gatling de 25 mm de l'AC-130 (amélioration) : rafales traçantes rapides
-const rtsS25 = u => { const G = RTS_GUNS[u.type], l = rtsLv(u.type, G.k); return { dmg:G.dmg * (1 + .35 * (l - 1)) * (1 + RTS_UPG.arm.k * rtsLv(u.type, 'arm')), snd:G.snd, beam:0xffd890, range:rtsStat(u, 'range') }; };
+const rtsS25 = u => { const G = RTS_GUNS[u.type], l = rtsLv(u.type, G.k) + (G.base ? 1 : 0); return { dmg:G.dmg * (1 + .35 * (l - 1)) * (1 + RTS_UPG.arm.k * rtsLv(u.type, 'arm')), snd:G.snd, beam:0xffd890, range:rtsStat(u, 'range') }; };
 // Missile Hellfire de l'hélicoptère (amélioration)
 function rtsHellfire(u, dt, tgt, pilot){
-  const l = rtsLv(u.type, 'hellfire'); if (!l) return;
+  const l = rtsLv(u.type, 'hellfire') + (u.type === 'heli' ? 1 : 0); if (!l) return; // l'Apache a ses Hellfire dès l'achat
   u.cd4 = (u.cd4 || 0) - dt; if (u.cd4 > 0 || !tgt) return;
   u.cd4 = 3; const S4 = { dmg:300 * (1 + .4 * (l - 1)) * (1 + RTS_UPG.arm.k * rtsLv(u.type, 'arm')), splash:4, snd:'rocket', range:rtsStat(u, 'range') + 8 };
-  if (pilot) rtsPilotShot(u, S4, 1.5); else rtsHit(rtsMuzzle(u, new THREE.Vector3()), tgt, tgt.g ? 'z' : 'nest', S4);
+  if (pilot){ rtsPilotShot(u, S4, 1.5); if (typeof rtsPosteShot === 'function') rtsPosteShot(u, 'w2'); } else rtsHit(rtsMuzzle(u, new THREE.Vector3()), tgt, tgt.g ? 'z' : 'nest', S4);
 }
 function rtsGat(u, dt, tgt, pilot){
-  const G = RTS_GUNS[u.type]; if (!G || !rtsLv(u.type, G.k)) return;
+  const G = RTS_GUNS[u.type]; if (!G || !(rtsLv(u.type, G.k) + (G.base ? 1 : 0))) return;
   u.cd3 = (u.cd3 || 0) - dt; if (u.cd3 > 0 || !tgt) return;
   u.cd3 = 1 / (G.rate * (1 + RTS_UPG.rate.k * rtsLv(u.type, 'rate')));
   if (pilot) rtsPilotShot(u, rtsS25(u), -1); else rtsHit(rtsMuzzle(u, new THREE.Vector3()), tgt, tgt.g ? 'z' : 'nest', rtsS25(u));
@@ -259,6 +263,7 @@ function rtsNearestZ(x, z, r, fwdX, fwdZ, cos){
 }
 // Avions : ils tournent autour d'un point (ordre, nid visé, ou au-dessus de la route) et attaquent ce qui passe devant
 function rtsAir(u, dt){
+  if (typeof rtsRearmAI === 'function' && rtsRearmAI(u, dt)) return; // à sec : il va refaire le plein (js/54-rts-postes.js)
   const U = u.U, gp = u.g.position, spd = rtsStat(u, 'speed');
   let cx = 0, cz = -40;
   if (u.nest && !u.nest.dead){ cx = u.nest.x; cz = u.nest.z; } else if (u.cmd === 'move' || u.cmd === 'patrol'){ cx = u.tx; cz = u.tz; u.cmd = 'patrol'; }
@@ -286,8 +291,9 @@ function rtsAir(u, dt){
     return;
   }
   const t = rtsNearestZ(gp.x, gp.z, rtsStat(u, 'range') + U.alt, fx, fz, -.3);
-  if (t){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(rtsMuzzle(u, new THREE.Vector3()), t, 'z', S2); }
-  else if (u.nest && !u.nest.dead){ const n = u.nest, nd = Math.hypot(n.x - gp.x, n.z - gp.z) || 1; if (nd < S2.range + n.r + U.alt && ((n.x - gp.x) * fx + (n.z - gp.z) * fz) / nd > -.3){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(rtsMuzzle(u, new THREE.Vector3()), n, 'nest', S2); } }
+  const am = () => typeof rtsAmmoUse !== 'function' || rtsAmmoUse(u, 'w1'); // munitions comptées
+  if (t && am()){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(rtsMuzzle(u, new THREE.Vector3()), t, 'z', S2); }
+  else if (!t && u.nest && !u.nest.dead){ const n = u.nest, nd = Math.hypot(n.x - gp.x, n.z - gp.z) || 1; if (nd < S2.range + n.r + U.alt && ((n.x - gp.x) * fx + (n.z - gp.z) * fz) / nd > -.3 && am()){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(rtsMuzzle(u, new THREE.Vector3()), n, 'nest', S2); } }
 }
 // AC-130 : il tourne en virage à gauche autour d'un point, les canons du flanc gauche pointés vers le centre
 function rtsGunshipFly(u, dt, cx, cz){
@@ -307,8 +313,9 @@ function rtsGunship(u, dt, cx, cz){
   u.scanT = (u.scanT || 0) - dt;
   if (u.scanT <= 0){ u.scanT = .3; u.tgt = rtsPickTarget(u, rtsStat(u, 'range'), 6); }
   const t = u.tgt && !u.tgt.dead ? u.tgt : null, n = u.nest && !u.nest.dead && Math.hypot(u.nest.x - gp.x, u.nest.z - gp.z) < rtsStat(u, 'range') ? u.nest : null;
-  if (u.cd <= 0 && (t || n)){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(from, t || n, t ? 'z' : 'nest', rtsS2(u)); }
-  if (u.cd2 <= 0 && (t || n)){ u.cd2 = 1 / rtsRate2(u); rtsHit(from, t || n, t ? 'z' : 'nest', rtsS2b(u)); }
+  const am = k => typeof rtsAmmoUse !== 'function' || rtsAmmoUse(u, k);
+  if (u.cd <= 0 && (t || n) && am('w1')){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(from, t || n, t ? 'z' : 'nest', rtsS2(u)); }
+  if (u.cd2 <= 0 && (t || n) && am('w2')){ u.cd2 = 1 / rtsRate2(u); rtsHit(from, t || n, t ? 'z' : 'nest', rtsS2b(u)); }
   rtsGat(u, dt, t || n, false);
 }
 function rtsUnits(dt){
@@ -452,7 +459,11 @@ function rtsCamStep(dt){
 function rtsFrame(dt){
   if (!RTS.on) return;
   if (RTS.pilot) rtsPilotCam(); else if (state === 'rts' || state === 'rtsover') rtsCamStep(dt);
-  if (RTS.pilot && RTS.pilot.U && RTS.pilot.U.gunship && camera.fov !== 38){ camera.fov = 38; camera.updateProjectionMatrix(); } // zoom du canonnier (le zoom du jeu ne s'en mêle pas)
+  if (RTS.pilot && RTS.pilot.U && RTS.pilot.U.gunship){ // zoom et filtre du poste de l'AC-130 (js/54-rts-postes.js ; le zoom du jeu ne s'en mêle pas)
+    const fv = (typeof rtsPosteFov === 'function' && rtsPosteFov(RTS.pilot)) || 38;
+    if (camera.fov !== fv){ camera.fov = fv; camera.updateProjectionMatrix(); }
+    canvas.classList.toggle('rt-ac', fv < 50); canvas.classList.toggle('rt-ac105', fv < 30);
+  }
   if (RTS.sky) RTS.sky.position.set(camera.position.x, 0, camera.position.z); // le ciel suit la caméra
   // En pilotage, les barres de vie trop proches des yeux sont cachées (sinon elles bouchent la vue)
   if (RTS.pilot || RTS.hpHid){
@@ -466,5 +477,6 @@ function rtsFrame(dt){
     mechFlashL.visible = RTS.spin >= 1 && (RTS.pv.fire || (isTouch && RTS.pv.aim.id !== null)); if (mechFlashL.visible) mechFlashL.material.rotation = Math.random() * 6;
   }
   Object.keys(VMS).forEach(k => { VMS[k].visible = false; });
+  if (typeof rtsPosteFrame === 'function') rtsPosteFrame(dt);
   rtsHUD();
 }

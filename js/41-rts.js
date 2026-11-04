@@ -23,14 +23,14 @@ const RTS_UNITS = {
   flamebot:{ name:'Robot lance-flammes', cost:450, hp:600, dmg:18, rate:9,  range:11, speed:5,   r:.9,  snd:'flamer',  col:0x8a3a20, flame:true, fac:'factory', kind:'ground', cat:'rob' },
   rocket:  { name:'Lance-roquettes', cost:700,  hp:420,  dmg:170, rate:.8,  range:26, speed:4.5, r:.9,  snd:'gl',      col:0x8a6a2a, splash:3.5, fac:'heavyfac', kind:'ground', cat:'rob' },
   heavy:   { name:'Mech lourd',      cost:1500, hp:1600, dmg:95,  rate:1.6, range:22, speed:3.6, r:1.4, snd:'laser',   col:0x6a3a6a, beam:0x50f0ff, pierce:true, fac:'heavyfac', kind:'ground', cat:'rob' },
-  tank:    { name:'Tank',            cost:1800, hp:3200, dmg:240, rate:.7,  range:30, speed:5.5, r:2.2, snd:'mg50',    col:0x5a6040, splash:4, fac:'vehdepot', kind:'ground', cat:'veh' },
-  heli:    { name:'Hélicoptère',     cost:2200, hp:1200, dmg:90,  rate:2.2, range:28, speed:12,  r:2.6, snd:'gl',      col:0x3a4a3a, splash:3, fac:'heliport', kind:'heli', alt:11, cat:'veh' },
-  jet:     { name:'Chasseur',        cost:3000, hp:800,  dmg:280, rate:1.2, range:34, speed:32,  r:3,   snd:'rocket',  col:0x6a7080, splash:3.5, fac:'airfield', kind:'air', alt:20, orbit:30, turn:1.3, cat:'veh' },
-  warthog: { name:'Warthog',         cost:3800, hp:1500, dmg:40,  rate:22,  range:30, speed:18,  r:3,   snd:'mg50',    col:0x6a7058, beam:0xffd890, fac:'airfield', kind:'air', alt:14, orbit:22, turn:1, cat:'veh' },
+  tank:    { name:'Tank',            w1:'Canon 120 mm', cost:1800, hp:3200, dmg:560, rate:.33, range:38, speed:5.5, r:2.2, snd:'mg50', col:0x5a6040, splash:5.5, fac:'vehdepot', kind:'ground', cat:'veh' },
+  heli:    { name:'Apache',          w1:'30 mm + roquettes', w2n:'Hellfire', cost:2200, hp:1200, dmg:90,  rate:2.2, range:28, speed:12,  r:2.6, snd:'gl', col:0x3a4a3a, splash:3, fac:'heliport', kind:'heli', alt:11, cat:'veh' },
+  jet:     { name:'Chasseur',        w1:'Canon 20 mm', cost:3000, hp:800,  dmg:75,  rate:10,  range:36, speed:32,  r:3,   snd:'mg50', col:0x6a7080, beam:0xffd890, fac:'airfield', kind:'air', alt:20, orbit:30, turn:1.3, cat:'veh' },
+  warthog: { name:'Warthog',         w1:'Canon 30 mm', cost:3800, hp:1500, dmg:55,  rate:22,  range:30, speed:18,  r:3,   snd:'mg50',    col:0x6a7058, beam:0xffd890, fac:'airfield', kind:'air', alt:14, orbit:22, turn:1, cat:'veh' },
   mech:    { name:'⭐ Mech de combat', w1:'Minigun',  cost:6000, hp:5000, dmg:16,  rate:20,  range:26, speed:4.5, r:2.6, snd:'minigun', col:0x5a5d50, beam:0xffd890, fac:'heavyfac', kind:'ground', cat:'rob', big:true,
              w2:{ name:'Roquettes', dmg:260, rate:1.5, range:34, splash:4.5, snd:'rocket' } },
   bomber:  { name:'AC-130',          cost:4500, hp:2400, dmg:110, rate:2.5, range:62, speed:16,  r:4,   snd:'sniper',  col:0x5a6068, splash:3, gunship:true, fac:'airfield', kind:'air', alt:30, orbit:40, turn:.7, cat:'veh',
-             w1:'40 mm', w2:{ name:'105 mm', dmg:650, rate:.33, range:62, splash:8, snd:'rocket' } }
+             w1:'40 mm', w2:{ name:'105 mm', dmg:1100, rate:.3, range:62, splash:11, snd:'rocket', big:true } }
 };
 const RTS_ORDER = Object.keys(RTS_UNITS);
 const RTS_HOTKEY = ['rifle', 'gunner', 'sniper', 'flamebot', 'rocket', 'heavy', 'mech', 'tank', 'heli'];
@@ -59,22 +59,22 @@ const RTS_UPG_SPEC = {
     reactive: { name:'Blindage réactif',      max:3, desc:'-15 % de dégâts reçus par niveau' }
   },
   heli: {
-    chaingun: { name:'Canon de 30 mm',        max:3, desc:'Un canon rotatif sous le nez, plus fort à chaque niveau' },
-    hellfire: { name:'Missiles Hellfire',     max:3, desc:'Un gros missile guidé toutes les 3 s, plus fort à chaque niveau' },
+    chaingun: { name:'Canon de 30 mm',        max:3, desc:'Le canon rotatif sous le nez (déjà là) : +35 % de dégâts par niveau' },
+    hellfire: { name:'Missiles Hellfire',     max:3, desc:'Les missiles guidés (déjà là) : +40 % de dégâts par niveau' },
     reactive: { name:'Leurres et blindage',   max:3, desc:'-15 % de dégâts reçus par niveau' },
     sensor:   { name:'Viseur infrarouge',     max:3, desc:'+15 % de portée par niveau' }
   }
 };
 // Arme d'appoint achetée en amélioration (tir rapide) et missile lourd
-const RTS_GUNS = { bomber:{ k:'g25', dmg:22, rate:10, snd:'minigun' }, tank:{ k:'coax', dmg:14, rate:8, snd:'rifle' }, heli:{ k:'chaingun', dmg:30, rate:6, snd:'mg50' } };
+const RTS_GUNS = { bomber:{ k:'g25', dmg:22, rate:10, snd:'minigun' }, tank:{ k:'coax', dmg:14, rate:8, snd:'rifle' }, heli:{ k:'chaingun', dmg:30, rate:10, snd:'mg50', base:true } }; // base : l'Apache a son canon dès l'achat
 const rtsUpgDef = (type, k) => RTS_UPG[k] || (RTS_UPG_SPEC[type] || {})[k];
 const RTS_BLD = {
   hq:       { name:'QG',                     hp:6000, size:6,   cost:0,    fixed:true },
   factory:  { name:'Usine de robots',        hp:2000, size:4,   cost:500,  desc:'Fantassins, mitrailleurs, tireurs d’élite, lance-flammes.' },
   heavyfac: { name:'Usine lourde',           hp:2600, size:5,   cost:1200, desc:'Lance-roquettes et mechs lourds.' },
   vehdepot: { name:'Garage de blindés',      hp:3000, size:5.5, cost:1500, desc:'Fabrique des tanks.' },
-  heliport: { name:'Héliport',               hp:2000, size:5,   cost:1800, desc:'Fabrique des hélicoptères.' },
-  airfield: { name:'Aérodrome',              hp:3200, size:9,   cost:3000, desc:'Chasseurs, Warthogs et bombardiers.' },
+  heliport: { name:'Héliport',               hp:2000, size:5,   cost:1800, desc:'Fabrique les hélicoptères Apache.' },
+  airfield: { name:'Aérodrome',              hp:3200, size:9,   cost:3000, desc:'Chasseurs, Warthogs et AC-130 : 2 avions par aérodrome, qui viennent y recharger leurs munitions.' },
   scrap:    { name:'Récupérateur',           hp:1200, size:3,   cost:400,  income:15, desc:'+15 $ toutes les 5 s.' },
   repair:   { name:'Atelier de réparation',  hp:1500, size:3.5, cost:700,  heal:45, healR:15, desc:'Répare robots, véhicules et bâtiments autour.' },
   wall:     { name:'Barricade',              hp:2500, size:2.2, cost:60,   desc:'Bloc de béton qui retient les zombies.' },
@@ -157,12 +157,23 @@ function rtsUnitGeo(type){
       vmBox(b, .4, .3, .4, VC.steel, .5, 2.2, -.6, 0, 0, 0, .04);
       return;
     }
-    if (type === 'heli'){
-      vmCyl(b, .9, 3.6, c, 0, 0, .6, 0, 0, 0, 10, .7); vmBox(b, 1.4, 1, 1.2, RTS_GLASS, 0, .15, 2.1, .25, 0, 0, .2); // cabine vitrée
-      vmCyl(b, .3, 4, c, 0, .2, -2.8, 0, 0, 0, 8, .5); vmBox(b, .12, 1.3, .9, c, 0, .8, -4.7, 0, 0, 0, .05); vmBox(b, 1.6, .1, .5, c, 0, .3, -4.6, 0, 0, 0, 0);
-      for (const s of [-1, 1]){ vmBox(b, .12, .12, 3, RTS_DARK, s * .8, -1.05, .6, 0, 0, 0, 0); vmBox(b, .1, .7, .1, RTS_DARK, s * .8, -.7, 1.2, 0, 0, 0, 0); vmBox(b, .1, .7, .1, RTS_DARK, s * .8, -.7, -.2, 0, 0, 0, 0); }
-      for (const s of [-1, 1]){ vmBox(b, 1.4, .12, .4, c, s * 1.1, -.2, .6, 0, 0, 0, 0); vmCyl(b, .2, 1.1, VC.oliveD, s * 1.7, -.35, .7, 0, 0, 0, 8); } // nacelles de roquettes
-      vmBox(b, .5, .5, .5, RTS_DARK, 0, .95, .6, 0, 0, 0, .05);
+    if (type === 'heli'){ // Apache : fuselage étroit, deux places l'une derrière l'autre, canon sous le nez, Hellfire et roquettes sur les ailettes
+      vmBox(b, 1.1, 1.1, 4.2, c, 0, 0, .4, 0, 0, 0, .35);                                                       // fuselage
+      vmBox(b, .8, .55, 1.0, RTS_GLASS, 0, .55, 2.2, .18, 0, 0, .15); vmBox(b, .85, .7, 1.1, RTS_GLASS, 0, .75, 1.1, .1, 0, 0, .15); // verrière en escalier (tireur devant, pilote derrière)
+      vmBox(b, .9, .55, 1.2, c, 0, -.1, 2.9, -.1, 0, 0, .25);                                                    // nez et capteurs
+      vmCyl(b, .2, .3, RTS_DARK, 0, -.05, 3.55, 0, 0, 0, 8);                                                   // tourelle de visée
+      vmBox(b, .3, .3, .3, RTS_DARK, 0, -.75, 2.3, 0, 0, 0, .05); vmCyl(b, .06, 1.2, RTS_DARK, 0, -.8, 3.0, 0, 0, 0, 6); // canon de 30 mm sous le nez
+      for (const s of [-1, 1]) vmBox(b, .5, .7, 1.4, c, s * .7, .2, -.1, 0, 0, 0, .15);                         // moteurs sur les flancs
+      vmCyl(b, .28, 4.4, c, 0, .25, -3.6, 0, 0, 0, 8, .5); vmBox(b, .14, 1.6, 1.0, c, 0, .95, -5.6, 0, 0, 0, .05); vmBox(b, 1.8, .1, .5, c, 0, .2, -5.4, 0, 0, 0, 0); // queue
+      for (const s of [-1, 1]){
+        vmBox(b, 1.8, .12, .6, c, s * 1.25, -.15, .5, 0, 0, s * -.06, .02);                                    // ailette
+        vmCyl(b, .24, 1.0, VC.oliveD, s * 1.25, -.5, .55, 0, 0, 0, 8);                                          // nacelle de roquettes Hydra
+        vmBox(b, .5, .08, .9, RTS_DARK, s * 2.0, -.32, .5, 0, 0, 0, 0);
+        for (const dx of [-.12, .12]) for (const dy of [-.5, -.72]) vmCyl(b, .07, .95, 0x8a7a58, s * 2.0 + dx, dy, .55, 0, 0, 0, 6); // 4 Hellfire
+        vmBox(b, .1, .5, .1, RTS_DARK, s * .55, -.8, 1.6, 0, 0, 0, 0); vmCyl(b, .2, .14, RTS_DARK, s * .55, -1.05, 1.6, 0, Math.PI / 2, 0, 8); // roues avant
+      }
+      vmBox(b, .08, .5, .08, RTS_DARK, 0, -.1, -5.6, 0, 0, 0, 0);                                               // roulette de queue
+      vmBox(b, .5, .5, .5, RTS_DARK, 0, .95, .4, 0, 0, 0, .05);                                                 // mât du rotor
       return;
     }
     if (type === 'jet'){

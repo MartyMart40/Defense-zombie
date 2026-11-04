@@ -591,3 +591,13 @@ body.rtphoto #rtsUI, body.rtphoto #rtInfo, body.rtphoto #rtTip, body.rtphoto #rt
 #tuTip button.ghost{ background:transparent; border:1px solid #c8b890; color:#eef4ea; font-weight:600; margin:0; width:auto; }
 #btnTuto{ margin:8px 0 2px; font-size:16px; }
 @media (max-height:520px){ #tuTip{ top:calc(26vh + env(safe-area-inset-top,0px)); font-size:13px; padding:7px 10px; } }
+/* RTS : postes de pilotage (js/54-rts-postes.js) */
+canvas.rt-ac105{ filter:grayscale(1) invert(1) contrast(1.5) brightness(.95); } /* 105 mm : caméra thermique « blanc chaud » */
+#rtPilot.ac.ck #rtrpAc{ display:none; }
+#rtrpHud{ position:absolute; left:50%; bottom:calc(40px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); max-width:calc(100vw - 32px); text-align:center; font-size:13px; letter-spacing:.06em; color:#e8ffe0; text-shadow:0 1px 3px #000; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#rtPilot.touch #rtrpHud{ bottom:auto; top:calc(196px + env(safe-area-inset-top,0px)); }
+#rtPilot.casque #rtrpHud, #rtPilot.ac #rtrpHud{ color:#9aff70; }
+#rtPilot.casque::before{ content:''; position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(10,30,10,.45) 100%); }
+#rtrpView{ position:absolute; z-index:3; left:calc(14px + env(safe-area-inset-left,0px)); top:calc(150px + env(safe-area-inset-top,0px)); pointer-events:auto; touch-action:manipulation; padding:10px 14px; font-size:15px; border-radius:8px; border:1px solid #9aff70; background:rgba(10,20,14,.85); color:#9aff70; font-weight:800; }
+#rtrpView.hide{ display:none; }
+#rtPilot.touch #rtrpView{ top:auto; left:calc(26px + env(safe-area-inset-left,0px)); bottom:calc(172px + env(safe-area-inset-bottom,0px)); }

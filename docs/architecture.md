@@ -1,0 +1,68 @@
+# Architecture du code : Dernier toit
+
+À lire avant d'ajouter un gros morceau (nouveau mode, nouveau système). Les règles courtes sont dans `AGENTS.md`.
+
+## Principe
+- Pas de compilation : `index.html` charge `lib/three.min.js` (Three.js r128) puis les fichiers `js/NN-nom.js` dans l'ordre du numéro. GitHub Pages sert le dépôt tel quel.
+- Scripts classiques (pas de modules) : les `const`, `let` et `function` de haut niveau sont partagés par tous les fichiers.
+- Un fichier ne peut appeler une fonction d'un fichier **plus loin** qu'à l'intérieur d'une fonction (jamais au chargement).
+- Une seule boucle (`js/15-boucle.js`) : `update(dt)` seulement quand `state === 'playing'` (le toit), puis `visuals(dt)` et le rendu, à chaque image.
+- La variable `state` dit où on est : `'title'`, `'playing'`, `'paused'`, `'shop'`, `'over'`, `'mech'`, `'mechover'`, `'rts'`, `'rtsover'`, etc.
+
+## Plages de numéros
+| Plage | Contenu |
+|-------|---------|
+| 00 à 15 | Base du jeu : outils, son, villes, scène, arme en main, zombies, tir, vagues, boutique, HUD, entrées, menus, boucle |
+| 16 à 38 | Systèmes du toit : atelier, défenses, types de zombies, boss, armes, pouvoirs, ambiance, rue, compagnons, défi, combos, perf, infini, repères, missions, punch, sauvegarde, écritures, arsenal, monstres, rendu, bruitages, vibrations |
+| 39 à 40 | Mode robot |
+| 41 à 44 | Mode RTS « Guerre des robots » |
+| 45 à 49 | Libre (petits ajouts aux modes existants) |
+| 50 à 59 | Prochain gros mode ou système |
+| 60 à 89 | Modes suivants (une dizaine chacun) |
+| 90 | `90-branchements.js` : branche le registre des modes sur le jeu commun. Toujours le dernier. |
+
+Un gros ajout prend sa propre dizaine, même s'il n'a besoin que de 2 ou 3 fichiers au départ : il pourra grandir sans renuméroter. Un fichier ne doit pas dépasser environ 700 lignes : au-delà, le couper par thème (comme le RTS : données, unités, pilotage, interface).
+
+## Registre des modes (`Jeu`, dans `js/00-base.js`)
+Un mode de jeu s'inscrit au lieu de remplacer `visuals`, `kill` ou `ambMusicState` lui-même :
+
+```js
+Jeu.mode('nom', {
+  etats: { jeu:'xjeu', fin:'xfin' },       // valeurs de state pendant la partie et à l'écran de fin
+  actif: () => X.on || state === 'xjeu' || state === 'xfin',
+  etape: dt => xStep(dt),    // logique, à chaque image quand state === etats.jeu, AVANT le rendu commun
+  image: dt => xFrame(dt),   // caméra, effets, interface, quand le mode est actif, APRÈS le rendu commun
+  tue: (z, etaitVivant) => { ... },   // un zombie vient d'être tué
+  musique: () => 'wave',     // 'menu', 'wave' ou 'boss', ou undefined pour laisser le jeu choisir
+  demarrer: () => xStart(), quitter: () => xQuit()
+});
+```
+
+- Un seul mode est actif à la fois (`Jeu.actif()`). Sur le toit, aucun mode n'est actif.
+- Événements communs, pour n'importe quel fichier : `Jeu.on('image', fn)` (chaque image, `fn(dt)`), `Jeu.on('tue', fn)` (`fn(z, etaitVivant)`). `Jeu.off` retire un écouteur. Une erreur dans un écouteur est affichée dans la console sans casser les autres.
+- Le branchement est fait **une seule fois** dans `js/90-branchements.js`. Pour un nouvel événement (ex. « nouvelle partie »), l'ajouter là avec `Jeu.emit('nom', ...)` et le documenter ici.
+- Inscrits aujourd'hui : `robot` (`js/39-robot.js`) et `rts` (`js/44-rts-interface.js`).
+- Tests : `tests/t-modes.js` ; accès dans le jeu par `window.__jeu`.
+
+## Les anciens crochets (toit)
+Les fichiers 04 à 38 se branchent encore par **réaffectation** : `const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); monTruc(dt); return r; };`. Chaque fichier enveloppe la version précédente. Ça marche et c'est couvert par les tests, mais :
+- l'ordre dépend du numéro des fichiers ;
+- une erreur dans un `try { } catch (e) {}` passe en silence ;
+- chaque enveloppe tourne à chaque image, même hors du toit.
+
+Règle : **pas de nouveau crochet par réaffectation pour un mode**. Utiliser `Jeu.mode` et `Jeu.on`. On convertit les vieux crochets petit à petit, quand on touche le fichier, avec les tests comme filet. Les crochets qui changent un calcul (ex. le robot qui multiplie `damage`, ou `hitBarricade`) restent des réaffectations pour l'instant.
+
+## Ajouter un nouveau mode : liste à suivre
+1. Choisir une dizaine libre (ex. 50 à 59) et créer `js/50-nom.js` (données, modèles), puis d'autres fichiers au besoin.
+2. Un objet d'état propre au mode (ex. `const TOUR = { on:false, ... }`) et des noms préfixés (`tourStart`, `tourStep`...) pour éviter les collisions entre fichiers.
+3. Nouvelles valeurs de `state` pour la partie et la fin.
+4. `Jeu.mode('nom', {...})` à la fin du dernier fichier du mode.
+5. Bouton sur l'écran titre, inséré après `btnRts` (voir la fin de `js/44-rts-interface.js`).
+6. Sauvegarde : un champ dans `P` avec une valeur par défaut (voir `js/39-robot.js`, `P.mech`), ou `store` avec une clé `dt_...` pour un simple réglage.
+7. `window.__nom = { ... }` pour les tests, un fichier `tests/t-nom.js`, ajouté dans `tests/index.html`.
+8. Une fiche `docs/nom.md` (modèle : `docs/rts.md`) et une ligne dans la carte du code de `AGENTS.md`.
+
+## Tests
+- `tests/index.html` charge le jeu dans un iframe et lance tous les `tests/t-*.js`. Résultat dans `window.RESULTATS`.
+- `__t.graine(n, fn)` fixe le hasard pour un test qui en dépend.
+- Pour les lancer sans téléphone : un serveur local (`python3 -m http.server`) et Chromium (Playwright), page `/tests/`.

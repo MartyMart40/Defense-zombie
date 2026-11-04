@@ -525,8 +525,21 @@ document.addEventListener('pointerlockchange', () => { if (state === 'mech' && !
 })();
 
 /* ---------- Crochets ---------- */
-// La boucle du jeu n'appelle update qu'en 'playing' : le robot avance dans visuals
-try { const _b = visuals; visuals = function(dt){ if (state === 'mech') mechStep(dt); const r = _b.apply(this, arguments); mechFrame(dt); return r; }; } catch (e) {}
+// Le robot s'inscrit comme mode (js/00-base.js, branché dans js/90-branchements.js) :
+// la boucle n'appelle update qu'en 'playing', le robot avance donc dans etape (avant le rendu) et s'affiche dans image.
+Jeu.mode('robot', {
+  etats: { jeu:'mech', fin:'mechover' },
+  actif: () => MECH.on || state === 'mech' || state === 'mechover',
+  etape: dt => mechStep(dt),
+  image: dt => mechFrame(dt),
+  tue: () => { if (MECH.on) MECH.kills++; },
+  // Musique : le robot, c'est une vague ; boss (des rues ou des monstres de js/40) : musique de boss
+  musique: () => {
+    if (state === 'mech') return (typeof mbBossAlive === 'function' && mbBossAlive()) || (typeof liveBoss === 'function' && liveBoss()) ? 'boss' : 'wave';
+    if (state === 'mechover') return 'menu';
+  },
+  demarrer: () => mechStart(), quitter: () => mechQuit()
+});
 // Bras du robot : la minigun sort à gauche, les roquettes à droite
 try {
   const _m = armMuzzle;
@@ -550,9 +563,6 @@ try {
   const _h = hitBarricade;
   hitBarricade = function(z){ if (MECH.on && z && z.g && (Math.abs(z.g.position.x - MECH.x) > 6 || z.g.position.z > MECH_CAM.z + 5 || z.g.position.z < MECH_CAM.z - 14)) return; return _h.apply(this, arguments); };
 } catch (e) {}
-try { const _k = kill; kill = function(){ const r = _k.apply(this, arguments); if (MECH.on) MECH.kills++; return r; }; } catch (e) {}
-// Musique et ambiance : le robot, c'est une vague
-try { if (typeof ambMusicState === 'function'){ const _a = ambMusicState; ambMusicState = function(){ if (state === 'mech') return typeof liveBoss === 'function' && liveBoss() ? 'boss' : 'wave'; if (state === 'mechover') return 'menu'; return _a.apply(this, arguments); }; } } catch (e) {}
 
 // Accès pour les tests automatiques
 window.__mech = { MECH_W, mW, mechWeapon, mechArms, mechArmsG, MECH_UPG, mUp, mechUpgBuy, mechUpgCost, mechUnlocked, mechUnlock, mechGarage, mechNorm, mechBtn, MECH, MECH_LEN, MECH_HEAT, mechStart, mechQuit, mechStep, mechStreet, mechPause, mechResume, mechOver, mechPlan, mechCk };

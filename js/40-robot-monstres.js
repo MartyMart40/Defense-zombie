@@ -313,8 +313,7 @@ try {
 try { const _h = mechHUD; mechHUD = function(){ const r = _h.apply(this, arguments); mbBossHUD(); return r; }; } catch (e) {}
 // Ferraille de la rue choisie (Ruelles sombres ×2, etc.)
 try { const _sf = scrapFor; scrapFor = function(){ const v = _sf.apply(this, arguments); return MECH.on && MECH.route && MECH.route.scrap ? v * MECH.route.scrap : v; }; } catch (e) {}
-// Musique de boss pour les boss du robot
-try { const _a = ambMusicState; ambMusicState = function(){ if (state === 'mech' && mbBossAlive()) return 'boss'; return _a.apply(this, arguments); }; } catch (e) {}
+// Musique de boss pour les boss du robot : voir musique() du mode 'robot' (js/39-robot.js)
 // Pendant le choix du carrefour, la pause et la reprise ne font rien (le choix reste à l'écran)
 try { const _pz = mechPause; mechPause = function(){ if (MECH.choosing) return; return _pz.apply(this, arguments); }; mechPause.again = _pz.again; } catch (e) {}
 try { const _rs = mechResume; mechResume = function(){ if (MECH.choosing) return; return _rs.apply(this, arguments); }; } catch (e) {}

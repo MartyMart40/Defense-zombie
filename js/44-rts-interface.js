@@ -346,18 +346,25 @@ $('rtOk').addEventListener('click', () => { if (RTS.ghost) rtsPlaceAt(RTS.ghost.
 })();
 
 /* ---------- Crochets ---------- */
-try {
-  const _b = visuals;
-  visuals = function(dt){
-    if (state === 'rts') rtsStep(dt);
-    const r = _b.apply(this, arguments);
-    rtsFrame(dt);
-    if (rtsMarkT > 0){ rtsMarkT -= dt; rtsMark.material.opacity = rtsMarkT / .6; if (rtsMarkT <= 0) rtsMark.visible = false; }
-    return r;
-  };
-} catch (e) {}
-try { const _k = kill; kill = function(z){ const was = z && !z.dead; const r = _k.apply(this, arguments); if (RTS.on && was){ RTS.kills++; if (z.rtsBoss){ RTS.bossKills++; S.money += 1500; banner(ZTYPES[z.type].name + ' abattu !', 'Le boss est tombé · +' + fmt(1500), 2200); } } return r; }; } catch (e) {}
-try { if (typeof ambMusicState === 'function'){ const _a = ambMusicState; ambMusicState = function(){ if (state === 'rts'){ for (const z of zombies) if (!z.dead && z.rtsBoss) return 'boss'; return RTS.threat > 3.5 ? 'boss' : 'wave'; } if (state === 'rtsover') return 'menu'; return _a.apply(this, arguments); }; } } catch (e) {}
+// Le RTS s'inscrit comme mode (js/00-base.js, branché dans js/90-branchements.js)
+Jeu.mode('rts', {
+  etats: { jeu:'rts', fin:'rtsover' },
+  actif: () => RTS.on || state === 'rts' || state === 'rtsover',
+  etape: dt => rtsStep(dt),
+  image: dt => rtsFrame(dt),
+  tue: (z, was) => {
+    if (!RTS.on || !was) return;
+    RTS.kills++;
+    if (z.rtsBoss){ RTS.bossKills++; S.money += 1500; banner(ZTYPES[z.type].name + ' abattu !', 'Le boss est tombé · +' + fmt(1500), 2200); }
+  },
+  musique: () => {
+    if (state === 'rts'){ for (const z of zombies) if (!z.dead && z.rtsBoss) return 'boss'; return RTS.threat > 3.5 ? 'boss' : 'wave'; }
+    if (state === 'rtsover') return 'menu';
+  },
+  demarrer: () => rtsStart(), quitter: () => rtsQuit()
+});
+// Le marqueur d'ordre s'efface, même après la partie (événement commun 'image')
+Jeu.on('image', dt => { if (rtsMarkT > 0){ rtsMarkT -= dt; rtsMark.material.opacity = rtsMarkT / .6; if (rtsMarkT <= 0) rtsMark.visible = false; } });
 // Le pointeur est relâché (Échap) pendant qu'on pilote : pause
 document.addEventListener('pointerlockchange', () => { if (state === 'rts' && RTS.pilot && !isTouch && !document.pointerLockElement && !RTS.paused) rtsUnpilot(); });
 

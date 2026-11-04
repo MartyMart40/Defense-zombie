@@ -443,11 +443,26 @@ body.rts #hud, body.rts #touch, body.rts #cross, body.rts #rpArrows{ display:non
 #rtThreat{ color:#ff9a7a; }
 #rtBase{ position:absolute; left:50%; top:calc(42px + env(safe-area-inset-top,0px)); transform:translateX(-50%); width:min(50vw, 320px); text-align:center; font-size:12px; }
 #rtPause{ position:absolute; right:calc(12px + env(safe-area-inset-right,0px)); top:calc(10px + env(safe-area-inset-top,0px)); pointer-events:auto; width:44px; height:44px; border-radius:8px; border:1px solid rgba(154,255,112,.5); background:rgba(0,0,0,.45); color:#eef4ea; font-size:18px; }
-#rtBar{ position:absolute; left:0; right:0; bottom:calc(8px + env(safe-area-inset-bottom,0px)); display:flex; flex-wrap:wrap; justify-content:center; gap:6px; padding:0 8px; pointer-events:none; }
-#rtBar button{ pointer-events:auto; position:relative; min-width:86px; padding:8px 10px; border-radius:8px; border:1px solid rgba(154,255,112,.55); background:rgba(10,20,14,.78); color:#eef4ea; font-size:13px; font-weight:700; line-height:1.15; }
-#rtBar button b{ display:block; color:#ffd060; font-size:13px; }
+#rtDock{ position:absolute; left:0; right:0; bottom:calc(6px + env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column; align-items:center; gap:5px; pointer-events:none; }
+#rtTabs{ display:flex; gap:4px; pointer-events:auto; }
+#rtTabs button{ padding:5px 10px; border-radius:7px 7px 0 0; border:1px solid rgba(255,208,96,.5); background:rgba(10,20,14,.7); color:#e8dcc0; font-size:12px; font-weight:700; }
+#rtTabs button.on{ background:rgba(255,208,96,.9); color:#2a1a08; }
+#rtBar{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px; padding:0 8px; pointer-events:none; max-width:100%; }
+#rtBar button{ pointer-events:auto; position:relative; min-width:86px; padding:7px 9px; border-radius:8px; border:1px solid rgba(154,255,112,.55); background:rgba(10,20,14,.8); color:#eef4ea; font-size:12px; font-weight:700; line-height:1.15; }
+#rtBar button b{ display:block; color:#ffd060; font-size:12px; }
 #rtBar button i{ position:absolute; right:4px; top:2px; font-style:normal; font-size:10px; opacity:.6; }
 #rtBar button.off{ opacity:.45; }
+#rtPlace{ position:absolute; left:50%; top:calc(66px + env(safe-area-inset-top,0px)); transform:translateX(-50%); display:flex; align-items:center; gap:8px; pointer-events:auto; background:rgba(10,20,14,.85); border:1px solid #ffd060; border-radius:8px; padding:6px 10px; font-size:13px; max-width:92vw; }
+#rtPlace.hide{ display:none; }
+#rtPlace button{ padding:5px 10px; border-radius:6px; border:0; background:#ffd060; color:#2a1a08; font-weight:800; }
+#rtInfo{ position:fixed; right:calc(10px + env(safe-area-inset-right,0px)); top:calc(64px + env(safe-area-inset-top,0px)); z-index:8; width:min(260px, 70vw); background:rgba(10,20,14,.88); border:1px solid rgba(255,208,96,.6); border-radius:10px; padding:10px; color:#eef4ea; }
+#rtInfo.hide{ display:none; }
+#rtInfo .nm{ font-weight:800; font-size:16px; color:#ffd060; }
+#rtInfo .ds{ font-size:12px; color:#cfd8c8; margin:3px 0; }
+.rt-acts{ display:flex; flex-direction:column; gap:5px; margin-top:6px; }
+.rt-acts button{ padding:7px 8px; border-radius:7px; border:0; background:#ffd060; color:#2a1a08; font-weight:800; font-size:13px; }
+.rt-acts button.ghost{ background:transparent; border:1px solid #c8b890; color:#eef4ea; }
+.rt-acts button:disabled{ opacity:.5; }
 #rtAll, #rtStop{ background:rgba(40,60,40,.85) !important; }
 #rtsPanel{ position:fixed; inset:0; z-index:9; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.55); }
 #rtsPanel.hide{ display:none; }

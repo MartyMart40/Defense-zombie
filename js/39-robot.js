@@ -359,7 +359,7 @@ function mechStep(dt){
   spawnT -= dt;
   let alive = zAliveCount();
   if (spawnT <= 0 && alive < plan.maxAlive){
-    for (let k = plan.burst || 1; k > 0 && alive < plan.maxAlive && plan.queue.length; k--){ spawnZombie(plan.queue.pop()); alive++; }
+    for (let k = plan.burst || 1; k > 0 && alive < plan.maxAlive && plan.queue.length; k--){ spawnZombie(plan.queue.pop()); alive = zAliveCount(); }
     spawnT = plan.interval * rand(.6, 1.4);
   }
   const MZ = MECH_CAM.z;

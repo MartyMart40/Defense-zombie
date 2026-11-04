@@ -65,7 +65,7 @@
       clearZombies(); R.units.forEach(function(u){ if (u !== U.heli) u.g.position.x += 0; });
       U.heli.g.position.set(-60, 11, -90); var w = __t.placer('walker', -60, -92), f = ZTYPES.flyer ? __t.placer('flyer', -61, -90) : null;
       w.rtsT = 0; if (f) f.rtsT = 0; visuals(1 / 30);
-      o.ignore = w.rtsTgt !== U.heli; o.vise = !f || f.rtsTgt === U.heli;
+      o.ignore = w.rtsTgt !== U.heli; o.vise = !f || (!!f.rtsTgt && !!f.rtsTgt.U && f.rtsTgt.U.kind !== 'ground');
       return o;
     }, calme);
     fin();
@@ -94,6 +94,26 @@
     ok(r.pietine, 'Le piétinement blesse les unités autour');
   });
 
+  test('RTS : chaque sorte d’unité attaque un zombie à sa portée', () => {
+    exiger(); reset();
+    const r = J(function(c){
+      eval(c); var R = calme(), o = {};
+      R.blds.filter(function(b){ return b.type === 't_mg'; }).forEach(function(b){ __rts.rtsSell(b); });
+      R.units.forEach(function(u){ u.g.position.set(-30, 0, 20); u.U = Object.assign({}, u.U, { range:0 }); });
+      Object.keys(__rts.RTS_UNITS).forEach(function(t){
+        clearZombies();
+        var U = __rts.RTS_UNITS[t], u = __rts.rtsSpawnUnit(t, 0, -60); u.cmd = 'idle'; u.tx = 0; u.tz = -60;
+        var z = __t.placer('walker', 0, -60 - Math.min(8, U.range * .6)); z.hp = z.maxHp = 1e6; z.speed = 0; z.dmg = 0;
+        for (var i = 0; i < 30 * 8; i++) visuals(1 / 30);
+        o[t] = Math.round(1e6 - z.hp); u.dead = true; R.units.splice(R.units.indexOf(u), 1); __rts.RTS.sel.length = 0;
+      });
+      return o;
+    }, calme);
+    fin();
+    const non = Object.keys(r).filter(k => !(r[k] > 0));
+    ok(!non.length, 'Unités qui n’attaquent pas : ' + non.join(', ') + ' · ' + JSON.stringify(r));
+  });
+
   test('RTS : piloter une unité à la première personne (bouger, viser, tirer, revenir)', () => {
     exiger(); reset();
     const r = J(function(c){
@@ -107,12 +127,18 @@
       R.pv.fire = true; for (var k = 0; k < 30; k++) visuals(1 / 30); R.pv.fire = false;
       o.tir = z.hp < 1e6;
       var bt = document.getElementById('rtrpExit'); o.bouton = !!bt && !!bt.closest('#rtPilot'); bt.click(); visuals(1 / 30); o.retour = !R.pilot && u.m.visible && camera.position.y > 20;
+      // Avec un groupe choisi, Piloter prend une unité du groupe ; au retour, plus rien n'est choisi
+      __rts.rtsSelect(R.units.filter(function(x){ return !x.dead; }), false); o.groupe = __rts.rtsPilotSel() && R.sel.length === 1 && R.sel[0] === R.pilot;
+      __rts.rtsUnpilot(); o.vide = R.sel.length === 0;
+      // Changer d'onglet annule la pose d'un bâtiment
+      __rts.rtsStartPlace('wall'); __rts.rtsTab('veh'); o.annule = !R.place; __rts.rtsTab('rob');
       // Un avion aussi
       var j = __rts.rtsSpawnUnit('jet', 0, -40); o.jet = __rts.rtsPilot(j); var p0 = j.g.position.clone(); visuals(1 / 30); o.jetAv = j.g.position.distanceTo(p0) > .5;
       return o;
     }, calme);
     fin();
     ok(r.pil && r.cache, 'Pilotage'); ok(r.cam, 'Caméra dans l’unité'); ok(r.avance, 'Il avance'); ok(r.tir, 'Il tire sur le zombie visé'); ok(r.bouton && r.retour, 'Bouton Retour à la carte');
+    ok(r.groupe && r.vide, 'Piloter avec un groupe choisi'); ok(r.annule, 'Un onglet annule la pose');
     ok(r.jet && r.jetAv, 'On pilote aussi un avion (il avance toujours)');
   });
 

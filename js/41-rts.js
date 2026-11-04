@@ -25,7 +25,7 @@ const RTS_UNITS = {
   heli:    { name:'Hélicoptère',     cost:2200, hp:1200, dmg:90,  rate:2.2, range:28, speed:12,  r:2.6, snd:'gl',      col:0x3a4a3a, splash:3, fac:'heliport', kind:'heli', alt:11, cat:'veh' },
   jet:     { name:'Chasseur',        cost:3000, hp:800,  dmg:280, rate:1.2, range:34, speed:32,  r:3,   snd:'rocket',  col:0x6a7080, splash:3.5, fac:'airfield', kind:'air', alt:20, orbit:30, turn:1.3, cat:'veh' },
   warthog: { name:'Warthog',         cost:3800, hp:1500, dmg:40,  rate:22,  range:30, speed:18,  r:3,   snd:'mg50',    col:0x6a7058, beam:0xffd890, fac:'airfield', kind:'air', alt:14, orbit:22, turn:1, cat:'veh' },
-  bomber:  { name:'Bombardier',      cost:4500, hp:1800, dmg:420, rate:4,   range:7,  speed:15,  r:4,   snd:'rocket',  col:0x4a4e56, splash:7, bomb:true, fac:'airfield', kind:'air', alt:26, orbit:34, turn:.6, cat:'veh' }
+  bomber:  { name:'Bombardier',      cost:4500, hp:1800, dmg:420, rate:4,   range:7,  speed:15,  r:4,   snd:'rocket',  col:0x4a4e56, splash:7, bomb:true, fac:'airfield', kind:'air', alt:26, orbit:0, turn:.8, cat:'veh' }
 };
 const RTS_ORDER = Object.keys(RTS_UNITS);
 const RTS_HOTKEY = ['rifle', 'gunner', 'sniper', 'flamebot', 'rocket', 'heavy', 'tank', 'heli', 'jet'];
@@ -373,6 +373,7 @@ function rtsFactoryFor(type){
 const RTS_FAC_NAME = { factory:'une Usine de robots', heavyfac:'une Usine lourde', vehdepot:'un Garage de blindés', heliport:'un Héliport', airfield:'un Aérodrome' };
 function rtsBuy(type){
   const U = RTS_UNITS[type]; if (!U || !RTS.on || state !== 'rts') return null;
+  rtsCancelPlace();
   const f = rtsFactoryFor(type);
   if (!f){ if (typeof toast === 'function') toast('Construis d’abord ' + RTS_FAC_NAME[U.fac]); return null; }
   if (S.money < U.cost){ if (typeof toast === 'function') toast('Pas assez d’argent pour : ' + U.name + ' (' + fmt(U.cost) + ')'); return null; }
@@ -658,7 +659,9 @@ function rtsHit(from, tgt, kind, S2){
     }
   } else if (S2.flame){
     for (const z of zombies){ if (z.dead) continue; const d = Math.hypot(z.g.position.x - from.x, z.g.position.z - from.z); if (d < S2.range + 1 && (z.g.position.x - from.x) * (to.x - from.x) + (z.g.position.z - from.z) * (to.z - from.z) > 0){ damage(z, S2.dmg, false, z.g.position.clone()); z.burnT = 3; z.burnDps = S2.dmg * 2; } }
-    if (Math.random() < .5){ rtsV.copy(to).lerp(from, rand(0, .6)); burst(rtsV, PMATS.ember ? 'ember' : 'dust', 3, 2); }
+    // Jet de flammes bien visible : deux traits (orange large, jaune au cœur) et des braises le long
+    if (typeof arsBeam === 'function'){ arsBeam(from, to, 0xff6a1a, .9, .1); arsBeam(from, to, 0xffd040, .35, .07); }
+    for (let k = 0; k < 2; k++){ rtsV.copy(from).lerp(to, rand(.3, 1)); burst(rtsV, PMATS.ember ? 'ember' : 'dust', 2, 2.5); }
   } else damage(tgt, S2.dmg, false, to.clone());
 }
 function rtsNestDie(n){
@@ -690,11 +693,16 @@ function rtsNearestZ(x, z, r, fwdX, fwdZ, cos){
 // Avions : ils tournent autour d'un point (ordre, nid visé, ou au-dessus de la route) et attaquent ce qui passe devant
 function rtsAir(u, dt){
   const U = u.U, gp = u.g.position, spd = rtsStat(u, 'speed');
-  let cx = 0, cz = -30;
+  let cx = 0, cz = -40;
   if (u.nest && !u.nest.dead){ cx = u.nest.x; cz = u.nest.z; } else if (u.cmd === 'move' || u.cmd === 'patrol'){ cx = u.tx; cz = u.tz; u.cmd = 'patrol'; }
+  else { // sans ordre : il va tourner au-dessus des zombies les plus proches de la base
+    u.huntT = (u.huntT || 0) - dt;
+    if (u.huntT <= 0){ u.huntT = 1; const q = rtsNearestZ(0, -10, 150); u.hunt = q ? [q.g.position.x, q.g.position.z] : null; }
+    if (u.hunt){ cx = u.hunt[0]; cz = u.hunt[1]; }
+  }
   const dx = cx - gp.x, dz = cz - gp.z, d = Math.hypot(dx, dz), R = U.orbit;
   let want = Math.atan2(dx, dz);
-  if (d < R) want += Math.PI / 2 * (1 - d / R) * 1.1;                     // tangente : il tourne en rond
+  if (d < R) want += Math.PI / 2 * (1 - d / R) * 1.1;                     // tangente : il tourne en rond (le bombardier, lui, repasse droit dessus)
   const df = Math.atan2(Math.sin(want - u.head), Math.cos(want - u.head));
   u.head += clamp(df, -U.turn * dt, U.turn * dt);
   const fx = Math.sin(u.head), fz = Math.cos(u.head);
@@ -708,9 +716,9 @@ function rtsAir(u, dt){
     if (rtsNearestZ(gp.x, gp.z, 8) || n){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(rtsMuzzle(u, new THREE.Vector3()), { x:gp.x + rand(-1, 1), z:gp.z + rand(-1, 1) }, 'pt', S2); }
     return;
   }
-  const t = rtsNearestZ(gp.x, gp.z, rtsStat(u, 'range') + U.alt, fx, fz, .55);
+  const t = rtsNearestZ(gp.x, gp.z, rtsStat(u, 'range') + U.alt, fx, fz, -.3);
   if (t){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(rtsMuzzle(u, new THREE.Vector3()), t, 'z', S2); }
-  else if (u.nest && !u.nest.dead){ const n = u.nest, nd = Math.hypot(n.x - gp.x, n.z - gp.z) || 1; if (nd < S2.range + n.r + U.alt && ((n.x - gp.x) * fx + (n.z - gp.z) * fz) / nd > .55){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(rtsMuzzle(u, new THREE.Vector3()), n, 'nest', S2); } }
+  else if (u.nest && !u.nest.dead){ const n = u.nest, nd = Math.hypot(n.x - gp.x, n.z - gp.z) || 1; if (nd < S2.range + n.r + U.alt && ((n.x - gp.x) * fx + (n.z - gp.z) * fz) / nd > -.3){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(rtsMuzzle(u, new THREE.Vector3()), n, 'nest', S2); } }
 }
 function rtsUnits(dt){
   for (const u of RTS.units){
@@ -841,6 +849,7 @@ function rtsUnpilot(){
     u.hpb.bg.visible = u.hpb.fg.visible = true; u.cmd = 'idle'; u.nest = null; u.tx = u.g.position.x; u.tz = u.g.position.z;
     RTS.cam.x = u.g.position.x; RTS.cam.z = u.g.position.z;
   }
+  RTS.sel.length = 0; RTS.bsel = null; if (typeof rtsInfo !== 'undefined' && rtsInfo) rtsInfo.classList.add('hide');
   document.body.classList.remove('piloting');
   if (rtsUI){ rtsUI.classList.remove('piloting'); rtsPilotUI.classList.add('hide'); }
   const cr = $('cross'); if (cr) cr.classList.add('hide');
@@ -926,6 +935,7 @@ function rtsShowPanel(html, btns){
   rtsPanel.classList.remove('hide');
 }
 function rtsTab(t){
+  if (RTS.tab !== t){ rtsCancelPlace(); if (RTS.bsel){ RTS.bsel = null; rtsInfoShow(); } }
   RTS.tab = t;
   rtsUI.querySelectorAll('#rtTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   const bar = $('rtBar'); let h = '';
@@ -945,11 +955,15 @@ function rtsTab(t){
   if (t === 'upg') rtsUpgPanel();
 }
 function rtsPilotSel(){
-  if (RTS.sel.length !== 1){ if (typeof toast === 'function') toast('Choisis une seule unité, puis Piloter'); return false; }
-  return rtsPilot(RTS.sel[0]);
+  const list = RTS.sel.filter(u => !u.dead);
+  if (!list.length){ if (typeof toast === 'function') toast('Choisis d’abord une unité, puis Piloter'); return false; }
+  let best = list[0], bd = 1e9;
+  list.forEach(u => { const d = Math.hypot(u.g.position.x - RTS.cam.x, u.g.position.z - RTS.cam.z); if (d < bd){ bd = d; best = u; } });
+  return rtsPilot(best);
 }
 function rtsUpgPanel(){
   if (state !== 'rts') return;
+  rtsCancelPlace();
   RTS.paused = true;
   let h = '<h2 class="title sm">Améliorer les unités</h2><p class="lead">Argent : <strong>' + fmt(Math.floor(S.money)) + '</strong> · vaut aussi pour les unités déjà construites</p><div class="mk-upg">';
   [['rob', 'Robots'], ['veh', 'Véhicules et avions']].forEach(c => {

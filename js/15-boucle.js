@@ -16,7 +16,7 @@ function update(dt){
     let alive = zAliveCount();
     if (spawnT <= 0 && alive < plan.maxAlive){
       // plan.burst : plusieurs zombies par sortie (mode horde, hordePlan dans 06-donnees.js) ; 1 dans la campagne
-      for (let k = plan.burst || 1; k > 0 && alive < plan.maxAlive && plan.queue.length; k--){ spawnZombie(plan.queue.pop()); alive++; }
+      for (let k = plan.burst || 1; k > 0 && alive < plan.maxAlive && plan.queue.length; k--){ spawnZombie(plan.queue.pop()); alive = zAliveCount(); } // recompté : un chef de meute amène ses petits
       spawnT = plan.interval * rand(.6, 1.4);
     }
   }

@@ -57,6 +57,8 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 47 astuces RTS | Bulles d'astuces des premières parties RTS, une fois chacune (dt_rts_astuces) |
 | 48 liste RTS | Choisir les unités une par une (rangée « Unités », Tab, double-clic) |
 | 49 commandement RTS | Mini-carte, point de ralliement, alerte « Base attaquée », Tenir la position, mode photo |
+| 50 sauvegarde robot | Course du robot gardée au début de chaque rue (dt_mech_partie), « Continuer le robot » |
+| 51 succès des modes | Succès du robot et du RTS (ajoutés à ACH) |
 | 90 branchements | Branche le registre `Jeu` sur le jeu commun ; toujours le dernier |
 
 Les const, let et function de haut niveau sont partagés entre tous les fichiers (portée globale). Un fichier peut appeler une fonction d'un fichier plus loin **seulement à l'intérieur d'une fonction**, jamais au chargement. Chaque fichier commence par `'use strict';`.

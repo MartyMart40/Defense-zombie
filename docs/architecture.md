@@ -17,8 +17,8 @@
 | 39 à 40 | Mode robot |
 | 41 à 44 | Mode RTS « Guerre des robots » |
 | 45 à 49 | Petits ajouts : 45 sauvegarde de la partie RTS, 46 application installable, 47 astuces du RTS, 48 liste des unités du RTS, 49 commandement du RTS (plage pleine) |
-| 50 à 59 | Prochain gros mode ou système |
-| 60 à 89 | Modes suivants (une dizaine chacun) |
+| 50 à 59 | Ajouts généraux : 50 sauvegarde du robot, 51 succès du robot et du RTS ; 52 à 59 libres |
+| 60 à 89 | Prochains gros modes (une dizaine chacun) |
 | 90 | `90-branchements.js` : branche le registre des modes sur le jeu commun. Toujours le dernier. |
 
 Un gros ajout prend sa propre dizaine, même s'il n'a besoin que de 2 ou 3 fichiers au départ : il pourra grandir sans renuméroter. Un fichier ne doit pas dépasser environ 700 lignes : au-delà, le couper par thème (comme le RTS : données, unités, pilotage, interface).
@@ -53,7 +53,7 @@ Les fichiers 04 à 38 se branchent encore par **réaffectation** : `const _b = v
 Règle : **pas de nouveau crochet par réaffectation pour un mode**. Utiliser `Jeu.mode` et `Jeu.on`. On convertit les vieux crochets petit à petit, quand on touche le fichier, avec les tests comme filet. Les crochets qui changent un calcul (ex. le robot qui multiplie `damage`, ou `hitBarricade`) restent des réaffectations pour l'instant.
 
 ## Ajouter un nouveau mode : liste à suivre
-1. Choisir une dizaine libre (ex. 50 à 59) et créer `js/50-nom.js` (données, modèles), puis d'autres fichiers au besoin.
+1. Choisir une dizaine libre (ex. 60 à 69) et créer `js/50-nom.js` (données, modèles), puis d'autres fichiers au besoin.
 2. Un objet d'état propre au mode (ex. `const TOUR = { on:false, ... }`) et des noms préfixés (`tourStart`, `tourStep`...) pour éviter les collisions entre fichiers.
 3. Nouvelles valeurs de `state` pour la partie et la fin.
 4. `Jeu.mode('nom', {...})` à la fin du dernier fichier du mode.

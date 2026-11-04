@@ -51,6 +51,9 @@ Les prix exacts sont dans `RTS_UNITS` et `RTS_BLD` (`js/41-rts.js`) : si un chif
 - Le bombardier est devenu un AC-130 : il tourne en virage à gauche autour de la zone visée.
 - Au cell, le menu du bas se replie (choix gardé dans `dt_rtsFold`) ; au cell couché, une seule rangée qui défile de côté.
 
+## Succès
+Démolisseur de nids (3, 15, 50), Tenir le fort (10, 30, 60 minutes dans une partie), Chasseur de colosses (1, 10, 30 boss) (`js/51-succes-modes.js`).
+
 ## Sauvegarde de la partie
 - Gardé : argent, temps, menace, hordes, boss, améliorations, taille de la base, la route, tous les nids (détruits compris), bâtiments (niveau, vie, rotation), unités (vie, poste).
 - Pas gardé : les zombies en vie, les obus en vol, le pilotage. La partie reprend sur la carte avec un instant de calme.

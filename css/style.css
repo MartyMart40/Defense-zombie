@@ -516,3 +516,6 @@ canvas.rt-ac{ filter:grayscale(1) contrast(1.35) brightness(1.1); }
 #rtrpAc i:nth-child(3){ left:0; bottom:0; border-right:0; border-top:0; }
 #rtrpAc i:nth-child(4){ right:0; bottom:0; border-left:0; border-top:0; }
 #rtrpAc span{ position:absolute; top:130px; left:50%; transform:translateX(-50%); white-space:nowrap; font-size:12px; color:#e8ffe8; }
+/* RTS : tourelle contrôlée (pas de manette de marche, toute la largeur sert à viser) */
+#rtPilot.tur #rtrpJoy{ display:none !important; }
+#rtPilot.touch.tur #rtrpAim{ left:0; }

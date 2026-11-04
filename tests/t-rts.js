@@ -210,6 +210,54 @@
     ok(r.gatling, 'La gatling de 25 mm tire'); ok(r.feu, 'Les obus incendiaires mettent le feu');
   });
 
+  test('RTS : améliorations du tank et de l’hélicoptère, hélices de l’AC-130 qui tournent', () => {
+    exiger(); reset();
+    const r = J(function(c){
+      eval(c); var R = calme(), o = {}; S.money = 1e7;
+      o.listes = Object.keys(__rts.RTS_UPG_SPEC.tank).join(',') + '|' + Object.keys(__rts.RTS_UPG_SPEC.heli).join(',');
+      o.achats = ['coax', 'he', 'apfsds', 'reactive'].every(function(k){ return __rts.rtsUpgBuy('tank', k); }) && ['chaingun', 'hellfire', 'reactive', 'sensor'].every(function(k){ return __rts.rtsUpgBuy('heli', k); });
+      R.blds.filter(function(b){ return b.type === 't_mg'; }).forEach(function(b){ __rts.rtsSell(b); });
+      R.units.forEach(function(u){ u.g.position.set(-30, 0, 20); u.hx = -30; u.hz = 20; u.U = Object.assign({}, u.U, { range:0 }); });
+      var t = __rts.rtsSpawnUnit('tank', 0, -60), h = __rts.rtsSpawnUnit('heli', 20, -60);
+      t.hp = t.maxHp = 1e4;
+      var zs = [[0, -72], [20, -74], [1, -80]].map(function(p){ var z = __t.placer('walker', p[0], p[1]); z.hp = z.maxHp = 1e6; z.speed = 0; z.dmg = 0; return z; });
+      var c3t = 0, c4 = 0; for (var i = 0; i < 30 * 8; i++){ var a = t.cd3, b = h.cd4; visuals(1 / 30); if (t.cd3 > (a || 0)) c3t++; if (h.cd4 > (b || 0)) c4++; }
+      o.coax = c3t > 5; o.hellfire = c4 >= 1;
+      var a130 = __rts.rtsSpawnUnit('bomber', 0, -40), pr = a130.g.userData.props, r0 = pr[0].rotation.z; visuals(1 / 30); o.helices = pr.length === 4 && pr[0].rotation.z !== r0;
+      return o;
+    }, calme);
+    fin();
+    egal(r.listes, 'coax,he,apfsds,reactive|chaingun,hellfire,reactive,sensor', 'Améliorations du tank et de l’hélicoptère'); ok(r.achats, 'Achats');
+    ok(r.coax, 'Mitrailleuse coaxiale du tank'); ok(r.hellfire, 'Missile Hellfire de l’hélicoptère'); ok(r.helices, 'Les 4 hélices de l’AC-130 tournent');
+  });
+
+  test('RTS : contrôler une tourelle (tir simple) et le mortier (rond jaune là où l’obus tombe)', () => {
+    exiger(); reset();
+    const r = J(function(c){
+      eval(c); var R = calme(), o = {}; S.money = 1e6;
+      R.units.forEach(function(u){ u.g.position.set(-30, 0, 20); u.hx = -30; u.hz = 20; u.U = Object.assign({}, u.U, { range:0 }); });
+      var t = R.blds.filter(function(b){ return b.type === 't_mg'; })[0];
+      R.bsel = t; __rts.rtsInfoShow(); var bt = document.querySelector('#rtInfo button[data-a="tpilot"]'); o.bouton = !!bt; bt.click();
+      o.pil = R.pilot === t; visuals(1 / 30); o.cam = camera.position.y < 6;
+      var z = __t.placer('walker', t.x, t.z - 14); z.hp = z.maxHp = 1e6; z.speed = 0; z.dmg = 0;
+      R.pv.yaw = 0; R.pv.pitch = -.15; R.pv.fire = true; for (var i = 0; i < 30; i++) visuals(1 / 30); R.pv.fire = false;
+      o.tir = z.hp < 1e6; o.tete = Math.abs(t.head.rotation.y - Math.PI) < .01;
+      __rts.rtsUnpilot(); o.retour = !R.pilot;
+      clearZombies(); R.blds.filter(function(b){ return b.type === 't_mg'; }).forEach(function(b){ __rts.rtsSell(b); });
+      var m = __rts.rtsBuild('t_mortar', 0, -20); o.mortier = __rts.rtsTurretPilot(m); R.pv.yaw = 0; R.pv.pitch = -.35; visuals(1 / 30);
+      var sp = R.mortSpot, ring = R.mortRing; o.rond = !!ring && ring.visible && Math.hypot(ring.position.x - sp.x, ring.position.z - sp.z) < .01;
+      var dd = Math.hypot(sp.x - m.x, sp.z - m.z); o.portee = dd >= 8 - .01 && dd <= __rts.rtsTStat(m, 'range') + .01;
+      var q = __t.placer('walker', sp.x, sp.z); q.hp = q.maxHp = 1e6; q.speed = 0; q.dmg = 0;
+      m.cd = 0; R.pv.fire = true; visuals(1 / 30); R.pv.fire = false; o.vol = R.shells.length === 1 && q.hp === 1e6;
+      for (var k = 0; k < 30 * 4; k++) visuals(1 / 30); o.boum = q.hp < 1e6;
+      __rts.rtsUnpilot(); o.fin = !R.mortRing;
+      return o;
+    }, calme);
+    fin();
+    ok(r.bouton && r.pil && r.cam, 'Bouton Contrôler et vue de la tourelle'); ok(r.tir && r.tete, 'La tourelle tire où on vise et sa tête suit'); ok(r.retour, 'Retour à la carte');
+    ok(r.mortier && r.rond && r.portee, 'Mortier : rond jaune là où l’obus tombera, dans sa portée'); ok(r.vol && r.boum, 'L’obus met un instant à tomber, puis explose'); ok(r.fin, 'Rond retiré au retour');
+  });
+
   test('RTS : piloter une unité à la première personne (bouger, viser, tirer, revenir)', () => {
     exiger(); reset();
     const r = J(function(c){
@@ -330,7 +378,7 @@
       return o;
     }, calme);
     fin();
-    ok(r.horde >= 10 && r.bord, 'Horde du nord : ' + r.horde); ok(r.large, 'La horde arrive sur toute la largeur du secteur de 90°'); ok(r.droit > r.route, 'La plupart coupent tout droit (' + r.droit + ') au lieu de suivre la route (' + r.route + ')');
+    ok(r.horde >= 10 && r.bord, 'Horde du nord : ' + r.horde); ok(r.large, 'La horde arrive sur toute la largeur du secteur de 90°'); ok(r.droit >= 2 && r.route < r.horde * .75, 'Une bonne part coupent tout droit (' + r.droit + ') au lieu de suivre la route (' + r.route + ')');
     ok(r.mur && r.qgIntact, 'Le zombie attaque la barricade d’abord');
     ok(r.avant && r.plus && r.apres, 'La base s’agrandit : on peut construire plus loin');
     egal(r.fin, 'rts', 'La partie continue'); egal(r.actifs, 6, 'Toujours 6 nids actifs');

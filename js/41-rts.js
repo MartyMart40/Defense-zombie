@@ -49,8 +49,22 @@ const RTS_UPG_SPEC = {
     cal105: { name:'Obusier : rechargement', max:4, desc:'+20 % de cadence du 105 mm par niveau' },
     fire:   { name:'Obus incendiaires',    max:1, desc:'Le 105 mm met le feu aux zombies touchés' },
     sensor: { name:'Capteurs infrarouges', max:3, desc:'+15 % de portée et +10 % de zone d’explosion par niveau' }
+  },
+  tank: {
+    coax:     { name:'Mitrailleuse coaxiale', max:3, desc:'Une mitrailleuse qui arrose les zombies proches, plus forte à chaque niveau' },
+    he:       { name:'Obus explosifs',        max:3, desc:'+25 % de zone d’explosion par niveau' },
+    apfsds:   { name:'Obus perforants',       max:1, desc:'L’obus traverse toute la file avant d’exploser' },
+    reactive: { name:'Blindage réactif',      max:3, desc:'-15 % de dégâts reçus par niveau' }
+  },
+  heli: {
+    chaingun: { name:'Canon de 30 mm',        max:3, desc:'Un canon rotatif sous le nez, plus fort à chaque niveau' },
+    hellfire: { name:'Missiles Hellfire',     max:3, desc:'Un gros missile guidé toutes les 3 s, plus fort à chaque niveau' },
+    reactive: { name:'Leurres et blindage',   max:3, desc:'-15 % de dégâts reçus par niveau' },
+    sensor:   { name:'Viseur infrarouge',     max:3, desc:'+15 % de portée par niveau' }
   }
 };
+// Arme d'appoint achetée en amélioration (tir rapide) et missile lourd
+const RTS_GUNS = { bomber:{ k:'g25', dmg:22, rate:10, snd:'minigun' }, tank:{ k:'coax', dmg:14, rate:8, snd:'rifle' }, heli:{ k:'chaingun', dmg:30, rate:6, snd:'mg50' } };
 const rtsUpgDef = (type, k) => RTS_UPG[k] || (RTS_UPG_SPEC[type] || {})[k];
 const RTS_BLD = {
   hq:       { name:'QG',                     hp:6000, size:6,   cost:0,    fixed:true },
@@ -84,7 +98,7 @@ function rtsRoadX(z){
 }
 const RTS_BOSS = ['titan', 'broodmother', 'behemoth'];
 const RTS = { on:false, paused:false, units:[], nests:[], blds:[], base:null, sel:[], bsel:null, place:null, tab:'rob', upg:{}, t:0, kills:0, threat:1,
-  hordeT:0, hordeN:0, bossN:0, bossKills:0, nestN:0, placeRot:0, ruins:[], chunks:0, zMin:-300, spin:0, lost:0, baseR:30, incT:5, cam:{ x:0, z:-10, h:56 }, keys:{}, drag:null, pinch:null, sndT:0, pilot:null,
+  hordeT:0, hordeN:0, bossN:0, bossKills:0, nestN:0, placeRot:0, ruins:[], shells:[], chunks:0, zMin:-300, spin:0, lost:0, baseR:30, incT:5, cam:{ x:0, z:-10, h:56 }, keys:{}, drag:null, pinch:null, sndT:0, pilot:null,
   pv:{ yaw:0, pitch:-.1, joy:{ id:null, dx:0, dy:0 }, aim:{ id:null, lx:0, ly:0 }, fire:false, fire2:false, mv:{ f:0, b:0, l:0, r:0 } }, best:+store.get('dt_rts_bestN', 0) || 0 };
 const rtsRoot = new THREE.Group(); scene.add(rtsRoot);
 const rtsMat = new THREE.MeshLambertMaterial({ vertexColors:true }); rtsMat.userData.keep = true;
@@ -174,7 +188,6 @@ function rtsUnitGeo(type){
       vmBox(b, 22, .3, 2.6, c, 0, 1.35, 1.2, 0, 0, 0, .08);                                                        // aile haute
       for (const sd of [-1, 1]) for (const x of [3.6, 7.2]){
         vmCyl(b, .5, 2.6, RTS_DARK, sd * x, 1, 2.4, 0, 0, 0, 10);                                                  // moteur
-        vmBox(b, 3.2, .12, .22, 0x2a2a2a, sd * x, 1, 3.75, 0, 0, .5, 0); vmBox(b, 3.2, .12, .22, 0x2a2a2a, sd * x, 1, 3.75, 0, 0, -1.07, 0); // hélice
       }
       vmBox(b, .2, 4, 2.8, c, 0, 2.6, -7, -.15, 0, 0, .05); vmBox(b, 8, .18, 2, c, 0, .9, -7, 0, 0, 0, .04);         // dérive et stabilisateur
       // Flanc gauche : obusier de 105, canon de 40 et gatling de 25
@@ -203,6 +216,10 @@ function rtsUnitGeo(type){
     else { vmCyl(b, .16, 1.6, ARS_C.whiteD, .95, 2.3, .55, 0, 0, 0, 10); for (let i = 0; i < 3; i++) vmRing(b, .2, .16, .06, ARS_C.cyan, .95, 2.3, .1 + i * .3, 0, 0, 0, 10); vmBox(b, .5, .6, .7, VC.blue, -.95, 2.3, 0, 0, 0, 0, .05); }
   });
 }
+function rtsPropGeo(){ // hélice à 4 pales (AC-130), tourne sur elle-même
+  return rtsGeo('prop', b => { for (let i = 0; i < 4; i++){ const a = i * Math.PI / 2; vmBox(b, .24, 1.6, .1, 0x2a2a2a, Math.sin(a) * .8, Math.cos(a) * .8, 0, 0, 0, -a, 0); } vmCyl(b, .22, .4, VC.steel, 0, 0, 0, 0, 0, 0, 8, .4); });
+}
+const rtsPropBlur = new THREE.MeshBasicMaterial({ color:0x9a9a9a, transparent:true, opacity:.22, depthWrite:false, side:THREE.DoubleSide });
 function rtsRotorGeo(big){
   return rtsGeo(big ? 'rotorB' : 'rotor', b => { const L = big ? 9 : 2.2; vmBox(b, L, .06, .35, RTS_DARK, 0, 0, 0, 0, 0, 0, 0); vmBox(b, .35, .06, L, RTS_DARK, 0, 0, 0, 0, 0, 0, 0); });
 }
@@ -396,6 +413,13 @@ function rtsSpawnUnit(type, x, z){
   const m = new THREE.Mesh(rtsUnitGeo(type), rtsMat); g.add(m);
   let rotor = null;
   if (type === 'heli'){ rotor = new THREE.Mesh(rtsRotorGeo(true), rtsMat); rotor.position.set(0, 1.3, .6); g.add(rotor); const tr = new THREE.Mesh(rtsRotorGeo(false), rtsMat); tr.rotation.z = Math.PI / 2; tr.position.set(.25, .9, -4.6); g.add(tr); g.userData.tail = tr; }
+  if (type === 'bomber'){ // 4 hélices et leur disque flou
+    g.userData.props = [];
+    for (const sd of [-1, 1]) for (const x of [3.6, 7.2]){
+      const pr = new THREE.Mesh(rtsPropGeo(), rtsMat); pr.position.set(sd * x, 1, 3.8); g.add(pr); g.userData.props.push(pr);
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(1.65, 20), rtsPropBlur); disc.position.set(sd * x, 1, 3.85); g.add(disc);
+    }
+  }
   const rr = ground ? U.r : U.r * .8;
   const ring = new THREE.Mesh(new THREE.RingGeometry(rr * 1.3, rr * 1.6, 24), rtsRingMat); ring.rotation.x = -Math.PI / 2; ring.position.y = ground ? .06 : -U.alt + .1; ring.visible = false; g.add(ring);
   const hp = rtsHpBar(g, U.big ? 9 : robot ? (type === 'heavy' ? 4.4 : 3) : ground ? 3.4 : 2.8, robot ? (type === 'heavy' ? 2.2 : 1.6) : 3.2);
@@ -518,7 +542,7 @@ function rtsStart(){
   if (typeof infLeave === 'function') try { infLeave(); } catch (e) {}
   newGame(); clearZombies(); rtsClearAll();
   curLoc = LOCS[0];
-  Object.assign(RTS, { on:true, paused:false, t:0, kills:0, threat:1, hordeT:RTS_CFG.hordeEvery, hordeN:0, bossN:0, bossKills:0, nestN:0, lost:0, upg:{}, baseR:RTS_CFG.baseR0, incT:5, tab:'rob', xp0:P.xp || 0, scr0:P.scrap || 0, zMin:-300, spin:0 });
+  Object.assign(RTS, { on:true, paused:false, t:0, kills:0, threat:1, hordeT:RTS_CFG.hordeEvery, hordeN:0, bossN:0, bossKills:0, nestN:0, lost:0, upg:{}, baseR:RTS_CFG.baseR0, incT:5, tab:'rob', xp0:P.xp || 0, scr0:P.scrap || 0, zMin:-300, spin:0, shells:[] });
   rtsRoadReset(); rtsDesert(); rtsMakeNests(); rtsBaseSize();
   S.money = RTS_CFG.money; S.wave = 1;
   RTS.cam.x = 0; RTS.cam.z = -10; RTS.cam.h = isTouch ? 64 : 56;
@@ -612,6 +636,7 @@ function rtsRoadNext(z){
   return z.wp >= 0 ? RTS_ROAD[z.wp] : null;
 }
 function rtsDmgTarget(T, dmg){
+  if (T.type && T.U) dmg *= Math.max(.4, 1 - .15 * rtsLv(T.type, 'reactive'));
   T.hp -= dmg; if (T.hpb) rtsHpSet(T.hpb, T.hp / T.maxHp);
   if (T.hp <= 0){ if (T.B) rtsBldDie(T); else rtsUnitDie(T); }
 }
@@ -695,6 +720,7 @@ function rtsBldDie(o, sold){
   if (o.dead) return; o.dead = true;
   rtsV.set(o.x, 2, o.z);
   if (!sold){ if (typeof rueBoom === 'function') rueBoom(o.x, 2.5, o.z, o.r * 4); if (typeof Snd === 'object' && Snd.boom) Snd.boom(1); burst(rtsV, 'dust', 20, 6); }
+  if (RTS.pilot === o) rtsUnpilot();
   rtsRoot.remove(o.g); if (RTS.bsel === o){ RTS.bsel = null; rtsInfoShow(); }
   if (o.type === 'hq' && state === 'rts') rtsEnd(false);
 }
@@ -728,7 +754,13 @@ function rtsHit(from, tgt, kind, S2){
     if (tgt.hp <= 0) rtsNestDie(tgt);
     return;
   }
-  if (S2.splash){ rtsBlast(to.x, to.z, S2); return; }
+  if (S2.splash){
+    if (S2.pierce2 && kind === 'z'){ // obus perforant : il traverse la file, puis explose
+      const ax = from.x, az = from.z, bx = to.x - ax, bz = to.z - az, L2 = bx * bx + bz * bz || 1;
+      for (const z of zombies){ if (z.dead || z === tgt) continue; const px = z.g.position.x - ax, pz = z.g.position.z - az, t = clamp((px * bx + pz * bz) / L2, 0, 1.6), qx = px - bx * t, qz = pz - bz * t; if (qx * qx + qz * qz < 1.6) damage(z, S2.dmg * .7, false, z.g.position.clone()); }
+    }
+    rtsBlast(to.x, to.z, S2); return;
+  }
   if (kind === 'pt'){ burst(to, 'dust', 2, 1.5); return; }
   if (S2.pierce){
     const ax = from.x, az = from.z, bx = to.x - ax, bz = to.z - az, L2 = bx * bx + bz * bz || 1;
@@ -768,17 +800,24 @@ function rtsNestDie(n){
   const nd = RTS.nests.filter(x => x.dead).length;
   banner('Nid détruit ! (' + nd + ')', '+' + fmt(bounty) + (nn ? ' · nouveau nid repéré au nord, niveau ' + (nn.idx + 1) : ''), 2600);
 }
-const rtsS2 = u => ({ dmg:rtsStat(u, 'dmg'), snd:u.U.snd, beam:u.U.beam, pierce:u.U.pierce, splash:u.U.splash && u.U.splash * (1 + .1 * rtsLv(u.type, 'sensor')), flame:u.U.flame, bomb:u.U.bomb, range:rtsStat(u, 'range') });
+const rtsS2 = u => ({ dmg:rtsStat(u, 'dmg'), snd:u.U.snd, beam:u.U.beam, pierce:u.U.pierce, splash:u.U.splash && u.U.splash * (1 + .1 * rtsLv(u.type, 'sensor') + .25 * rtsLv(u.type, 'he')), pierce2:rtsLv(u.type, 'apfsds') > 0, flame:u.U.flame, bomb:u.U.bomb, range:rtsStat(u, 'range') });
 const rtsMuzzle = (u, out) => { const p = u.g.position; return out.set(p.x, u.U.big ? 5.2 : u.U.kind === 'ground' ? (u.U.cat === 'rob' ? (u.type === 'heavy' ? 3.4 : 2.2) * RTS_SC : 2) : p.y - .5, p.z); };
 // Arme secondaire (roquettes du Mech de combat) : mêmes améliorations d'armes et de cadence
 const rtsS2b = u => { const W = u.U.w2, k = 1 + RTS_UPG.arm.k * rtsLv(u.type, 'arm'), se = rtsLv(u.type, 'sensor'); return { dmg:W.dmg * k, snd:W.snd, splash:W.splash * (1 + .1 * se), range:W.range * (1 + .06 * rtsLv(u.type, 'spd') + .15 * se), burn:rtsLv(u.type, 'fire') > 0 }; };
 const rtsRate2 = u => u.U.w2.rate * (1 + RTS_UPG.rate.k * rtsLv(u.type, 'rate')) * (1 + .2 * rtsLv(u.type, 'cal105'));
 // Gatling de 25 mm de l'AC-130 (amélioration) : rafales traçantes rapides
-const rtsS25 = u => { const l = rtsLv(u.type, 'g25'); return { dmg:22 * (1 + .35 * (l - 1)) * (1 + RTS_UPG.arm.k * rtsLv(u.type, 'arm')), snd:'minigun', beam:0xffd890, range:rtsStat(u, 'range') }; };
+const rtsS25 = u => { const G = RTS_GUNS[u.type], l = rtsLv(u.type, G.k); return { dmg:G.dmg * (1 + .35 * (l - 1)) * (1 + RTS_UPG.arm.k * rtsLv(u.type, 'arm')), snd:G.snd, beam:0xffd890, range:rtsStat(u, 'range') }; };
+// Missile Hellfire de l'hélicoptère (amélioration)
+function rtsHellfire(u, dt, tgt, pilot){
+  const l = rtsLv(u.type, 'hellfire'); if (!l) return;
+  u.cd4 = (u.cd4 || 0) - dt; if (u.cd4 > 0 || !tgt) return;
+  u.cd4 = 3; const S4 = { dmg:300 * (1 + .4 * (l - 1)) * (1 + RTS_UPG.arm.k * rtsLv(u.type, 'arm')), splash:4, snd:'rocket', range:rtsStat(u, 'range') + 8 };
+  if (pilot) rtsPilotShot(u, S4, 1.5); else rtsHit(rtsMuzzle(u, new THREE.Vector3()), tgt, tgt.g ? 'z' : 'nest', S4);
+}
 function rtsGat(u, dt, tgt, pilot){
-  if (!rtsLv(u.type, 'g25')) return;
+  const G = RTS_GUNS[u.type]; if (!G || !rtsLv(u.type, G.k)) return;
   u.cd3 = (u.cd3 || 0) - dt; if (u.cd3 > 0 || !tgt) return;
-  u.cd3 = 1 / (10 * (1 + RTS_UPG.rate.k * rtsLv(u.type, 'rate')));
+  u.cd3 = 1 / (G.rate * (1 + RTS_UPG.rate.k * rtsLv(u.type, 'rate')));
   if (pilot) rtsPilotShot(u, rtsS25(u), -1); else rtsHit(rtsMuzzle(u, new THREE.Vector3()), tgt, tgt.g ? 'z' : 'nest', rtsS25(u));
 }
 // Choix de la cible : tireur d'élite = le plus gros ; explosifs = là où ils sont le plus serrés ; sinon le plus proche
@@ -868,6 +907,7 @@ function rtsUnits(dt){
     if (u.dead) continue;
     u.ring.visible = RTS.sel.indexOf(u) >= 0 && RTS.pilot !== u;
     if (u.rotor){ u.rotor.rotation.y += dt * 30; if (u.g.userData.tail) u.g.userData.tail.rotation.x += dt * 40; }
+    if (u.g.userData.props) u.g.userData.props.forEach((pr, i) => { pr.rotation.z += dt * (i % 2 ? 23 : 25); });
     u.cd -= dt; u.cd2 -= dt;
     if (RTS.pilot === u) continue;                           // piloté par le joueur
     if (u.U.kind === 'air'){ rtsAir(u, dt); continue; }
@@ -926,6 +966,7 @@ function rtsUnits(dt){
       if (tgt && Math.hypot(tgt.g.position.x - gp.x, tgt.g.position.z - gp.z) <= rng){ u.cd = 1 / rtsStat(u, 'rate'); u.head = Math.atan2(tgt.g.position.x - gp.x, tgt.g.position.z - gp.z); u.g.rotation.y = u.head; rtsHit(rtsMuzzle(u, new THREE.Vector3()), tgt, 'z', S2); }
       else if (nest && Math.hypot(nest.x - gp.x, nest.z - gp.z) <= rng + nest.r){ u.cd = 1 / rtsStat(u, 'rate'); u.head = Math.atan2(nest.x - gp.x, nest.z - gp.z); u.g.rotation.y = u.head; rtsHit(rtsMuzzle(u, new THREE.Vector3()), nest, 'nest', S2); }
     }
+    if (RTS_GUNS[u.type] && u.type !== 'bomber'){ const g2 = rtsNearestZ(gp.x, gp.z, rng); rtsGat(u, dt, g2, false); rtsHellfire(u, dt, tgt || g2 || nest, false); }
     // Arme secondaire : roquettes là où les zombies sont serrés, sinon sur le nid
     if (U.w2 && u.cd2 <= 0){
       const S3 = rtsS2b(u), t2 = rtsPickTarget(u, S3.range, S3.splash);
@@ -939,6 +980,7 @@ function rtsBuildings(dt){
     if (o.dead) continue;
     o.ring.visible = RTS.bsel === o;
     const B = o.B;
+    if (B.turret && RTS.pilot === o) continue;
     if (B.turret){
       o.cd -= dt; o.scanT -= dt;
       const rng = rtsTStat(o, 'range'), mn = B.turret.min || 0;
@@ -985,6 +1027,7 @@ function rtsStep(dt){
     banner('Horde n° ' + RTS.hordeN + ' !', sub, 2400);
     if (typeof Snd === 'object' && Snd.groan) Snd.groan();
   }
+  for (let i = RTS.shells.length - 1; i >= 0; i--){ const sh = RTS.shells[i]; sh.t -= dt; if (sh.t <= 0){ RTS.shells.splice(i, 1); rtsBlast(sh.x, sh.z, sh.S2); } }
   rtsUnits(dt); rtsBuildings(dt); rtsZombies(dt);
   if (RTS.pilot && state === 'rts') rtsPilotStep(dt);
   groanT -= dt; if (groanT <= 0){ groanT = rand(1.5, 3.5); if (zAliveCount() > 0 && typeof Snd === 'object') Snd.groan(); }
@@ -999,7 +1042,7 @@ function rtsCamStep(dt){
 function rtsFrame(dt){
   if (!RTS.on) return;
   if (RTS.pilot) rtsPilotCam(); else if (state === 'rts' || state === 'rtsover') rtsCamStep(dt);
-  if (RTS.pilot && RTS.pilot.U.gunship && camera.fov !== 38){ camera.fov = 38; camera.updateProjectionMatrix(); } // zoom du canonnier (le zoom du jeu ne s'en mêle pas)
+  if (RTS.pilot && RTS.pilot.U && RTS.pilot.U.gunship && camera.fov !== 38){ camera.fov = 38; camera.updateProjectionMatrix(); } // zoom du canonnier (le zoom du jeu ne s'en mêle pas)
   if (RTS.sky) RTS.sky.position.set(camera.position.x, 0, camera.position.z); // le ciel suit la caméra
   // En pilotage, les barres de vie trop proches des yeux sont cachées (sinon elles bouchent la vue)
   if (RTS.pilot || RTS.hpHid){
@@ -1007,7 +1050,7 @@ function rtsFrame(dt){
     for (const u of RTS.units){ if (u.dead || u === RTS.pilot) continue; const v = !RTS.pilot || camera.position.distanceTo(u.g.position) > 12; u.hpb.bg.visible = u.hpb.fg.visible = v; }
     for (const o of RTS.blds){ if (o.dead) continue; const v = !RTS.pilot || Math.hypot(camera.position.x - o.x, camera.position.z - o.z) > 12 + o.r; o.hpb.bg.visible = o.hpb.fg.visible = v; }
   }
-  if (RTS.pilot && RTS.pilot.U.big && typeof mechCk !== 'undefined'){ // même cockpit que le mode « Robot de combat »
+  if (RTS.pilot && RTS.pilot.U && RTS.pilot.U.big && typeof mechCk !== 'undefined'){ // même cockpit que le mode « Robot de combat »
     mechCk.visible = true; Object.keys(mechArmsG).forEach(k => { mechArmsG[k].visible = k === 'minigun' || k === 'rocket'; });
     mechBarrels.rotation.z += dt * 28 * RTS.spin; mechCk.position.y = -Math.sin(RTS.pilot.step * 2) * .03;
     mechFlashL.visible = RTS.spin >= 1 && (RTS.pv.fire || (isTouch && RTS.pv.aim.id !== null)); if (mechFlashL.visible) mechFlashL.material.rotation = Math.random() * 6;
@@ -1042,8 +1085,64 @@ function rtsPilot(u){
   if (!isTouch && typeof lockPointer === 'function') lockPointer();
   return true;
 }
+// Contrôle d'une tourelle (ou du mortier) : vue derrière la tête de la tourelle, on vise et on tire
+function rtsTurretPilot(o){
+  if (!o || o.dead || !o.B.turret || state !== 'rts') return false;
+  if (RTS.pilot) rtsUnpilot();
+  rtsCancelPlace(); RTS.pilot = o; RTS.sel.length = 0; RTS.bsel = null; o.ring.visible = false;
+  const P2 = RTS.pv; P2.yaw = (o.head ? o.head.rotation.y : 0) + Math.PI; P2.pitch = o.B.turret.splash ? -.45 : -.08; P2.fire = P2.fire2 = false;
+  P2.joy.dx = P2.joy.dy = 0; P2.joy.id = P2.aim.id = null;
+  rtsInfo.classList.add('hide');
+  document.body.classList.add('piloting'); rtsUI.classList.add('piloting'); rtsPilotUI.classList.remove('hide'); rtsPilotUI.classList.toggle('touch', isTouch); $('cross').classList.remove('hide');
+  rtsPilotUI.classList.remove('w2', 'ac'); rtsPilotUI.classList.add('tur'); $('rtrpFire').textContent = 'Tir'; $('rtrpName').textContent = '🎮 ' + o.B.name;
+  if (o.B.turret.splash){ RTS.mortRing = new THREE.Mesh(new THREE.RingGeometry(.86, 1, 40), new THREE.MeshBasicMaterial({ color:0xffd040, transparent:true, opacity:.9, depthWrite:false, side:THREE.DoubleSide })); RTS.mortRing.rotation.x = -Math.PI / 2; scene.add(RTS.mortRing); }
+  if (!isTouch && typeof lockPointer === 'function') lockPointer();
+  return true;
+}
+// Où tombera l'obus du mortier : là où vise le centre de l'écran, entre la portée mini et maxi
+function rtsMortarSpot(o){
+  rtsTurretCam(); camera.updateMatrixWorld(); rtsRay.setFromCamera(new THREE.Vector2(0, 0), camera);
+  const O = rtsRay.ray.origin, d = rtsRay.ray.direction, rng = rtsTStat(o, 'range'), mn = o.B.turret.min || 0;
+  let x, z;
+  if (d.y < -1e-3){ const t = -O.y / d.y; x = O.x + d.x * t; z = O.z + d.z * t; } else { x = O.x + d.x * rng; z = O.z + d.z * rng; }
+  let dx = x - o.x, dz = z - o.z, L = Math.hypot(dx, dz) || 1; const k = clamp(L, mn, rng) / L;
+  return { x:o.x + dx * k, z:o.z + dz * k };
+}
+function rtsTurretStep(dt){
+  const o = RTS.pilot, P2 = RTS.pv, T = o.B.turret;
+  P2.pitch = clamp(P2.pitch, -1.1, .35);
+  if (o.head) o.head.rotation.y = P2.yaw + Math.PI;
+  o.cd -= dt;
+  const firing = P2.fire || (isTouch && P2.aim.id !== null);
+  const S2 = Object.assign({}, T, { dmg:rtsTStat(o, 'dmg'), range:rtsTStat(o, 'range') });
+  if (T.splash){
+    const sp = rtsMortarSpot(o); RTS.mortSpot = sp;
+    if (RTS.mortRing){ RTS.mortRing.position.set(sp.x, .15, sp.z); RTS.mortRing.scale.setScalar(S2.splash); RTS.mortRing.material.opacity = .55 + .35 * Math.sin(RTS.t * 8); }
+    if (firing && o.cd <= 0){
+      o.cd = 1 / rtsTStat(o, 'rate'); rtsShotSnd('gl'); burst(rtsV.set(o.x, 3, o.z), 'dust', 6, 3);
+      RTS.shells.push({ x:sp.x, z:sp.z, t:1 + Math.hypot(sp.x - o.x, sp.z - o.z) / 40, S2 }); // l'obus met un peu de temps à retomber
+    }
+    return;
+  }
+  if (firing && o.cd <= 0){ o.cd = 1 / rtsTStat(o, 'rate'); rtsPilotShot({ U:{}, g:{ position:new THREE.Vector3(o.x, 0, o.z) }, type:o.type }, S2); }
+}
+function rtsTurretCam(){
+  const o = RTS.pilot, P2 = RTS.pv, mort = !!o.B.turret.splash, back = mort ? 7 : 2.2, up = mort ? 7 : 3.4;
+  camera.position.set(o.x + Math.sin(P2.yaw) * back, up, o.z + Math.cos(P2.yaw) * back);
+  camera.rotation.order = 'YXZ'; camera.rotation.set(P2.pitch, P2.yaw, 0);
+}
 function rtsUnpilot(){
   const u = RTS.pilot; RTS.pilot = null;
+  if (u && u.B){ // c'était une tourelle
+    if (RTS.mortRing){ scene.remove(RTS.mortRing); RTS.mortRing.geometry.dispose(); RTS.mortRing = null; }
+    rtsPilotUI.classList.remove('tur');
+    RTS.pv.fire = RTS.pv.fire2 = false; RTS.pv.joy.id = RTS.pv.aim.id = null;
+    RTS.cam.x = u.x; RTS.cam.z = u.z; RTS.sel.length = 0; RTS.bsel = null; rtsInfo.classList.add('hide');
+    document.body.classList.remove('piloting'); rtsUI.classList.remove('piloting'); rtsPilotUI.classList.add('hide');
+    const cr = $('cross'); if (cr) cr.classList.add('hide');
+    if (typeof unlockPointer === 'function') unlockPointer();
+    return;
+  }
   RTS.pv.fire = RTS.pv.fire2 = false; RTS.pv.joy.id = RTS.pv.aim.id = null; RTS.pv.joy.dx = RTS.pv.joy.dy = 0; RTS.spin = 0;
   if (u && u.U.big){ try { if (typeof Snd === 'object' && Snd.mg) Snd.mgTick(0, false); if (typeof mechCk !== 'undefined') mechCk.visible = false; if (typeof mechArms === 'function') mechArms(); } catch (e) {} }
   if (u && !u.dead){
@@ -1060,6 +1159,7 @@ function rtsUnpilot(){
   camera.rotation.z = 0;
 }
 function rtsPilotStep(dt){
+  if (RTS.pilot && RTS.pilot.B){ rtsTurretStep(dt); return; }
   const u = RTS.pilot, P2 = RTS.pv; if (!u || u.dead) return;
   const U = u.U, gp = u.g.position, spd = rtsStat(u, 'speed');
   P2.pitch = clamp(P2.pitch, -1.2, .5);
@@ -1090,7 +1190,9 @@ function rtsPilotStep(dt){
   }
   // Tir : vers ce qui est au centre de l'écran (zombie, nid, sinon le sol)
   const firing = P2.fire || (isTouch && P2.aim.id !== null);
-  if (U.gunship) rtsGat(u, dt, (P2.fire || (isTouch && P2.aim.id !== null)) ? true : null, true);
+  const trig = (P2.fire || (isTouch && P2.aim.id !== null)) ? true : null;
+  if (U.gunship || u.type === 'tank' || u.type === 'heli') rtsGat(u, dt, trig, true);
+  if (u.type === 'heli') rtsHellfire(u, dt, P2.fire2 || trig ? true : null, true);
   if (U.gunship && P2.fire2 && u.cd2 <= 0){ u.cd2 = 1 / rtsRate2(u); rtsPilotShot(u, rtsS2b(u)); shake = Math.max(shake, .25); }
   if (U.big){ // minigun : elle monte en régime avant de tirer, avec le vrai son continu du mode robot
     RTS.spin = clamp(RTS.spin + (firing ? dt / .35 : -dt / .8), 0, 1);
@@ -1134,6 +1236,7 @@ function rtsPilotShot(u, S2, side){
 }
 function rtsPilotCam(){
   const u = RTS.pilot; if (!u) return;
+  if (u.B){ rtsTurretCam(); return; }
   const P2 = RTS.pv, gp = u.g.position, U = u.U, cat = U.cat === 'rob' ? 'rob' : u.type === 'tank' ? 'tank' : U.kind === 'heli' ? 'heli' : 'air';
   const bob = cat === 'rob' ? Math.abs(Math.sin(u.step * 2)) * .12 : 0;
   const ey = U.gunship ? gp.y + RTS_EYE.gun : U.big ? RTS_EYE.big + Math.sin(u.step * 2) * .09 : (U.kind === 'ground' ? RTS_EYE[cat] * (cat === 'rob' ? RTS_SC * (u.type === 'heavy' ? 1.5 : 1) : 1) : gp.y + RTS_EYE[cat]) + bob;
@@ -1222,6 +1325,7 @@ function rtsInfoShow(){
   } else {
     const B = o.B; h = '<div class="nm">' + B.name + (B.turret ? ' · niveau ' + o.lv : '') + '</div><div class="ds">' + Math.ceil(o.hp) + ' / ' + Math.ceil(o.maxHp) + ' de vie' + (B.desc ? ' · ' + B.desc : '') + '</div><div class="rt-acts">';
     if (B.turret){
+      h += '<button type="button" data-a="tpilot">🎮 Contrôler</button>';
       h += o.lv < RTS_TMAX ? '<button type="button" data-a="up">Améliorer ' + fmt(rtsTCost(o)) + '</button>' : '<button type="button" disabled>Niveau max</button>';
       h += '<div class="ds">' + Math.round(rtsTStat(o, 'dmg')) + ' dégâts · ' + rtsTStat(o, 'rate').toFixed(1).replace('.', ',') + ' tirs/s · portée ' + Math.round(rtsTStat(o, 'range')) + ' m</div>';
     }
@@ -1233,6 +1337,7 @@ function rtsInfoShow(){
   rtsInfo.innerHTML = h; rtsInfo.classList.remove('hide');
   rtsInfo.querySelectorAll('button[data-a]').forEach(b => b.addEventListener('click', () => {
     const a = b.dataset.a;
+    if (a === 'tpilot'){ rtsTurretPilot(o); return; }
     if (a === 'up') rtsTurretUp(o); else if (a === 'sell') rtsSell(o); else if (a === 'pilot') rtsPilot(one); else if (a.indexOf('mk:') === 0) rtsBuy(a.slice(3));
     rtsInfoShow();
   }));
@@ -1248,7 +1353,7 @@ function rtsHUD(){
   const f = $('rtBaseFill'); if (f && RTS.base) f.style.width = (clamp(RTS.base.hp / RTS.base.maxHp, 0, 1) * 100).toFixed(1) + '%';
   let boss = null; for (const z of zombies) if (!z.dead && z.rtsBoss){ boss = z; break; }
   const bb = $('rtBoss'); if (bb){ if (bb.classList.contains('hide') === !!boss) bb.classList.toggle('hide', !boss); if (boss){ set('rtBossName', '☠ ' + ZTYPES[boss.type].name); $('rtBossFill').style.width = (clamp(boss.hp / boss.maxHp, 0, 1) * 100).toFixed(1) + '%'; } }
-  if (RTS.pilot){ const u = RTS.pilot; set('rtrpName', '🎮 ' + u.U.name + ' · ' + Math.ceil(u.hp) + ' / ' + Math.ceil(u.maxHp)); }
+  if (RTS.pilot){ const u = RTS.pilot; set('rtrpName', '🎮 ' + (u.U ? u.U.name : u.B.name + ' · niveau ' + u.lv) + ' · ' + Math.ceil(u.hp) + ' / ' + Math.ceil(u.maxHp)); }
   rtsUI.querySelectorAll('.rt-buy').forEach(b => {
     const fac = rtsFactoryFor(b.dataset.t), off = S.money < RTS_UNITS[b.dataset.t].cost || !fac; if (b.classList.contains('off') !== off) b.classList.toggle('off', off);
     const em = b.querySelector('em'), need = fac ? '' : 'Il faut : ' + RTS_BLD[RTS_UNITS[b.dataset.t].fac].name; if (em && em.textContent !== need) em.textContent = need;
@@ -1494,4 +1599,4 @@ document.addEventListener('pointerlockchange', () => { if (state === 'rts' && RT
 // Accès pour les tests automatiques
 window.__rts = { RTS, RTS_UNITS, RTS_CFG, RTS_BLD, RTS_UPG, RTS_ROAD, RTS_BOSS, rtsStart, rtsQuit, rtsBuy, rtsStep, rtsSelect, rtsOrder, rtsPick, rtsSpawnUnit, rtsSpawnAt, rtsNestDie, rtsEnd, rtsPause,
   rtsBuild, rtsBldOk, rtsPlaceBld, rtsTurretUp, rtsSell, rtsUpgBuy, rtsUpgCost, rtsStat, rtsTStat, rtsStartPlace, rtsPlaceAt, rtsTap, rtsTab, rtsInfoShow,
-  rtsGhostAt, rtsSnap, rtsRotate, rtsGunship, RTS_UPG_SPEC, rtsUpgPanel, rtsPilot, rtsUnpilot, rtsPilotSel, rtsPilotStep, rtsValleyX, rtsRoadDist, rtsClampValley, rtsRoadNext, rtsRoadX, rtsAddNest, rtsFront, rtsPickTarget, RTS_KITE };
+  rtsGhostAt, rtsSnap, rtsRotate, rtsGunship, RTS_UPG_SPEC, rtsUpgPanel, rtsTurretPilot, rtsMortarSpot, rtsPilot, rtsUnpilot, rtsPilotSel, rtsPilotStep, rtsValleyX, rtsRoadDist, rtsClampValley, rtsRoadNext, rtsRoadX, rtsAddNest, rtsFront, rtsPickTarget, RTS_KITE };

@@ -1,53 +1,66 @@
 'use strict';
-/* ================= Mode RTS : « Guerre des robots » — défense d'une base militaire dans le désert ================= */
-// Vue de dessus. Ta base est au centre d'un désert parsemé de bâtiments en ruine ; des bâtiments infectés (nids)
-// tout autour font sortir des zombies, et des hordes arrivent de toutes les directions.
-//   Bâtiments à acheter et à placer dans la zone de la base : usines (pour fabriquer les robots), récupérateur
-//   (argent régulier), atelier de réparation, barricades, et 5 tourelles (mitrailleuse, canon, lance-flammes, mortier,
-//   Tesla) qu'on améliore une à une. La zone de la base s'agrandit à chaque nid détruit.
-//   Robots fabriqués dans les usines, envoyés en groupe ; améliorations par type de robot (armes, blindage, cadence).
+/* ================= Mode RTS : « Guerre des robots », base militaire dans une vallée du désert ================= */
+// Vue de dessus. La base est au fond d'une vallée : montagnes au sud et sur les côtés, ouverture au nord (90°).
+// Les zombies arrivent du nord en suivant une vieille route d'asphalte à moitié détruite ; des nids sont plantés le long.
+//   Bâtiments à placer dans la zone de la base (elle s'agrandit à chaque nid détruit) : usines de robots, usine lourde,
+//   garage de blindés, héliport, aérodrome, récupérateur, atelier de réparation, barricades, 5 tourelles améliorables.
+//   Unités : 6 robots, un tank, un hélicoptère, un chasseur, un bombardier et un avion d'appui (Warthog) ;
+//   améliorations par type (armes, blindage, cadence, moteurs).
+//   Boss avec les hordes : Titan (piétine), Mère pondeuse (pond), Béhémoth ailé (crache de l'acide).
+//   Pilotage : n'importe quelle unité choisie peut être pilotée à la première personne (bouton Piloter, touche F).
 //   Gagné quand tous les nids sont détruits ; perdu si le QG tombe.
-// Mêmes zombies (spawnZombie, damage, kill : argent, XP et ferraille pour de vrai) ; menés ici (rtsZombies).
-// Contrôles ordi : clic gauche (ou cadre) pour choisir, clic droit pour envoyer, ZQSD / WASD / flèches pour la vue,
-//   molette pour zoomer, 1 à 4 robots, Espace tout choisir, Échap annule une construction ou met en pause.
-// Cell : toucher pour choisir et envoyer, glisser pour la vue, pincer pour zoomer, onglets en bas.
+// Mêmes zombies (spawnZombie, damage, kill : argent, XP et ferraille pour de vrai), menés ici (rtsZombies).
 // État du jeu : 'rts' (rtsStep est appelé dans visuals), 'rtsover' à la fin.
 
 /* ---------- Données ---------- */
+// kind : 'ground' (au sol), 'heli' (vole sur place), 'air' (avion : vole en rond, ne s'arrête jamais)
 const RTS_UNITS = {
-  rifle:   { name:'Fantassin',       cost:150,  hp:320,  dmg:26,  rate:3,   range:18, speed:6,   r:.8,  snd:'pistol', col:0x4a6fa5, beam:0xffd890, fac:'factory' },
-  gunner:  { name:'Mitrailleur',     cost:400,  hp:520,  dmg:12,  rate:12,  range:16, speed:5,   r:.9,  snd:'rifle',  col:0x3d6a4a, beam:0xffd890, fac:'factory' },
-  rocket:  { name:'Lance-roquettes', cost:700,  hp:420,  dmg:170, rate:.8,  range:26, speed:4.5, r:.9,  snd:'gl',     col:0x8a6a2a, splash:3.5, fac:'heavyfac' },
-  heavy:   { name:'Mech lourd',      cost:1500, hp:1600, dmg:95,  rate:1.6, range:22, speed:3.6, r:1.4, snd:'laser',  col:0x6a3a6a, beam:0x50f0ff, pierce:true, fac:'heavyfac' }
+  rifle:   { name:'Fantassin',       cost:150,  hp:320,  dmg:26,  rate:3,   range:18, speed:6,   r:.8,  snd:'pistol',  col:0x4a6fa5, beam:0xffd890, fac:'factory', kind:'ground', cat:'rob' },
+  gunner:  { name:'Mitrailleur',     cost:400,  hp:520,  dmg:12,  rate:12,  range:16, speed:5,   r:.9,  snd:'rifle',   col:0x3d6a4a, beam:0xffd890, fac:'factory', kind:'ground', cat:'rob' },
+  sniper:  { name:'Tireur d’élite',  cost:500,  hp:300,  dmg:150, rate:.6,  range:42, speed:5.5, r:.8,  snd:'sniper',  col:0x5a5a3a, beam:0xfff0c0, pierce:true, fac:'factory', kind:'ground', cat:'rob' },
+  flamebot:{ name:'Robot lance-flammes', cost:450, hp:600, dmg:18, rate:9,  range:11, speed:5,   r:.9,  snd:'flamer',  col:0x8a3a20, flame:true, fac:'factory', kind:'ground', cat:'rob' },
+  rocket:  { name:'Lance-roquettes', cost:700,  hp:420,  dmg:170, rate:.8,  range:26, speed:4.5, r:.9,  snd:'gl',      col:0x8a6a2a, splash:3.5, fac:'heavyfac', kind:'ground', cat:'rob' },
+  heavy:   { name:'Mech lourd',      cost:1500, hp:1600, dmg:95,  rate:1.6, range:22, speed:3.6, r:1.4, snd:'laser',   col:0x6a3a6a, beam:0x50f0ff, pierce:true, fac:'heavyfac', kind:'ground', cat:'rob' },
+  tank:    { name:'Tank',            cost:1800, hp:3200, dmg:240, rate:.7,  range:30, speed:5.5, r:2.2, snd:'mg50',    col:0x5a6040, splash:4, fac:'vehdepot', kind:'ground', cat:'veh' },
+  heli:    { name:'Hélicoptère',     cost:2200, hp:1200, dmg:90,  rate:2.2, range:28, speed:12,  r:2.6, snd:'gl',      col:0x3a4a3a, splash:3, fac:'heliport', kind:'heli', alt:11, cat:'veh' },
+  jet:     { name:'Chasseur',        cost:3000, hp:800,  dmg:280, rate:1.2, range:34, speed:32,  r:3,   snd:'rocket',  col:0x6a7080, splash:3.5, fac:'airfield', kind:'air', alt:20, orbit:30, turn:1.3, cat:'veh' },
+  warthog: { name:'Warthog',         cost:3800, hp:1500, dmg:40,  rate:22,  range:30, speed:18,  r:3,   snd:'mg50',    col:0x6a7058, beam:0xffd890, fac:'airfield', kind:'air', alt:14, orbit:22, turn:1, cat:'veh' },
+  bomber:  { name:'Bombardier',      cost:4500, hp:1800, dmg:420, rate:4,   range:7,  speed:15,  r:4,   snd:'rocket',  col:0x4a4e56, splash:7, bomb:true, fac:'airfield', kind:'air', alt:26, orbit:34, turn:.6, cat:'veh' }
 };
-const RTS_ORDER = ['rifle', 'gunner', 'rocket', 'heavy'];
+const RTS_ORDER = Object.keys(RTS_UNITS);
+const RTS_HOTKEY = ['rifle', 'gunner', 'sniper', 'flamebot', 'rocket', 'heavy', 'tank', 'heli', 'jet'];
 const RTS_SC = 1.5; // échelle des robots (lisibles de haut)
-// Améliorations des robots, par type (achetées pendant la partie)
 const RTS_UPG = {
   arm:  { name:'Armes',    max:5, k:.18, desc:'+18 % de dégâts' },
   hp:   { name:'Blindage', max:5, k:.22, desc:'+22 % de vie' },
   rate: { name:'Cadence',  max:5, k:.1,  desc:'+10 % de cadence' },
   spd:  { name:'Moteurs',  max:3, k:.1,  desc:'+10 % de vitesse et +6 % de portée' }
 };
-// Bâtiments : size = rayon d'encombrement ; turret = statistiques de tir (niveau 1)
 const RTS_BLD = {
-  hq:       { name:'QG',                       hp:6000, size:6,   cost:0,    fixed:true },
-  factory:  { name:'Usine de robots',          hp:2000, size:4,   cost:500,  desc:'Fabrique fantassins et mitrailleurs.' },
-  heavyfac: { name:'Usine lourde',             hp:2600, size:5,   cost:1200, desc:'Fabrique lance-roquettes et mechs lourds.' },
-  scrap:    { name:'Récupérateur',             hp:1200, size:3,   cost:400,  income:15, desc:'+15 $ toutes les 5 s.' },
-  repair:   { name:'Atelier de réparation',    hp:1500, size:3.5, cost:700,  heal:45, healR:15, desc:'Répare robots et bâtiments autour.' },
-  wall:     { name:'Barricade',                hp:2500, size:2.2, cost:60,   desc:'Bloc de béton qui retient les zombies.' },
-  t_mg:     { name:'Tourelle mitrailleuse',    hp:900,  size:1.8, cost:250,  turret:{ dmg:14,  rate:8,   range:20, snd:'rifle',  beam:0xffd890 }, desc:'Tir rapide.' },
-  t_cannon: { name:'Tourelle canon',           hp:1300, size:2,   cost:450,  turret:{ dmg:130, rate:.9,  range:28, snd:'sniper', beam:0xffc060, pierce:true }, desc:'Obus qui traverse une file.' },
-  t_flame:  { name:'Tourelle lance-flammes',   hp:1100, size:1.8, cost:400,  turret:{ dmg:16,  rate:10,  range:12, snd:'flamer', flame:true }, desc:'Brûle tout ce qui approche.' },
-  t_mortar: { name:'Mortier',                  hp:900,  size:2,   cost:600,  turret:{ dmg:150, rate:.5,  range:44, snd:'gl',     splash:5, min:8 }, desc:'Longue portée, explosions.' },
-  t_tesla:  { name:'Tourelle Tesla',           hp:1000, size:1.8, cost:700,  turret:{ dmg:60,  rate:1.3, range:18, snd:'arc',    chain:4 }, desc:'L’éclair saute de zombie en zombie.' }
+  hq:       { name:'QG',                     hp:6000, size:6,   cost:0,    fixed:true },
+  factory:  { name:'Usine de robots',        hp:2000, size:4,   cost:500,  desc:'Fantassins, mitrailleurs, tireurs d’élite, lance-flammes.' },
+  heavyfac: { name:'Usine lourde',           hp:2600, size:5,   cost:1200, desc:'Lance-roquettes et mechs lourds.' },
+  vehdepot: { name:'Garage de blindés',      hp:3000, size:5.5, cost:1500, desc:'Fabrique des tanks.' },
+  heliport: { name:'Héliport',               hp:2000, size:5,   cost:1800, desc:'Fabrique des hélicoptères.' },
+  airfield: { name:'Aérodrome',              hp:3200, size:9,   cost:3000, desc:'Chasseurs, Warthogs et bombardiers.' },
+  scrap:    { name:'Récupérateur',           hp:1200, size:3,   cost:400,  income:15, desc:'+15 $ toutes les 5 s.' },
+  repair:   { name:'Atelier de réparation',  hp:1500, size:3.5, cost:700,  heal:45, healR:15, desc:'Répare robots, véhicules et bâtiments autour.' },
+  wall:     { name:'Barricade',              hp:2500, size:2.2, cost:60,   desc:'Bloc de béton qui retient les zombies.' },
+  t_mg:     { name:'Tourelle mitrailleuse',  hp:900,  size:1.8, cost:250,  turret:{ dmg:14,  rate:8,   range:20, snd:'rifle',  beam:0xffd890 }, desc:'Tir rapide.' },
+  t_cannon: { name:'Tourelle canon',         hp:1300, size:2,   cost:450,  turret:{ dmg:130, rate:.9,  range:28, snd:'sniper', beam:0xffc060, pierce:true }, desc:'Obus qui traverse une file.' },
+  t_flame:  { name:'Tourelle lance-flammes', hp:1100, size:1.8, cost:400,  turret:{ dmg:16,  rate:10,  range:12, snd:'flamer', flame:true }, desc:'Brûle tout ce qui approche.' },
+  t_mortar: { name:'Mortier',                hp:900,  size:2,   cost:600,  turret:{ dmg:150, rate:.5,  range:44, snd:'gl',     splash:5, min:8 }, desc:'Longue portée, explosions.' },
+  t_tesla:  { name:'Tourelle Tesla',         hp:1000, size:1.8, cost:700,  turret:{ dmg:60,  rate:1.3, range:18, snd:'arc',    chain:4 }, desc:'L’éclair saute de zombie en zombie.' }
 };
-const RTS_BUILD_TABS = { bat:['factory', 'heavyfac', 'scrap', 'repair', 'wall'], tour:['t_mg', 't_cannon', 't_flame', 't_mortar', 't_tesla'] };
-const RTS_TMAX = 6; // niveaux des tourelles
-const RTS_CFG = { money:900, nests:6, nestHp:4500, hordeEvery:45, bounty:500, maxUnits:40, baseR0:24, baseRStep:9, mapR:132 };
+const RTS_BUILD_TABS = { bat:['factory', 'heavyfac', 'vehdepot', 'heliport', 'airfield', 'scrap', 'repair', 'wall'], tour:['t_mg', 't_cannon', 't_flame', 't_mortar', 't_tesla'] };
+const RTS_TMAX = 6;
+const RTS_CFG = { money:900, nests:6, nestHp:4500, hordeEvery:45, bounty:500, maxUnits:40, baseR0:30, baseRStep:8, bossEvery:3, bossHp:.25 };
+// Vieille route : de la base (index 0) jusqu'au bout de la vallée, au nord
+const RTS_ROAD = [[0, -8], [3, -24], [-5, -42], [-1, -62], [10, -82], [16, -102], [8, -122], [-2, -146]];
+const RTS_BOSS = ['titan', 'broodmother', 'behemoth'];
 const RTS = { on:false, paused:false, units:[], nests:[], blds:[], base:null, sel:[], bsel:null, place:null, tab:'rob', upg:{}, t:0, kills:0, threat:1,
-  hordeT:0, hordeN:0, lost:0, baseR:24, incT:5, cam:{ x:0, z:0, h:52 }, keys:{}, drag:null, pinch:null, sndT:0, best:+store.get('dt_rts_best', 0) || 0 };
+  hordeT:0, hordeN:0, bossN:0, bossKills:0, lost:0, baseR:30, incT:5, cam:{ x:0, z:-10, h:56 }, keys:{}, drag:null, pinch:null, sndT:0, pilot:null,
+  pv:{ yaw:0, pitch:-.1, joy:{ id:null, dx:0, dy:0 }, aim:{ id:null, lx:0, ly:0 }, fire:false, mv:{ f:0, b:0, l:0, r:0 } }, best:+store.get('dt_rts_best', 0) || 0 };
 const rtsRoot = new THREE.Group(); scene.add(rtsRoot);
 const rtsMat = new THREE.MeshLambertMaterial({ vertexColors:true }); rtsMat.userData.keep = true;
 const rtsRingMat = new THREE.MeshBasicMaterial({ color:0x6aff8a, transparent:true, opacity:.8, depthWrite:false, side:THREE.DoubleSide });
@@ -56,19 +69,72 @@ const rtsHpG = new THREE.SpriteMaterial({ color:0x6aff8a, depthTest:false });
 const rtsHpR = new THREE.SpriteMaterial({ color:0xff5a3a, depthTest:false });
 const rtsGhostOk = new THREE.MeshBasicMaterial({ color:0x6aff8a, transparent:true, opacity:.4, depthWrite:false });
 const rtsGhostNo = new THREE.MeshBasicMaterial({ color:0xff4a3a, transparent:true, opacity:.4, depthWrite:false });
-const rtsV = new THREE.Vector3(), rtsV2 = new THREE.Vector3(), rtsRay = new THREE.Raycaster();
+const rtsV = new THREE.Vector3(), rtsV2 = new THREE.Vector3(), rtsV3 = new THREE.Vector3(), rtsRay = new THREE.Raycaster();
 const rtsLv = (type, k) => ((RTS.upg[type] || {})[k] || 0);
+// La vallée : fermée au sud (z > 26) et sur les côtés (elle s'élargit vers le nord, ouverture de 90°)
+const rtsValleyX = z => 36 + Math.max(0, -z) * .95;
+function rtsClampValley(p, air){
+  if (air){ const r = Math.hypot(p.x, p.z); if (r > 160){ p.x *= 160 / r; p.z *= 160 / r; } return p; }
+  if (p.z > 26) p.z = 26; if (p.z < -150) p.z = -150;
+  const m = rtsValleyX(p.z) - 2; p.x = clamp(p.x, -m, m);
+  return p;
+}
 
 /* ---------- Modèles (géométries fusionnées, gardées en cache) ---------- */
 const RTS_GEO = {};
 function rtsGeo(key, draw){ if (!RTS_GEO[key]){ const b = vmNew(); draw(b); RTS_GEO[key] = vmGeo(b); } return RTS_GEO[key]; }
+const RTS_SAND = 0xc8a46a, RTS_CONC = 0x8a8478, RTS_DARK = 0x3a3630, RTS_KAKI = 0x6a6a46, RTS_Y = [2.6, 1.6, .3], RTS_GLASS = [.5, 1.5, 2.4];
 function rtsUnitGeo(type){
   return rtsGeo('u_' + type, b => {
-    const U = RTS_UNITS[type], c = U.col, k = type === 'heavy' ? 1.5 : 1;
+    const U = RTS_UNITS[type], c = U.col;
+    if (type === 'tank'){
+      vmBox(b, 2.6, .9, 4.4, c, 0, .9, 0, 0, 0, 0, .15);
+      for (const s of [-1, 1]){ vmBox(b, .7, .9, 4.6, RTS_DARK, s * 1.55, .45, 0, 0, 0, 0, .1); for (let i = 0; i < 5; i++) vmCyl(b, .32, .72, 0x2a2a28, s * 1.55, .4, -1.7 + i * .85, 0, Math.PI / 2, 0, 8); }
+      vmBox(b, 2.7, .12, 4.5, RTS_Y, 0, 1.36, 0, 0, 0, 0, 0);
+      vmBox(b, 1.7, .7, 1.9, c, 0, 1.75, -.1, 0, 0, 0, .12); vmCyl(b, .14, 3, RTS_DARK, 0, 1.8, 2.1, 0, 0, 0, 8); vmCyl(b, .22, .4, RTS_DARK, 0, 1.8, 3.5, 0, 0, 0, 8);
+      vmBox(b, .4, .3, .4, VC.steel, .5, 2.2, -.6, 0, 0, 0, .04);
+      return;
+    }
+    if (type === 'heli'){
+      vmCyl(b, .9, 3.6, c, 0, 0, .6, 0, 0, 0, 10, .7); vmBox(b, 1.4, 1, 1.2, RTS_GLASS, 0, .15, 2.1, .25, 0, 0, .2); // cabine vitrée
+      vmCyl(b, .3, 4, c, 0, .2, -2.8, 0, 0, 0, 8, .5); vmBox(b, .12, 1.3, .9, c, 0, .8, -4.7, 0, 0, 0, .05); vmBox(b, 1.6, .1, .5, c, 0, .3, -4.6, 0, 0, 0, 0);
+      for (const s of [-1, 1]){ vmBox(b, .12, .12, 3, RTS_DARK, s * .8, -1.05, .6, 0, 0, 0, 0); vmBox(b, .1, .7, .1, RTS_DARK, s * .8, -.7, 1.2, 0, 0, 0, 0); vmBox(b, .1, .7, .1, RTS_DARK, s * .8, -.7, -.2, 0, 0, 0, 0); }
+      for (const s of [-1, 1]){ vmBox(b, 1.4, .12, .4, c, s * 1.1, -.2, .6, 0, 0, 0, 0); vmCyl(b, .2, 1.1, VC.oliveD, s * 1.7, -.35, .7, 0, 0, 0, 8); } // nacelles de roquettes
+      vmBox(b, .5, .5, .5, RTS_DARK, 0, .95, .6, 0, 0, 0, .05);
+      return;
+    }
+    if (type === 'jet'){
+      vmCyl(b, .7, 8, c, 0, 0, 0, 0, 0, 0, 10, .25); vmBox(b, .8, .55, 1.6, RTS_GLASS, 0, .55, 2, 0, 0, 0, .2);
+      vmBox(b, 7, .14, 3, c, 0, 0, -.8, 0, 0, 0, .05);                                                                               // ailes
+      for (const s of [-1, 1]) vmBox(b, .14, 1.6, 1.4, c, s * .7, .9, -3.3, 0, 0, s * .3, .03);                                    // dérives
+      vmBox(b, 2.6, .1, 1.1, c, 0, 0, -3.5, 0, 0, 0, 0);
+      vmCyl(b, .5, .5, [3, 1.2, .3], 0, 0, -4.1, 0, 0, 0, 10);                                                                     // réacteur rougeoyant
+      for (const s of [-1, 1]) vmCyl(b, .14, 1.6, VC.light, s * 2.4, -.2, -.6, 0, 0, 0, 6);                                        // missiles
+      return;
+    }
+    if (type === 'warthog'){
+      vmCyl(b, .75, 8.5, c, 0, 0, 0, 0, 0, 0, 10, .5); vmBox(b, .8, .55, 1.3, RTS_GLASS, 0, .6, 2.2, 0, 0, 0, .2);
+      vmBox(b, 11, .2, 1.9, c, 0, -.1, .2, 0, 0, 0, .05);                                                                            // ailes droites
+      for (const s of [-1, 1]){ vmCyl(b, .5, 1.8, RTS_DARK, s * 1.1, .8, -2.2, 0, 0, 0, 10); vmBox(b, .12, 1.6, 1, c, s * 1.6, .9, -4, 0, 0, 0, .03); } // réacteurs et dérives jumelles
+      vmBox(b, 3.6, .12, .9, c, 0, .5, -4, 0, 0, 0, 0);
+      vmCyl(b, .14, 1.2, RTS_DARK, 0, -.25, 4.6, 0, 0, 0, 8);                                                                       // canon rotatif
+      for (let i = 0; i < 6; i++) vmCyl(b, .1, .5, VC.olive, -4 + i * 1.6, -.4, .4, 0, 0, 0, 6);                                    // bombes sous les ailes
+      vmBox(b, .7, .05, .4, [3, .3, .2], 0, .4, 3.9, 0, 0, 0, 0);                                                                   // dents peintes
+      return;
+    }
+    if (type === 'bomber'){
+      vmCyl(b, 1.1, 12, c, 0, 0, 0, 0, 0, 0, 12, .45); vmBox(b, 1.1, .6, 1.4, RTS_GLASS, 0, .8, 4.6, 0, 0, 0, .2);
+      vmBox(b, 18, .25, 2.6, c, 0, .2, .5, 0, 0, 0, .06);
+      for (const s of [-1, 1]) for (const x of [3, 6.2]){ vmCyl(b, .45, 1.8, RTS_DARK, s * x, -.2, 1.2, 0, 0, 0, 10); vmCyl(b, .5, .1, [3, 1.2, .3], s * x, -.2, .25, 0, 0, 0, 10); }
+      vmBox(b, .16, 2.4, 2, c, 0, 1.4, -5.4, 0, 0, 0, .04); vmBox(b, 5.4, .14, 1.6, c, 0, .6, -5.4, 0, 0, 0, 0);
+      vmBox(b, 1.4, .1, 4, RTS_DARK, 0, -1.05, .4, 0, 0, 0, 0);                                                                      // trappe à bombes
+      return;
+    }
+    const k = type === 'heavy' ? 1.5 : 1;
     vmBox(b, .9 * k, .7 * k, .8 * k, c, 0, 1.55 * k, 0, 0, 0, 0, .08);
     vmBox(b, .5 * k, .3 * k, .4 * k, VC.blue, 0, 1.95 * k, .2 * k, 0, 0, 0, .05);
     vmBox(b, .52 * k, .08 * k, .05, [.6, 2.4, 3], 0, 1.98 * k, .42 * k, 0, 0, 0, 0);
-    vmBox(b, .95 * k, .1 * k, .85 * k, [2.6, 1.4, .3], 0, 1.22 * k, 0, 0, 0, 0, 0);
+    vmBox(b, .95 * k, .1 * k, .85 * k, RTS_Y, 0, 1.22 * k, 0, 0, 0, 0, 0);
     for (const s of [-1, 1]){
       vmBox(b, .22 * k, .75 * k, .26 * k, VC.park, s * .3 * k, .78 * k, 0, 0, 0, 0, .03);
       vmBox(b, .2 * k, .7 * k, .22 * k, VC.blue, s * .3 * k, .32 * k, .05 * k, 0, 0, 0, .03);
@@ -76,11 +142,15 @@ function rtsUnitGeo(type){
     }
     if (type === 'rifle') vmBox(b, .14, .14, .9, VC.park, .55, 1.6, .35, 0, 0, 0, .02);
     else if (type === 'gunner'){ for (let i = 0; i < 4; i++) vmCyl(b, .045, .9, VC.blue, .58 + (i % 2) * .08, 1.55 + Math.floor(i / 2) * .08, .4, 0, 0, 0, 6); vmBox(b, .25, .25, .4, VC.oliveD, -.6, 1.55, 0, 0, 0, 0, .03); }
+    else if (type === 'sniper'){ vmBox(b, .12, .12, 1.8, RTS_DARK, .55, 1.65, .8, 0, 0, 0, .02); vmCyl(b, .08, .5, VC.blue, .55, 1.82, .4, 0, 0, 0, 8); vmBox(b, .4, .2, .3, RTS_Y, 0, 2.15, -.1, 0, 0, 0, 0); }
+    else if (type === 'flamebot'){ vmCyl(b, .22, .8, VC.red, -.1, 1.75, -.6, Math.PI / 2, 0, 0, 10); vmCyl(b, .1, 1, VC.steel, .55, 1.5, .5, 0, 0, 0, 8); vmCyl(b, .05, .1, [3, 1.3, .3], .55, 1.5, 1.05, 0, 0, 0, 6); }
     else if (type === 'rocket'){ vmBox(b, .45, .4, .6, VC.olive, .62, 1.9, 0, 0, 0, 0, .04); for (let i = 0; i < 4; i++) vmCyl(b, .07, .05, VC.port, .52 + (i % 2) * .2, 1.82 + Math.floor(i / 2) * .16, .31, 0, 0, 0, 8); }
     else { vmCyl(b, .16, 1.6, ARS_C.whiteD, .95, 2.3, .55, 0, 0, 0, 10); for (let i = 0; i < 3; i++) vmRing(b, .2, .16, .06, ARS_C.cyan, .95, 2.3, .1 + i * .3, 0, 0, 0, 10); vmBox(b, .5, .6, .7, VC.blue, -.95, 2.3, 0, 0, 0, 0, .05); }
   });
 }
-const RTS_SAND = 0xc8a46a, RTS_CONC = 0x8a8478, RTS_DARK = 0x3a3630, RTS_KAKI = 0x6a6a46;
+function rtsRotorGeo(big){
+  return rtsGeo(big ? 'rotorB' : 'rotor', b => { const L = big ? 9 : 2.2; vmBox(b, L, .06, .35, RTS_DARK, 0, 0, 0, 0, 0, 0, 0); vmBox(b, .35, .06, L, RTS_DARK, 0, 0, 0, 0, 0, 0, 0); });
+}
 function rtsBldGeo(type){
   return rtsGeo('b_' + type, b => {
     if (type === 'hq'){
@@ -88,31 +158,42 @@ function rtsBldGeo(type){
       vmBox(b, 10.2, .4, 8.2, [.6, 1.4, 3], 0, 4.6, 0, 0, 0, 0, 0);
       for (const s of [-1, 1]){ vmBox(b, 1.4, 6, 1.4, RTS_CONC, s * 5, 3, s * 4, 0, 0, 0, .1); vmBox(b, 1.6, .5, 1.6, RTS_DARK, s * 5, 6.2, s * 4, 0, 0, 0, 0); }
       vmCyl(b, .12, 7, 0x9a9aa0, 2, 10, 1, Math.PI / 2, 0, 0, 6); vmBox(b, .6, .6, .6, [3, .4, .3], 2, 13.4, 1, 0, 0, 0, 0);
-      vmCyl(b, 1.4, .4, 0x9a9aa0, -2, 7.4, 0, Math.PI / 2, 0, 0, 12);                                      // parabole
+      vmCyl(b, 1.4, .4, 0x9a9aa0, -2, 7.4, 0, Math.PI / 2, 0, 0, 12);
       vmBox(b, 3, 2.6, .2, RTS_DARK, 0, 1.3, 4.05, 0, 0, 0, 0);
-    } else if (type === 'factory' || type === 'heavyfac'){
-      const k = type === 'heavyfac' ? 1.25 : 1;
-      vmBox(b, 7 * k, 3.5 * k, 6 * k, RTS_KAKI, 0, 1.75 * k, 0, 0, 0, 0, .2);
-      vmCyl(b, 3 * k, 6 * k, 0x7a7a6a, 0, 3.5 * k, 0, 0, Math.PI / 2, 0, 12, 1);                         // toit en voûte
-      vmBox(b, 4 * k, 3 * k, .2, [2.6, 1.6, .3], 0, 1.5 * k, 3.05 * k, 0, 0, 0, 0);                      // grande porte jaune
+    } else if (type === 'factory' || type === 'heavyfac' || type === 'vehdepot'){
+      const k = type === 'factory' ? 1 : type === 'heavyfac' ? 1.25 : 1.35;
+      vmBox(b, 7 * k, 3.5 * k, 6 * k, type === 'vehdepot' ? 0x5a6040 : RTS_KAKI, 0, 1.75 * k, 0, 0, 0, 0, .2);
+      vmCyl(b, 3 * k, 6 * k, 0x7a7a6a, 0, 3.5 * k, 0, 0, Math.PI / 2, 0, 12, 1);
+      vmBox(b, 4 * k, 3 * k, .2, RTS_Y, 0, 1.5 * k, 3.05 * k, 0, 0, 0, 0);
       vmBox(b, 3.6 * k, 2.6 * k, .22, RTS_DARK, 0, 1.4 * k, 3.06 * k, 0, 0, 0, 0);
-      vmCyl(b, .5, 3, RTS_CONC, 2.5 * k, 5.5 * k, -1.5 * k, Math.PI / 2, 0, 0, 8);                       // cheminée
-      if (type === 'heavyfac'){ vmBox(b, .4, 7, .4, [2.6, 1.6, .3], -4.6, 3.5, -3, 0, 0, 0, 0); vmBox(b, 5, .4, .4, [2.6, 1.6, .3], -2.4, 7, -3, 0, 0, 0, 0); } // grue
+      vmCyl(b, .5, 3, RTS_CONC, 2.5 * k, 5.5 * k, -1.5 * k, Math.PI / 2, 0, 0, 8);
+      if (type === 'heavyfac'){ vmBox(b, .4, 7, .4, RTS_Y, -4.6, 3.5, -3, 0, 0, 0, 0); vmBox(b, 5, .4, .4, RTS_Y, -2.4, 7, -3, 0, 0, 0, 0); }
+      if (type === 'vehdepot') for (let i = 0; i < 3; i++) vmBox(b, .5, .5, 7.8, RTS_Y, -3.5 + i * 3.5, .05, 0, 0, 0, 0, 0); // rails au sol
+    } else if (type === 'heliport'){
+      vmCyl(b, 5, .3, RTS_CONC, 0, .15, 0, Math.PI / 2, 0, 0, 20); vmRing(b, 4.4, 4, .32, RTS_Y, 0, .16, 0, Math.PI / 2, 0, 0, 24);
+      vmBox(b, .6, .32, 3.4, [2.8, 2.8, 2.6], -1.1, .17, 0, 0, 0, 0, 0); vmBox(b, .6, .32, 3.4, [2.8, 2.8, 2.6], 1.1, .17, 0, 0, 0, 0, 0); vmBox(b, 1.6, .32, .6, [2.8, 2.8, 2.6], 0, .17, 0, 0, 0, 0, 0); // H
+      vmBox(b, 1.6, 6, 1.6, RTS_KAKI, 4, 3, -4, 0, 0, 0, .1); vmBox(b, 2.4, 1.4, 2.4, RTS_GLASS, 4, 6.6, -4, 0, 0, 0, .1);           // tour de contrôle
+    } else if (type === 'airfield'){
+      vmBox(b, 5, .12, 20, 0x3a3836, 0, .06, 0, 0, 0, 0, 0);                                                                         // piste
+      for (let i = 0; i < 6; i++) vmBox(b, .4, .13, 1.6, [2.8, 2.8, 2.6], 0, .07, -8 + i * 3.2, 0, 0, 0, 0);
+      vmBox(b, 6, 4, 7, RTS_KAKI, -6.5, 2, 3, 0, 0, 0, .2); vmCyl(b, 3, 7, 0x7a7a6a, -6.5, 4, 3, 0, 0, 0, 12, 1);                     // hangar
+      vmBox(b, 1.4, 7, 1.4, RTS_KAKI, 5, 3.5, -6, 0, 0, 0, .1); vmBox(b, 2.4, 1.4, 2.4, RTS_GLASS, 5, 7.6, -6, 0, 0, 0, .1);
+      for (const s of [-1, 1]) for (let i = 0; i < 5; i++) vmBox(b, .25, .2, .25, [3, 2.4, .5], s * 2.8, .1, -9 + i * 4.5, 0, 0, 0, 0); // balises
     } else if (type === 'scrap'){
       vmBox(b, 4, 2.4, 3.6, 0x6a5a40, 0, 1.2, 0, 0, 0, 0, .15);
-      for (let i = 0; i < 5; i++) vmBox(b, rand(.6, 1.2), rand(.4, .9), rand(.6, 1.2), [VC.steel, 0x7a3a2a, RTS_DARK][i % 3], rand(-2.2, 2.2), 2.6 + rand(0, .4), rand(-1.6, 1.6), rand(-.4, .4), rand(0, 3), rand(-.4, .4), .05);
+      for (let i = 0; i < 5; i++) vmBox(b, .6 + (i % 3) * .3, .4 + (i % 2) * .4, .8, [VC.steel, 0x7a3a2a, RTS_DARK][i % 3], -2 + i, 2.7, (i % 2 ? 1 : -1) * .8, .2 * i, i, -.2, .05);
       vmCyl(b, .1, 4, 0x9a9aa0, 1.5, 4, 1.2, Math.PI / 2, 0, 0, 6); vmBox(b, .4, .4, .4, [2.6, 2, .3], 1.5, 6, 1.2, 0, 0, 0, 0);
     } else if (type === 'repair'){
       vmCyl(b, 3.4, .25, RTS_CONC, 0, .12, 0, Math.PI / 2, 0, 0, 16);
-      vmBox(b, 2.4, .3, .6, [.4, 2.6, .6], 0, .3, 0, 0, 0, 0, 0); vmBox(b, .6, .3, 2.4, [.4, 2.6, .6], 0, .3, 0, 0, 0, 0, 0); // croix verte
-      vmBox(b, .5, 5, .5, [2.6, 1.6, .3], -2.8, 2.5, -2.4, 0, 0, 0, 0); vmBox(b, 3, .4, .4, [2.6, 1.6, .3], -1.4, 5, -2.4, 0, 0, 0, 0); // bras de levage
+      vmBox(b, 2.4, .3, .6, [.4, 2.6, .6], 0, .3, 0, 0, 0, 0, 0); vmBox(b, .6, .3, 2.4, [.4, 2.6, .6], 0, .3, 0, 0, 0, 0, 0);
+      vmBox(b, .5, 5, .5, RTS_Y, -2.8, 2.5, -2.4, 0, 0, 0, 0); vmBox(b, 3, .4, .4, RTS_Y, -1.4, 5, -2.4, 0, 0, 0, 0);
       vmBox(b, .3, 1.5, .3, VC.steel, 0, 4.2, -2.4, 0, 0, 0, 0);
     } else if (type === 'wall'){
       vmBox(b, 4.4, 2, 1.2, RTS_CONC, 0, 1, 0, 0, 0, 0, .1);
-      for (let i = 0; i < 4; i++) vmBox(b, .5, .3, 1.22, i % 2 ? [2.6, 1.6, .3] : RTS_DARK, -1.5 + i, 1.6, 0, 0, 0, 0, 0);
-    } else { // tourelles : socle (la tête tourne à part)
+      for (let i = 0; i < 4; i++) vmBox(b, .5, .3, 1.22, i % 2 ? RTS_Y : RTS_DARK, -1.5 + i, 1.6, 0, 0, 0, 0, 0);
+    } else {
       vmCyl(b, 1.5, 1, RTS_CONC, 0, .5, 0, Math.PI / 2, 0, 0, 10); vmCyl(b, 1.1, .5, RTS_DARK, 0, 1.25, 0, Math.PI / 2, 0, 0, 10);
-      for (let i = 0; i < 4; i++){ const a = i * Math.PI / 2 + .78; vmBox(b, .5, .6, .5, [2.6, 1.6, .3], Math.cos(a) * 1.4, .3, Math.sin(a) * 1.4, 0, 0, 0, 0); }
+      for (let i = 0; i < 4; i++){ const a = i * Math.PI / 2 + .78; vmBox(b, .5, .6, .5, RTS_Y, Math.cos(a) * 1.4, .3, Math.sin(a) * 1.4, 0, 0, 0, 0); }
     }
   });
 }
@@ -145,12 +226,21 @@ function rtsHpBar(parent, y, w){
 }
 function rtsHpSet(h, k){ k = clamp(k, 0, 1); h.fg.scale.x = h.w * k; h.fg.position.x = -h.w * (1 - k) / 2; h.fg.material = k < .35 ? rtsHpR : rtsHpG; }
 
-/* ---------- Le désert (remplace la ville le temps de la partie) ---------- */
+/* ---------- La vallée : montagnes, vieille route, ruines (remplace la ville le temps de la partie) ---------- */
+function rtsRoadDist(x, z){
+  let best = 1e9;
+  for (let i = 0; i < RTS_ROAD.length - 1; i++){
+    const A = RTS_ROAD[i], B2 = RTS_ROAD[i + 1], dx = B2[0] - A[0], dz = B2[1] - A[1], L2 = dx * dx + dz * dz;
+    const t = clamp(((x - A[0]) * dx + (z - A[1]) * dz) / L2, 0, 1), qx = A[0] + dx * t - x, qz = A[1] + dz * t - z;
+    best = Math.min(best, Math.hypot(qx, qz));
+  }
+  return best;
+}
 function rtsDesert(){
   disposeWorld(); fires.length = 0;
   world = new THREE.Group(); scene.add(world);
   const fogC = 0xc8a878;
-  scene.fog.color.setHex(fogC); scene.background.setHex(fogC); scene.fog.near = 150; scene.fog.far = 340; // vue de haut : la brume reste au loin
+  scene.fog.color.setHex(fogC); scene.background.setHex(fogC); scene.fog.near = 150; scene.fog.far = 360;
   world.add(new THREE.HemisphereLight(0xffe8c8, 0x6a5030, .55));
   const sun = new THREE.DirectionalLight(0xffd8a0, .65); sun.position.set(-60, 80, 40); world.add(sun);
   world.add(new THREE.AmbientLight(0x503820, .2));
@@ -158,45 +248,62 @@ function rtsDesert(){
   world.add(new THREE.Mesh(new THREE.SphereGeometry(300, 24, 16), new THREE.MeshBasicMaterial({ map:skyTex, side:THREE.BackSide, fog:false, depthWrite:false })));
   const sunSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, color:0xfff2d0, fog:false, depthWrite:false, blending:THREE.AdditiveBlending }));
   sunSpr.position.set(-90, 60, -250); sunSpr.scale.set(60, 60, 1); world.add(sunSpr);
-  // Sable : petites ondulations et teintes qui varient (couleurs par sommet)
-  const gg = new THREE.PlaneGeometry(420, 420, 70, 70); gg.rotateX(-Math.PI / 2);
+  // Sable
+  const gg = new THREE.PlaneGeometry(440, 440, 70, 70); gg.rotateX(-Math.PI / 2);
   const pos = gg.attributes.position, col = new Float32Array(pos.count * 3), c1 = new THREE.Color(0xb08a52), c2 = new THREE.Color(0x8e6c3e), cc = new THREE.Color();
   for (let i = 0; i < pos.count; i++){
-    const x = pos.getX(i), z = pos.getZ(i), r = Math.hypot(x, z);
-    const dune = Math.sin(x * .05) * Math.cos(z * .043) * (r > 150 ? 6 : .25) + Math.sin((x + z) * .11) * .15;
-    pos.setY(i, r > 150 ? Math.max(0, dune) * ((r - 150) / 40) : dune * .5);
+    const x = pos.getX(i), z = pos.getZ(i);
+    pos.setY(i, Math.sin(x * .05) * Math.cos(z * .043) * .12 + Math.sin((x + z) * .11) * .08);
     cc.copy(c1).lerp(c2, .5 + .5 * Math.sin(x * .07 + z * .05)); col[i * 3] = cc.r; col[i * 3 + 1] = cc.g; col[i * 3 + 2] = cc.b;
   }
   gg.setAttribute('color', new THREE.BufferAttribute(col, 3)); gg.computeVertexNormals();
   world.add(new THREE.Mesh(gg, new THREE.MeshLambertMaterial({ vertexColors:true })));
-  // Bâtiments en ruine, rochers, épaves (une seule géométrie fusionnée)
-  const b = vmNew(), nestA = RTS.nestAngles || [];
-  for (let i = 0; i < 34; i++){
-    const a = rand(0, 6.283), r = rand(40, 125);
-    if (nestA.some(n => Math.abs(Math.atan2(Math.sin(a - n), Math.cos(a - n))) < .18)) continue;
-    const x = Math.cos(a) * r, z = Math.sin(a) * r, w = rand(5, 12), d = rand(5, 10), rot = rand(0, 3);
-    vmPush(b, x, 0, z, 0, rot, 0);
-    // murs cassés : hauteurs inégales
+  const b = vmNew(), ROCK = [0x8a6a4a, 0x7a5a3e, 0x9a7a56, 0x6a4e36];
+  // Montagnes : au sud et sur les deux côtés de la vallée (un mur infranchissable)
+  const peak = (x, z, s) => {
+    vmCyl(b, s, s * rand(1.6, 2.6), pick(ROCK), x, s * .9, z, Math.PI / 2, rand(0, 3), 0, 7, rand(.08, .25));
+    vmCyl(b, s * .7, s * 1.2, pick(ROCK), x + rand(-s, s) * .5, s * .5, z + rand(-s, s) * .5, Math.PI / 2, rand(0, 3), 0, 6, .3);
+    vmBox(b, s * 1.4, s * .4, s * 1.2, pick(ROCK), x + rand(-s, s) * .4, s * .15, z + rand(-s, s) * .4, rand(-.2, .2), rand(0, 3), rand(-.2, .2), s * .1);
+  };
+  for (let x = -66; x <= 66; x += 9) peak(x + rand(-3, 3), 40 + rand(-4, 8), rand(9, 15));                                  // sud
+  for (let z = 30; z > -175; z -= 9){ const m = rtsValleyX(z); for (const s of [-1, 1]) peak(s * (m + 9 + rand(0, 6)), z + rand(-3, 3), rand(8, 14)); } // côtés
+  // Vieille route d'asphalte, à moitié détruite : dalles qui manquent, fissures, bandes effacées
+  for (let i = 0; i < RTS_ROAD.length - 1; i++){
+    const A = RTS_ROAD[i], B2 = RTS_ROAD[i + 1], dx = B2[0] - A[0], dz = B2[1] - A[1], L = Math.hypot(dx, dz), rot = Math.atan2(dx, dz);
+    for (let t = 0; t < L; t += 3.2){
+      const x = A[0] + dx * t / L, z = A[1] + dz * t / L;
+      for (const off of [-2.6, 0, 2.6]){
+        if (Math.random() < .14) continue;                                                                                 // trou
+        const ox = Math.cos(rot) * off, oz = -Math.sin(rot) * off;
+        vmBox(b, rand(2.2, 2.7), .08, rand(2.8, 3.3), Math.random() < .25 ? 0x4a4642 : 0x34322f, x + ox + rand(-.15, .15), .05, z + oz + rand(-.15, .15), 0, rot + rand(-.06, .06), 0, 0);
+      }
+      if (Math.random() < .5) vmBox(b, .25, .09, 1.3, [1.6, 1.3, .4], x, .07, z, 0, rot, 0, 0);                            // bande jaune effacée
+      if (Math.random() < .3) vmBox(b, rand(.5, 1.2), .3, rand(.5, 1.2), RTS_DARK, x + rand(-3, 3), .12, z + rand(-1, 1), 0, rand(0, 3), 0, .05); // gravats
+    }
+  }
+  // Ruines dans la vallée (loin de la route, des nids et de la base)
+  for (let i = 0; i < 26; i++){
+    const z = rand(-140, -40), m = rtsValleyX(z) - 8, x = rand(-m, m);
+    if (rtsRoadDist(x, z) < 10 || RTS.nests.some(n => Math.hypot(n.x - x, n.z - z) < 12)) continue;
+    const w = rand(5, 11), d = rand(5, 9);
+    vmPush(b, x, 0, z, 0, rand(0, 3), 0);
     for (let k = 0; k < 4; k++){ const h = rand(1.5, 7); vmBox(b, w / 4, h, .5, k % 2 ? RTS_CONC : 0x9a9080, -w / 2 + w / 8 + k * w / 4, h / 2, -d / 2, 0, 0, 0, .05); }
     for (let k = 0; k < 3; k++){ const h = rand(1, 5); vmBox(b, .5, h, d / 3, 0x9a9080, -w / 2, h / 2, -d / 2 + d / 6 + k * d / 3, 0, 0, 0, .05); }
-    if (Math.random() < .6) for (let k = 0; k < 3; k++){ const h = rand(1, 4); vmBox(b, w / 3, h, .5, RTS_CONC, -w / 2 + w / 6 + k * w / 3, h / 2, d / 2, 0, 0, 0, .05); }
-    for (let k = 0; k < 4; k++) vmBox(b, rand(.6, 1.6), rand(.4, 1), rand(.6, 1.6), 0x8a8070, rand(-w / 2, w / 2), .3, rand(-d / 2, d / 2), rand(-.4, .4), rand(0, 3), rand(-.4, .4), .05); // gravats
-    for (let k = 0; k < 3; k++) vmBox(b, .08, rand(1, 3), .08, RTS_DARK, rand(-w / 2, w / 2), rand(4, 6), -d / 2, rand(-.5, .5), 0, rand(-.5, .5), 0); // fers tordus
+    for (let k = 0; k < 4; k++) vmBox(b, rand(.6, 1.6), rand(.4, 1), rand(.6, 1.6), 0x8a8070, rand(-w / 2, w / 2), .3, rand(-d / 2, d / 2), rand(-.4, .4), rand(0, 3), rand(-.4, .4), .05);
+    for (let k = 0; k < 3; k++) vmBox(b, .08, rand(1, 3), .08, RTS_DARK, rand(-w / 2, w / 2), rand(4, 6), -d / 2, rand(-.5, .5), 0, rand(-.5, .5), 0);
     vmPop(b);
   }
-  for (let i = 0; i < 40; i++){ const a = rand(0, 6.283), r = rand(30, 135), s = rand(.8, 3); vmBox(b, s, s * .6, s * 1.2, 0x9a7a52, Math.cos(a) * r, s * .25, Math.sin(a) * r, rand(-.3, .3), rand(0, 3), rand(-.3, .3), s * .2); } // rochers
+  // Épaves de blindés le long de la route
   const wrecks = [];
-  for (let i = 0; i < 7; i++){ // épaves de blindés
-    const a = rand(0, 6.283), r = rand(32, 110), x = Math.cos(a) * r, z = Math.sin(a) * r;
-    vmPush(b, x, 0, z, 0, rand(0, 3), .15);
+  for (let i = 2; i < RTS_ROAD.length - 1; i++){
+    const P2 = RTS_ROAD[i], s = i % 2 ? 1 : -1, x = P2[0] + s * rand(6, 9), z = P2[1] + rand(-4, 4);
+    vmPush(b, x, 0, z, 0, rand(0, 3), .12);
     vmBox(b, 3.4, 1.2, 6, 0x4a4a36, 0, .9, 0, 0, 0, 0, .15); vmBox(b, 2, .9, 2.4, 0x3a3a2a, 0, 1.9, -.4, 0, 0, 0, .1); vmCyl(b, .15, 3, RTS_DARK, 0, 1.9, 1.8, 0, 0, 0, 6);
-    for (const s of [-1, 1]) vmBox(b, .6, .9, 6.2, RTS_DARK, s * 1.8, .45, 0, 0, 0, 0, .05);
-    vmPop(b);
-    wrecks.push([x, z]);
+    for (const q of [-1, 1]) vmBox(b, .6, .9, 6.2, RTS_DARK, q * 1.8, .45, 0, 0, 0, 0, .05);
+    vmPop(b); wrecks.push([x, z]);
   }
   world.add(new THREE.Mesh(vmGeo(b), rtsMat));
-  wrecks.slice(0, 4).forEach(w => makeFire(w[0], 1.6, w[1], 1.1));
-  // Dalle de la base et limite (jaune) : grandissent quand on détruit des nids
+  wrecks.filter((w, i) => i % 2).forEach(w => makeFire(w[0], 1.6, w[1], 1.1));
   RTS.pad = new THREE.Mesh(new THREE.CircleGeometry(1, 48), new THREE.MeshLambertMaterial({ color:0x8a867c })); RTS.pad.rotation.x = -Math.PI / 2; RTS.pad.position.y = .04; world.add(RTS.pad);
   RTS.edge = new THREE.Mesh(new THREE.RingGeometry(.97, 1, 64), new THREE.MeshBasicMaterial({ color:0xffd040, transparent:true, opacity:.7, side:THREE.DoubleSide, depthWrite:false })); RTS.edge.rotation.x = -Math.PI / 2; RTS.edge.position.y = .07; world.add(RTS.edge);
   try { if (typeof ambReset === 'function') ambReset(); if (typeof __amb === 'object') __amb.set(pick(['clair', 'clair', 'vent', 'coucher', 'poussiere', 'nuitClaire', 'canicule'])); } catch (e) {}
@@ -214,12 +321,17 @@ const rtsStat = (u, k) => {
   if (k === 'range') return U.range * (1 + .06 * rtsLv(t, 'spd'));
   return U[k];
 };
+const rtsIsAir = u => u.U.kind !== 'ground';
 function rtsSpawnUnit(type, x, z){
-  const U = RTS_UNITS[type], g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(RTS_SC); rtsRoot.add(g);
+  const U = RTS_UNITS[type], g = new THREE.Group(), ground = U.kind === 'ground', robot = U.cat === 'rob';
+  g.position.set(x, ground ? 0 : U.alt, z); if (robot) g.scale.setScalar(RTS_SC); rtsRoot.add(g);
   const m = new THREE.Mesh(rtsUnitGeo(type), rtsMat); g.add(m);
-  const ring = new THREE.Mesh(new THREE.RingGeometry(U.r * 1.3, U.r * 1.6, 20), rtsRingMat); ring.rotation.x = -Math.PI / 2; ring.position.y = .06; ring.visible = false; g.add(ring);
-  const hp = rtsHpBar(g, type === 'heavy' ? 4.4 : 3, type === 'heavy' ? 2.2 : 1.6);
-  const u = { type, U, g, m, ring, hpb:hp, hp:0, maxHp:0, tx:x, tz:z, cmd:'idle', nest:null, tgt:null, cd:rand(0, .5), scanT:0, step:0, dead:false, r:U.r * RTS_SC };
+  let rotor = null;
+  if (type === 'heli'){ rotor = new THREE.Mesh(rtsRotorGeo(true), rtsMat); rotor.position.set(0, 1.3, .6); g.add(rotor); const tr = new THREE.Mesh(rtsRotorGeo(false), rtsMat); tr.rotation.z = Math.PI / 2; tr.position.set(.25, .9, -4.6); g.add(tr); g.userData.tail = tr; }
+  const rr = ground ? U.r : U.r * .8;
+  const ring = new THREE.Mesh(new THREE.RingGeometry(rr * 1.3, rr * 1.6, 24), rtsRingMat); ring.rotation.x = -Math.PI / 2; ring.position.y = ground ? .06 : -U.alt + .1; ring.visible = false; g.add(ring);
+  const hp = rtsHpBar(g, robot ? (type === 'heavy' ? 4.4 : 3) : ground ? 3.4 : 2.8, robot ? (type === 'heavy' ? 2.2 : 1.6) : 3.2);
+  const u = { type, U, g, m, ring, rotor, hpb:hp, hp:0, maxHp:0, tx:x, tz:z, cmd:'idle', nest:null, tgt:null, cd:rand(0, .5), scanT:0, step:0, dead:false, r:robot ? U.r * RTS_SC : U.r, head:rand(0, 6.28) };
   u.maxHp = u.hp = rtsStat(u, 'hp');
   m.userData.rtsUnit = u; RTS.units.push(u); rtsHpSet(hp, 1);
   return u;
@@ -229,7 +341,7 @@ function rtsPlaceBld(type, x, z, free){
   const m = new THREE.Mesh(rtsBldGeo(type), rtsMat); g.add(m);
   let head = null; if (B.turret){ head = new THREE.Mesh(rtsHeadGeo(type), rtsMat); head.position.y = 1.5; g.add(head); }
   const ring = new THREE.Mesh(new THREE.RingGeometry(B.size + .3, B.size + .7, 32), rtsRingMat); ring.rotation.x = -Math.PI / 2; ring.position.y = .1; ring.visible = false; g.add(ring);
-  const hpb = rtsHpBar(g, type === 'hq' ? 15 : B.turret ? 4.2 : 7, Math.max(2.2, B.size * 1.2));
+  const hpb = rtsHpBar(g, type === 'hq' ? 15 : B.turret ? 4.2 : 7, Math.max(2.2, Math.min(8, B.size * 1.2)));
   const o = { type, B, g, m, head, ring, hpb, hp:B.hp, maxHp:B.hp, x, z, r:B.size, lv:1, cd:rand(0, .5), tgt:null, scanT:0, spent:free ? 0 : B.cost, dead:false };
   m.userData.rtsBld = o; if (head) head.userData.rtsBld = o;
   RTS.blds.push(o); rtsHpSet(hpb, 1);
@@ -239,6 +351,7 @@ function rtsPlaceBld(type, x, z, free){
 function rtsBldOk(type, x, z){
   const B = RTS_BLD[type]; if (!B) return 'Bâtiment inconnu';
   if (Math.hypot(x, z) + B.size > RTS.baseR) return 'Hors de la base : détruis des nids pour l’agrandir';
+  if (z + B.size > 26 || Math.abs(x) + B.size > rtsValleyX(z) - 2) return 'Trop près de la montagne';
   for (const o of RTS.blds) if (!o.dead && Math.hypot(o.x - x, o.z - z) < o.r + B.size + .5) return 'Trop près d’un autre bâtiment';
   return '';
 }
@@ -253,34 +366,35 @@ function rtsBuild(type, x, z){
   return o;
 }
 function rtsFactoryFor(type){
-  const need = RTS_UNITS[type].fac; let best = null, n = 1e9;
-  for (const o of RTS.blds) if (!o.dead && o.type === need){ const q = o.queue || 0; if (q < n){ n = q; best = o; } }
+  const need = RTS_UNITS[type].fac; let best = null;
+  for (const o of RTS.blds) if (!o.dead && o.type === need){ best = o; if (Math.random() < .5) break; }
   return best;
 }
+const RTS_FAC_NAME = { factory:'une Usine de robots', heavyfac:'une Usine lourde', vehdepot:'un Garage de blindés', heliport:'un Héliport', airfield:'un Aérodrome' };
 function rtsBuy(type){
   const U = RTS_UNITS[type]; if (!U || !RTS.on || state !== 'rts') return null;
   const f = rtsFactoryFor(type);
-  if (!f){ if (typeof toast === 'function') toast('Construis d’abord ' + (U.fac === 'heavyfac' ? 'une Usine lourde' : 'une Usine de robots')); return null; }
-  if (S.money < U.cost){ if (typeof toast === 'function') toast('Pas assez d’argent pour un ' + U.name + ' (' + fmt(U.cost) + ')'); return null; }
-  if (RTS.units.filter(u => !u.dead).length >= RTS_CFG.maxUnits){ if (typeof toast === 'function') toast('Garage plein : ' + RTS_CFG.maxUnits + ' robots au plus'); return null; }
+  if (!f){ if (typeof toast === 'function') toast('Construis d’abord ' + RTS_FAC_NAME[U.fac]); return null; }
+  if (S.money < U.cost){ if (typeof toast === 'function') toast('Pas assez d’argent pour : ' + U.name + ' (' + fmt(U.cost) + ')'); return null; }
+  if (RTS.units.filter(u => !u.dead).length >= RTS_CFG.maxUnits){ if (typeof toast === 'function') toast('Plein : ' + RTS_CFG.maxUnits + ' unités au plus'); return null; }
   S.money -= U.cost;
-  const a = Math.atan2(-f.z, -f.x) + rand(-.4, .4), out = f.r + 2.5;          // il sort de l'usine côté centre
+  const a = Math.atan2(-f.z - 20, -f.x) + rand(-.4, .4), out = f.r + 3;
   const u = rtsSpawnUnit(type, f.x + Math.cos(a) * out, f.z + Math.sin(a) * out);
-  u.tx = f.x + Math.cos(a) * (out + 3); u.tz = f.z + Math.sin(a) * (out + 3); u.cmd = 'move';
+  u.tx = f.x + Math.cos(a) * (out + 4); u.tz = f.z + Math.sin(a) * (out + 4); u.cmd = U.kind === 'air' ? 'idle' : 'move';
+  if (U.kind === 'air') u.head = Math.PI; // décolle vers le nord
   if (typeof Snd === 'object' && Snd.buy) Snd.buy();
   return u;
 }
+const rtsUpgCost = (type, k) => Math.round(RTS_UNITS[type].cost * .8 * Math.pow(1.6, rtsLv(type, k)));
 function rtsUpgBuy(type, k){
   const U = RTS_UPG[k], C = RTS_UNITS[type]; if (!U || !C) return false;
-  const l = rtsLv(type, k), cost = Math.round(C.cost * .8 * Math.pow(1.6, l));
+  const l = rtsLv(type, k), cost = rtsUpgCost(type, k);
   if (l >= U.max || S.money < cost) return false;
   S.money -= cost; RTS.upg[type] = RTS.upg[type] || {}; RTS.upg[type][k] = l + 1;
   if (k === 'hp') RTS.units.forEach(u => { if (u.type === type && !u.dead){ const k2 = rtsStat(u, 'hp') / u.maxHp; u.maxHp *= k2; u.hp *= k2; rtsHpSet(u.hpb, u.hp / u.maxHp); } });
   if (typeof Snd === 'object' && Snd.buy) Snd.buy();
   return true;
 }
-const rtsUpgCost = (type, k) => Math.round(RTS_UNITS[type].cost * .8 * Math.pow(1.6, rtsLv(type, k)));
-// Tourelles : améliorer et vendre
 const rtsTCost = o => Math.round(o.B.cost * .6 * Math.pow(1.5, o.lv - 1));
 const rtsTStat = (o, k) => { const T = o.B.turret, l = o.lv - 1; return k === 'dmg' ? T.dmg * (1 + .3 * l) : k === 'rate' ? T.rate * (1 + .1 * l) : k === 'range' ? T.range * (1 + .06 * l) : T[k]; };
 function rtsTurretUp(o){
@@ -296,22 +410,23 @@ function rtsSell(o){
   S.money += Math.round(o.spent * .5); rtsBldDie(o, true);
   return true;
 }
+// Nids : le long de la vieille route, de chaque côté, de plus en plus loin au nord
 function rtsMakeNests(){
-  const n = RTS_CFG.nests, a0 = rand(0, 6.283);
-  RTS.nestAngles = [];
-  for (let i = 0; i < n; i++){
-    const a = a0 + i / n * Math.PI * 2 + rand(-.2, .2), r = 70 + (i % 3) * 18 + rand(0, 10);
-    RTS.nestAngles.push(a);
-    const x = Math.cos(a) * r, z = Math.sin(a) * r, g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = Math.atan2(-x, -z); rtsRoot.add(g);
-    const m = new THREE.Mesh(rtsNestGeo(), rtsMat); g.add(m);
+  const idx = [2, 3, 4, 5, 6, 7];
+  for (let i = 0; i < RTS_CFG.nests; i++){
+    const P2 = RTS_ROAD[idx[i % idx.length]], s = i % 2 ? 1 : -1, m = rtsValleyX(P2[1]) - 10;
+    const x = clamp(P2[0] + s * rand(13, 18), -m, m), z = P2[1] + rand(-5, 5);
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = Math.atan2(-x, -z); rtsRoot.add(g);
+    const mm = new THREE.Mesh(rtsNestGeo(), rtsMat); g.add(mm);
     const hp = rtsHpBar(g, 10.5, 6), mx = RTS_CFG.nestHp * (1 + .3 * i);
-    const o = { g, m, hpb:hp, hp:mx, maxHp:mx, x, z, r:4.5, spawnT:rand(3, 7), dead:false, idx:i };
-    m.userData.rtsNest = o; RTS.nests.push(o);
+    const o = { g, m:mm, hpb:hp, hp:mx, maxHp:mx, x, z, r:4.5, spawnT:rand(3, 7), dead:false, idx:i };
+    mm.userData.rtsNest = o; RTS.nests.push(o);
   }
 }
 
 /* ---------- Démarrer, quitter ---------- */
 function rtsClearAll(){
+  rtsUnpilot();
   while (rtsRoot.children.length) rtsRoot.remove(rtsRoot.children[0]);
   RTS.units.length = 0; RTS.nests.length = 0; RTS.blds.length = 0; RTS.sel.length = 0; RTS.bsel = null; RTS.base = null; rtsCancelPlace();
 }
@@ -320,35 +435,37 @@ function rtsStart(){
   if (typeof infLeave === 'function') try { infLeave(); } catch (e) {}
   newGame(); clearZombies(); rtsClearAll();
   curLoc = LOCS[0];
-  Object.assign(RTS, { on:true, paused:false, t:0, kills:0, threat:1, hordeT:RTS_CFG.hordeEvery, hordeN:0, lost:0, upg:{}, baseR:RTS_CFG.baseR0, incT:5, tab:'rob', xp0:P.xp || 0, scr0:P.scrap || 0 });
+  Object.assign(RTS, { on:true, paused:false, t:0, kills:0, threat:1, hordeT:RTS_CFG.hordeEvery, hordeN:0, bossN:0, bossKills:0, lost:0, upg:{}, baseR:RTS_CFG.baseR0, incT:5, tab:'rob', xp0:P.xp || 0, scr0:P.scrap || 0 });
   rtsMakeNests(); rtsDesert(); rtsBaseSize();
   S.money = RTS_CFG.money; S.wave = 1;
-  RTS.cam.x = 0; RTS.cam.z = 4; RTS.cam.h = isTouch ? 60 : 52;
+  RTS.cam.x = 0; RTS.cam.z = -10; RTS.cam.h = isTouch ? 64 : 56;
   plan = { queue:[], total:0, hpMult:1, spdMult:1, dmgMult:1, cashMult:1.6, xp:1.5, maxAlive:isTouch ? 130 : 220, interval:1 };
   rtsPlaceBld('hq', 0, 0, true);
-  rtsPlaceBld('factory', -10, 8, true);
-  rtsPlaceBld('t_mg', 9, -9, true); rtsPlaceBld('t_mg', -9, -10, true); rtsPlaceBld('t_mg', 10, 10, true);
-  for (let i = 0; i < 3; i++){ const u = rtsSpawnUnit('rifle', -3 + i * 3, 10); u.tx = -3 + i * 3; u.tz = 13; u.cmd = 'move'; }
+  rtsPlaceBld('factory', -12, 6, true);
+  rtsPlaceBld('t_mg', 7, -12, true); rtsPlaceBld('t_mg', -7, -13, true); rtsPlaceBld('t_mg', 14, -3, true);
+  for (let i = 0; i < 3; i++){ const u = rtsSpawnUnit('rifle', -3 + i * 3, -12); u.tx = -3 + i * 3; u.tz = -16; u.cmd = 'move'; }
   state = 'rts';
   showScreen(null); rtsPanel.classList.add('hide');
   $('hud').classList.add('hide'); $('touch').classList.add('hide'); $('cross').classList.add('hide');
   document.body.classList.add('rts');
   rtsUI.classList.remove('hide'); rtsUI.classList.toggle('touch', isTouch); rtsTab('rob');
   if (typeof unlockPointer === 'function') unlockPointer();
-  banner('Base militaire assiégée', 'Détruis les ' + RTS.nests.length + ' bâtiments infectés autour de la base', 2800);
+  banner('Base assiégée', 'Ils arrivent du nord par la vieille route. Détruis les ' + RTS.nests.length + ' nids.', 3000);
 }
 function rtsQuit(){
   RTS.on = false; RTS.paused = false;
+  rtsClearAll();
   rtsUI.classList.add('hide'); rtsPanel.classList.add('hide'); rtsBox.style.display = 'none'; rtsInfo.classList.add('hide');
   document.body.classList.remove('rts');
-  rtsClearAll(); clearZombies(); RTS.pad = RTS.edge = null;
-  camera.position.copy(EYE); camera.rotation.set(0, 0, 0); camera.rotation.order = 'YXZ';
+  clearZombies(); RTS.pad = RTS.edge = null;
+  camera.position.copy(EYE); camera.rotation.order = 'YXZ'; camera.rotation.set(0, 0, 0);
   state = 'menu'; curLoc = LOCS[0]; buildWorld(curLoc); newGame(); plan = wavePlan(1);
   if (typeof saveP === 'function') saveP();
   showScreen('scrTitle'); $('hud').classList.add('hide');
 }
 function rtsEnd(won){
   if (state === 'rtsover') return;
+  rtsUnpilot();
   state = 'rtsover'; RTS.paused = false; rtsCancelPlace();
   const min = Math.floor(RTS.t / 60), sec = Math.floor(RTS.t % 60);
   if (won){
@@ -358,31 +475,32 @@ function rtsEnd(won){
   } else if (typeof Snd === 'object' && Snd.boom) Snd.boom(2.2);
   if (typeof saveP === 'function') saveP();
   const xp = Math.max(0, Math.round((P.xp || 0) - RTS.xp0)), scr = Math.max(0, Math.round((P.scrap || 0) - RTS.scr0));
-  setTimeout(() => rtsShowPanel('<h2 class="title sm">' + (won ? 'Base libérée !' : 'Le QG est tombé') + '</h2><div class="stats">'
-    + '<span>Nids détruits : <strong>' + RTS.nests.filter(n => n.dead).length + ' / ' + RTS.nests.length + '</strong></span>'
+  setTimeout(() => rtsShowPanel('<h2 class="title sm">' + (won ? 'Vallée libérée !' : 'Le QG est tombé') + '</h2><div class="stats">'
+    + '<span>Nids détruits : <strong>' + RTS.nests.filter(n => n.dead).length + ' / ' + RTS.nests.length + '</strong> · Boss abattus : <strong>' + RTS.bossKills + '</strong></span>'
     + '<span>Temps : <strong>' + min + ' min ' + String(sec).padStart(2, '0') + ' s</strong>' + (won && RTS.best ? ' · record : ' + Math.floor(RTS.best / 60) + ' min ' + String(RTS.best % 60).padStart(2, '0') + ' s' : '') + '</span>'
-    + '<span>Zombies abattus : <strong>' + fmtN(RTS.kills) + '</strong> · Robots perdus : <strong>' + RTS.lost + '</strong></span>'
+    + '<span>Zombies abattus : <strong>' + fmtN(RTS.kills) + '</strong> · Unités perdues : <strong>' + RTS.lost + '</strong></span>'
     + '<span>Expérience : <strong>+' + fmtN(xp) + '</strong> · Ferraille : <strong>+' + fmtN(scr) + ' ⚙</strong>' + (won ? ' (dont 400 de prime)' : '') + '</span></div>',
     [['Rejouer', rtsStart], ['Menu', rtsQuit]]), 1000);
 }
 function rtsPause(){
   if (state !== 'rts' || RTS.paused) return;
-  RTS.paused = true;
+  RTS.paused = true; if (typeof unlockPointer === 'function') unlockPointer();
   rtsShowPanel('<h2 class="title sm">Pause</h2><p class="lead">Menace ' + RTS.threat.toFixed(1).replace('.', ',') + ' · ' + fmtN(RTS.kills) + ' zombies abattus</p>',
-    [['Reprendre', () => { RTS.paused = false; rtsPanel.classList.add('hide'); }], ['Abandonner', rtsQuit]]);
+    [['Reprendre', () => { RTS.paused = false; rtsPanel.classList.add('hide'); if (RTS.pilot && !isTouch && typeof lockPointer === 'function') lockPointer(); }], ['Abandonner', rtsQuit]]);
 }
 
-/* ---------- Chaque image ---------- */
-const RTS_SPAWN = [['walker', 0], ['runner', 1.2], ['crawler', 1.4], ['spider', 2], ['bloater', 2.2], ['brute', 2.6], ['stalker', 3], ['shield', 3.4], ['spitter', 1.8], ['abomination', 4.2]];
+/* ---------- Zombies : la route, les cibles, les boss ---------- */
+const RTS_SPAWN = [['walker', 0], ['runner', 1.2], ['crawler', 1.4], ['spider', 2], ['bloater', 2.2], ['brute', 2.6], ['stalker', 3], ['shield', 3.4], ['spitter', 1.8], ['flyer', 2.4], ['abomination', 4.2]];
 function rtsPickType(){
   const ok = RTS_SPAWN.filter(e => RTS.threat >= e[1] && ZTYPES[e[0]]);
   return Math.random() < .45 ? 'walker' : ok[Math.floor(Math.random() * ok.length)][0];
 }
-function rtsSpawnAt(x, z, n, spread){
+function rtsSpawnAt(x, z, n, spread, type){
   let alive = zAliveCount(), k = 0; spread = spread || 3;
-  for (let i = 0; i < n && alive < plan.maxAlive; i++){
-    const t = rtsPickType(), zz = spawnZombie(t); if (!zz) continue;
-    zz.g.position.set(x + rand(-spread, spread), zz.g.position.y, z + rand(-spread, spread)); zz.rtsT = 0; alive++; k++;
+  for (let i = 0; i < n && (alive < plan.maxAlive || type); i++){
+    const t = type || rtsPickType(), zz = spawnZombie(t); if (!zz) continue;
+    zz.g.position.set(x + rand(-spread, spread), zz.g.position.y, z + rand(-spread, spread)); zz.rtsT = 0; zz.wp = null; alive++; k++;
+    if (RTS_BOSS.indexOf(t) >= 0){ zz.maxHp = zz.hp = zz.maxHp * RTS_CFG.bossHp; zz.rtsBoss = true; zz.abT = 3; }
   }
   return k;
 }
@@ -391,14 +509,54 @@ function rtsThreat(){
   RTS.threat = 1 + RTS.kills / 140 + RTS.t / 150 + killed * .45;
   plan.hpMult = 1 + .55 * (RTS.threat - 1); plan.dmgMult = 1 + .4 * (RTS.threat - 1); plan.spdMult = Math.min(1.5, 1 + .05 * (RTS.threat - 1));
 }
-// Cible d'un zombie : robot ou bâtiment le plus proche (à 16 m), sinon le QG
+const RTS_FLY = { flyer:1, gargoyle:1, crow:1, behemoth:1 };
+// Cible d'un zombie : unité ou bâtiment le plus proche (à 16 m) ; seuls les volants s'en prennent aux hélicoptères et aux avions
 function rtsTargetOfZombie(z){
-  const gp = z.g.position; let best = null, bd = 16 * 16;
-  for (const u of RTS.units){ if (u.dead) continue; const dx = u.g.position.x - gp.x, dz = u.g.position.z - gp.z, d = dx * dx + dz * dz; if (d < bd){ bd = d; best = u; } }
+  const gp = z.g.position, fly = RTS_FLY[z.type]; let best = null, bd = 16 * 16;
+  for (const u of RTS.units){ if (u.dead || (rtsIsAir(u) && !fly)) continue; const dx = u.g.position.x - gp.x, dz = u.g.position.z - gp.z, d = dx * dx + dz * dz; if (d < bd){ bd = d; best = u; } }
   for (const o of RTS.blds){ if (o.dead) continue; const dx = o.x - gp.x, dz = o.z - gp.z, d = Math.max(0, Math.hypot(dx, dz) - o.r); if (d * d < bd){ bd = d * d; best = o; } }
-  return best || RTS.base;
+  return best;
 }
-const rtsPos = T => (T.g && !T.B ? T.g.position : rtsV2.set(T.x, 0, T.z));
+const rtsPos = T => (T.B ? rtsV2.set(T.x, 0, T.z) : T.g.position);
+// Prochain point de la route vers la base (la route va du nord, index élevé, vers la base, index 0)
+function rtsRoadNext(z){
+  const gp = z.g.position;
+  if (z.wp == null){
+    let bi = 0, bd = 1e9; RTS_ROAD.forEach((p, i) => { const d = Math.hypot(p[0] - gp.x, p[1] - gp.z); if (d < bd){ bd = d; bi = i; } });
+    if (bi > 0 && RTS_ROAD[bi][1] < gp.z - 2) bi--;                  // ce point est derrière lui (plus au nord) : on prend le suivant
+    z.wp = bi;
+  }
+  const P2 = RTS_ROAD[z.wp];
+  if (P2 && Math.hypot(P2[0] - gp.x, P2[1] - gp.z) < 4) z.wp--;
+  return z.wp >= 0 ? RTS_ROAD[z.wp] : null;
+}
+function rtsDmgTarget(T, dmg){
+  T.hp -= dmg; if (T.hpb) rtsHpSet(T.hpb, T.hp / T.maxHp);
+  if (T.hp <= 0){ if (T.B) rtsBldDie(T); else rtsUnitDie(T); }
+}
+function rtsBossAbility(z, dt){
+  z.abT -= dt; if (z.abT > 0) return;
+  const gp = z.g.position;
+  if (z.type === 'titan'){                        // piétinement : tout ce qui est au sol autour
+    z.abT = rand(4.5, 6);
+    shake = Math.max(shake, .5); rtsV.set(gp.x, .3, gp.z); burst(rtsV, 'dust', 26, 8); if (typeof Snd === 'object' && Snd.boom) Snd.boom(1.2);
+    RTS.units.slice().forEach(u => { if (!u.dead && !rtsIsAir(u) && Math.hypot(u.g.position.x - gp.x, u.g.position.z - gp.z) < 12) rtsDmgTarget(u, z.dmg * .5); });
+    RTS.blds.slice().forEach(o => { if (!o.dead && Math.hypot(o.x - gp.x, o.z - gp.z) < 12 + o.r) rtsDmgTarget(o, z.dmg * .5); });
+  } else if (z.type === 'broodmother'){           // elle pond des araignées ou des rampants
+    z.abT = rand(5, 7); rtsSpawnAt(gp.x, gp.z, 3, 3, Math.random() < .5 && ZTYPES.spider ? 'spider' : 'crawler');
+  } else if (z.type === 'behemoth'){              // crachat d'acide sur la cible la plus proche (avions compris)
+    z.abT = rand(2.5, 3.5);
+    let best = null, bd = 34 * 34;
+    RTS.units.forEach(u => { if (u.dead) return; const d = (u.g.position.x - gp.x) ** 2 + (u.g.position.z - gp.z) ** 2; if (d < bd){ bd = d; best = u; } });
+    RTS.blds.forEach(o => { if (o.dead) return; const d = (o.x - gp.x) ** 2 + (o.z - gp.z) ** 2; if (d < bd){ bd = d; best = o; } });
+    if (best){
+      const tp = rtsPos(best), to = new THREE.Vector3(tp.x, best.B ? 2 : best.g.position.y + 1, tp.z);
+      if (typeof arsBeam === 'function') arsBeam(rtsV.set(gp.x, gp.y + 2, gp.z), to, 0x8aff40, .35, .25);
+      burst(to, PMATS.acid ? 'acid' : 'dust', 9, 2.4);
+      rtsDmgTarget(best, z.dmg * .6);
+    }
+  }
+}
 function rtsZombies(dt){
   for (let i = zombies.length - 1; i >= 0; i--){
     const z = zombies[i];
@@ -407,16 +565,20 @@ function rtsZombies(dt){
       z.deadT += dt; z.body.rotation.x = -Math.min(1, z.deadT / .45) * Math.PI / 2;
       if (z.deadT <= 1.6 && z.g.position.y > 0){ z.fallV = (z.fallV || 0) + 22 * dt; z.g.position.y = Math.max(0, z.g.position.y - z.fallV * dt); }
       if (z.deadT > 1.6) z.g.position.y -= dt * 1.2;
-      if (z.deadT > 2.8){ disposeZombie(z); zombies.splice(i, 1); }
+      if (z.deadT > (z.rtsBoss ? 5 : 2.8)){ disposeZombie(z); zombies.splice(i, 1); }
       continue;
     }
     if (z.burnT > 0){ z.burnT -= dt; z.burnTick = (z.burnTick || .25) - dt; if (z.burnTick <= 0){ z.burnTick = .25; damage(z, (z.burnDps || 20) * .25, false, z.g.position); if (z.dead) continue; } }
+    if (z.rtsBoss){ rtsBossAbility(z, dt); if (state !== 'rts') return; }
     z.rtsT = (z.rtsT || 0) - dt;
-    if (z.rtsT <= 0 || !z.rtsTgt || z.rtsTgt.dead){ z.rtsT = rand(.3, .6); z.rtsTgt = rtsTargetOfZombie(z); }
-    const T = z.rtsTgt; if (!T) continue;
-    const gp = z.g.position, tp = rtsPos(T), dx = tp.x - gp.x, dz = tp.z - gp.z, d = Math.hypot(dx, dz);
-    const reach = (T.r || 1) + .9 * ((ZTYPES[z.type] || {}).scale || 1);
-    const fly = z.type === 'flyer' || z.type === 'gargoyle' || z.type === 'crow' || z.type === 'behemoth';
+    if (z.rtsT <= 0 || (z.rtsTgt && z.rtsTgt.dead)){ z.rtsT = rand(.3, .6); z.rtsTgt = rtsTargetOfZombie(z); }
+    const gp = z.g.position, fly = !!RTS_FLY[z.type];
+    // Sans cible proche, il suit la vieille route jusqu'à la base, puis va vers le QG
+    let T = z.rtsTgt, tp;
+    if (T) tp = rtsPos(T);
+    else { const P2 = fly ? null : rtsRoadNext(z); if (P2) tp = rtsV3.set(P2[0], 0, P2[1]); else { T = RTS.base; if (!T) continue; tp = rtsPos(T); } }
+    const dx = tp.x - gp.x, dz = tp.z - gp.z, d = Math.hypot(dx, dz);
+    const reach = T ? (T.r || 1) + .9 * ((ZTYPES[z.type] || {}).scale || 1) : 0;
     z.g.rotation.y = Math.atan2(dx, dz);
     z.phase += dt * Math.max(2, z.speed * 3);
     const s = Math.sin(z.phase);
@@ -425,26 +587,28 @@ function rtsZombies(dt){
     const R = z.rig;
     if (R && R.legs) R.legs.forEach((l, k) => { l.rotation.x = Math.sin(z.phase + k * 1.3) * .5; });
     if (R && R.wing){ const a = Math.sin(z.phase * 2.5); R.wing[0].rotation.z = -a * .7; R.wing[1].rotation.z = a * .7; }
-    if (fly) gp.y += ((z.alt || 5) * .6 - gp.y) * Math.min(1, dt * 2);
-    if (d > reach){ const v = z.speed * dt / d; gp.x += dx * v; gp.z += dz * v; }
+    if (fly){ const want = T && !T.B && rtsIsAir(T) ? T.g.position.y : (z.alt || 5) * .6; gp.y += (want - gp.y) * Math.min(1, dt * 2); }
+    if (!T || d > reach){ const v = z.speed * dt / Math.max(d, .01); gp.x += dx * v; gp.z += dz * v; }
     else {
       z.atkT -= dt;
       if (z.atkT <= 0){
         z.atkT = rand(.9, 1.3);
-        T.hp -= z.dmg; if (T.hpb) rtsHpSet(T.hpb, T.hp / T.maxHp);
         rtsV.set(tp.x, 1.2, tp.z); burst(rtsV, 'wood', 2, 1.5);
-        if (T.hp <= 0){ if (T.B) rtsBldDie(T); else rtsUnitDie(T); }
+        rtsDmgTarget(T, z.dmg);
+        if (state !== 'rts') return;
       }
     }
+    if (!fly) rtsClampValley(gp, false);
   }
   zFrame++;
 }
 function rtsUnitDie(u){
   if (u.dead) return; u.dead = true; RTS.lost++;
-  rtsV.set(u.g.position.x, 1.5, u.g.position.z);
-  if (typeof rueBoom === 'function') rueBoom(rtsV.x, 1.6, rtsV.z, 7);
-  burst(rtsV, 'dust', 12, 4); if (typeof Snd === 'object' && Snd.boom) Snd.boom(.6);
+  rtsV.copy(u.g.position); rtsV.y = Math.max(1.5, rtsV.y);
+  if (typeof rueBoom === 'function') rueBoom(rtsV.x, rtsV.y, rtsV.z, rtsIsAir(u) ? 12 : 7);
+  burst(rtsV, 'dust', 12, 4); if (typeof Snd === 'object' && Snd.boom) Snd.boom(rtsIsAir(u) ? 1 : .6);
   rtsRoot.remove(u.g); const i = RTS.sel.indexOf(u); if (i >= 0) RTS.sel.splice(i, 1);
+  if (RTS.pilot === u){ rtsUnpilot(); if (typeof toast === 'function') toast('Ton unité est détruite : retour à la carte'); }
 }
 function rtsBldDie(o, sold){
   if (o.dead) return; o.dead = true;
@@ -454,24 +618,29 @@ function rtsBldDie(o, sold){
   if (o.type === 'hq' && state === 'rts') rtsEnd(false);
 }
 function rtsShotSnd(id){ if (RTS.sndT > 0 || typeof Snd !== 'object') return; RTS.sndT = .07; try { Snd.shot(id); } catch (e) {} }
-// Un tir : robot ou tourelle (S = statistiques), vers un zombie ou un nid
-function rtsHit(from, tgt, isNest, S2){
-  const to = isNest ? rtsV2.set(tgt.x, 3 + rand(-1, 2), tgt.z) : rtsV2.set(tgt.g.position.x, tgt.g.position.y + (tgt.aimY || 1.1), tgt.g.position.z);
-  if (S2.beam && typeof arsBeam === 'function') arsBeam(from, to, S2.beam, S2.pierce ? .14 : .04, S2.pierce ? .12 : .05);
+// Explosion au sol (roquettes, obus, bombes)
+function rtsBlast(x, z, S2){
+  for (const zz of zombies){ if (zz.dead) continue; const d = Math.hypot(zz.g.position.x - x, zz.g.position.z - z); if (d < S2.splash) damage(zz, S2.dmg * (1 - .5 * d / S2.splash), false, zz.g.position.clone()); }
+  for (const n of RTS.nests){ if (n.dead) continue; if (Math.hypot(n.x - x, n.z - z) < S2.splash + n.r){ n.hp -= S2.dmg * .8; rtsHpSet(n.hpb, n.hp / n.maxHp); if (n.hp <= 0) rtsNestDie(n); } }
+  if (typeof rueBoom === 'function') rueBoom(x, 1.2, z, S2.splash * 2.4);
+  if (typeof Snd === 'object' && Snd.boom && Math.random() < .5) Snd.boom(S2.bomb ? 1 : .45);
+}
+// Un tir (robot, véhicule, avion ou tourelle) vers un zombie ('z'), un nid ('nest') ou un point du sol ('pt', { x, z })
+function rtsHit(from, tgt, kind, S2){
+  const to = kind === 'nest' ? rtsV2.set(tgt.x, 3 + rand(-1, 2), tgt.z) : kind === 'pt' ? rtsV2.set(tgt.x, .5, tgt.z) : rtsV2.set(tgt.g.position.x, tgt.g.position.y + (tgt.aimY || 1.1), tgt.g.position.z);
+  if (S2.beam && typeof arsBeam === 'function') arsBeam(from, to, S2.beam, S2.pierce ? .14 : .05, S2.pierce ? .12 : .05);
   if (S2.chain && typeof arsBolt === 'function') arsBolt(from, to);
+  if (!S2.beam && !S2.chain && !S2.flame && typeof arsBeam === 'function') arsBeam(from, to, 0xffa040, .12, .08); // traînée de roquette, d'obus ou de bombe
   rtsShotSnd(S2.snd);
-  if (isNest){
+  if (kind === 'nest'){
     tgt.hp -= S2.dmg * (S2.splash ? 1.6 : 1); rtsHpSet(tgt.hpb, tgt.hp / tgt.maxHp); burst(to, 'dust', 2, 2);
     if (S2.splash && typeof rueBoom === 'function') rueBoom(to.x, to.y, to.z, 6);
     if (tgt.hp <= 0) rtsNestDie(tgt);
     return;
   }
-  if (S2.splash){
-    const sx = to.x, sz = to.z;
-    for (const z of zombies){ if (z.dead) continue; const d = Math.hypot(z.g.position.x - sx, z.g.position.z - sz); if (d < S2.splash) damage(z, S2.dmg * (1 - .5 * d / S2.splash), false, z.g.position.clone()); }
-    if (typeof rueBoom === 'function') rueBoom(sx, 1.2, sz, S2.splash * 2.4);
-    if (typeof Snd === 'object' && Snd.boom && Math.random() < .4) Snd.boom(.4);
-  } else if (S2.pierce){
+  if (S2.splash){ rtsBlast(to.x, to.z, S2); return; }
+  if (kind === 'pt'){ burst(to, 'dust', 2, 1.5); return; }
+  if (S2.pierce){
     const ax = from.x, az = from.z, bx = to.x - ax, bz = to.z - az, L2 = bx * bx + bz * bz || 1;
     for (const z of zombies){
       if (z.dead) continue; const px = z.g.position.x - ax, pz = z.g.position.z - az, t = clamp((px * bx + pz * bz) / L2, 0, 1.4);
@@ -483,11 +652,11 @@ function rtsHit(from, tgt, isNest, S2){
       let best = null, bd = 49;
       for (const z of zombies){ if (z.dead || hit.indexOf(z) >= 0) continue; const d = (z.g.position.x - cur.g.position.x) ** 2 + (z.g.position.z - cur.g.position.z) ** 2; if (d < bd){ bd = d; best = z; } }
       if (!best) break;
-      if (typeof arsBolt === 'function') arsBolt(rtsV.set(cur.g.position.x, 1.2, cur.g.position.z), rtsV2.set(best.g.position.x, 1.2, best.g.position.z));
+      if (typeof arsBolt === 'function') arsBolt(rtsV.set(cur.g.position.x, 1.2, cur.g.position.z), rtsV3.set(best.g.position.x, 1.2, best.g.position.z));
       damage(best, S2.dmg * .8, false, best.g.position.clone()); hit.push(best); cur = best;
     }
   } else if (S2.flame){
-    for (const z of zombies){ if (z.dead) continue; const d = Math.hypot(z.g.position.x - from.x, z.g.position.z - from.z); if (d < S2.range && (z.g.position.x - from.x) * (to.x - from.x) + (z.g.position.z - from.z) * (to.z - from.z) > 0){ damage(z, S2.dmg, false, z.g.position.clone()); z.burnT = 3; z.burnDps = S2.dmg * 2; } }
+    for (const z of zombies){ if (z.dead) continue; const d = Math.hypot(z.g.position.x - from.x, z.g.position.z - from.z); if (d < S2.range + 1 && (z.g.position.x - from.x) * (to.x - from.x) + (z.g.position.z - from.z) * (to.z - from.z) > 0){ damage(z, S2.dmg, false, z.g.position.clone()); z.burnT = 3; z.burnDps = S2.dmg * 2; } }
     if (Math.random() < .5){ rtsV.copy(to).lerp(from, rand(0, .6)); burst(rtsV, PMATS.ember ? 'ember' : 'dust', 3, 2); }
   } else damage(tgt, S2.dmg, false, to.clone());
 }
@@ -500,22 +669,63 @@ function rtsNestDie(n){
   if (typeof Snd === 'object' && Snd.boom) Snd.boom(2);
   shake = Math.max(shake, .6);
   n.g.scale.y = .25; n.g.position.y = -.5; n.hpb.bg.visible = n.hpb.fg.visible = false;
-  RTS.baseR = Math.min(RTS_CFG.mapR - 30, RTS.baseR + RTS_CFG.baseRStep); rtsBaseSize(); // la base s'agrandit
+  RTS.baseR = Math.min(70, RTS.baseR + RTS_CFG.baseRStep); rtsBaseSize();
   const left = RTS.nests.filter(x => !x.dead).length;
   banner('Nid détruit ! La base s’agrandit', '+' + fmt(bounty) + ' · ' + left + ' nid' + (left > 1 ? 's' : '') + ' restant' + (left > 1 ? 's' : ''), 2400);
   if (RTS.nests.every(x => x.dead)) rtsEnd(true);
 }
+const rtsS2 = u => ({ dmg:rtsStat(u, 'dmg'), snd:u.U.snd, beam:u.U.beam, pierce:u.U.pierce, splash:u.U.splash, flame:u.U.flame, bomb:u.U.bomb, range:rtsStat(u, 'range') });
+const rtsMuzzle = (u, out) => { const p = u.g.position; return out.set(p.x, u.U.kind === 'ground' ? (u.U.cat === 'rob' ? (u.type === 'heavy' ? 3.4 : 2.2) * RTS_SC : 2) : p.y - .5, p.z); };
+function rtsNearestZ(x, z, r, fwdX, fwdZ, cos){
+  let best = null, bd = r * r;
+  for (const q of zombies){
+    if (q.dead) continue; const dx = q.g.position.x - x, dz = q.g.position.z - z, d = dx * dx + dz * dz;
+    if (d >= bd) continue;
+    if (fwdX != null){ const L = Math.sqrt(d) || 1; if ((dx * fwdX + dz * fwdZ) / L < cos) continue; }
+    bd = d; best = q;
+  }
+  return best;
+}
+// Avions : ils tournent autour d'un point (ordre, nid visé, ou au-dessus de la route) et attaquent ce qui passe devant
+function rtsAir(u, dt){
+  const U = u.U, gp = u.g.position, spd = rtsStat(u, 'speed');
+  let cx = 0, cz = -30;
+  if (u.nest && !u.nest.dead){ cx = u.nest.x; cz = u.nest.z; } else if (u.cmd === 'move' || u.cmd === 'patrol'){ cx = u.tx; cz = u.tz; u.cmd = 'patrol'; }
+  const dx = cx - gp.x, dz = cz - gp.z, d = Math.hypot(dx, dz), R = U.orbit;
+  let want = Math.atan2(dx, dz);
+  if (d < R) want += Math.PI / 2 * (1 - d / R) * 1.1;                     // tangente : il tourne en rond
+  const df = Math.atan2(Math.sin(want - u.head), Math.cos(want - u.head));
+  u.head += clamp(df, -U.turn * dt, U.turn * dt);
+  const fx = Math.sin(u.head), fz = Math.cos(u.head);
+  gp.x += fx * spd * dt; gp.z += fz * spd * dt; gp.y += (U.alt - gp.y) * Math.min(1, dt);
+  u.g.rotation.set(0, u.head, -clamp(df, -.6, .6) * .8);
+  rtsClampValley(gp, true);
+  if (u.cd > 0) return;
+  const S2 = rtsS2(u);
+  if (U.bomb){ // bombes : quand il passe au-dessus de zombies ou du nid visé
+    const n = u.nest && !u.nest.dead && Math.hypot(u.nest.x - gp.x, u.nest.z - gp.z) < 8 ? u.nest : null;
+    if (rtsNearestZ(gp.x, gp.z, 8) || n){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(rtsMuzzle(u, new THREE.Vector3()), { x:gp.x + rand(-1, 1), z:gp.z + rand(-1, 1) }, 'pt', S2); }
+    return;
+  }
+  const t = rtsNearestZ(gp.x, gp.z, rtsStat(u, 'range') + U.alt, fx, fz, .55);
+  if (t){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(rtsMuzzle(u, new THREE.Vector3()), t, 'z', S2); }
+  else if (u.nest && !u.nest.dead){ const n = u.nest, nd = Math.hypot(n.x - gp.x, n.z - gp.z) || 1; if (nd < S2.range + n.r + U.alt && ((n.x - gp.x) * fx + (n.z - gp.z) * fz) / nd > .55){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(rtsMuzzle(u, new THREE.Vector3()), n, 'nest', S2); } }
+}
 function rtsUnits(dt){
   for (const u of RTS.units){
     if (u.dead) continue;
+    u.ring.visible = RTS.sel.indexOf(u) >= 0 && RTS.pilot !== u;
+    if (u.rotor){ u.rotor.rotation.y += dt * 30; if (u.g.userData.tail) u.g.userData.tail.rotation.x += dt * 40; }
+    u.cd -= dt;
+    if (RTS.pilot === u) continue;                           // piloté par le joueur
+    if (u.U.kind === 'air'){ rtsAir(u, dt); continue; }
     const gp = u.g.position, rng = rtsStat(u, 'range');
-    u.cd -= dt; u.scanT -= dt;
+    u.scanT -= dt;
     let nest = u.nest && !u.nest.dead ? u.nest : null;
     if (u.scanT <= 0){
-      u.scanT = rand(.2, .35); let best = null, bd = (rng + (u.cmd === 'idle' ? 6 : 0)) ** 2;
-      for (const z of zombies){ if (z.dead) continue; const dx = z.g.position.x - gp.x, dz = z.g.position.z - gp.z, d = dx * dx + dz * dz; if (d < bd){ bd = d; best = z; } }
-      u.tgt = best; u.autoNest = null;
-      if (!nest && !best && u.cmd === 'idle') for (const n of RTS.nests){ if (!n.dead && Math.hypot(n.x - gp.x, n.z - gp.z) < rng + n.r){ u.autoNest = n; break; } }
+      u.scanT = rand(.2, .35);
+      u.tgt = rtsNearestZ(gp.x, gp.z, rng + (u.cmd === 'idle' ? 6 : 0)); u.autoNest = null;
+      if (!nest && !u.tgt && u.cmd === 'idle') for (const n of RTS.nests){ if (!n.dead && Math.hypot(n.x - gp.x, n.z - gp.z) < rng + n.r){ u.autoNest = n; break; } }
     }
     nest = nest || (u.autoNest && !u.autoNest.dead ? u.autoNest : null);
     let tx = u.tx, tz = u.tz, go = u.cmd === 'move';
@@ -523,21 +733,21 @@ function rtsUnits(dt){
     else if (u.cmd === 'idle' && u.tgt){ const dz = Math.hypot(u.tgt.g.position.x - gp.x, u.tgt.g.position.z - gp.z); if (dz > rng){ tx = u.tgt.g.position.x; tz = u.tgt.g.position.z; go = true; } }
     if (go){
       const dx = tx - gp.x, dz = tz - gp.z, d = Math.hypot(dx, dz);
-      if (d < .6){ if (u.cmd === 'move') u.cmd = 'idle'; }
-      else { const v = Math.min(d, rtsStat(u, 'speed') * dt); gp.x += dx / d * v; gp.z += dz / d * v; u.g.rotation.y = Math.atan2(dx, dz); u.step += dt * u.U.speed * 1.6; }
+      if (d < .8){ if (u.cmd === 'move') u.cmd = 'idle'; }
+      else { const v = Math.min(d, rtsStat(u, 'speed') * dt); gp.x += dx / d * v; gp.z += dz / d * v; u.head = Math.atan2(dx, dz); u.g.rotation.y = u.head; u.step += dt * u.U.speed * 1.6; }
     }
-    for (const o of RTS.units){ if (o === u || o.dead) continue; const dx = gp.x - o.g.position.x, dz = gp.z - o.g.position.z, d = Math.hypot(dx, dz), m = u.r + o.r; if (d > 0 && d < m){ gp.x += dx / d * (m - d) * .5; gp.z += dz / d * (m - d) * .5; } }
-    for (const o of RTS.blds){ if (o.dead) continue; const dx = gp.x - o.x, dz = gp.z - o.z, d = Math.hypot(dx, dz), m = u.r + o.r; if (d > 0 && d < m){ gp.x += dx / d * (m - d); gp.z += dz / d * (m - d); } } // contourne les bâtiments
-    const rr = Math.hypot(gp.x, gp.z); if (rr > RTS_CFG.mapR){ gp.x *= RTS_CFG.mapR / rr; gp.z *= RTS_CFG.mapR / rr; }
-    u.m.position.y = Math.abs(Math.sin(u.step * 2)) * .08; u.m.rotation.z = Math.sin(u.step) * .04;
+    if (u.U.kind === 'ground'){
+      for (const o of RTS.units){ if (o === u || o.dead || o.U.kind !== 'ground') continue; const dx = gp.x - o.g.position.x, dz = gp.z - o.g.position.z, d = Math.hypot(dx, dz), m = u.r + o.r; if (d > 0 && d < m){ gp.x += dx / d * (m - d) * .5; gp.z += dz / d * (m - d) * .5; } }
+      for (const o of RTS.blds){ if (o.dead) continue; const dx = gp.x - o.x, dz = gp.z - o.z, d = Math.hypot(dx, dz), m = u.r + o.r; if (d > 0 && d < m){ gp.x += dx / d * (m - d); gp.z += dz / d * (m - d); } }
+      rtsClampValley(gp, false);
+      if (u.U.cat === 'rob'){ u.m.position.y = Math.abs(Math.sin(u.step * 2)) * .08; u.m.rotation.z = Math.sin(u.step) * .04; }
+    } else { gp.y = u.U.alt + Math.sin(RTS.t * 1.5 + u.head) * .3; rtsClampValley(gp, true); }
     const tgt = u.tgt && !u.tgt.dead ? u.tgt : null;
     if (u.cd <= 0){
-      const S2 = { dmg:rtsStat(u, 'dmg'), snd:u.U.snd, beam:u.U.beam, pierce:u.U.pierce, splash:u.U.splash, range:rng };
-      rtsV.set(gp.x, (u.type === 'heavy' ? 3.4 : 2.2) * RTS_SC, gp.z);
-      if (tgt && Math.hypot(tgt.g.position.x - gp.x, tgt.g.position.z - gp.z) <= rng){ u.cd = 1 / rtsStat(u, 'rate'); u.g.rotation.y = Math.atan2(tgt.g.position.x - gp.x, tgt.g.position.z - gp.z); rtsHit(rtsV.clone(), tgt, false, S2); }
-      else if (nest && Math.hypot(nest.x - gp.x, nest.z - gp.z) <= rng + nest.r){ u.cd = 1 / rtsStat(u, 'rate'); u.g.rotation.y = Math.atan2(nest.x - gp.x, nest.z - gp.z); rtsHit(rtsV.clone(), nest, true, S2); }
+      const S2 = rtsS2(u);
+      if (tgt && Math.hypot(tgt.g.position.x - gp.x, tgt.g.position.z - gp.z) <= rng){ u.cd = 1 / rtsStat(u, 'rate'); u.head = Math.atan2(tgt.g.position.x - gp.x, tgt.g.position.z - gp.z); u.g.rotation.y = u.head; rtsHit(rtsMuzzle(u, new THREE.Vector3()), tgt, 'z', S2); }
+      else if (nest && Math.hypot(nest.x - gp.x, nest.z - gp.z) <= rng + nest.r){ u.cd = 1 / rtsStat(u, 'rate'); u.head = Math.atan2(nest.x - gp.x, nest.z - gp.z); u.g.rotation.y = u.head; rtsHit(rtsMuzzle(u, new THREE.Vector3()), nest, 'nest', S2); }
     }
-    u.ring.visible = RTS.sel.indexOf(u) >= 0;
   }
 }
 function rtsBuildings(dt){
@@ -553,24 +763,18 @@ function rtsBuildings(dt){
       if (t){
         const want = Math.atan2(t.g.position.x - o.x, t.g.position.z - o.z), cur = o.head.rotation.y, df = Math.atan2(Math.sin(want - cur), Math.cos(want - cur));
         o.head.rotation.y = cur + clamp(df, -dt * 5, dt * 5);
-        if (o.cd <= 0 && Math.abs(df) < .3){
-          o.cd = 1 / rtsTStat(o, 'rate');
-          const S2 = Object.assign({}, B.turret, { dmg:rtsTStat(o, 'dmg'), range:rng });
-          rtsHit(new THREE.Vector3(o.x, 2.2, o.z), t, false, S2);
-        }
+        if (o.cd <= 0 && Math.abs(df) < .3){ o.cd = 1 / rtsTStat(o, 'rate'); rtsHit(new THREE.Vector3(o.x, 2.2, o.z), t, 'z', Object.assign({}, B.turret, { dmg:rtsTStat(o, 'dmg'), range:rng })); }
       }
     } else if (B.heal){
       o.healT = (o.healT || 0) - dt;
-      if (o.healT <= 0){ o.healT = .5;
-        const h = B.heal * .5;
+      if (o.healT <= 0){ o.healT = .5; const h = B.heal * .5;
         RTS.units.forEach(u => { if (!u.dead && u.hp < u.maxHp && Math.hypot(u.g.position.x - o.x, u.g.position.z - o.z) < B.healR){ u.hp = Math.min(u.maxHp, u.hp + h); rtsHpSet(u.hpb, u.hp / u.maxHp); } });
         RTS.blds.forEach(b => { if (!b.dead && b !== o && b.hp < b.maxHp && Math.hypot(b.x - o.x, b.z - o.z) < B.healR + b.r){ b.hp = Math.min(b.maxHp, b.hp + h * 2); rtsHpSet(b.hpb, b.hp / b.maxHp); } });
       }
     }
   }
-  // Récupérateurs : de l'argent régulier
   RTS.incT -= dt;
-  if (RTS.incT <= 0){ RTS.incT = 5; const n = RTS.blds.filter(o => !o.dead && o.B.income).length; if (n){ const g = n * RTS_BLD.scrap.income; S.money += g; } }
+  if (RTS.incT <= 0){ RTS.incT = 5; const n = RTS.blds.filter(o => !o.dead && o.B.income).length; if (n) S.money += n * RTS_BLD.scrap.income; }
 }
 function rtsStep(dt){
   if (!RTS.on || RTS.paused || state !== 'rts') return;
@@ -582,40 +786,135 @@ function rtsStep(dt){
     if (n.spawnT <= 0){ n.spawnT = Math.max(2.2, rand(6, 9) / Math.sqrt(RTS.threat)); const a = Math.atan2(-n.z, -n.x); rtsSpawnAt(n.x + Math.cos(a) * 6, n.z + Math.sin(a) * 6, 1 + Math.floor(RTS.threat * .8)); }
     n.m.scale.setScalar(1 + Math.sin(RTS.t * 2.2 + n.idx) * .015);
   }
-  // Hordes : elles arrivent de n'importe quel côté du désert
+  // Hordes : toujours du nord, par la vieille route ; un boss toutes les RTS_CFG.bossEvery hordes
   RTS.hordeT -= dt;
   if (RTS.hordeT <= 0){
     RTS.hordeT = RTS_CFG.hordeEvery; RTS.hordeN++;
-    const a = rand(0, 6.283), r = RTS_CFG.mapR, n = rtsSpawnAt(Math.cos(a) * r, Math.sin(a) * r, 10 + Math.round(RTS.threat * 5), 8);
-    const dir = ['à l’est', 'au sud-est', 'au sud', 'au sud-ouest', 'à l’ouest', 'au nord-ouest', 'au nord', 'au nord-est'][Math.round(((a + 6.283) % 6.283) / (Math.PI / 4)) % 8];
-    banner('Horde n° ' + RTS.hordeN + ' !', n + ' zombies arrivent ' + dir, 2200);
+    const E = RTS_ROAD[RTS_ROAD.length - 1], n = rtsSpawnAt(E[0], E[1], 10 + Math.round(RTS.threat * 5), 10);
+    let sub = n + ' zombies arrivent du nord par la vieille route';
+    if (RTS.hordeN % RTS_CFG.bossEvery === 0){ const bt = RTS_BOSS[RTS.bossN++ % RTS_BOSS.length]; if (ZTYPES[bt] && rtsSpawnAt(E[0], E[1] + 6, 1, 2, bt)) sub = 'Un boss arrive : ' + ZTYPES[bt].name + ' !'; }
+    banner('Horde n° ' + RTS.hordeN + ' !', sub, 2400);
     if (typeof Snd === 'object' && Snd.groan) Snd.groan();
   }
   rtsUnits(dt); rtsBuildings(dt); rtsZombies(dt);
+  if (RTS.pilot && state === 'rts') rtsPilotStep(dt);
   groanT -= dt; if (groanT <= 0){ groanT = rand(1.5, 3.5); if (zAliveCount() > 0 && typeof Snd === 'object') Snd.groan(); }
 }
 function rtsCamStep(dt){
   const C = RTS.cam, k = RTS.keys, sp = C.h * .9 * dt;
   C.x += ((k.r ? 1 : 0) - (k.l ? 1 : 0)) * sp; C.z += ((k.b ? 1 : 0) - (k.f ? 1 : 0)) * sp;
-  C.x = clamp(C.x, -125, 125); C.z = clamp(C.z, -125, 125); C.h = clamp(C.h, 24, 95);
+  C.x = clamp(C.x, -110, 110); C.z = clamp(C.z, -150, 30); C.h = clamp(C.h, 24, 100);
   camera.position.set(C.x, C.h, C.z + C.h * .38);
   camera.lookAt(C.x, 0, C.z);
 }
 function rtsFrame(dt){
   if (!RTS.on) return;
-  if (state === 'rts' || state === 'rtsover') rtsCamStep(dt);
+  if (RTS.pilot) rtsPilotCam(); else if (state === 'rts' || state === 'rtsover') rtsCamStep(dt);
   Object.keys(VMS).forEach(k => { VMS[k].visible = false; });
   rtsHUD();
+}
+
+/* ---------- Pilotage à la première personne ---------- */
+// Robots, tank et hélicoptère : on avance dans la direction du regard ; avions : toujours en avant, on vire à gauche ou à droite.
+const RTS_EYE = { rob:2.6, tank:3.1, heli:.4, air:.6 };
+function rtsPilot(u){
+  if (!u || u.dead || state !== 'rts' || !RTS.on) return false;
+  if (RTS.pilot) rtsUnpilot();
+  rtsCancelPlace(); RTS.pilot = u; RTS.sel.length = 0; RTS.sel.push(u); RTS.bsel = null;
+  const P2 = RTS.pv; P2.yaw = u.head + Math.PI; P2.pitch = u.U.kind === 'air' ? -.35 : u.U.kind === 'heli' ? -.4 : -.12; P2.fire = false;
+  P2.joy.dx = P2.joy.dy = 0; P2.joy.id = P2.aim.id = null; Object.keys(P2.mv).forEach(k => { P2.mv[k] = 0; });
+  u.m.visible = false; if (u.rotor) u.rotor.visible = false; if (u.g.userData.tail) u.g.userData.tail.visible = false;
+  u.hpb.bg.visible = u.hpb.fg.visible = false; u.ring.visible = false;
+  rtsInfo.classList.add('hide');
+  document.body.classList.add('piloting'); rtsUI.classList.add('piloting'); rtsPilotUI.classList.remove('hide'); rtsPilotUI.classList.toggle('touch', isTouch); $('cross').classList.remove('hide');
+  $('rtrpName').textContent = '🎮 ' + u.U.name;
+  if (!isTouch && typeof lockPointer === 'function') lockPointer();
+  return true;
+}
+function rtsUnpilot(){
+  const u = RTS.pilot; RTS.pilot = null;
+  RTS.pv.fire = false; RTS.pv.joy.id = RTS.pv.aim.id = null; RTS.pv.joy.dx = RTS.pv.joy.dy = 0;
+  if (u && !u.dead){
+    u.m.visible = true; if (u.rotor) u.rotor.visible = true; if (u.g.userData.tail) u.g.userData.tail.visible = true;
+    u.hpb.bg.visible = u.hpb.fg.visible = true; u.cmd = 'idle'; u.nest = null; u.tx = u.g.position.x; u.tz = u.g.position.z;
+    RTS.cam.x = u.g.position.x; RTS.cam.z = u.g.position.z;
+  }
+  document.body.classList.remove('piloting');
+  if (rtsUI){ rtsUI.classList.remove('piloting'); rtsPilotUI.classList.add('hide'); }
+  const cr = $('cross'); if (cr) cr.classList.add('hide');
+  if (typeof unlockPointer === 'function') unlockPointer();
+  camera.rotation.z = 0;
+}
+function rtsPilotStep(dt){
+  const u = RTS.pilot, P2 = RTS.pv; if (!u || u.dead) return;
+  const U = u.U, gp = u.g.position, spd = rtsStat(u, 'speed');
+  P2.pitch = clamp(P2.pitch, -1.2, .5);
+  const fwdIn = clamp(P2.mv.f - P2.mv.b - P2.joy.dy, -1, 1), sideIn = clamp(P2.mv.r - P2.mv.l + P2.joy.dx, -1, 1);
+  if (U.kind === 'air'){
+    P2.yaw -= sideIn * U.turn * dt * 1.3;                                       // on vire
+    const k = 1 + Math.max(0, fwdIn) * .4 - Math.max(0, -fwdIn) * .4;           // un peu plus ou moins vite
+    gp.x += -Math.sin(P2.yaw) * spd * k * dt; gp.z += -Math.cos(P2.yaw) * spd * k * dt; gp.y += (U.alt - gp.y) * Math.min(1, dt);
+    u.head = P2.yaw + Math.PI; u.g.rotation.set(0, u.head, sideIn * .5);
+    rtsClampValley(gp, true);
+  } else {
+    const sy = Math.sin(P2.yaw), cy = Math.cos(P2.yaw), f = fwdIn * spd, s = sideIn * spd * .8;
+    gp.x += (-sy * f + cy * s) * dt; gp.z += (-cy * f - sy * s) * dt;
+    u.head = P2.yaw + Math.PI; u.g.rotation.y = u.head;
+    if (U.kind === 'ground'){
+      for (const o of RTS.blds){ if (o.dead) continue; const dx = gp.x - o.x, dz = gp.z - o.z, d = Math.hypot(dx, dz), m = u.r + o.r; if (d > 0 && d < m){ gp.x += dx / d * (m - d); gp.z += dz / d * (m - d); } }
+      rtsClampValley(gp, false);
+      if (Math.abs(fwdIn) + Math.abs(sideIn) > .1) u.step += dt * U.speed * 1.6;
+    } else { gp.y = U.alt; rtsClampValley(gp, true); }
+  }
+  // Tir : vers ce qui est au centre de l'écran (zombie, nid, sinon le sol)
+  const firing = P2.fire || (isTouch && P2.aim.id !== null);
+  if (!firing || u.cd > 0) return;
+  u.cd = 1 / rtsStat(u, 'rate');
+  const S2 = rtsS2(u), from = rtsMuzzle(u, new THREE.Vector3());
+  if (U.bomb){ rtsHit(from, { x:gp.x + rand(-1, 1), z:gp.z + rand(-1, 1) }, 'pt', S2); return; }
+  rtsPilotCam(); camera.updateMatrixWorld(); rtsRay.setFromCamera(new THREE.Vector2(0, 0), camera); rtsRay.far = 240;
+  const hz = rtsRay.intersectObjects(hitMeshes, false).find(h => h.object.userData.z && !h.object.userData.z.dead);
+  if (hz){ rtsHit(from, hz.object.userData.z, 'z', S2); return; }
+  rtsRoot.updateMatrixWorld(true);
+  const hn = rtsRay.intersectObjects(RTS.nests.filter(n => !n.dead).map(n => n.m), false)[0];
+  if (hn){ rtsHit(from, hn.object.userData.rtsNest, 'nest', S2); return; }
+  const o = rtsRay.ray.origin, d = rtsRay.ray.direction;
+  // Aide à la visée : le zombie le plus proche de la ligne de mire (moins de 4°)
+  let best = null, bc = Math.cos(.07);
+  for (const q of zombies){
+    if (q.dead) continue; rtsV3.set(q.g.position.x - o.x, q.g.position.y + (q.aimY || 1.1) - o.y, q.g.position.z - o.z);
+    const L = rtsV3.length(); if (L > 200 || L < .5) continue;
+    const c = rtsV3.dot(d) / L; if (c > bc){ bc = c; best = q; }
+  }
+  if (best){ rtsHit(from, best, 'z', S2); return; }
+  const t = d.y < -1e-3 ? Math.min(-o.y / d.y, 200) : 120, px = o.x + d.x * t, pz = o.z + d.z * t;
+  // Coup au sol : les zombies tout près du point visé sont touchés aussi (tir un peu imprécis)
+  const near = rtsNearestZ(px, pz, S2.splash ? 0 : 2.2);
+  if (near) rtsHit(from, near, 'z', S2); else rtsHit(from, { x:px, z:pz }, 'pt', S2);
+}
+function rtsPilotCam(){
+  const u = RTS.pilot; if (!u) return;
+  const P2 = RTS.pv, gp = u.g.position, U = u.U, cat = U.cat === 'rob' ? 'rob' : u.type === 'tank' ? 'tank' : U.kind === 'heli' ? 'heli' : 'air';
+  const bob = cat === 'rob' ? Math.abs(Math.sin(u.step * 2)) * .12 : 0;
+  const ey = (U.kind === 'ground' ? RTS_EYE[cat] * (cat === 'rob' ? RTS_SC * (u.type === 'heavy' ? 1.5 : 1) : 1) : gp.y + RTS_EYE[cat]) + bob;
+  camera.position.set(gp.x - Math.sin(P2.yaw) * .4, ey, gp.z - Math.cos(P2.yaw) * .4);
+  camera.rotation.order = 'YXZ'; camera.rotation.set(P2.pitch, P2.yaw, U.kind === 'air' ? u.g.rotation.z * .5 : 0);
 }
 
 /* ---------- Affichage ---------- */
 const rtsUI = document.createElement('div'); rtsUI.id = 'rtsUI'; rtsUI.className = 'hide';
 rtsUI.innerHTML = '<div id="rtTop"><span id="rtMoney"></span><span id="rtThreat"></span><span id="rtNests"></span><span id="rtSel"></span></div>'
   + '<div id="rtBase"><span>QG</span><div class="mk-bar"><i id="rtBaseFill"></i></div></div>'
+  + '<div id="rtBoss" class="hide"><span id="rtBossName"></span><div class="mk-bar"><i id="rtBossFill"></i></div></div>'
   + '<button id="rtPause" type="button" aria-label="Pause">❚❚</button>'
   + '<div id="rtPlace" class="hide"><span id="rtPlaceTxt"></span><button type="button" id="rtCancel">Annuler</button></div>'
-  + '<div id="rtDock"><div id="rtTabs"><button type="button" data-tab="rob">Robots</button><button type="button" data-tab="bat">Bâtiments</button><button type="button" data-tab="tour">Tourelles</button><button type="button" data-tab="upg">Améliorations</button></div><div id="rtBar"></div></div>';
+  + '<div id="rtDock"><div id="rtTabs"><button type="button" data-tab="rob">Robots</button><button type="button" data-tab="veh">Véhicules</button><button type="button" data-tab="bat">Bâtiments</button><button type="button" data-tab="tour">Tourelles</button><button type="button" data-tab="upg">Améliorations</button></div><div id="rtBar"></div></div>';
 document.body.appendChild(rtsUI);
+const rtsPilotUI = document.createElement('div'); rtsPilotUI.id = 'rtPilot'; rtsPilotUI.className = 'hide';
+rtsPilotUI.innerHTML = '<div id="rtrpTop"><span id="rtrpName"></span><button type="button" id="rtrpExit">Retour à la carte</button></div>'
+  + '<div id="rtrpJoy"><div id="rtrpKnob"></div></div><div id="rtrpAim"></div><button type="button" id="rtrpFire">Tir</button>'
+  + '<div id="rtrpHelp">ZQSD ou WASD : bouger · souris : viser · clic : tirer · F : retour à la carte</div>';
+document.body.appendChild(rtsPilotUI);
 const rtsInfo = document.createElement('div'); rtsInfo.id = 'rtInfo'; rtsInfo.className = 'hide'; document.body.appendChild(rtsInfo);
 const rtsPanel = document.createElement('div'); rtsPanel.id = 'rtsPanel'; rtsPanel.className = 'hide'; document.body.appendChild(rtsPanel);
 const rtsBox = document.createElement('div'); rtsBox.id = 'rtsBox'; document.body.appendChild(rtsBox);
@@ -628,56 +927,67 @@ function rtsTab(t){
   RTS.tab = t;
   rtsUI.querySelectorAll('#rtTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   const bar = $('rtBar'); let h = '';
-  if (t === 'rob'){
-    h = RTS_ORDER.map((k, i) => '<button type="button" class="rt-buy" data-t="' + k + '">' + RTS_UNITS[k].name + '<b>' + fmt(RTS_UNITS[k].cost) + '</b>' + (isTouch ? '' : '<i>' + (i + 1) + '</i>') + '</button>').join('')
-      + '<button type="button" id="rtAll">Tout choisir</button><button type="button" id="rtStop">Arrêt</button>';
+  if (t === 'rob' || t === 'veh'){
+    h = RTS_ORDER.filter(k => RTS_UNITS[k].cat === t).map(k => { const i = RTS_HOTKEY.indexOf(k); return '<button type="button" class="rt-buy" data-t="' + k + '">' + RTS_UNITS[k].name + '<b>' + fmt(RTS_UNITS[k].cost) + '</b>' + (isTouch || i < 0 ? '' : '<i>' + (i + 1) + '</i>') + '</button>'; }).join('')
+      + '<button type="button" id="rtAll">Tout choisir</button><button type="button" id="rtStop">Arrêt</button><button type="button" id="rtPil">🎮 Piloter</button>';
   } else if (t === 'bat' || t === 'tour'){
     h = RTS_BUILD_TABS[t].map(k => '<button type="button" class="rt-bld" data-b="' + k + '">' + RTS_BLD[k].name + '<b>' + fmt(RTS_BLD[k].cost) + '</b></button>').join('');
-  } else {
-    h = '<button type="button" id="rtUpg">Améliorer les robots…</button>';
-  }
+  } else h = '<button type="button" id="rtUpg">Améliorer les unités…</button>';
   bar.innerHTML = h;
   bar.querySelectorAll('.rt-buy').forEach(b => b.addEventListener('click', () => rtsBuy(b.dataset.t)));
   bar.querySelectorAll('.rt-bld').forEach(b => b.addEventListener('click', () => rtsStartPlace(b.dataset.b)));
-  const all = $('rtAll'); if (all) all.addEventListener('click', () => rtsSelect(RTS.units.filter(u => !u.dead), false));
+  const all = $('rtAll'); if (all) all.addEventListener('click', () => rtsSelect(RTS.units.filter(u => !u.dead && u.U.cat === t), false));
   const st = $('rtStop'); if (st) st.addEventListener('click', () => { RTS.sel.forEach(u => { u.cmd = 'idle'; u.nest = null; u.tx = u.g.position.x; u.tz = u.g.position.z; }); });
+  const pl = $('rtPil'); if (pl) pl.addEventListener('click', () => rtsPilotSel());
   const up = $('rtUpg'); if (up) up.addEventListener('click', () => rtsUpgPanel());
   if (t === 'upg') rtsUpgPanel();
+}
+function rtsPilotSel(){
+  if (RTS.sel.length !== 1){ if (typeof toast === 'function') toast('Choisis une seule unité, puis Piloter'); return false; }
+  return rtsPilot(RTS.sel[0]);
 }
 function rtsUpgPanel(){
   if (state !== 'rts') return;
   RTS.paused = true;
-  let h = '<h2 class="title sm">Améliorer les robots</h2><p class="lead">Argent : <strong>' + fmt(Math.floor(S.money)) + '</strong> · s’applique aussi aux robots déjà construits</p><div class="mk-upg">';
-  RTS_ORDER.forEach(t => {
-    h += '<h4 class="wuh">' + RTS_UNITS[t].name + '</h4>';
-    Object.keys(RTS_UPG).forEach(k => {
-      const U = RTS_UPG[k], l = rtsLv(t, k), max = l >= U.max, c = rtsUpgCost(t, k);
-      h += '<div class="row"><div class="info"><div class="nm">' + U.name + ' <span class="inf-lv">' + l + ' / ' + U.max + '</span></div><div class="ds">' + U.desc + ' par niveau</div></div>'
-        + '<button type="button" data-u="' + t + ':' + k + '"' + (max || S.money < c ? ' disabled' : '') + '>' + (max ? 'Max' : fmt(c)) + '</button></div>';
+  let h = '<h2 class="title sm">Améliorer les unités</h2><p class="lead">Argent : <strong>' + fmt(Math.floor(S.money)) + '</strong> · vaut aussi pour les unités déjà construites</p><div class="mk-upg">';
+  [['rob', 'Robots'], ['veh', 'Véhicules et avions']].forEach(c => {
+    h += '<h4 class="wuh">' + c[1] + '</h4>';
+    RTS_ORDER.filter(t => RTS_UNITS[t].cat === c[0]).forEach(t => {
+      h += '<div class="rt-ut">' + RTS_UNITS[t].name + '</div>';
+      Object.keys(RTS_UPG).forEach(k => {
+        const U = RTS_UPG[k], l = rtsLv(t, k), max = l >= U.max, cost = rtsUpgCost(t, k);
+        h += '<div class="row"><div class="info"><div class="nm">' + U.name + ' <span class="inf-lv">' + l + ' / ' + U.max + '</span></div><div class="ds">' + U.desc + ' par niveau</div></div>'
+          + '<button type="button" data-u="' + t + ':' + k + '"' + (max || S.money < cost ? ' disabled' : '') + '>' + (max ? 'Max' : fmt(cost)) + '</button></div>';
+      });
     });
   });
   h += '</div>';
   rtsShowPanel(h, [['Retour au combat', () => { RTS.paused = false; rtsPanel.classList.add('hide'); rtsTab('rob'); }]]);
-  rtsPanel.querySelectorAll('button[data-u]').forEach(b => b.addEventListener('click', () => { const p = b.dataset.u.split(':'); if (rtsUpgBuy(p[0], p[1])) rtsUpgPanel(); }));
+  rtsPanel.querySelectorAll('button[data-u]').forEach(b => b.addEventListener('click', () => { const p = b.dataset.u.split(':'); if (rtsUpgBuy(p[0], p[1])){ const sc = rtsPanel.querySelector('.mk-upg'), y = sc ? sc.scrollTop : 0; rtsUpgPanel(); const sc2 = rtsPanel.querySelector('.mk-upg'); if (sc2) sc2.scrollTop = y; } }));
 }
-// Fenêtre d'un bâtiment choisi : vie, niveau, améliorer, vendre, fabriquer
+// Fenêtre de ce qui est choisi : un bâtiment (vie, niveau, améliorer, fabriquer, vendre) ou une seule unité (piloter)
 function rtsInfoShow(){
-  const o = RTS.bsel;
-  if (!o || o.dead || state !== 'rts'){ rtsInfo.classList.add('hide'); return; }
-  const B = o.B; let h = '<div class="nm">' + B.name + (B.turret ? ' · niveau ' + o.lv : '') + '</div><div class="ds">' + Math.ceil(o.hp) + ' / ' + Math.ceil(o.maxHp) + ' de vie' + (B.desc ? ' · ' + B.desc : '') + '</div><div class="rt-acts">';
-  if (B.turret){
-    const c = rtsTCost(o);
-    h += o.lv < RTS_TMAX ? '<button type="button" data-a="up">Améliorer ' + fmt(c) + '</button>' : '<button type="button" disabled>Niveau max</button>';
-    h += '<div class="ds">' + Math.round(rtsTStat(o, 'dmg')) + ' dégâts · ' + rtsTStat(o, 'rate').toFixed(1).replace('.', ',') + ' tirs/s · portée ' + Math.round(rtsTStat(o, 'range')) + ' m</div>';
+  const o = RTS.bsel && !RTS.bsel.dead ? RTS.bsel : null, one = RTS.sel.length === 1 && !RTS.pilot ? RTS.sel[0] : null;
+  if (state !== 'rts' || (!o && !one)){ rtsInfo.classList.add('hide'); return; }
+  let h;
+  if (one){
+    h = '<div class="nm">' + one.U.name + '</div><div class="ds">' + Math.ceil(one.hp) + ' / ' + Math.ceil(one.maxHp) + ' de vie · ' + Math.round(rtsStat(one, 'dmg')) + ' dégâts · portée ' + Math.round(rtsStat(one, 'range')) + ' m</div>'
+      + '<div class="rt-acts"><button type="button" data-a="pilot">🎮 Piloter</button></div>';
+  } else {
+    const B = o.B; h = '<div class="nm">' + B.name + (B.turret ? ' · niveau ' + o.lv : '') + '</div><div class="ds">' + Math.ceil(o.hp) + ' / ' + Math.ceil(o.maxHp) + ' de vie' + (B.desc ? ' · ' + B.desc : '') + '</div><div class="rt-acts">';
+    if (B.turret){
+      h += o.lv < RTS_TMAX ? '<button type="button" data-a="up">Améliorer ' + fmt(rtsTCost(o)) + '</button>' : '<button type="button" disabled>Niveau max</button>';
+      h += '<div class="ds">' + Math.round(rtsTStat(o, 'dmg')) + ' dégâts · ' + rtsTStat(o, 'rate').toFixed(1).replace('.', ',') + ' tirs/s · portée ' + Math.round(rtsTStat(o, 'range')) + ' m</div>';
+    }
+    if (o.type === 'hq') h += '<div class="ds">Si le QG tombe, la partie est perdue.</div>';
+    RTS_ORDER.forEach(k => { if (RTS_UNITS[k].fac === o.type) h += '<button type="button" data-a="mk:' + k + '">' + RTS_UNITS[k].name + ' ' + fmt(RTS_UNITS[k].cost) + '</button>'; });
+    if (!B.fixed) h += '<button type="button" class="ghost" data-a="sell">Vendre (+' + fmt(Math.round(o.spent * .5)) + ')</button>';
+    h += '</div>';
   }
-  if (B.fixed && o.type === 'hq') h += '<div class="ds">Si le QG tombe, la partie est perdue.</div>';
-  RTS_ORDER.forEach(k => { if (RTS_UNITS[k].fac === o.type) h += '<button type="button" data-a="mk:' + k + '">' + RTS_UNITS[k].name + ' ' + fmt(RTS_UNITS[k].cost) + '</button>'; });
-  if (!B.fixed) h += '<button type="button" class="ghost" data-a="sell">Vendre (+' + fmt(Math.round(o.spent * .5)) + ')</button>';
-  h += '</div>';
   rtsInfo.innerHTML = h; rtsInfo.classList.remove('hide');
   rtsInfo.querySelectorAll('button[data-a]').forEach(b => b.addEventListener('click', () => {
     const a = b.dataset.a;
-    if (a === 'up') rtsTurretUp(o); else if (a === 'sell') rtsSell(o); else if (a.indexOf('mk:') === 0) rtsBuy(a.slice(3));
+    if (a === 'up') rtsTurretUp(o); else if (a === 'sell') rtsSell(o); else if (a === 'pilot') rtsPilot(one); else if (a.indexOf('mk:') === 0) rtsBuy(a.slice(3));
     rtsInfoShow();
   }));
 }
@@ -690,15 +1000,18 @@ function rtsHUD(){
   set('rtNests', '🏚 Nids : ' + left + ' / ' + RTS.nests.length);
   set('rtSel', '🤖 ' + alive + (RTS.sel.length ? ' (' + RTS.sel.length + ' choisi' + (RTS.sel.length > 1 ? 's' : '') + ')' : ''));
   const f = $('rtBaseFill'); if (f && RTS.base) f.style.width = (clamp(RTS.base.hp / RTS.base.maxHp, 0, 1) * 100).toFixed(1) + '%';
+  let boss = null; for (const z of zombies) if (!z.dead && z.rtsBoss){ boss = z; break; }
+  const bb = $('rtBoss'); if (bb){ if (bb.classList.contains('hide') === !!boss) bb.classList.toggle('hide', !boss); if (boss){ set('rtBossName', '☠ ' + ZTYPES[boss.type].name); $('rtBossFill').style.width = (clamp(boss.hp / boss.maxHp, 0, 1) * 100).toFixed(1) + '%'; } }
+  if (RTS.pilot){ const u = RTS.pilot; set('rtrpName', '🎮 ' + u.U.name + ' · ' + Math.ceil(u.hp) + ' / ' + Math.ceil(u.maxHp)); }
   rtsUI.querySelectorAll('.rt-buy').forEach(b => { const off = S.money < RTS_UNITS[b.dataset.t].cost || !rtsFactoryFor(b.dataset.t); if (b.classList.contains('off') !== off) b.classList.toggle('off', off); });
   rtsUI.querySelectorAll('.rt-bld').forEach(b => { const off = S.money < RTS_BLD[b.dataset.b].cost; if (b.classList.contains('off') !== off) b.classList.toggle('off', off); });
-  if (RTS.bsel && !rtsInfo.classList.contains('hide') && Math.random() < .1) rtsInfoShow(); // vie à jour de temps en temps
+  if ((RTS.bsel || RTS.sel.length === 1) && !RTS.pilot && !rtsInfo.classList.contains('hide') && Math.random() < .1) rtsInfoShow();
 }
 
-/* ---------- Construire : un fantôme suit le pointeur, on pose dans la zone de la base ---------- */
+/* ---------- Construire : un fantôme suit le pointeur ---------- */
 let rtsGhost = null;
 function rtsStartPlace(type){
-  if (state !== 'rts') return;
+  if (state !== 'rts' || RTS.pilot) return;
   const B = RTS_BLD[type]; if (S.money < B.cost){ if (typeof toast === 'function') toast('Pas assez d’argent : ' + B.name + ' (' + fmt(B.cost) + ')'); return; }
   rtsCancelPlace();
   RTS.place = type; RTS.sel.length = 0; RTS.bsel = null; rtsInfoShow();
@@ -713,7 +1026,7 @@ function rtsPlaceAt(x, z){ const t = RTS.place; if (!t) return false; const o = 
 /* ---------- Commandes ---------- */
 function rtsNdc(cx, cy){ return new THREE.Vector2(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1); }
 function rtsPick(cx, cy){
-  camera.updateMatrixWorld(); rtsRoot.updateMatrixWorld(true); rtsRay.setFromCamera(rtsNdc(cx, cy), camera);
+  camera.updateMatrixWorld(); rtsRoot.updateMatrixWorld(true); rtsRay.setFromCamera(rtsNdc(cx, cy), camera); rtsRay.far = Infinity;
   const meshes = []; RTS.units.forEach(u => { if (!u.dead) meshes.push(u.m); }); RTS.nests.forEach(n => { if (!n.dead) meshes.push(n.m); });
   RTS.blds.forEach(o => { if (!o.dead){ meshes.push(o.m); if (o.head) meshes.push(o.head); } });
   const h = rtsRay.intersectObjects(meshes, false)[0];
@@ -726,24 +1039,24 @@ function rtsPick(cx, cy){
 function rtsSelect(list, add){
   if (!add) RTS.sel.length = 0;
   list.forEach(u => { if (!u.dead && RTS.sel.indexOf(u) < 0) RTS.sel.push(u); });
-  if (list.length){ RTS.bsel = null; rtsInfoShow(); if (typeof Snd === 'object' && Snd.tone) Snd.tone(900, .05, 'square', .04, 1200); }
+  if (list.length){ RTS.bsel = null; if (typeof Snd === 'object' && Snd.tone) Snd.tone(900, .05, 'square', .04, 1200); }
+  rtsInfoShow();
 }
 function rtsOrder(p){
   if (!RTS.sel.length) return false;
   if (p.nest){ RTS.sel.forEach(u => { u.nest = p.nest; u.cmd = 'attack'; }); if (typeof toast === 'function') toast('Attaque du nid !'); }
   else if (p.x != null){
     const n = RTS.sel.length, cols = Math.ceil(Math.sqrt(n));
-    RTS.sel.forEach((u, i) => { u.nest = null; u.cmd = 'move'; u.tx = p.x + ((i % cols) - (cols - 1) / 2) * 2.6; u.tz = p.z + (Math.floor(i / cols) - (cols - 1) / 2) * 2.6; });
+    RTS.sel.forEach((u, i) => { u.nest = null; u.cmd = 'move'; u.tx = p.x + ((i % cols) - (cols - 1) / 2) * 2.8; u.tz = p.z + (Math.floor(i / cols) - (cols - 1) / 2) * 2.8; });
     rtsMarker(p.x, p.z);
   } else return false;
   if (typeof Snd === 'object' && Snd.tone) Snd.tone(600, .06, 'triangle', .05, 800);
   return true;
 }
-// Un toucher ou un clic gauche simple
 function rtsTap(cx, cy, add){
   const p = rtsPick(cx, cy);
   if (RTS.place){ if (p.x != null) rtsPlaceAt(p.x, p.z); return; }
-  if (p.unit){ if (isTouch){ const i = RTS.sel.indexOf(p.unit); if (i >= 0) RTS.sel.splice(i, 1); else rtsSelect([p.unit], true); } else rtsSelect([p.unit], add); return; }
+  if (p.unit){ if (isTouch){ const i = RTS.sel.indexOf(p.unit); if (i >= 0){ RTS.sel.splice(i, 1); rtsInfoShow(); } else rtsSelect([p.unit], true); } else rtsSelect([p.unit], add); return; }
   if (p.bld && !RTS.sel.length){ RTS.bsel = p.bld; rtsInfoShow(); return; }
   if (isTouch && RTS.sel.length) rtsOrder(p);
   else if (!add){ RTS.sel.length = 0; RTS.bsel = null; rtsInfoShow(); }
@@ -761,47 +1074,52 @@ function rtsBoxSelect(x0, y0, x1, y1, add){
 canvas.addEventListener('pointerdown', e => {
   if (state !== 'rts' || RTS.paused || e.pointerType === 'touch') return;
   if (typeof Snd === 'object') Snd.init();
+  if (RTS.pilot){ if (e.button === 0) RTS.pv.fire = true; if (!plock && typeof lockPointer === 'function') lockPointer(); return; }
   if (e.button === 2){ if (RTS.place){ rtsCancelPlace(); return; } rtsOrder(rtsPick(e.clientX, e.clientY)); return; }
   if (e.button === 0) RTS.drag = { x:e.clientX, y:e.clientY, add:e.shiftKey, box:false };
 });
 document.addEventListener('pointermove', e => {
   if (state !== 'rts' || e.pointerType === 'touch') return;
+  if (RTS.pilot){ if (!RTS.paused){ RTS.pv.yaw -= (e.movementX || 0) * .0022 * sens; RTS.pv.pitch -= (e.movementY || 0) * .0022 * sens; } return; }
   if (RTS.place){ const p = rtsPick(e.clientX, e.clientY); if (p.x != null) rtsGhostAt(p.x, p.z); }
   if (!RTS.drag || RTS.place) return;
   const D = RTS.drag; if (Math.hypot(e.clientX - D.x, e.clientY - D.y) > 8) D.box = true;
   if (D.box){ const s = rtsBox.style; s.display = 'block'; s.left = Math.min(D.x, e.clientX) + 'px'; s.top = Math.min(D.y, e.clientY) + 'px'; s.width = Math.abs(e.clientX - D.x) + 'px'; s.height = Math.abs(e.clientY - D.y) + 'px'; }
 });
 document.addEventListener('pointerup', e => {
-  if (state !== 'rts' || !RTS.drag || e.pointerType === 'touch') return;
+  if (e.pointerType === 'touch') return;
+  if (RTS.pilot){ if (e.button === 0) RTS.pv.fire = false; return; }
+  if (state !== 'rts' || !RTS.drag) return;
   const D = RTS.drag; RTS.drag = null; rtsBox.style.display = 'none';
   if (D.box && !RTS.place) rtsBoxSelect(D.x, D.y, e.clientX, e.clientY, D.add);
   else rtsTap(e.clientX, e.clientY, D.add);
 });
-document.addEventListener('wheel', e => { if (state === 'rts') RTS.cam.h = clamp(RTS.cam.h + e.deltaY * .05, 24, 95); }, { passive:true });
+document.addEventListener('wheel', e => { if (state === 'rts' && !RTS.pilot) RTS.cam.h = clamp(RTS.cam.h + e.deltaY * .05, 24, 100); }, { passive:true });
 const RTS_KEYS = { KeyW:'f', KeyZ:'f', ArrowUp:'f', KeyS:'b', ArrowDown:'b', KeyA:'l', KeyQ:'l', ArrowLeft:'l', KeyD:'r', ArrowRight:'r' };
 document.addEventListener('keydown', e => {
   if (state !== 'rts') return;
-  if (RTS_KEYS[e.code]){ RTS.keys[RTS_KEYS[e.code]] = 1; e.preventDefault(); }
-  else if (/^Digit[1-4]$/.test(e.code)) rtsBuy(RTS_ORDER[+e.code.slice(-1) - 1]);
-  else if (e.code === 'Space'){ rtsSelect(RTS.units.filter(u => !u.dead), false); e.preventDefault(); }
+  if (RTS_KEYS[e.code]){ if (RTS.pilot) RTS.pv.mv[RTS_KEYS[e.code]] = 1; else RTS.keys[RTS_KEYS[e.code]] = 1; e.preventDefault(); }
+  else if (e.code === 'KeyF' && !RTS.paused){ if (RTS.pilot) rtsUnpilot(); else rtsPilotSel(); }
+  else if (!RTS.pilot && /^Digit[1-9]$/.test(e.code)){ const t = RTS_HOTKEY[+e.code.slice(-1) - 1]; if (t) rtsBuy(t); }
+  else if (e.code === 'Space'){ if (RTS.pilot) RTS.pv.fire = true; else rtsSelect(RTS.units.filter(u => !u.dead), false); e.preventDefault(); }
   else if (e.code === 'Escape' || e.code === 'KeyP'){
     if (RTS.place) rtsCancelPlace();
     else if (RTS.paused){ RTS.paused = false; rtsPanel.classList.add('hide'); }
     else rtsPause();
   }
 });
-document.addEventListener('keyup', e => { if (RTS_KEYS[e.code]) RTS.keys[RTS_KEYS[e.code]] = 0; });
+document.addEventListener('keyup', e => { if (RTS_KEYS[e.code]){ RTS.keys[RTS_KEYS[e.code]] = 0; RTS.pv.mv[RTS_KEYS[e.code]] = 0; } if (e.code === 'Space') RTS.pv.fire = false; });
 (function(){
   const pts = new Map(); let tap = null;
   canvas.addEventListener('touchstart', e => {
-    if (state !== 'rts' || RTS.paused) return;
+    if (state !== 'rts' || RTS.paused || RTS.pilot) return;
     e.preventDefault(); if (typeof Snd === 'object') Snd.init();
     for (const t of e.changedTouches) pts.set(t.identifier, { x:t.clientX, y:t.clientY });
     if (pts.size === 1){ const t = e.changedTouches[0]; tap = { x:t.clientX, y:t.clientY, moved:false }; }
     else { tap = null; const a = [...pts.values()]; RTS.pinch = { d:Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y), h:RTS.cam.h }; }
   }, { passive:false });
   canvas.addEventListener('touchmove', e => {
-    if (state !== 'rts') return;
+    if (state !== 'rts' || RTS.pilot) return;
     e.preventDefault();
     for (const t of e.changedTouches){
       const p = pts.get(t.identifier); if (!p) continue;
@@ -812,16 +1130,34 @@ document.addEventListener('keyup', e => { if (RTS_KEYS[e.code]) RTS.keys[RTS_KEY
       }
       p.x = t.clientX; p.y = t.clientY;
     }
-    if (pts.size >= 2 && RTS.pinch){ const a = [...pts.values()]; const d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); RTS.cam.h = clamp(RTS.pinch.h * RTS.pinch.d / Math.max(20, d), 24, 95); }
+    if (pts.size >= 2 && RTS.pinch){ const a = [...pts.values()]; const d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); RTS.cam.h = clamp(RTS.pinch.h * RTS.pinch.d / Math.max(20, d), 24, 100); }
   }, { passive:false });
   const end = e => {
     if (state !== 'rts') return;
     for (const t of e.changedTouches) pts.delete(t.identifier);
     if (pts.size < 2) RTS.pinch = null;
-    if (tap && !tap.moved && pts.size === 0 && e.changedTouches.length){ const t = e.changedTouches[0]; rtsTap(t.clientX, t.clientY, true); }
+    if (tap && !tap.moved && pts.size === 0 && e.changedTouches.length && !RTS.pilot){ const t = e.changedTouches[0]; rtsTap(t.clientX, t.clientY, true); }
     if (pts.size === 0) tap = null;
   };
   canvas.addEventListener('touchend', end); canvas.addEventListener('touchcancel', end);
+  // Pilotage au doigt : manette à gauche, glisser à droite pour viser (et tirer en même temps), bouton Tir
+  const joy = $('rtrpJoy'), knob = $('rtrpKnob'), aimZ = $('rtrpAim'), P2 = RTS.pv, R2 = 46;
+  const setJoy = (cx, cy) => { const b = joy.getBoundingClientRect(), x = cx - (b.left + b.width / 2), y = cy - (b.top + b.height / 2), d = Math.hypot(x, y), k = d > R2 ? R2 / d : 1; P2.joy.dx = clamp(x * k / R2, -1, 1); P2.joy.dy = clamp(y * k / R2, -1, 1); knob.style.transform = 'translate(' + (x * k).toFixed(0) + 'px,' + (y * k).toFixed(0) + 'px)'; };
+  joy.addEventListener('touchstart', e => { e.preventDefault(); const t = e.changedTouches[0]; P2.joy.id = t.identifier; setJoy(t.clientX, t.clientY); }, { passive:false });
+  aimZ.addEventListener('touchstart', e => { e.preventDefault(); if (typeof Snd === 'object') Snd.init(); const t = e.changedTouches[0]; P2.aim.id = t.identifier; P2.aim.lx = t.clientX; P2.aim.ly = t.clientY; }, { passive:false });
+  rtsPilotUI.addEventListener('touchmove', e => {
+    for (const t of e.changedTouches){
+      if (t.identifier === P2.joy.id) setJoy(t.clientX, t.clientY);
+      else if (t.identifier === P2.aim.id){ P2.yaw -= (t.clientX - P2.aim.lx) * .005 * sens; P2.pitch -= (t.clientY - P2.aim.ly) * .005 * sens; P2.aim.lx = t.clientX; P2.aim.ly = t.clientY; }
+    }
+    if (e.cancelable) e.preventDefault();
+  }, { passive:false });
+  const pend = e => { for (const t of e.changedTouches){ if (t.identifier === P2.joy.id){ P2.joy.id = null; P2.joy.dx = P2.joy.dy = 0; knob.style.transform = ''; } if (t.identifier === P2.aim.id) P2.aim.id = null; } };
+  rtsPilotUI.addEventListener('touchend', pend); rtsPilotUI.addEventListener('touchcancel', pend);
+  const fb = $('rtrpFire');
+  fb.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); P2.fire = true; fb.classList.add('down'); }, { passive:false });
+  fb.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); P2.fire = false; fb.classList.remove('down'); });
+  $('rtrpExit').addEventListener('click', () => rtsUnpilot());
 })();
 rtsUI.querySelectorAll('#rtTabs button').forEach(b => b.addEventListener('click', () => rtsTab(b.dataset.tab)));
 $('rtPause').addEventListener('click', () => rtsPause());
@@ -846,9 +1182,12 @@ try {
     return r;
   };
 } catch (e) {}
-try { const _k = kill; kill = function(){ const r = _k.apply(this, arguments); if (RTS.on) RTS.kills++; return r; }; } catch (e) {}
-try { if (typeof ambMusicState === 'function'){ const _a = ambMusicState; ambMusicState = function(){ if (state === 'rts') return RTS.threat > 3.5 ? 'boss' : 'wave'; if (state === 'rtsover') return 'menu'; return _a.apply(this, arguments); }; } } catch (e) {}
+try { const _k = kill; kill = function(z){ const was = z && !z.dead; const r = _k.apply(this, arguments); if (RTS.on && was){ RTS.kills++; if (z.rtsBoss){ RTS.bossKills++; S.money += 1500; banner(ZTYPES[z.type].name + ' abattu !', 'Le boss est tombé · +' + fmt(1500), 2200); } } return r; }; } catch (e) {}
+try { if (typeof ambMusicState === 'function'){ const _a = ambMusicState; ambMusicState = function(){ if (state === 'rts'){ for (const z of zombies) if (!z.dead && z.rtsBoss) return 'boss'; return RTS.threat > 3.5 ? 'boss' : 'wave'; } if (state === 'rtsover') return 'menu'; return _a.apply(this, arguments); }; } } catch (e) {}
+// Le pointeur est relâché (Échap) pendant qu'on pilote : pause
+document.addEventListener('pointerlockchange', () => { if (state === 'rts' && RTS.pilot && !isTouch && !document.pointerLockElement && !RTS.paused) rtsPause(); });
 
 // Accès pour les tests automatiques
-window.__rts = { RTS, RTS_UNITS, RTS_CFG, RTS_BLD, RTS_UPG, rtsStart, rtsQuit, rtsBuy, rtsStep, rtsSelect, rtsOrder, rtsPick, rtsSpawnUnit, rtsSpawnAt, rtsNestDie, rtsEnd, rtsPause,
-  rtsBuild, rtsBldOk, rtsPlaceBld, rtsTurretUp, rtsSell, rtsUpgBuy, rtsUpgCost, rtsStat, rtsTStat, rtsStartPlace, rtsPlaceAt, rtsTap, rtsTab, rtsInfoShow };
+window.__rts = { RTS, RTS_UNITS, RTS_CFG, RTS_BLD, RTS_UPG, RTS_ROAD, RTS_BOSS, rtsStart, rtsQuit, rtsBuy, rtsStep, rtsSelect, rtsOrder, rtsPick, rtsSpawnUnit, rtsSpawnAt, rtsNestDie, rtsEnd, rtsPause,
+  rtsBuild, rtsBldOk, rtsPlaceBld, rtsTurretUp, rtsSell, rtsUpgBuy, rtsUpgCost, rtsStat, rtsTStat, rtsStartPlace, rtsPlaceAt, rtsTap, rtsTab, rtsInfoShow,
+  rtsPilot, rtsUnpilot, rtsPilotSel, rtsPilotStep, rtsValleyX, rtsRoadDist, rtsClampValley, rtsRoadNext };

@@ -127,7 +127,7 @@ ZKINDS.abomination = {
 /* ---------- Boss ---------- */
 function mbBossIntro(z){
   const T = ZTYPES[z.type] || {};
-  banner('⚠ ' + T.name, 'Boss de la rue ' + (typeof MECH === 'object' ? MECH.street : ''), 2600);
+  banner('⚠ ' + T.name, state === 'rts' ? 'Il arrive par la vieille route' : 'Boss de la rue ' + (typeof MECH === 'object' ? MECH.street : ''), 2600);
   mbRoar(true); shake = Math.max(shake, .6);
   if (typeof vib === 'function') vib([120, 60, 160], 40);
 }

@@ -470,3 +470,24 @@ body.rts #hud, body.rts #touch, body.rts #cross, body.rts #rpArrows{ display:non
 #rtsPanel .stats{ display:flex; flex-direction:column; gap:6px; margin:10px 0; }
 #rtsBox{ position:fixed; display:none; z-index:8; border:1px solid #9aff70; background:rgba(154,255,112,.12); pointer-events:none; }
 .rts-btn{ border-color:#ffd060 !important; color:#ffd060 !important; }
+/* RTS : boss, onglet Véhicules, pilotage à la première personne */
+#rtBoss{ position:absolute; left:50%; top:calc(74px + env(safe-area-inset-top,0px)); transform:translateX(-50%); width:min(70vw, 420px); text-align:center; font-size:13px; color:#ff9a7a; }
+#rtBoss.hide{ display:none; }
+#rtBoss .mk-bar i{ background:linear-gradient(90deg,#ff3a2a,#ffa040); }
+#rtPil{ background:rgba(80,50,10,.88) !important; border-color:#ffd060 !important; }
+.rt-ut{ margin:10px 0 2px; font-weight:800; color:#ffd060; }
+#rtsPanel .mk-upg{ max-height:60vh; overflow:auto; }
+#rtsUI.piloting #rtDock, #rtsUI.piloting #rtPlace{ display:none; }
+body.rts.piloting #cross{ display:block !important; }
+#rtPilot{ position:fixed; inset:0; z-index:7; pointer-events:none; color:#eef4ea; font-weight:700; text-shadow:0 2px 3px #000; }
+#rtPilot.hide{ display:none; }
+#rtrpTop{ position:absolute; left:50%; top:calc(150px + env(safe-area-inset-top,0px)); transform:translateX(-50%); display:flex; gap:10px; align-items:center; font-size:14px; }
+#rtrpExit{ pointer-events:auto; padding:7px 12px; border-radius:8px; border:1px solid #ffd060; background:rgba(10,20,14,.85); color:#ffd060; font-weight:800; }
+#rtrpHelp{ position:absolute; left:50%; bottom:calc(14px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); font-size:12px; opacity:.75; white-space:nowrap; }
+#rtrpJoy, #rtrpAim, #rtrpFire{ display:none; }
+#rtPilot.touch #rtrpHelp{ display:none; }
+#rtPilot.touch #rtrpJoy{ display:block; position:absolute; left:calc(22px + env(safe-area-inset-left,0px)); bottom:calc(40px + env(safe-area-inset-bottom,0px)); width:120px; height:120px; border-radius:50%; background:rgba(0,0,0,.3); border:2px solid rgba(154,255,112,.45); pointer-events:auto; touch-action:none; }
+#rtrpKnob{ position:absolute; left:50%; top:50%; width:48px; height:48px; margin:-24px 0 0 -24px; border-radius:50%; background:rgba(154,255,112,.55); }
+#rtPilot.touch #rtrpAim{ display:block; position:absolute; left:42%; right:0; top:150px; bottom:0; pointer-events:auto; touch-action:none; }
+#rtPilot.touch #rtrpFire{ display:block; position:absolute; right:calc(18px + env(safe-area-inset-right,0px)); bottom:calc(40px + env(safe-area-inset-bottom,0px)); width:90px; height:90px; border-radius:50%; border:0; background:rgba(255,120,48,.88); color:#2a1a08; font-weight:900; font-size:18px; pointer-events:auto; touch-action:none; }
+#rtrpFire.down{ transform:scale(.92); filter:brightness(1.2); }

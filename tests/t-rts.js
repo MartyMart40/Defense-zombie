@@ -1,5 +1,5 @@
 'use strict';
-/* Tests du mode RTS « Guerre des robots » : base militaire dans le désert (js/41-rts.js) */
+/* Tests du mode RTS « Guerre des robots » : base militaire dans une vallée du désert (js/41-rts.js) */
 (function(){
   if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
   const exiger = () => { if (lire('typeof __rts === "object" && typeof __rts.rtsBuild === "function"') !== true) ignorer('Mode RTS absent (js/41-rts.js)'); };
@@ -7,7 +7,7 @@
   // Partie calme : pas de ponte, pas de horde, pas de zombies
   const calme = 'function calme(){ __rts.rtsStart(); var R = __rts.RTS; R.nests.forEach(function(n){ n.spawnT = 1e9; }); R.hordeT = 1e9; clearZombies(); return R; }';
 
-  test('RTS : base militaire dans le désert (QG, usine, tourelles), 6 nids tout autour, vue de dessus', () => {
+  test('RTS : base dans une vallée (montagnes au sud et sur les côtés), 6 nids au nord le long de la vieille route', () => {
     exiger(); reset();
     const r = J(function(){
       var b = document.getElementById('btnRts'), o = { btn: !!b && !!b.closest('#scrTitle') };
@@ -15,18 +15,105 @@
       var R = __rts.RTS;
       o.state = state; o.nids = R.nests.length; o.robots = R.units.length; o.argent = S.money;
       o.types = R.blds.map(function(x){ return x.type; }).sort().join(',');
-      var ang = R.nests.map(function(n){ return Math.atan2(n.z, n.x); }), loin = R.nests.every(function(n){ return Math.hypot(n.x, n.z) > 60; });
-      o.loin = loin; o.quadrants = [0, 1, 2, 3].filter(function(q){ return ang.some(function(a){ var k = Math.floor(((a + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 2)); return k === q; }); }).length;
-      o.sable = scene.fog.color.getHexString(); o.dalle = !!R.pad && R.pad.scale.x === R.baseR;
+      o.nord = R.nests.every(function(n){ return n.z < -30 && Math.abs(Math.atan2(n.x, -n.z)) < Math.PI / 4 + .1; });
+      o.route = R.nests.every(function(n){ return __rts.rtsRoadDist(n.x, n.z) < 26; });
+      o.dalle = !!R.pad && R.pad.scale.x === R.baseR;
       o.barricade = world.children.some(function(g){ return g.isGroup && g.children.length >= 6 && g.children.every(function(c){ return Math.abs(c.position.z - BAR_Z) < 1.4; }); });
       camera.updateMatrixWorld(); var d = new THREE.Vector3(); camera.getWorldDirection(d); o.bas = d.y < -.8 && camera.position.y > 24;
+      var p = { x:80, z:20 }; __rts.rtsClampValley(p, false); o.mur = Math.abs(p.x) < 40;
+      var q = { x:0, z:60 }; __rts.rtsClampValley(q, false); o.sud = q.z <= 26;
       return o;
     });
     fin();
     ok(r.btn, 'Bouton'); egal(r.state, 'rts', 'État');
-    egal(r.nids, 6, 'Nids'); ok(r.loin, 'Nids loin de la base'); ok(r.quadrants >= 3, 'Nids tout autour (' + r.quadrants + ' côtés sur 4)');
+    egal(r.nids, 6, 'Nids'); ok(r.nord, 'Nids au nord, dans l’ouverture de 90°'); ok(r.route, 'Nids le long de la route');
     egal(r.types, 'factory,hq,t_mg,t_mg,t_mg', 'Bâtiments de départ'); egal(r.robots, 3, 'Robots de départ'); egal(r.argent, 900, 'Argent de départ');
     ok(!r.barricade, 'Plus de rue : pas de barricade'); ok(r.dalle, 'Dalle de la base'); ok(r.bas, 'Vue de dessus');
+    ok(r.mur && r.sud, 'Montagnes : on ne passe ni par les côtés ni par le sud');
+  });
+
+  test('RTS : sans cible, les zombies suivent la vieille route jusqu’à la base', () => {
+    exiger(); reset();
+    const r = J(function(c){
+      eval(c); var R = calme(), o = {};
+      R.units.forEach(function(u){ u.g.position.set(0, 0, 20); u.U = Object.assign({}, u.U, { range:0, dmg:0 }); });
+      R.blds.filter(function(b){ return b.type === 't_mg'; }).forEach(function(b){ __rts.rtsSell(b); });
+      var E = __rts.RTS_ROAD[__rts.RTS_ROAD.length - 1], z = __t.placer('walker', E[0], E[1]); z.speed = 6; z.hp = z.maxHp = 1e9;
+      var maxD = 0; for (var i = 0; i < 30 * 25; i++){ visuals(1 / 30); maxD = Math.max(maxD, __rts.rtsRoadDist(z.g.position.x, z.g.position.z)); }
+      o.route = maxD; o.base = Math.hypot(z.g.position.x, z.g.position.z);
+      return o;
+    }, calme);
+    fin();
+    ok(r.route < 5, 'Il reste sur la route (écart ' + r.route.toFixed(1) + ' m)'); ok(r.base < 25, 'Il arrive à la base : ' + r.base.toFixed(0) + ' m');
+  });
+
+  test('RTS : nouveaux robots, tank, hélicoptère, chasseur, Warthog et bombardier, avec leurs bâtiments et améliorations', () => {
+    exiger(); reset();
+    const r = J(function(c){
+      eval(c); var R = calme(), o = {}; S.money = 1e6; R.baseR = 70;
+      o.sans = __rts.rtsBuy('tank') === null && __rts.rtsBuy('jet') === null;
+      o.bats = ['vehdepot', 'heliport', 'airfield'].map(function(t, i){ return !!__rts.rtsBuild(t, [20, -20, 25][i], [10, 12, -25][i]); });
+      var U = {}; ['sniper', 'flamebot', 'tank', 'heli', 'jet', 'warthog', 'bomber'].forEach(function(t){ U[t] = __rts.rtsBuy(t); });
+      o.tous = Object.keys(U).filter(function(k){ return !!U[k]; }).join(',');
+      for (var i = 0; i < 60; i++) visuals(1 / 30);
+      o.vol = ['heli', 'jet', 'warthog', 'bomber'].every(function(k){ return U[k].g.position.y > 8; });
+      var p0 = U.jet.g.position.clone(); visuals(1 / 30); o.avance = U.jet.g.position.distanceTo(p0) > .5;
+      o.tankSol = U.tank.g.position.y === 0;
+      var d0 = __rts.rtsStat(U.tank, 'dmg'); o.upTank = __rts.rtsUpgBuy('tank', 'arm') && __rts.rtsStat(U.tank, 'dmg') > d0;
+      o.upAvion = __rts.rtsUpgBuy('bomber', 'spd') && __rts.rtsStat(U.bomber, 'speed') > __rts.RTS_UNITS.bomber.speed;
+      // Les zombies au sol ignorent les avions ; les volants les attaquent
+      clearZombies(); R.units.forEach(function(u){ if (u !== U.heli) u.g.position.x += 0; });
+      U.heli.g.position.set(-60, 11, -90); var w = __t.placer('walker', -60, -92), f = ZTYPES.flyer ? __t.placer('flyer', -61, -90) : null;
+      w.rtsT = 0; if (f) f.rtsT = 0; visuals(1 / 30);
+      o.ignore = w.rtsTgt !== U.heli; o.vise = !f || f.rtsTgt === U.heli;
+      return o;
+    }, calme);
+    fin();
+    ok(r.sans, 'Refus sans garage ni aérodrome'); egal(r.bats.join(','), 'true,true,true', 'Garage, héliport et aérodrome');
+    egal(r.tous, 'sniper,flamebot,tank,heli,jet,warthog,bomber', 'Toutes les nouvelles unités'); ok(r.vol, 'Les appareils volent'); ok(r.avance, 'Le chasseur ne s’arrête jamais');
+    ok(r.tankSol, 'Le tank roule au sol'); ok(r.upTank && r.upAvion, 'Améliorations des véhicules et des avions');
+    ok(r.ignore, 'Les zombies au sol ignorent l’hélicoptère'); ok(r.vise, 'Les volants s’en prennent à l’hélicoptère');
+  });
+
+  test('RTS : un boss arrive avec la horde (barre de vie), le Titan piétine', () => {
+    exiger(); reset();
+    const r = J(function(c){
+      eval(c); var R = calme(), o = {};
+      R.hordeN = __rts.RTS_CFG.bossEvery - 1; R.hordeT = 0; visuals(1 / 30); R.hordeT = 1e9;
+      var b = zombies.filter(function(z){ return !z.dead && z.rtsBoss; })[0]; o.boss = b ? b.type : '';
+      visuals(1 / 30); o.barre = !document.getElementById('rtBoss').classList.contains('hide');
+      o.pv = b ? b.maxHp < ZTYPES[b.type].hp * 1.5 : false;
+      clearZombies();
+      var t = __rts.rtsSpawnAt(0, -20, 1, 0, 'titan'), ti = zombies.filter(function(z){ return z.type === 'titan'; })[0];
+      var u = R.units[0]; u.g.position.set(3, 0, -20); u.U = Object.assign({}, u.U, { range:0 }); var h0 = u.hp; ti.abT = 0; ti.speed = 0;
+      visuals(1 / 30); o.pietine = u.dead || u.hp < h0;
+      return o;
+    }, calme);
+    fin();
+    egal(r.boss, 'titan', 'Premier boss : le Titan'); ok(r.barre, 'Barre de vie du boss'); ok(r.pv, 'Vie réduite pour le mode RTS');
+    ok(r.pietine, 'Le piétinement blesse les unités autour');
+  });
+
+  test('RTS : piloter une unité à la première personne (bouger, viser, tirer, revenir)', () => {
+    exiger(); reset();
+    const r = J(function(c){
+      eval(c); var R = calme(), o = {}; S.money = 1e6;
+      var u = R.units[0]; u.g.position.set(0, 0, -20); __rts.rtsSelect([u], false);
+      o.pil = __rts.rtsPilotSel() && R.pilot === u; o.cache = !u.m.visible;
+      visuals(1 / 30); o.cam = camera.position.distanceTo(new THREE.Vector3(u.g.position.x, camera.position.y, u.g.position.z)) < 1 && camera.position.y < 6;
+      R.pv.yaw = 0; R.pv.pitch = -.15; var z0 = u.g.position.z; R.pv.mv.f = 1; for (var i = 0; i < 30; i++) visuals(1 / 30); R.pv.mv.f = 0;
+      o.avance = u.g.position.z < z0 - 2;
+      var z = __t.placer('walker', u.g.position.x, u.g.position.z - 14); z.hp = z.maxHp = 1e6; z.speed = 0;
+      R.pv.fire = true; for (var k = 0; k < 30; k++) visuals(1 / 30); R.pv.fire = false;
+      o.tir = z.hp < 1e6;
+      __rts.rtsUnpilot(); visuals(1 / 30); o.retour = !R.pilot && u.m.visible && camera.position.y > 20;
+      // Un avion aussi
+      var j = __rts.rtsSpawnUnit('jet', 0, -40); o.jet = __rts.rtsPilot(j); var p0 = j.g.position.clone(); visuals(1 / 30); o.jetAv = j.g.position.distanceTo(p0) > .5;
+      return o;
+    }, calme);
+    fin();
+    ok(r.pil && r.cache, 'Pilotage'); ok(r.cam, 'Caméra dans l’unité'); ok(r.avance, 'Il avance'); ok(r.tir, 'Il tire sur le zombie visé'); ok(r.retour, 'Retour à la carte');
+    ok(r.jet && r.jetAv, 'On pilote aussi un avion (il avance toujours)');
   });
 
   test('RTS : construire et placer des bâtiments dans la zone de la base, vendre', () => {
@@ -52,7 +139,7 @@
     const r = J(function(c){
       eval(c); var R = calme(), o = {}; S.money = 20000;
       o.sansUsine = __rts.rtsBuy('heavy') === null;
-      var hf = __rts.rtsBuild('heavyfac', 15, 2); o.usine = !!hf;
+      var hf = __rts.rtsBuild('heavyfac', 20, 8); o.usine = !!hf;
       var u = __rts.rtsBuy('heavy'); o.lourd = !!u && Math.hypot(u.g.position.x - hf.x, u.g.position.z - hf.z) < hf.r + 5;
       var f = __rts.rtsBuy('rifle'); var d0 = __rts.rtsStat(f, 'dmg'), h0 = f.maxHp;
       o.arm = __rts.rtsUpgBuy('rifle', 'arm') && __rts.rtsStat(f, 'dmg') > d0 * 1.15;
@@ -80,7 +167,7 @@
       for (var n = 0; n < 60; n++) visuals(1 / 30); o.chaine = zs.filter(function(q){ return q.hp < 1e6; }).length;
       clearZombies();
       var rep = __rts.rtsBuild('repair', -14, -2); var u = R.units[0]; u.g.position.set(-14, 0, 4); u.cmd = 'idle'; u.hp = 10; o.rep = !!rep;
-      var sc = __rts.rtsBuild('scrap', 16, -2); o.sc = !!sc; var m0 = S.money; R.incT = .01;
+      var sc = __rts.rtsBuild('scrap', -4, 14); o.sc = !!sc; var m0 = S.money; R.incT = .01;
       for (var j = 0; j < 30; j++) visuals(1 / 30); o.soin = u.hp > 10; o.revenu = S.money - m0;
       return o;
     }, calme);
@@ -90,7 +177,7 @@
     ok(r.rep && r.sc, 'Atelier et récupérateur construits'); ok(r.soin, 'L’atelier répare'); ok(r.revenu >= 15, 'Le récupérateur rapporte : ' + r.revenu);
   });
 
-  test('RTS : zombies de partout ; ils attaquent le bâtiment le plus proche ; la base s’agrandit à chaque nid ; fin de partie', () => {
+  test('RTS : hordes du nord ; ils attaquent le bâtiment le plus proche ; la base s’agrandit à chaque nid ; fin de partie', () => {
     exiger(); reset();
     const r = J(function(c){
       eval(c); var R = calme(), o = {}; S.money = 1e6;
@@ -98,20 +185,20 @@
       R.blds.filter(function(b){ return b.type === 't_mg'; }).forEach(function(b){ __rts.rtsSell(b); });
       // Horde : du bord du désert
       R.hordeT = 0; visuals(1 / 30); R.hordeT = 1e9;
-      var zs = zombies.filter(function(z){ return !z.dead; }); o.horde = zs.length; o.bord = zs.every(function(z){ return Math.hypot(z.g.position.x, z.g.position.z) > 110; });
+      var zs = zombies.filter(function(z){ return !z.dead; }); o.horde = zs.length; o.bord = zs.every(function(z){ return z.g.position.z < -125; });
       clearZombies();
       // Une barricade entre le zombie et le QG : il l'attaque d'abord
       var w = __rts.rtsBuild('wall', 0, -16); var z = __t.placer('walker', 0, -26); var h0 = w.hp, q0 = R.base.hp;
       for (var i = 0; i < 30 * 8; i++) visuals(1 / 30); o.mur = w.hp < h0; o.qgIntact = R.base.hp === q0;
       clearZombies();
       // La base s'agrandit
-      var r0 = R.baseR; o.avant = __rts.rtsBldOk('t_mg', 0, -28) !== '';
-      __rts.rtsNestDie(R.nests[0]); o.plus = R.baseR > r0; o.apres = __rts.rtsBldOk('t_mg', 0, -28) === '';
+      var r0 = R.baseR; o.avant = __rts.rtsBldOk('t_mg', 0, -34) !== '';
+      __rts.rtsNestDie(R.nests[0]); o.plus = R.baseR > r0; o.apres = __rts.rtsBldOk('t_mg', 0, -34) === '';
       R.nests.forEach(function(n){ if (!n.dead) __rts.rtsNestDie(n); }); o.fin = state;
       return o;
     }, calme);
     fin();
-    ok(r.horde >= 10 && r.bord, 'Horde du bord du désert : ' + r.horde);
+    ok(r.horde >= 10 && r.bord, 'Horde du nord, au bout de la route : ' + r.horde);
     ok(r.mur && r.qgIntact, 'Le zombie attaque la barricade d’abord');
     ok(r.avant && r.plus && r.apres, 'La base s’agrandit : on peut construire plus loin');
     egal(r.fin, 'rtsover', 'Victoire');

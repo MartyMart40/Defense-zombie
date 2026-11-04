@@ -8,6 +8,7 @@ Jeu de tir défensif 3D en navigateur (Three.js r128 chargé depuis cdnjs). Conc
 ## Structure du code
 - `index.html` : le HTML (écrans, HUD, boutons) et la liste des scripts, dans l'ordre.
 - `css/style.css` : tout le style.
+- `lib/three.min.js` : copie locale de Three.js r128 (ne pas modifier).
 - `js/NN-nom.js` : scripts classiques (pas de modules), chargés dans l'ordre du numéro.
   Les `const`, `let` et `function` de haut niveau sont partagés entre tous les fichiers (portée globale).
   Conséquence : un fichier peut appeler une fonction d'un fichier plus loin **seulement à l'intérieur d'une fonction**, jamais au chargement.

@@ -19,6 +19,7 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 | # | Tâche | Date |
 |---|-------|------|
+| 62 | Cell et solidité : écran titre avec l’aide repliée sous « Comment jouer » (les trois modes visibles sans défiler) ; RTS : menu du bas repliable (bouton ▾, choix gardé), une seule rangée qui défile de côté au cell couché, caméra de départ plus proche au cell couché ; sable plat sous la base (les bosses ne coupent plus la dalle) ; Three.js r128 copié dans lib/ (secours sur cdnjs) ; tests du mitrailleur et de la roquette avec un hasard fixé (__t.graine) ; js/41-rts.js découpé en 4 fichiers (41 données et vallée, 42 unités et partie, 43 pilotage, 44 interface) sans rien changer au jeu ; tests/t-cell.js | 2026-11-04 |
 | 61 | RTS : améliorations du tank (mitrailleuse coaxiale, obus explosifs, obus perforants, blindage réactif) et de l'hélicoptère (canon de 30 mm, missiles Hellfire, leurres et blindage, viseur infrarouge) ; hélices de l'AC-130 qui tournent (avec disque flou) ; contrôle des tourelles (bouton « 🎮 Contrôler » : on vise et on tire, la tête suit) et du mortier (rond jaune là où l'obus tombera, entre sa portée mini et maxi, l'obus met un instant à retomber) | 2026-11-04 |
 | 60 | RTS : améliorations propres à l'AC-130 (gatling de 25 mm sur 3 niveaux, rechargement du 105 mm, obus incendiaires, capteurs infrarouges) ; zombies qui arrivent de tout le secteur de 90° au nord : nids étalés sur toute la largeur, hordes en 3 à 5 groupes, 3 zombies sur 10 seulement suivent la vieille route, les autres coupent tout droit vers la base | 2026-11-04 |
 | 59 | RTS : rotation des bâtiments par quarts de tour (bouton « ↻ Tourner » ou touche R, gardée pour le suivant) ; Mech de combat mis en avant (étoile) et bâtiment requis affiché sur chaque unité ; le bombardier devient un AC-130 : il tourne en virage à gauche autour de la zone visée et tire du flanc avec un canon de 40 mm et un obusier de 105 mm ; piloté, vue du canonnier (zoom, noir et blanc, cadre de visée), la manette déplace la zone visée | 2026-11-04 |
@@ -98,8 +99,8 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 - Une explosion que le joueur cause tue un civil (pénalité) ; les défenses jamais.
 
 - Mesurer les vraies images/s : ouvrir tests/perf.html sur l'ordi et le cell de Martin.
-- Test du mitrailleur parfois instable (90 % de précision au hasard).
-- Test « la roquette touche un volant en hauteur » : échoue environ 1 fois sur 6 séries complètes, jamais seul ; le message d'échec donne maintenant la distance la plus courte entre la roquette et le volant pour trouver la cause.
+- Tests du mitrailleur et de la roquette sur un volant : hasard fixé depuis la tâche 62 (plus d’échec au hasard). Si l’un échoue encore, c’est un vrai changement de comportement.
+- RTS au cell : menu repliable et rangée qui défile de côté, à essayer sur un vrai cell (vertical et couché).
 
 - Infini : vie +18 % et dégâts +14 % par vague (vague 20 : vie ×23, dégâts ×12). À confirmer en jouant.
 - Robot : rue de 140 m, blindage 1 500 (+250 et réparation à chaque rue), armes ×2,4 puis +16 % par rue, zombies +22 % de vie par rue. À équilibrer en jouant.

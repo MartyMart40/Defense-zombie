@@ -57,6 +57,6 @@ Les prix exacts sont dans `RTS_UNITS` et `RTS_BLD` (`js/41-rts.js`) : si un chif
 - Commencer une nouvelle partie quand une partie est sauvée demande une confirmation (deuxième clic).
 
 ## À équilibrer en jouant
-- Simulateur (`docs/equilibrage.md`, 2026-11-04) : avec la stratégie simple du robot-joueur, le QG tombe vers 5 à 7 minutes, avec environ 500 zombies en vie dès la 5e minute. La menace monte avec chaque zombie tué (1 + tués / 160 + minutes / 2,5 + 0,4 par nid), donc mieux on se défend, plus il en vient : à vérifier en jouant.
+- Menace (tâche 67) : 1 + minutes / 4 + 0,5 par nid détruit + tués / 600 (`RTS_THREAT`). Avant : 1 + minutes / 2,5 + 0,4 par nid + tués / 160, qui s'emballait (mieux on se défendait, plus il en venait). Simulateur, même robot-joueur : la base tenait 6 à 8 min, elle tient maintenant 16 à 30 min.
 - Prix des véhicules et des avions, force des boss.
 - Pilotage au doigt sur un vrai cell, plafond de 300 zombies au cell.

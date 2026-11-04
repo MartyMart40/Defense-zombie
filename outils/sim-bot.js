@@ -5,8 +5,8 @@
 //   - toit : vise le zombie le plus proche de la barricade avec une erreur de visée réglable, tire, recharge ;
 //            entre les vagues : répare, achète des armes et des améliorations, place ses talents, achète des défenses ;
 //   - RTS : bâtit (usine lourde, tourelles), achète des unités, des améliorations, attaque le nid le plus proche.
-// Le robot-joueur ne se sert pas des pouvoirs, des accessoires, des compagnons ni du contrôle des tourelles :
-// un vrai joueur fait donc un peu mieux que lui.
+// Il lance ses pouvoirs (grenade, Molotov, frappe aérienne) dans les groupes serrés, comme un joueur.
+// Il ne se sert pas des accessoires, des compagnons ni du contrôle des tourelles : un vrai joueur fait donc un peu mieux que lui.
 
 (function(){
   // Hasard fixé (même partie à chaque lancement avec la même graine)
@@ -56,6 +56,24 @@
     }
     return best;
   }
+  // Pouvoirs : au plus un lancer toutes les 0,7 s, dans le groupe le plus serré (grenade ≥ 5 zombies, Molotov ≥ 6 près de la barricade, frappe ≥ 12)
+  const POUV = { t:0, n:0 };
+  const SEUIL = { grenade:{ n:5, r:4.5, zMin:-70 }, molotov:{ n:6, r:3.6, zMin:-35 }, strike:{ n:12, r:9, zMin:-90 } };
+  function pouvoirs(dt){
+    if (typeof powUse !== 'function') return;
+    POUV.t -= dt; if (POUV.t > 0) return; POUV.t = .7;
+    const vivants = zombies.filter(z => !z.dead && z.g && z.g.position.z < BAR_Z + 1);
+    for (const id of ['strike', 'grenade', 'molotov']){
+      if (!pwUnlocked(id) || !pwS[id] || pwS[id].ch < 1) continue;
+      const S2 = SEUIL[id]; let best = null, bn = 0;
+      for (const a of vivants){
+        const pa = a.g.position; if (pa.z < S2.zMin) continue;
+        let n = 0; for (const b of vivants){ const pb = b.g.position; if (Math.abs(pb.x - pa.x) < S2.r && Math.abs(pb.z - pa.z) < S2.r) n++; }
+        if (n > bn){ bn = n; best = pa; }
+      }
+      if (best && bn >= S2.n && powUse(id, { x:best.x, y:0, z:best.z })){ POUV.n++; return; }
+    }
+  }
   function viser(J, dt){
     vise.t -= dt;
     if (!vise.z || vise.z.dead || vise.t <= 0){
@@ -79,7 +97,17 @@
     }
     saveP();
   }
+  // Ferraille : moitié pour les défenses, moitié pour les pouvoirs (charges et dégâts de la grenade et du Molotov d'abord)
+  function pouvoirsAtelier(){
+    if (typeof pwUpgrade !== 'function') return;
+    for (let n = 0; n < 30; n++){
+      let best = null, bc = 1e18;
+      ['grenade', 'molotov', 'strike'].forEach(id => { if (!pwUnlocked(id)) return; ['ch', 'dmg', 'cd'].forEach(k => { const l = pwLv(id)[k]; if (l >= PW_MAX[k]) return; const c = pwUpgCost(id, k, l); if (c < bc){ bc = c; best = [id, k]; } }); });
+      if (!best || P.scrap < bc * 2 || !pwUpgrade(best[0], best[1])) break;
+    }
+  }
   function defenses(){
+    pouvoirsAtelier();
     if (typeof defBuy !== 'function') return;
     for (let i = 0; i < DEF_SLOTS.length; i++) if (!P.slots[i]){ const t = DEF_ORDER.slice().reverse().find(t => P.scrap >= DEF_TYPES[t].price && t !== 'nuke'); if (t) defBuy(i, t); }
     for (let n = 0; n < 50; n++){
@@ -94,9 +122,10 @@
   //   patient  : améliore l'arme en main ; l'arme suivante seulement avec deux fois son prix en poche,
   //              en sautant les armes de près (fusil à pompe, lance-flammes), faibles au bout de la rue
   //   pistolet : garde le pistolet et n'achète que des améliorations
+  //   pompe    : achète le fusil à pompe dès qu'on peut, puis seulement des améliorations
   const BOT = { armes:null, strategie:'patient' };
   const PRES = ['shotgun', 'flamer'];
-  const STRAT = { boutique:{ k:1 }, patient:{ k:2, sauf:PRES }, pistolet:{ k:1, armes:[] } };
+  const STRAT = { boutique:{ k:1 }, patient:{ k:2, sauf:PRES }, pistolet:{ k:1, armes:[] }, pompe:{ k:1, armes:['shotgun'] } };
   function boutique(){
     talents(); defenses();
     if (S.bar < S.barMax * .8 && S.money >= repairCost()){ S.money -= repairCost(); S.bar = S.barMax; }
@@ -125,11 +154,11 @@
     const wins0 = P.wins[LOCS[idx].id] || 0;
     if (inf) infStart(idx, true); else startLocation(idx);
     let t = 0, n = 0, barMin = 1, vagues = [];
-    vise.z = null;
+    vise.z = null; POUV.n = 0; POUV.t = 0;
     while (t < maxT){
       if (state === 'shop'){ boutique(); startWave(); continue; }
       if (state !== 'playing') break;
-      viser(J, dt); visuals(dt); update(dt); t += dt;
+      viser(J, dt); if (BOT.pouvoirs !== false) pouvoirs(dt); visuals(dt); update(dt); t += dt;
       if (S.barMax > 0) barMin = Math.min(barMin, S.bar / S.barMax);
       if (endT > 0 && endT < dt * 1.5) vagues.push({ v:S.wave, bar:Math.round(100 * S.bar / S.barMax), argent:Math.round(S.money) });
       if (++n % 1500 === 0) await pause();
@@ -138,7 +167,7 @@
     const gagne = !inf && (P.wins[LOCS[idx].id] || 0) > wins0;
     return { ville:LOCS[idx].name, inf:!!inf, gagne, vague:S.wave, tenues:gagne ? curLoc.waves : Math.max(0, S.wave - 1), sur:curLoc.waves,
       bar:Math.round(100 * Math.max(0, S.bar) / S.barMax), barMin:Math.round(100 * barMin), argent:Math.round(S.money), abattus:S.kills,
-      minutes:Math.round(t / 6) / 10, niveau:P.level, ferraille:Math.round(P.scrap), arme:WEAPONS[S.cur].name, finTemps:t >= maxT, vagues };
+      minutes:Math.round(t / 6) / 10, pouvoirs:POUV.n, niveau:P.level, ferraille:Math.round(P.scrap), arme:WEAPONS[S.cur].name, finTemps:t >= maxT, vagues };
   }
   // Campagne complète : chaque ville jusqu'à la victoire (essais au plus), en gardant le profil comme un vrai joueur
   async function campagne(opts){
@@ -178,20 +207,21 @@
     if (nb('heavyfac') && !nb('repair') && m() >= RTS_BLD.repair.cost + 600) rtsPlace('repair');
     if (!nb('scrap') && m() >= RTS_BLD.scrap.cost + 400) rtsPlace('scrap');
     const tour = RTS.blds.filter(o => !o.dead && o.B.turret).length;
-    if (tour < 4 + nd && m() >= 700) rtsPlace(nd >= 2 && Math.random() < .5 ? 't_cannon' : 't_mg');
+    if (tour < 5 + 2 * nd + Math.floor(RTS.t / 180) && m() >= 600) rtsPlace(RTS.t > 240 && Math.random() < .5 ? 't_cannon' : 't_mg');
     // Unités : du plus fort qu'on peut se payer
-    const voulu = Math.min(RTS_CFG.maxUnits, 8 + nd * 3);
+    const voulu = Math.min(RTS_CFG.maxUnits, 10 + nd * 3 + Math.floor(RTS.t / 90));
     if (armee().length < voulu){
       const t = ['heavy', 'rocket', 'gunner', 'rifle'].find(t => rtsFactoryFor(t) && m() >= RTS_UNITS[t].cost + 150);
       if (t) rtsBuy(t);
+      if (t && m() > 3000){ const t2 = ['heavy', 'rocket', 'gunner'].find(x => rtsFactoryFor(x) && m() >= RTS_UNITS[x].cost + 150); if (t2) rtsBuy(t2); }
     }
     // Améliorations quand l'armée est là
-    if (armee().length >= 8 && m() > 2500){
+    if (armee().length >= 8 && m() > 1800){
       const types = [...new Set(armee().map(u => u.type))];
-      for (const t of types) for (const k of ['arm', 'hp', 'rate']){ if (m() > 2000 && rtsUpgCost(t, k) < m() - 1500) rtsUpgBuy(t, k); }
+      for (const t of types) for (const k of ['arm', 'hp', 'rate']){ if (rtsUpgCost(t, k) < m() - 800) rtsUpgBuy(t, k); }
     }
     // Tourelles plus fortes
-    RTS.blds.filter(o => !o.dead && o.B.turret).forEach(o => { if (m() > 1500) rtsTurretUp(o); });
+    RTS.blds.filter(o => !o.dead && o.B.turret).forEach(o => { if (m() > 1000) rtsTurretUp(o); });
     // Attaque : le nid vivant le plus proche, quand l'armée au sol est assez grosse
     const sol = armee().filter(u => u.U.kind === 'ground');
     if (BOT.rtsAttaque !== false && sol.length >= 8){

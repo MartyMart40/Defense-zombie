@@ -2,7 +2,7 @@
 /* ================= Données de jeu ================= */
 const WEAPONS = {
   pistol:  { id:'pistol',  name:'Pistolet',         price:0,    dmg:30,  rate:3.2, mag:12, reload:1.1, pellets:1, spread:.0015, pierce:1, zoomFov:56, recoil:.03, ucost:70,  upg:['dmg', 'rate', 'reload', 'pierce'], desc:'Précis et rapide à recharger.' },
-  shotgun: { id:'shotgun', name:'Fusil à pompe',     price:350,  dmg:17,  rate:1.15, mag:6, reload:2.0, pellets:9, spread:.055, pierce:1, zoomFov:60, recoil:.08, ucost:110, upg:['dmg', 'mag', 'reload', 'pellets'], desc:'Dévastateur de près, faible au bout de la rue.' },
+  shotgun: { id:'shotgun', name:'Fusil à pompe',     price:350,  dmg:30,  rate:1.5, mag:8, reload:1.5, pellets:8, spread:.03, pierce:2, zoomFov:60, recoil:.08, ucost:110, upg:['dmg', 'mag', 'reload', 'pellets'], desc:'Dévastateur de près, bon jusqu’au milieu de la rue. Les plombs traversent deux zombies.' },
   rifle:   { id:'rifle',   name:'Fusil d’assaut',   price:900,  dmg:24,  rate:9,   mag:30, reload:1.8, pellets:1, spread:.014, pierce:1, zoomFov:50, recoil:.022, ucost:160, upg:['dmg', 'mag', 'reload', 'spread'], desc:'Tir automatique, garde le doigt sur la gâchette.' },
   sniper:  { id:'sniper',  name:'Sniper',           price:1600, dmg:190, rate:.9,  mag:5,  reload:2.4, pellets:1, spread:0,    pierce:4, zoomFov:18, recoil:.11, ucost:220, upg:['dmg', 'rate', 'reload', 'pierce'], desc:'Énormes dégâts, traverse jusqu’à 4 zombies. Lunette quand tu vises.' },
   // Nouvelles armes (projectiles, flammes et montée en régime : 20-armes.js)

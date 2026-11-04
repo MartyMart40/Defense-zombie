@@ -20,7 +20,7 @@ const quoi = process.argv[2] || 'tout';
 const joueurs = (process.argv[3] || 'moyen,bon').split(',').filter(Boolean);
 const graine = +process.argv[4] || 1;
 const strategie = process.argv[5] || 'patient';
-const NOM_STRAT = { boutique:'l’arme suivante dès qu’on peut', patient:'l’arme suivante avec deux fois son prix en poche, sans les armes de près', pistolet:'le pistolet seulement, et des améliorations' };
+const NOM_STRAT = { boutique:'l’arme suivante dès qu’on peut', patient:'l’arme suivante avec deux fois son prix en poche, sans les armes de près', pistolet:'le pistolet seulement, et des améliorations', pompe:'le fusil à pompe dès qu’on peut, puis des améliorations' };
 
 async function page(b){
   const p = await b.newPage();
@@ -35,10 +35,10 @@ async function page(b){
 const pct = v => v + ' %';
 const LOCS_N = 5;
 function mdToit(c){
-  let h = '| Ville | Essai | Résultat | Vagues | Barricade à la fin (plus bas) | Argent à la fin | Niveau | Arme | Minutes de jeu |\n|---|---|---|---|---|---|---|---|---|\n';
+  let h = '| Ville | Essai | Résultat | Vagues | Barricade à la fin (plus bas) | Argent à la fin | Niveau | Arme | Pouvoirs lancés | Minutes de jeu |\n|---|---|---|---|---|---|---|---|---|---|\n';
   c.parties.forEach(r => {
     h += '| ' + r.ville + ' | ' + r.essai + ' | ' + (r.gagne ? 'Libérée' : r.finTemps ? 'Trop long' : 'Perdue') + ' | ' + r.tenues + ' / ' + r.sur + ' | ' + pct(r.bar) + ' (' + pct(r.barMin) + ') | '
-      + r.argent.toLocaleString('fr-CA') + ' $ | ' + r.niveau + ' | ' + r.arme + ' | ' + String(r.minutes).replace('.', ',') + ' |\n';
+      + r.argent.toLocaleString('fr-CA') + ' $ | ' + r.niveau + ' | ' + r.arme + ' | ' + r.pouvoirs + ' | ' + String(r.minutes).replace('.', ',') + ' |\n';
   });
   return h;
 }
@@ -61,7 +61,8 @@ function mdRts(r){
     + 'Rapport écrit par `outils/simulateur.js` le ' + out.date + ' (graine ' + graine + '). Un robot-joueur joue le vrai jeu en accéléré.\n'
     + 'Il vise le zombie le plus proche de la barricade avec une erreur de visée selon le niveau du joueur, achète entre les vagues '
     + '(l’arme suivante, puis toujours l’amélioration la moins chère), place ses talents et achète des défenses avec la ferraille.\n'
-    + 'Il ne se sert pas des pouvoirs, des accessoires, des compagnons ni du contrôle des tourelles : un vrai joueur fait un peu mieux.\n'
+    + 'Il lance ses pouvoirs (grenade, Molotov, frappe aérienne) dans les groupes serrés et améliore les pouvoirs avec une partie de sa ferraille.\n'
+    + 'Il ne se sert pas des accessoires, des compagnons ni du contrôle des tourelles : un vrai joueur fait un peu mieux.\n'
     + 'Ces chiffres servent à comparer avant et après un changement d’équilibrage, pas à remplacer les essais de Martin.\n\n'
     + '- Débutant : erreur de visée d’environ 0,6° (à chaque coup), 10 % des tirs visés à la tête, 0,6 s pour changer de cible.\n- Moyen : environ 0,35°, 30 % à la tête, 0,4 s.\n- Bon : environ 0,17°, 60 % à la tête, 0,25 s.\n\n';
   for (const j of joueurs){
@@ -91,8 +92,8 @@ function mdRts(r){
   }
   if (quoi === 'tout' || quoi === 'rts'){
     const p = await page(b);
-    md += '## Guerre des robots (RTS)\n\nLe robot-joueur bâtit une usine lourde, un récupérateur, un atelier de réparation, des tourelles devant la base (4 plus une par nid détruit), '
-      + 'achète l’unité la plus forte qu’il peut payer (8 unités plus 3 par nid détruit) et des améliorations. Deux façons de jouer : il attaque le nid le plus proche dès qu’il a 8 unités au sol, '
+    md += '## Guerre des robots (RTS)\n\nLe robot-joueur bâtit une usine lourde, un récupérateur, un atelier de réparation, des tourelles devant la base (5, plus 2 par nid détruit, plus une toutes les 3 minutes), '
+      + 'achète l’unité la plus forte qu’il peut payer (10, plus 3 par nid détruit, plus une toutes les 90 secondes), des améliorations dès qu’il a de l’argent en trop. Deux façons de jouer : il attaque le nid le plus proche dès qu’il a 8 unités au sol, '
       + 'ou il garde toute son armée à la base. Une ligne toutes les 5 minutes de jeu. Rappel : menace = 1 + zombies tués / 160 + minutes / 2,5 + 0,4 par nid détruit.\n\n';
     out.rts = {};
     for (const [cle, attaque, titre] of [['attaque', true, 'Il attaque les nids'], ['defense', false, 'Il reste à la base']]){

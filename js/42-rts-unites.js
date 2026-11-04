@@ -234,9 +234,12 @@ function rtsSpawnAt(x, z, n, spread, type){
   }
   return k;
 }
+const RTS_THREAT = { t:240, nid:.5, tues:600 }; // menace : +1 toutes les 4 minutes, +0,5 par nid détruit, +1 tous les 600 tués
 function rtsThreat(){
   const killed = RTS.nests.filter(n => n.dead).length;
-  RTS.threat = 1 + RTS.kills / 160 + RTS.t / 150 + killed * .4;
+  // Surtout le temps et les nids détruits ; un peu les tués (avant : tués / 160, ce qui emballait tout :
+  // mieux on se défendait, plus il en venait). Voir docs/equilibrage.md.
+  RTS.threat = 1 + RTS.t / RTS_THREAT.t + killed * RTS_THREAT.nid + RTS.kills / RTS_THREAT.tues;
   plan.hpMult = 1 + .55 * (RTS.threat - 1); plan.dmgMult = 1 + .4 * (RTS.threat - 1); plan.spdMult = Math.min(1.5, 1 + .05 * (RTS.threat - 1));
 }
 const RTS_FLY = { flyer:1, gargoyle:1, crow:1, behemoth:1 };

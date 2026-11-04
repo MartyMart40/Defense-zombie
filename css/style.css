@@ -573,3 +573,8 @@ canvas.rt-ac{ filter:grayscale(1) contrast(1.35) brightness(1.1); }
 #rtPhoto.hide{ display:none; }
 #rtPhoto button{ padding:8px 12px; border-radius:7px; border:1px solid #ffd060; background:rgba(10,20,14,.75); color:#ffd060; font-weight:800; font-size:14px; }
 body.rtphoto #rtsUI, body.rtphoto #rtInfo, body.rtphoto #rtTip, body.rtphoto #rtMini, body.rtphoto #rtAlert, body.rtphoto #rtsPanel{ display:none !important; }
+/* Statistiques à vie (js/52-statistiques.js) */
+#scrStats .row{ padding:7px 0; }
+#scrStats .st-v{ font-size:18px; font-weight:700; color:var(--amber); text-align:right; white-space:nowrap; }
+#scrStats .st-bar{ height:5px; margin-top:4px; background:rgba(255,255,255,.1); border-radius:3px; overflow:hidden; }
+#scrStats .st-bar i{ display:block; height:100%; background:var(--amber); }

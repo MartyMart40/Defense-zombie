@@ -13,7 +13,8 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | `js/45-rts-sauvegarde.js` | Partie en cours gardée toutes les 30 s, à la pause et quand le cell met le jeu de côté ; reprise par « Continuer la guerre » |
 | `js/47-rts-astuces.js` | Astuces des premières parties : une bulle à la fois, au bon moment, une fois chacune ; « Plus d’astuces » les coupe, la pause permet de les revoir |
 | `js/48-rts-liste.js` | Choisir les unités une par une : rangée « Unités » (pastilles avec la vie), Tab pour la suivante, double-clic pour le même type |
-| `tests/t-rts.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js` | Tests |
+| `js/49-rts-commandement.js` | Mini-carte (toucher pour y aller), point de ralliement, alerte « Base attaquée », « ✋ Tenir » (u.hold), mode photo (dans la pause) |
+| `tests/t-rts.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js` | Tests |
 
 ## Règles et chiffres actuels
 - Départ : 900 $, QG, usine de robots, 3 tourelles mitrailleuses, 3 fantassins.

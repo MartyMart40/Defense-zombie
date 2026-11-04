@@ -16,7 +16,7 @@
 | 16 à 38 | Systèmes du toit : atelier, défenses, types de zombies, boss, armes, pouvoirs, ambiance, rue, compagnons, défi, combos, perf, infini, repères, missions, punch, sauvegarde, écritures, arsenal, monstres, rendu, bruitages, vibrations |
 | 39 à 40 | Mode robot |
 | 41 à 44 | Mode RTS « Guerre des robots » |
-| 45 à 49 | Petits ajouts : 45 sauvegarde de la partie RTS, 46 application installable, 47 astuces du RTS, 48 liste des unités du RTS ; 49 libre |
+| 45 à 49 | Petits ajouts : 45 sauvegarde de la partie RTS, 46 application installable, 47 astuces du RTS, 48 liste des unités du RTS, 49 commandement du RTS (plage pleine) |
 | 50 à 59 | Prochain gros mode ou système |
 | 60 à 89 | Modes suivants (une dizaine chacun) |
 | 90 | `90-branchements.js` : branche le registre des modes sur le jeu commun. Toujours le dernier. |

@@ -20,10 +20,11 @@ function rtsSaveData(){
     lost: R.lost, upg: JSON.parse(JSON.stringify(R.upg || {})), baseR: R.baseR, rot: R.placeRot || 0,
     xpG: Math.max(0, Math.round((P.xp || 0) - R.xp0)), scrG: Math.max(0, Math.round((P.scrap || 0) - R.scr0)),
     cam: { x: rtsR1(R.cam.x), z: rtsR1(R.cam.z), h: rtsR1(R.cam.h) },
+    rally: R.rally ? { x: rtsR1(R.rally.x), z: rtsR1(R.rally.z) } : null,
     road: RTS_ROAD.map(p => [rtsR1(p[0]), rtsR1(p[1])]),
     nests: R.nests.map(n => ({ x: rtsR1(n.x), z: rtsR1(n.z), hp: Math.round(n.hp), d: n.dead ? 1 : 0, st: rtsR1(n.spawnT) })),
     blds: R.blds.filter(o => !o.dead).map(o => ({ t: o.type, x: o.x, z: o.z, r: o.rot || 0, hp: Math.round(o.hp), lv: o.lv || 1, s: o.spent || 0 })),
-    units: R.units.filter(u => !u.dead).map(u => ({ t: u.type, x: rtsR1(u.g.position.x), z: rtsR1(u.g.position.z), hp: Math.round(u.hp), hx: rtsR1(u.hx), hz: rtsR1(u.hz), hd: rtsR1(u.head || 0) }))
+    units: R.units.filter(u => !u.dead).map(u => ({ t: u.type, x: rtsR1(u.g.position.x), z: rtsR1(u.g.position.z), hp: Math.round(u.hp), hx: rtsR1(u.hx), hz: rtsR1(u.hz), hd: rtsR1(u.head || 0), ho: u.hold ? 1 : 0 }))
   };
 }
 // Sauve la partie en cours (seulement pendant une partie RTS)
@@ -85,7 +86,7 @@ function rtsLoadRest(d){
     const u = rtsSpawnUnit(s.t, +s.x, +s.z);
     u.hp = clamp(+s.hp || u.maxHp, 1, u.maxHp); rtsHpSet(u.hpb, u.hp / u.maxHp);
     u.hx = u.tx = isFinite(s.hx) ? +s.hx : u.g.position.x; u.hz = u.tz = isFinite(s.hz) ? +s.hz : u.g.position.z;
-    u.head = +s.hd || 0; u.cmd = u.U.kind === 'air' ? 'idle' : 'move';
+    u.head = +s.hd || 0; u.cmd = u.U.kind === 'air' ? 'idle' : 'move'; u.hold = !!s.ho;
   }
 }
 

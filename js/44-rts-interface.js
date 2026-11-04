@@ -38,7 +38,7 @@ function rtsTab(t){
   const bar = $('rtBar'); let h = '';
   if (t === 'rob' || t === 'veh'){
     h = RTS_ORDER.filter(k => RTS_UNITS[k].cat === t).map(k => { const i = RTS_HOTKEY.indexOf(k); return '<button type="button" class="rt-buy' + (RTS_UNITS[k].big ? ' rt-star' : '') + '" data-t="' + k + '">' + RTS_UNITS[k].name + '<b>' + fmt(RTS_UNITS[k].cost) + '</b><em></em>' + (isTouch || i < 0 ? '' : '<i>' + (i + 1) + '</i>') + '</button>'; }).join('')
-      + '<button type="button" id="rtAll">Tout choisir</button><button type="button" id="rtStop">Arrêt</button><button type="button" id="rtPil">🎮 Piloter</button>';
+      + '<button type="button" id="rtAll">Tout choisir</button><button type="button" id="rtStop">Arrêt</button><button type="button" id="rtHold">✋ Tenir</button><button type="button" id="rtRally">📍 Ralliement</button><button type="button" id="rtPil">🎮 Piloter</button>';
   } else if (t === 'bat' || t === 'tour'){
     h = RTS_BUILD_TABS[t].map(k => '<button type="button" class="rt-bld" data-b="' + k + '">' + RTS_BLD[k].name + '<b>' + fmt(RTS_BLD[k].cost) + '</b></button>').join('');
   } else h = '<button type="button" id="rtUpg">Améliorer les unités…</button>';
@@ -48,6 +48,9 @@ function rtsTab(t){
   const all = $('rtAll'); if (all) all.addEventListener('click', () => rtsSelect(RTS.units.filter(u => !u.dead && u.U.cat === t), false));
   const st = $('rtStop'); if (st) st.addEventListener('click', () => { RTS.sel.forEach(u => { u.cmd = 'idle'; u.nest = null; u.retreat = false; u.tx = u.hx = u.g.position.x; u.tz = u.hz = u.g.position.z; }); });
   const pl = $('rtPil'); if (pl) pl.addEventListener('click', () => rtsPilotSel());
+  const ho = $('rtHold'); if (ho) ho.addEventListener('click', () => { if (typeof rtsHold === 'function') rtsHold(); });
+  const ra = $('rtRally'); if (ra) ra.addEventListener('click', () => { if (typeof rtsRallyToggle === 'function') rtsRallyToggle(); });
+  if (typeof rtsCmdBtns === 'function') rtsCmdBtns();
   const up = $('rtUpg'); if (up) up.addEventListener('click', () => rtsUpgPanel());
   if (t === 'upg') rtsUpgPanel();
 }
@@ -84,7 +87,7 @@ function rtsInfoShow(){
   if (state !== 'rts' || (!o && !one)){ rtsInfo.classList.add('hide'); return; }
   let h;
   if (one){
-    h = '<div class="nm">' + one.U.name + '</div><div class="ds">' + Math.ceil(one.hp) + ' / ' + Math.ceil(one.maxHp) + ' de vie · ' + Math.round(rtsStat(one, 'dmg')) + ' dégâts · portée ' + Math.round(rtsStat(one, 'range')) + ' m</div>'
+    h = '<div class="nm">' + one.U.name + '</div><div class="ds">' + Math.ceil(one.hp) + ' / ' + Math.ceil(one.maxHp) + ' de vie · ' + Math.round(rtsStat(one, 'dmg')) + ' dégâts · portée ' + Math.round(rtsStat(one, 'range')) + ' m' + (one.hold ? ' · ✋ tient sa position' : '') + '</div>'
       + '<div class="rt-acts"><button type="button" data-a="pilot">🎮 Piloter</button></div>';
   } else {
     const B = o.B; h = '<div class="nm">' + B.name + (B.turret ? ' · niveau ' + o.lv : '') + '</div><div class="ds">' + Math.ceil(o.hp) + ' / ' + Math.ceil(o.maxHp) + ' de vie' + (B.desc ? ' · ' + B.desc : '') + '</div><div class="rt-acts">';
@@ -241,6 +244,7 @@ function rtsTapUnit(u, mode){
 }
 function rtsTap(cx, cy, add, long){
   const p = rtsPick(cx, cy);
+  if (RTS.rallyPick){ if (p.x != null && typeof rtsRallySet === 'function') rtsRallySet(p.x, p.z); return; } // point de ralliement (js/49)
   if (RTS.place){ if (p.x != null){ if (isTouch) rtsGhostAt(p.x, p.z); else rtsPlaceAt(p.x, p.z); } return; }
   if (p.unit){ rtsTapUnit(p.unit, isTouch ? (long ? 'long' : 'tap') : (add ? 'add' : 'click')); return; }
   if (p.bld && !RTS.sel.length){ RTS.bsel = p.bld; rtsInfoShow(); return; }
@@ -290,7 +294,9 @@ document.addEventListener('keydown', e => {
   else if (!RTS.pilot && /^Digit[1-9]$/.test(e.code)){ const t = RTS_HOTKEY[+e.code.slice(-1) - 1]; if (t) rtsBuy(t); }
   else if (e.code === 'Space'){ if (RTS.pilot) RTS.pv.fire = true; else rtsSelect(RTS.units.filter(u => !u.dead), false); e.preventDefault(); }
   else if (e.code === 'Escape' || e.code === 'KeyP'){
-    if (RTS.place) rtsCancelPlace();
+    if (RTS.photo){ if (typeof rtsPhoto === 'function') rtsPhoto(false); }
+    else if (RTS.rallyPick){ RTS.rallyPick = false; if (typeof rtsCmdBtns === 'function') rtsCmdBtns(); }
+    else if (RTS.place) rtsCancelPlace();
     else if (RTS.pilot && !RTS.paused) rtsUnpilot();
     else if (RTS.paused){ RTS.paused = false; rtsPanel.classList.add('hide'); }
     else rtsPause();
@@ -300,7 +306,7 @@ document.addEventListener('keyup', e => { if (RTS_KEYS[e.code]){ RTS.keys[RTS_KE
 (function(){
   const pts = new Map(); let tap = null;
   canvas.addEventListener('touchstart', e => {
-    if (state !== 'rts' || RTS.paused || RTS.pilot) return;
+    if (state !== 'rts' || (RTS.paused && !RTS.photo) || RTS.pilot) return; // mode photo : la caméra bouge au doigt
     e.preventDefault(); if (typeof Snd === 'object') Snd.init();
     for (const t of e.changedTouches) pts.set(t.identifier, { x:t.clientX, y:t.clientY });
     if (pts.size === 1){

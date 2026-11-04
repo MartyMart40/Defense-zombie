@@ -560,3 +560,16 @@ canvas.rt-ac{ filter:grayscale(1) contrast(1.35) brightness(1.1); }
 #rtRoster .rt-u b{ display:block; height:100%; width:100%; background:#7ee05a; }
 #rtRoster .rt-u b.bas{ background:#ff6a4a; }
 @media (max-height:520px){ #rtRoster .rt-u{ padding:3px 6px; font-size:11px; } }
+/* RTS : commandement (js/49-rts-commandement.js) */
+#rtMini{ position:fixed; z-index:7; left:calc(10px + env(safe-area-inset-left,0px)); top:calc(76px + env(safe-area-inset-top,0px)); width:120px; height:150px; border:1px solid rgba(255,208,96,.6); border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,.45); touch-action:none; cursor:pointer; }
+#rtMini.hide{ display:none; }
+@media (max-height:520px){ #rtMini{ top:calc(48px + env(safe-area-inset-top,0px)); width:96px; height:120px; } }
+#rtBar #rtAll, #rtBar #rtStop, #rtBar #rtHold, #rtBar #rtRally, #rtBar #rtPil{ min-width:0; padding:7px 8px; }
+#rtBar #rtHold.on, #rtBar #rtRally.on{ border-color:#ffd060 !important; background:rgba(120,90,20,.9) !important; }
+#rtAlert{ position:fixed; z-index:9; left:50%; top:calc(60px + env(safe-area-inset-top,0px)); transform:translateX(-50%); max-width:calc(100vw - 32px); padding:8px 14px; border-radius:8px; border:1px solid #ff6a4a; background:rgba(90,16,10,.92); color:#ffe8e0; font-weight:800; font-size:14px; animation:rtAl 1s ease-in-out infinite alternate; }
+#rtAlert.hide{ display:none; }
+@keyframes rtAl{ from{ box-shadow:0 0 0 rgba(255,90,60,0); } to{ box-shadow:0 0 16px rgba(255,90,60,.8); } }
+#rtPhoto{ position:fixed; z-index:9; left:50%; bottom:calc(14px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:8px; max-width:calc(100vw - 32px); color:#eef4ea; font-size:12px; text-shadow:0 1px 3px #000; }
+#rtPhoto.hide{ display:none; }
+#rtPhoto button{ padding:8px 12px; border-radius:7px; border:1px solid #ffd060; background:rgba(10,20,14,.75); color:#ffd060; font-weight:800; font-size:14px; }
+body.rtphoto #rtsUI, body.rtphoto #rtInfo, body.rtphoto #rtTip, body.rtphoto #rtMini, body.rtphoto #rtAlert, body.rtphoto #rtsPanel{ display:none !important; }

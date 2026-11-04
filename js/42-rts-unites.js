@@ -79,6 +79,7 @@ function rtsBuy(type){
   const u = rtsSpawnUnit(type, f.x + Math.cos(a) * out, f.z + Math.sin(a) * out);
   u.tx = u.hx = f.x + Math.cos(a) * (out + 4); u.tz = u.hz = f.z + Math.sin(a) * (out + 4); u.cmd = U.kind === 'air' ? 'idle' : 'move';
   if (U.kind === 'air') u.head = Math.PI; // décolle vers le nord
+  if (typeof rtsRallyApply === 'function') rtsRallyApply(u); // point de ralliement (js/49-rts-commandement.js)
   if (typeof Snd === 'object' && Snd.buy) Snd.buy();
   return u;
 }
@@ -164,6 +165,7 @@ function rtsStart(save){
   }
   rtsBaseSize(); RTS.saveT = 30;
   if (typeof RTS_TIP === 'object'){ RTS_TIP.cur = null; RTS_TIP.gap = 3; }
+  if (typeof rtsCmdReset === 'function'){ rtsCmdReset(); if (save && save.rally && isFinite(save.rally.x)) rtsRallySet(+save.rally.x, +save.rally.z); }
   state = 'rts';
   showScreen(null); rtsPanel.classList.add('hide');
   $('hud').classList.add('hide'); $('touch').classList.add('hide'); $('cross').classList.add('hide');
@@ -217,6 +219,7 @@ function rtsPause(){
       .concat(RTS.pilot ? [['Retour à la carte', () => { rtsUnpilot(); RTS.paused = false; rtsPanel.classList.add('hide'); }]] : []).concat([['Sauver et quitter', () => { if (typeof rtsSave === 'function') rtsSave(); rtsQuit(); }],
         ['Abandonner (efface la partie)', () => { if (typeof rtsSaveClear === 'function') rtsSaveClear(); rtsQuit(); }]]));
   if (typeof rtsTipPauseBtn === 'function') rtsTipPauseBtn();
+  if (typeof rtsPhotoPauseBtn === 'function') rtsPhotoPauseBtn();
 }
 
 /* ---------- Zombies : la route, les cibles, les boss ---------- */
@@ -556,10 +559,11 @@ function rtsUnits(dt){
     }
     nest = nest || (u.autoNest && !u.autoNest.dead ? u.autoNest : null);
     // Où aller : retraite > recul devant un zombie trop proche > nid visé > ordre de marche > garde de son poste
+    // u.hold (« Tenir la position », js/49-rts-commandement.js) : ni retraite, ni recul, ni poursuite ; elle tire d'où elle est
     let tx = u.tx, tz = u.tz, go = false, back = false;
     const kite = RTS_KITE[u.type] || 0;
-    if (u.retreat){ const h = rtsHealSpot(u); if (h){ const want = (h.B.heal ? h.B.healR * .5 : h.r + 5); if (Math.hypot(h.x - gp.x, h.z - gp.z) > want){ tx = h.x; tz = h.z; go = true; } } }
-    else if (kite && u.near && !u.near.dead && u.nearD < kite){
+    if (u.retreat && !u.hold){ const h = rtsHealSpot(u); if (h){ const want = (h.B.heal ? h.B.healR * .5 : h.r + 5); if (Math.hypot(h.x - gp.x, h.z - gp.z) > want){ tx = h.x; tz = h.z; go = true; } } }
+    else if (kite && !u.hold && u.near && !u.near.dead && u.nearD < kite){
       // Recule : à l'opposé du zombie, un peu vers son poste (et vers la base)
       const ax = gp.x - u.near.g.position.x, az = gp.z - u.near.g.position.z, al = Math.hypot(ax, az) || 1;
       const hx = u.hx - gp.x, hz = u.hz + 6 - gp.z, hl = Math.hypot(hx, hz) || 1;
@@ -567,7 +571,7 @@ function rtsUnits(dt){
     }
     else if (u.nest && !u.nest.dead){ const dn = Math.hypot(u.nest.x - gp.x, u.nest.z - gp.z); if (dn > rng + u.nest.r - 2){ tx = u.nest.x; tz = u.nest.z; go = true; } }
     else if (u.cmd === 'move'){ go = true; }
-    else if (u.tgt && !u.tgt.dead){
+    else if (u.tgt && !u.tgt.dead && !u.hold){
       // Garde : il ne poursuit pas trop loin de son poste
       const tp = u.tgt.g.position, dz = Math.hypot(tp.x - gp.x, tp.z - gp.z);
       if (dz > rng && Math.hypot(tp.x - u.hx, tp.z - u.hz) < RTS_LEASH + rng){ tx = tp.x; tz = tp.z; go = true; }

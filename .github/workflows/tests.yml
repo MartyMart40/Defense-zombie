@@ -17,9 +17,10 @@ jobs:
         with:
           node-version: 22
       - name: Installer Playwright et Chromium
+        # Le réseau de GitHub coupe parfois un téléchargement : on réessaie jusqu'à 3 fois
         run: |
-          npm install --no-save --no-package-lock playwright@1.63.0
-          npx playwright install --with-deps chromium
+          for i in 1 2 3; do npm install --no-save --no-package-lock playwright@1.63.0 && break; echo "Nouvel essai ($i)"; sleep 10; done
+          for i in 1 2 3; do npx playwright install --with-deps chromium && break; echo "Nouvel essai ($i)"; sleep 10; done
       - name: Vérifier la syntaxe
         run: cat js/*.js > /tmp/all.js && node --check /tmp/all.js && node --check sw.js
       - name: Servir le jeu

@@ -1064,7 +1064,7 @@ rtsUI.innerHTML = '<div id="rtTop"><span id="rtMoney"></span><span id="rtThreat"
   + '<div id="rtBase"><span>QG</span><div class="mk-bar"><i id="rtBaseFill"></i></div></div>'
   + '<div id="rtBoss" class="hide"><span id="rtBossName"></span><div class="mk-bar"><i id="rtBossFill"></i></div></div>'
   + '<button id="rtPause" type="button" aria-label="Pause">❚❚</button>'
-  + '<div id="rtPlace" class="hide"><span id="rtPlaceTxt"></span><button type="button" id="rtCancel">Annuler</button></div>'
+  + '<div id="rtPlace" class="hide"><span id="rtPlaceTxt"></span><button type="button" id="rtOk">Poser ici</button><button type="button" id="rtCancel">Annuler</button></div>'
   + '<div id="rtDock"><div id="rtTabs"><button type="button" data-tab="rob">Robots</button><button type="button" data-tab="veh">Véhicules</button><button type="button" data-tab="bat">Bâtiments</button><button type="button" data-tab="tour">Tourelles</button><button type="button" data-tab="upg">Améliorations</button></div><div id="rtBar"></div></div>';
 document.body.appendChild(rtsUI);
 const rtsPilotUI = document.createElement('div'); rtsPilotUI.id = 'rtPilot'; rtsPilotUI.className = 'hide';
@@ -1171,19 +1171,57 @@ function rtsHUD(){
 }
 
 /* ---------- Construire : un fantôme suit le pointeur ---------- */
-let rtsGhost = null;
+// Quadrillage de 2 m sur la zone de la base : le bâtiment se cale sur une case ; son emprise est verte (libre) ou rouge.
+// Ordi : le fantôme suit la souris, un clic pose. Cell : toucher ou glisser le fantôme le déplace, « Poser ici » confirme.
+const RTS_GRID = 2;
+const rtsSnap = v => Math.round(v / RTS_GRID) * RTS_GRID;
+let rtsGhost = null, rtsGridMesh = null, rtsFoot = null;
+const rtsFootOk = new THREE.MeshBasicMaterial({ color:0x6aff8a, transparent:true, opacity:.35, depthWrite:false, side:THREE.DoubleSide });
+const rtsFootNo = new THREE.MeshBasicMaterial({ color:0xff4a3a, transparent:true, opacity:.4, depthWrite:false, side:THREE.DoubleSide });
+function rtsGridBuild(){
+  if (rtsGridMesh){ scene.remove(rtsGridMesh); rtsGridMesh.geometry.dispose(); }
+  const R = RTS.baseR, pts = [];
+  for (let v = -Math.floor(R / RTS_GRID) * RTS_GRID; v <= R; v += RTS_GRID){
+    const h = Math.sqrt(Math.max(0, R * R - v * v)); if (h <= 0) continue;
+    pts.push(v, 0, -h, v, 0, h, -h, 0, v, h, 0, v);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  rtsGridMesh = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color:0xfff0a0, transparent:true, opacity:.45, depthWrite:false }));
+  rtsGridMesh.position.y = .1; scene.add(rtsGridMesh);
+  // Emprise des bâtiments déjà posés : cases occupées en gris
+  RTS.blds.forEach(o => { if (o.dead) return; const m = new THREE.Mesh(new THREE.PlaneGeometry(o.r * 2, o.r * 2), new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:.22, depthWrite:false })); m.rotation.x = -Math.PI / 2; m.position.set(o.x, .02 - .1, o.z); rtsGridMesh.add(m); });
+}
 function rtsStartPlace(type){
   if (state !== 'rts' || RTS.pilot) return;
   const B = RTS_BLD[type]; if (S.money < B.cost){ if (typeof toast === 'function') toast('Pas assez d’argent : ' + B.name + ' (' + fmt(B.cost) + ')'); return; }
   rtsCancelPlace();
   RTS.place = type; RTS.sel.length = 0; RTS.bsel = null; rtsInfoShow();
-  rtsGhost = new THREE.Mesh(rtsBldGeo(type), rtsGhostOk); rtsGhost.position.set(RTS.cam.x, .05, RTS.cam.z); scene.add(rtsGhost);
-  $('rtPlaceTxt').textContent = (isTouch ? 'Touche' : 'Clique') + ' un endroit dans la zone jaune pour poser : ' + B.name;
+  rtsGridBuild();
+  rtsGhost = new THREE.Mesh(rtsBldGeo(type), rtsGhostOk); scene.add(rtsGhost);
+  rtsFoot = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), rtsFootOk); rtsFoot.rotation.x = -Math.PI / 2; rtsFoot.scale.set(B.size * 2, B.size * 2, 1); scene.add(rtsFoot);
+  // Départ : au centre de l'écran s'il est dans la base, sinon un peu au nord du QG
+  const inB = Math.hypot(RTS.cam.x, RTS.cam.z) < RTS.baseR - B.size;
+  rtsGhostAt(inB ? RTS.cam.x : 0, inB ? RTS.cam.z : -RTS.baseR * .5);
   $('rtPlace').classList.remove('hide');
 }
-function rtsCancelPlace(){ RTS.place = null; if (rtsGhost){ scene.remove(rtsGhost); rtsGhost = null; } const p = $('rtPlace'); if (p) p.classList.add('hide'); }
-function rtsGhostAt(x, z){ if (!rtsGhost) return; rtsGhost.position.set(x, .05, z); rtsGhost.material = rtsBldOk(RTS.place, x, z) ? rtsGhostNo : rtsGhostOk; }
-function rtsPlaceAt(x, z){ const t = RTS.place; if (!t) return false; const o = rtsBuild(t, x, z); if (o){ rtsCancelPlace(); return true; } return false; }
+function rtsCancelPlace(){
+  RTS.place = null; RTS.ghostDrag = false;
+  if (rtsGhost){ scene.remove(rtsGhost); rtsGhost = null; }
+  if (rtsFoot){ scene.remove(rtsFoot); rtsFoot.geometry.dispose(); rtsFoot = null; }
+  if (rtsGridMesh){ scene.remove(rtsGridMesh); rtsGridMesh.traverse(o => { if (o.geometry) o.geometry.dispose(); }); rtsGridMesh = null; }
+  const p = $('rtPlace'); if (p) p.classList.add('hide');
+}
+function rtsGhostAt(x, z){
+  if (!rtsGhost || !RTS.place) return;
+  x = rtsSnap(x); z = rtsSnap(z);
+  const why = rtsBldOk(RTS.place, x, z), B = RTS_BLD[RTS.place];
+  rtsGhost.position.set(x, .05, z); rtsGhost.material = why ? rtsGhostNo : rtsGhostOk;
+  if (rtsFoot){ rtsFoot.position.set(x, .12, z); rtsFoot.material = why ? rtsFootNo : rtsFootOk; }
+  RTS.ghost = { x, z, ok:!why };
+  const t = $('rtPlaceTxt'); if (t) t.textContent = B.name + ' : ' + (why || (isTouch ? 'glisse-le sur la grille, puis Poser ici' : 'clique pour poser'));
+  const ok = $('rtOk'); if (ok) ok.disabled = !!why;
+}
+function rtsPlaceAt(x, z){ const t = RTS.place; if (!t) return false; const o = rtsBuild(t, rtsSnap(x), rtsSnap(z)); if (o){ rtsCancelPlace(); return true; } return false; }
 
 /* ---------- Commandes ---------- */
 function rtsNdc(cx, cy){ return new THREE.Vector2(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1); }
@@ -1217,7 +1255,7 @@ function rtsOrder(p){
 }
 function rtsTap(cx, cy, add){
   const p = rtsPick(cx, cy);
-  if (RTS.place){ if (p.x != null) rtsPlaceAt(p.x, p.z); return; }
+  if (RTS.place){ if (p.x != null){ if (isTouch) rtsGhostAt(p.x, p.z); else rtsPlaceAt(p.x, p.z); } return; }
   if (p.unit){ if (isTouch){ const i = RTS.sel.indexOf(p.unit); if (i >= 0){ RTS.sel.splice(i, 1); rtsInfoShow(); } else rtsSelect([p.unit], true); } else rtsSelect([p.unit], add); return; }
   if (p.bld && !RTS.sel.length){ RTS.bsel = p.bld; rtsInfoShow(); return; }
   if (isTouch && RTS.sel.length) rtsOrder(p);
@@ -1278,7 +1316,12 @@ document.addEventListener('keyup', e => { if (RTS_KEYS[e.code]){ RTS.keys[RTS_KE
     if (state !== 'rts' || RTS.paused || RTS.pilot) return;
     e.preventDefault(); if (typeof Snd === 'object') Snd.init();
     for (const t of e.changedTouches) pts.set(t.identifier, { x:t.clientX, y:t.clientY });
-    if (pts.size === 1){ const t = e.changedTouches[0]; tap = { x:t.clientX, y:t.clientY, moved:false }; }
+    if (pts.size === 1){
+      const t = e.changedTouches[0]; tap = { x:t.clientX, y:t.clientY, moved:false };
+      // Pose d'un bâtiment : un doigt posé près du fantôme le fait glisser (au lieu de déplacer la carte)
+      RTS.ghostDrag = false;
+      if (RTS.place && rtsGhost){ camera.updateMatrixWorld(); rtsV.copy(rtsGhost.position).project(camera); const sx = (rtsV.x + 1) / 2 * innerWidth, sy = (1 - rtsV.y) / 2 * innerHeight; if (Math.hypot(sx - t.clientX, sy - t.clientY) < 80) RTS.ghostDrag = true; }
+    }
     else { tap = null; const a = [...pts.values()]; RTS.pinch = { d:Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y), h:RTS.cam.h }; }
   }, { passive:false });
   canvas.addEventListener('touchmove', e => {
@@ -1289,7 +1332,8 @@ document.addEventListener('keyup', e => { if (RTS_KEYS[e.code]){ RTS.keys[RTS_KE
       if (pts.size === 1){
         const dx = t.clientX - p.x, dy = t.clientY - p.y;
         if (tap && Math.hypot(t.clientX - tap.x, t.clientY - tap.y) > 12) tap.moved = true;
-        if (!tap || tap.moved){ const k = RTS.cam.h / innerHeight * 1.4; RTS.cam.x -= dx * k; RTS.cam.z -= dy * k; }
+        if (RTS.ghostDrag){ const q = rtsPick(t.clientX, t.clientY); if (q.x != null) rtsGhostAt(q.x, q.z); if (tap) tap.moved = true; }
+        else if (!tap || tap.moved){ const k = RTS.cam.h / innerHeight * 1.4; RTS.cam.x -= dx * k; RTS.cam.z -= dy * k; }
       }
       p.x = t.clientX; p.y = t.clientY;
     }
@@ -1300,7 +1344,7 @@ document.addEventListener('keyup', e => { if (RTS_KEYS[e.code]){ RTS.keys[RTS_KE
     for (const t of e.changedTouches) pts.delete(t.identifier);
     if (pts.size < 2) RTS.pinch = null;
     if (tap && !tap.moved && pts.size === 0 && e.changedTouches.length && !RTS.pilot){ const t = e.changedTouches[0]; rtsTap(t.clientX, t.clientY, true); }
-    if (pts.size === 0) tap = null;
+    if (pts.size === 0){ tap = null; RTS.ghostDrag = false; }
   };
   canvas.addEventListener('touchend', end); canvas.addEventListener('touchcancel', end);
   // Pilotage au doigt : manette à gauche, glisser à droite pour viser (et tirer en même temps), bouton Tir
@@ -1330,6 +1374,7 @@ document.addEventListener('keyup', e => { if (RTS_KEYS[e.code]){ RTS.keys[RTS_KE
 rtsUI.querySelectorAll('#rtTabs button').forEach(b => b.addEventListener('click', () => rtsTab(b.dataset.tab)));
 $('rtPause').addEventListener('click', () => rtsPause());
 $('rtCancel').addEventListener('click', () => rtsCancelPlace());
+$('rtOk').addEventListener('click', () => { if (RTS.ghost) rtsPlaceAt(RTS.ghost.x, RTS.ghost.z); });
 (function(){
   const ref = $('btnMech') || $('btnStart');
   if (ref && ref.parentNode && !$('btnRts')){
@@ -1358,4 +1403,4 @@ document.addEventListener('pointerlockchange', () => { if (state === 'rts' && RT
 // Accès pour les tests automatiques
 window.__rts = { RTS, RTS_UNITS, RTS_CFG, RTS_BLD, RTS_UPG, RTS_ROAD, RTS_BOSS, rtsStart, rtsQuit, rtsBuy, rtsStep, rtsSelect, rtsOrder, rtsPick, rtsSpawnUnit, rtsSpawnAt, rtsNestDie, rtsEnd, rtsPause,
   rtsBuild, rtsBldOk, rtsPlaceBld, rtsTurretUp, rtsSell, rtsUpgBuy, rtsUpgCost, rtsStat, rtsTStat, rtsStartPlace, rtsPlaceAt, rtsTap, rtsTab, rtsInfoShow,
-  rtsPilot, rtsUnpilot, rtsPilotSel, rtsPilotStep, rtsValleyX, rtsRoadDist, rtsClampValley, rtsRoadNext, rtsRoadX, rtsAddNest, rtsFront, rtsPickTarget, RTS_KITE };
+  rtsGhostAt, rtsSnap, rtsPilot, rtsUnpilot, rtsPilotSel, rtsPilotStep, rtsValleyX, rtsRoadDist, rtsClampValley, rtsRoadNext, rtsRoadX, rtsAddNest, rtsFront, rtsPickTarget, RTS_KITE };

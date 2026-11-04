@@ -196,14 +196,19 @@
       o.dessus = __rts.rtsBuild('t_cannon', 0, 0) === null;
       var m0 = S.money, t = __rts.rtsBuild('t_cannon', 0, -16); o.ok = !!t && m0 - S.money === __rts.RTS_BLD.t_cannon.cost;
       // Pose au pointeur : fantôme puis clic
-      __rts.rtsStartPlace('wall'); o.fantome = !!R.place; o.pose = __rts.rtsPlaceAt(-16, -6); o.fini = !R.place;
+      __rts.rtsStartPlace('wall'); o.fantome = !!R.place;
+      o.grille = scene.children.some(function(c){ return c.isLineSegments && c.visible; });
+      __rts.rtsGhostAt(-15.3, -6.4); o.cale = R.ghost.x === -16 && R.ghost.z === -6 && R.ghost.ok;
+      __rts.rtsGhostAt(0, 0); o.rouge = R.ghost.ok === false && document.getElementById('rtOk').disabled;
+      o.pose = __rts.rtsPlaceAt(-16.7, -5.2); var w = R.blds[R.blds.length - 1]; o.case = w.type === 'wall' && w.x === -16 && w.z === -6; o.fini = !R.place;
+      o.grilleFin = !scene.children.some(function(c){ return c.isLineSegments && c.visible; });
       var m1 = S.money; o.vente = __rts.rtsSell(t) && S.money - m1 === Math.round(__rts.RTS_BLD.t_cannon.cost * .5);
       o.qg = __rts.rtsSell(R.base) === false;
       return o;
     }, calme);
     fin();
     ok(r.dehors, 'Refus hors de la base'); ok(r.dessus, 'Refus sur un autre bâtiment'); ok(r.ok, 'Construction payée');
-    ok(r.fantome && r.pose && r.fini, 'Pose au pointeur'); ok(r.vente, 'Vente : moitié du prix'); ok(r.qg, 'Le QG ne se vend pas');
+    ok(r.fantome && r.pose && r.fini, 'Pose au pointeur'); ok(r.grille && r.grilleFin, 'Quadrillage affiché pendant la pose'); ok(r.cale && r.case, 'Le bâtiment se cale sur la grille de 2 m'); ok(r.rouge, 'Emprise rouge et bouton bloqué sur une case occupée'); ok(r.vente, 'Vente : moitié du prix'); ok(r.qg, 'Le QG ne se vend pas');
   });
 
   test('RTS : robots fabriqués dans les usines (usine lourde pour les gros), améliorations des robots', () => {

@@ -9,7 +9,7 @@ function rtsPilot(u){
   rtsCancelPlace(); RTS.pilot = u; RTS.sel.length = 0; RTS.sel.push(u); RTS.bsel = null;
   const P2 = RTS.pv; P2.yaw = u.head + Math.PI; P2.pitch = u.U.kind === 'air' ? -.35 : u.U.kind === 'heli' ? -.4 : -.12; P2.fire = P2.fire2 = false; RTS.spin = 0;
   P2.joy.dx = P2.joy.dy = 0; P2.joy.id = P2.aim.id = null; Object.keys(P2.mv).forEach(k => { P2.mv[k] = 0; });
-  u.m.visible = false; if (u.rotor) u.rotor.visible = false; if (u.g.userData.tail) u.g.userData.tail.visible = false;
+  u.m.visible = false; if (u.legs) u.legs.forEach(l => { l.visible = false; }); if (u.rotor) u.rotor.visible = false; if (u.g.userData.tail) u.g.userData.tail.visible = false;
   u.hpb.bg.visible = u.hpb.fg.visible = false; u.ring.visible = false;
   rtsInfo.classList.add('hide');
   document.body.classList.add('piloting'); rtsUI.classList.add('piloting'); rtsPilotUI.classList.remove('hide'); rtsPilotUI.classList.toggle('touch', isTouch); $('cross').classList.remove('hide');
@@ -90,7 +90,7 @@ function rtsUnpilot(){
   if (u && u.U && u.type === 'heli'){ try { if (typeof Snd === 'object' && Snd.mgTick) Snd.mgTick(0, false); } catch (e) { errNote(e); } }
   if (u && u.U.big){ try { if (typeof Snd === 'object' && Snd.mg) Snd.mgTick(0, false); if (typeof mechCk !== 'undefined') mechCk.visible = false; if (typeof mechArms === 'function') mechArms(); } catch (e) { errNote(e); } }
   if (u && !u.dead){
-    u.m.visible = true; if (u.rotor) u.rotor.visible = true; if (u.g.userData.tail) u.g.userData.tail.visible = true;
+    u.m.visible = true; if (u.legs) u.legs.forEach(l => { l.visible = true; }); if (u.rotor) u.rotor.visible = true; if (u.g.userData.tail) u.g.userData.tail.visible = true;
     u.hpb.bg.visible = u.hpb.fg.visible = true; u.cmd = 'idle'; u.nest = null; u.retreat = false; u.tx = u.hx = u.g.position.x; u.tz = u.hz = u.g.position.z;
     RTS.cam.x = u.g.position.x; RTS.cam.z = u.g.position.z;
   }

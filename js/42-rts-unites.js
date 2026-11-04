@@ -15,6 +15,9 @@ function rtsSpawnUnit(type, x, z){
   const U = RTS_UNITS[type], g = new THREE.Group(), ground = U.kind === 'ground', robot = U.cat === 'rob' && !U.big;
   g.position.set(x, ground ? 0 : U.alt, z); if (robot) g.scale.setScalar(RTS_SC); rtsRoot.add(g);
   const m = new THREE.Mesh(rtsUnitGeo(type), rtsMat); g.add(m);
+  // Petits robots : deux jambes à part, qui pivotent à la hanche quand ils marchent
+  let legs = null;
+  if (robot){ const k = type === 'heavy' ? 1.5 : 1; legs = [-1, 1].map(s => { const l = new THREE.Mesh(rtsLegGeo(type), rtsMat); l.position.set(s * .3 * k, RTS_HIP * k, 0); g.add(l); l.userData.rtsUnit = null; return l; }); }
   let rotor = null;
   if (type === 'heli'){ rotor = new THREE.Mesh(rtsRotorGeo(true), rtsMat); rotor.position.set(0, 1.3, .4); g.add(rotor); const tr = new THREE.Mesh(rtsRotorGeo(false), rtsMat); tr.rotation.z = Math.PI / 2; tr.position.set(.25, 1.0, -5.6); g.add(tr); g.userData.tail = tr; }
   if (type === 'bomber'){ // 4 hélices et leur disque flou
@@ -27,7 +30,7 @@ function rtsSpawnUnit(type, x, z){
   const rr = ground ? U.r : U.r * .8;
   const ring = new THREE.Mesh(new THREE.RingGeometry(rr * 1.3, rr * 1.6, 24), rtsRingMat); ring.rotation.x = -Math.PI / 2; ring.position.y = ground ? .06 : -U.alt + .1; ring.visible = false; g.add(ring);
   const hp = rtsHpBar(g, U.big ? 9 : robot ? (type === 'heavy' ? 4.4 : 3) : ground ? 3.4 : 2.8, robot ? (type === 'heavy' ? 2.2 : 1.6) : 3.2);
-  const u = { type, U, g, m, ring, rotor, hpb:hp, hp:0, maxHp:0, tx:x, tz:z, cmd:'idle', nest:null, tgt:null, cd:rand(0, .5), cd2:rand(0, .5), scanT:0, step:0, dead:false, hx:x, hz:z, retreat:false, r:robot ? U.r * RTS_SC : U.r, head:rand(0, 6.28) };
+  const u = { type, U, g, m, ring, rotor, hpb:hp, legs, hp:0, maxHp:0, tx:x, tz:z, cmd:'idle', nest:null, tgt:null, cd:rand(0, .5), cd2:rand(0, .5), scanT:0, step:0, dead:false, hx:x, hz:z, retreat:false, r:robot ? U.r * RTS_SC : U.r, head:rand(0, 6.28) };
   u.maxHp = u.hp = rtsStat(u, 'hp');
   m.userData.rtsUnit = u; RTS.units.push(u); rtsHpSet(hp, 1);
   return u;

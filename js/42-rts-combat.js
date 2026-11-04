@@ -323,6 +323,11 @@ function rtsGunship(u, dt, cx, cz){
   if (u.cd2 <= 0 && (t || n) && am('w2')){ u.cd2 = 1 / rtsRate2(u); rtsHit(from, t || n, t ? 'z' : 'nest', rtsS2b(u)); }
   rtsGat(u, dt, t || n, false);
 }
+// Pas des petits robots : les jambes se balancent en sens contraire pendant la marche, puis reviennent droites à l'arrêt
+function rtsLegsStep(u, dt, marche){
+  const a = marche ? Math.sin(u.step * 1.6) * .55 : 0;
+  u.legs.forEach((l, i) => { const want = i ? a : -a; l.rotation.x += (want - l.rotation.x) * Math.min(1, dt * (marche ? 18 : 8)); });
+}
 function rtsUnits(dt){
   for (const u of RTS.units){
     if (u.dead) continue;
@@ -381,6 +386,7 @@ function rtsUnits(dt){
       for (const o of RTS.blds){ if (o.dead) continue; const dx = gp.x - o.x, dz = gp.z - o.z, d = Math.hypot(dx, dz), m = u.r + o.r; if (d > 0 && d < m){ gp.x += dx / d * (m - d); gp.z += dz / d * (m - d); } }
       rtsClampValley(gp, false);
       if (U.cat === 'rob'){ u.m.position.y = Math.abs(Math.sin(u.step * 2)) * (U.big ? .15 : .08); u.m.rotation.z = Math.sin(u.step) * .04; }
+      if (u.legs) rtsLegsStep(u, dt, go && Math.hypot(tx - gp.x, tz - gp.z) >= .8); // les jambes font des pas
     } else { gp.y = U.alt + Math.sin(RTS.t * 1.5 + u.head) * .3; rtsClampValley(gp, true); }
     const tgt = u.tgt && !u.tgt.dead ? u.tgt : null;
     if (u.cd <= 0){
@@ -482,6 +488,7 @@ function rtsFrame(dt){
     mechFlashL.visible = RTS.spin >= 1 && (RTS.pv.fire || (isTouch && RTS.pv.aim.id !== null)); if (mechFlashL.visible) mechFlashL.material.rotation = Math.random() * 6;
   }
   Object.keys(VMS).forEach(k => { VMS[k].visible = false; });
+  if (typeof vmRoot !== 'undefined') vmRoot.visible = false; // pas de mains ni d'arme du toit pendant le RTS : le poste de pilotage les remplace
   if (typeof rtsPosteFrame === 'function') rtsPosteFrame(dt);
   rtsHUD();
 }

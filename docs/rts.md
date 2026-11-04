@@ -15,6 +15,7 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | `js/47-rts-astuces.js` | Astuces des premières parties : une bulle à la fois, au bon moment, une fois chacune ; « Plus d’astuces » les coupe, la pause permet de les revoir |
 | `js/54-rts-postes.js` | Postes de pilotage (ce qu'on voit quand on pilote un véhicule), munitions des avions et retour à l'aérodrome, 2 avions par aérodrome |
 | `js/55-rts-niveaux.js` | Les armes embellissent avec leurs améliorations (niveau visuel de 0 à 1 par arme) |
+| `js/56-rts-postes-robots.js` | Poste des petits robots : visière, bras et arme propre à chaque robot, recul, éclair, détails selon les améliorations |
 | `js/48-rts-liste.js` | Choisir les unités une par une : rangée « Unités » (pastilles avec la vie), Tab pour la suivante, double-clic pour le même type ; groupes enregistrés (5 au plus) |
 | `js/49-rts-commandement.js` | Mini-carte (toucher pour y aller), point de ralliement, alerte « Base attaquée », « ✋ Tenir » (u.hold), mode photo (dans la pause) |
 | `tests/t-rts.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js` | Tests |
@@ -62,6 +63,11 @@ Les prix exacts sont dans `RTS_UNITS` et `RTS_BLD` (`js/41-rts.js`) : si un chif
 - Au début : petit « pew pew », traînée fine, petite explosion, presque pas de recul. En montant : traînée plus large avec un cœur blanc, son plus lourd, explosion plus grosse (poussière, fumée, boule de feu du 105 mm), écran qui tremble plus, recul et éclair plus forts.
 - Dans le poste, le modèle gagne des détails à 1/3, 2/3 et au maximum (frein de bouche, manchons, cylindres de recul, canons en plus sur l'Apache, métal rougi).
 - Les dégâts ne changent pas : seule la mise en scène suit les améliorations.
+
+## Petits robots (2026-11-04, demande de Martin)
+- Les jambes sont des pièces à part (`rtsLegGeo`) : elles font des pas pendant la marche (une devant, l'autre derrière) et reviennent droites à l'arrêt.
+- Pilotés, ils ont leur poste : visière et bras droit avec leur arme (fusil, 4 canons qui tournent, long fusil à lunette, buse et veilleuse, 4 tubes, canon laser à anneaux). Simple au départ ; Armes et Cadence ajoutent 3 paliers de détails, plus de recul et un plus gros éclair. Le viseur affiche « ARME n % ».
+- Les mains et l'arme du toit ne s'affichent plus pendant le RTS (elles restaient visibles en pilotage).
 
 ## Décisions prises
 - Groupes enregistrés : « ＋ Groupe » enregistre les unités choisies, « G1 »... les choisit (retoucher : la caméra y va), appui long ou clic droit : remplacer (ou supprimer sans choix). Ordi : Ctrl+1 à 5 enregistre, Maj+1 à 5 rappelle ; les chiffres seuls achètent toujours des robots. Gardés dans la sauvegarde.

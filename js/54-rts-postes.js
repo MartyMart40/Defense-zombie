@@ -147,6 +147,7 @@ function rtsPosteId(u){
   if (u.type === 'tank') return 'tank';
   if (u.type === 'heli') return 'heli';
   if (u.U.kind === 'air' && !u.U.bomb) return 'jet';
+  if (u.U.cat === 'rob' && !u.U.big && PT.g['rob_' + u.type]) return 'rob_' + u.type; // petits robots (js/56-rts-postes-robots.js)
   return null;
 }
 function rtsPosteShow(){ const id = rtsPosteId(RTS.pilot); PT.cur = id; Object.keys(PT.g).forEach(k => { PT.g[k].visible = k === id; }); rtsPilotUI.classList.toggle('casque', id === 'heli' || id === 'jet'); rtsPilotUI.classList.toggle('ck', id === 'acCk'); }
@@ -193,6 +194,7 @@ function rtsPosteFrame(dt){
   if (PT.cur === 'jet'){ PT.fJet.visible = PT.k.jet > .3 && Math.random() < .8; if (PT.fJet.visible) PT.fJet.material.rotation = Math.random() * 6; PT.g.jet.rotation.z = -(u.g.rotation.z || 0) * .15; }
   if (PT.cur === 'ac40'){ PT.c40.position.z = -1.0 + PT.k.ac40 * .35 * A; PT.f40.scale.setScalar(.4 + .9 * A); PT.f40.visible = PT.k.ac40 > .6; }
   if (PT.cur === 'ac105'){ PT.c105.position.z = -1.0 + PT.k.ac105 * .9 * A; PT.f105.scale.setScalar(.6 + 2.6 * A); PT.f105.visible = PT.k.ac105 > .8; if (PT.f105.visible) PT.f105.material.rotation = Math.random() * 6; }
+  if (typeof rtsRobPosteFrame === 'function') rtsRobPosteFrame(dt, A, firing); // petits robots
   if (typeof rtsTierDetails === 'function') rtsTierDetails(); // détails du modèle selon le niveau
   rtsPosteHud(false, dt);
 }
@@ -243,6 +245,7 @@ function rtsPosteMuzzle(u, kind){
     else { PT.podI = 1 - PT.podI; o = PT.mPod[PT.podI]; } // roquettes : une nacelle puis l'autre
   }
   else if (PT.cur === 'jet') o = PT.fJet;
+  else if (PT.cur.indexOf('rob_') === 0 && PT.rob && PT.rob[PT.cur.slice(4)]) o = PT.rob[PT.cur.slice(4)].flash;
   else if (PT.cur === 'ac40') o = PT.f40;
   else if (PT.cur === 'ac105') o = PT.f105;
   return o ? ptEcran(o, PT.cur === 'ac105' || PT.cur === 'ac40' ? 6 : 4) : null;
@@ -268,7 +271,8 @@ function rtsPosteHud(now, dt){
   const u = RTS.pilot; if (!u || !u.U){ rtsPosteHudEl.textContent = ''; return; }
   const s = x => Math.max(0, x).toFixed(1).replace('.', ',') + ' s';
   let t = '';
-  if (u.type === 'tank') t = 'CANON 120 MM · ' + (u.cd > 0 ? 'CHARGEMENT ' + s(u.cd) : 'OBUS PRÊT') + (rtsLv('tank', 'coax') ? ' · COAXIALE' : '');
+  if (u.U.cat === 'rob' && !u.U.big) t = u.U.name.toUpperCase() + ' · ARME ' + Math.round(100 * (typeof rtsPosteTier === 'function' ? rtsPosteTier(u) : 0)) + ' %'; // le niveau monte avec les améliorations
+  else if (u.type === 'tank') t = 'CANON 120 MM · ' + (u.cd > 0 ? 'CHARGEMENT ' + s(u.cd) : 'OBUS PRÊT') + (rtsLv('tank', 'coax') ? ' · COAXIALE' : '');
   else if (u.type === 'heli') t = '30 MM · ROQUETTES · HELLFIRE ' + ((u.cd4 || 0) > 0 ? s(u.cd4) : 'PRÊT');
   else if (rtsAmmoMax(u, 'w1') != null){
     const a = rtsAmmoInit(u), A = RTS_AMMO[u.type];

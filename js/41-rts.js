@@ -216,17 +216,23 @@ function rtsUnitGeo(type){
     vmBox(b, .5 * k, .3 * k, .4 * k, VC.blue, 0, 1.95 * k, .2 * k, 0, 0, 0, .05);
     vmBox(b, .52 * k, .08 * k, .05, [.6, 2.4, 3], 0, 1.98 * k, .42 * k, 0, 0, 0, 0);
     vmBox(b, .95 * k, .1 * k, .85 * k, RTS_Y, 0, 1.22 * k, 0, 0, 0, 0, 0);
-    for (const s of [-1, 1]){
-      vmBox(b, .22 * k, .75 * k, .26 * k, VC.park, s * .3 * k, .78 * k, 0, 0, 0, 0, .03);
-      vmBox(b, .2 * k, .7 * k, .22 * k, VC.blue, s * .3 * k, .32 * k, .05 * k, 0, 0, 0, .03);
-      vmBox(b, .3 * k, .08 * k, .45 * k, VC.park, s * .3 * k, .04, .12 * k, 0, 0, 0, 0);
-    }
+    // Les jambes sont à part (rtsLegGeo) : elles bougent quand le robot marche
     if (type === 'rifle') vmBox(b, .14, .14, .9, VC.park, .55, 1.6, .35, 0, 0, 0, .02);
     else if (type === 'gunner'){ for (let i = 0; i < 4; i++) vmCyl(b, .045, .9, VC.blue, .58 + (i % 2) * .08, 1.55 + Math.floor(i / 2) * .08, .4, 0, 0, 0, 6); vmBox(b, .25, .25, .4, VC.oliveD, -.6, 1.55, 0, 0, 0, 0, .03); }
     else if (type === 'sniper'){ vmBox(b, .12, .12, 1.8, RTS_DARK, .55, 1.65, .8, 0, 0, 0, .02); vmCyl(b, .08, .5, VC.blue, .55, 1.82, .4, 0, 0, 0, 8); vmBox(b, .4, .2, .3, RTS_Y, 0, 2.15, -.1, 0, 0, 0, 0); }
     else if (type === 'flamebot'){ vmCyl(b, .22, .8, VC.red, -.1, 1.75, -.6, Math.PI / 2, 0, 0, 10); vmCyl(b, .1, 1, VC.steel, .55, 1.5, .5, 0, 0, 0, 8); vmCyl(b, .05, .1, [3, 1.3, .3], .55, 1.5, 1.05, 0, 0, 0, 6); }
     else if (type === 'rocket'){ vmBox(b, .45, .4, .6, VC.olive, .62, 1.9, 0, 0, 0, 0, .04); for (let i = 0; i < 4; i++) vmCyl(b, .07, .05, VC.port, .52 + (i % 2) * .2, 1.82 + Math.floor(i / 2) * .16, .31, 0, 0, 0, 8); }
     else { vmCyl(b, .16, 1.6, ARS_C.whiteD, .95, 2.3, .55, 0, 0, 0, 10); for (let i = 0; i < 3; i++) vmRing(b, .2, .16, .06, ARS_C.cyan, .95, 2.3, .1 + i * .3, 0, 0, 0, 10); vmBox(b, .5, .6, .7, VC.blue, -.95, 2.3, 0, 0, 0, 0, .05); }
+  });
+}
+// Une jambe de petit robot (cuisse, tibia, pied), le pivot à la hanche : elle se balance quand le robot marche
+const RTS_HIP = 1.155;
+function rtsLegGeo(type){
+  return rtsGeo('leg_' + type, b => {
+    const k = type === 'heavy' ? 1.5 : 1, h = RTS_HIP * k;
+    vmBox(b, .22 * k, .75 * k, .26 * k, VC.park, 0, .78 * k - h, 0, 0, 0, 0, .03);
+    vmBox(b, .2 * k, .7 * k, .22 * k, VC.blue, 0, .32 * k - h, .05 * k, 0, 0, 0, .03);
+    vmBox(b, .3 * k, .08 * k, .45 * k, VC.park, 0, .04 - h, .12 * k, 0, 0, 0, 0);
   });
 }
 function rtsPropGeo(){ // hélice à 4 pales (AC-130), tourne sur elle-même

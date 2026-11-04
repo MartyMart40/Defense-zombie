@@ -63,6 +63,7 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 53 tutoriel | Tutoriel du toit facultatif : proposé une fois à un nouveau joueur, 6 bulles, « Passer », « Revoir » dans Comment jouer (P.tuto) |
 | 54 postes RTS | Postes de pilotage des véhicules (tank, Apache, chasseur, AC-130 à 3 postes), munitions des avions, 2 avions par aérodrome |
 | 55 niveaux RTS | Les armes des véhicules embellissent avec leurs améliorations : traînée, son, explosion, recul, éclair, détails du modèle (3 paliers) |
+| 56 postes des robots | Poste de pilotage des petits robots : visière et bras avec l'arme de chaque robot, détails selon les améliorations |
 | 90 branchements | Branche le registre `Jeu` sur le jeu commun ; toujours le dernier |
 
 Les const, let et function de haut niveau sont partagés entre tous les fichiers (portée globale). Un fichier peut appeler une fonction d'un fichier plus loin **seulement à l'intérieur d'une fonction**, jamais au chargement. Chaque fichier commence par `'use strict';`.

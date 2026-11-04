@@ -158,7 +158,8 @@ function styleHDMaj(){
   // Retirer les anciens (autre rue, ou style changé)
   HD.mats.forEach(([o, lm, sm]) => { if (o.material === sm) o.material = lm; sm.dispose(); (sm.userData.hdCartes || []).forEach(t => t.dispose()); });
   HD.mats = []; HD.pour = null;
-  if (!veut){ if (!styleHD()) styleHDLineaire(false); if (styleHD() && !HD.pret && !HD.casse) styleHDCharger(); return; }
+  if (!veut){ if (typeof decorRetirer === 'function' && DECOR.monde) decorRetirer(); // décor de js/59 : retiré tout de suite
+    if (!styleHD()) styleHDLineaire(false); if (styleHD() && !HD.pret && !HD.casse) styleHDCharger(); return; }
   const faits = new Map();
   STY.orig.forEach(([o]) => {
     const lm = o.material; let sm = faits.get(lm);

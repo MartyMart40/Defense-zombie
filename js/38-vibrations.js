@@ -46,16 +46,16 @@ function vibSet(on){ VIB.on = !!on; store.set('dt_vib', VIB.on); vibBtn(); if (V
 })();
 
 /* ---------- Crochets ---------- */
-try { const _b = fire; fire = function(){ const id = S && S.cur; const r = _b.apply(this, arguments); if (r !== false && state === 'playing') vibShot(id); return r; }; } catch (e) {}
+try { const _b = fire; fire = function(){ const id = S && S.cur; const r = _b.apply(this, arguments); if (r !== false && (state === 'playing' || state === 'mech')) vibShot(id); return r; }; } catch (e) {}
 // Explosions : toutes passent par Snd.boom (barils, roquettes, grenades, gonflés, mortier, ogive)
 try {
   const _b = Snd.boom;
-  Snd.boom = function(power){ const r = _b.apply(this, arguments); if (state === 'playing') vibBoom(power, null); return r; };
+  Snd.boom = function(power){ const r = _b.apply(this, arguments); if (state === 'playing' || state === 'mech') vibBoom(power, null); return r; };
 } catch (e) {}
 // Gros coups sur la barricade (colosse, boss) : une secousse dans la main
 try {
   const _h = hitBarricade;
-  hitBarricade = function(z, dmg, shk){ const r = _h.apply(this, arguments); if (shk >= .45 && state === 'playing') vib(Math.round(40 + 80 * Math.min(1, shk)), 8); return r; };
+  hitBarricade = function(z, dmg, shk){ const r = _h.apply(this, arguments); if (shk >= .45 && (state === 'playing' || state === 'mech')) vib(Math.round(40 + 80 * Math.min(1, shk)), 8); return r; };
 } catch (e) {}
 
 // Accès pour les tests automatiques

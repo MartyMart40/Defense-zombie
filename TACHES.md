@@ -19,6 +19,8 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 
 | # | Tâche | Date |
 |---|-------|------|
+| 48 | Mode robot : mech à deux pattes, vue du cockpit, minigun à gauche et roquettes à droite, marche de rue en rue (villes à la suite), blindage, surchauffe, boss toutes les 3 rues, commandes ordi et cell (js/39-robot.js) | 2026-11-04 |
+| 47 | Mode infini plus dur : vie +18 % et dégâts +14 % par vague (argent +10 %), spéciaux plus tôt, apparitions plus rapides | 2026-11-04 |
 | 46 | Améliorations des armes sans plafond (coût qui monte plus vite après l'ancien maximum, gains qui diminuent pour recharge, précision, montée en régime ; plombs plafonnés puis +8 % de dégâts) | 2026-11-04 |
 | 45 | 22 accessoires propres aux autres armes (2 par arme), visibles ; un seul accessoire au bout du canon ; silencieux qui étouffe le tir ; meutes et nuées sous le plafond de zombies en vie | 2026-11-04 |
 | 44 | Vibrations du cellulaire : tirs selon l'arme, explosions, gros coups sur la barricade ; réglage dans Pause (js/38-vibrations.js) | 2026-11-03 |
@@ -86,7 +88,8 @@ Fichier tenu par Claude (coordonnateur). Statuts : À faire, En cours, Fait, Blo
 - Test du mitrailleur parfois instable (90 % de précision au hasard).
 - Test « la roquette touche un volant en hauteur » : échoue environ 1 fois sur 6 séries complètes, jamais seul ; le message d'échec donne maintenant la distance la plus courte entre la roquette et le volant pour trouver la cause.
 
-- Infini : un joueur devrait céder vers les vagues 25 à 35 (dégâts +12 % par niveau contre zombies +10 % composés). À confirmer en jouant.
+- Infini : vie +18 % et dégâts +14 % par vague (vague 20 : vie ×23, dégâts ×12). À confirmer en jouant.
+- Robot : rue de 140 m, blindage 1 500 (+250 et réparation à chaque rue), armes ×2,4 puis +16 % par rue, zombies +22 % de vie par rue. À équilibrer en jouant.
 - Succès : environ 760 ferrailles d'un coup à la première victoire de Saint-Clou. À baisser si trop.
 
 - Survivant : il meurt aux trois quarts du trajet si un poursuivant vit encore (plus de minuterie de 5 s). Poursuivants à 78 % de sa vitesse au départ, 94 % aux trois quarts.

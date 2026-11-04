@@ -275,7 +275,7 @@ try {
   visuals = function(dt){
     const r = _visualsArm(dt);
     armVisual(dt);
-    if (ARM.active && state !== 'playing' && state !== 'paused') armClear(); // fin de vague : plus rien en l'air
+    if (ARM.active && state !== 'playing' && state !== 'paused' && state !== 'mech') armClear(); // fin de vague : plus rien en l'air (le robot garde ses roquettes)
     return r;
   };
 } catch (e) {}

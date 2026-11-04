@@ -46,7 +46,7 @@
     ok(b.vraie, 'LOCS remis tel quel');
   });
 
-  test('Infini : +10 % de zombies, de vie, de dégâts et d’argent par vague, même difficulté partout', () => {
+  test('Infini : +10 % de zombies et d’argent, +18 % de vie, +14 % de dégâts par vague, même difficulté partout', () => {
     if (!pret()) ignorer('Mode infini absent');
     reset(GAGNE);
     const r = J(function(){
@@ -59,13 +59,14 @@
       // Une autre ville en infini : mêmes chiffres
       __inf.infStart(4, true); var q = wavePlan(12); o.port = { n: q.queue.length, hp: q.hpMult }; __inf.infStart(0, true); var q0 = wavePlan(12); o.vil = { n: q0.queue.length, hp: q0.hpMult };
       o.cap50 = wavePlan(50).maxAlive; o.dev = DEV_CAP; o.n50 = wavePlan(50).queue.length;
+      o.hpG = __inf.INF_HP_GROW; o.dmgG = __inf.INF_DMG_GROW;
       return o;
     });
     ok(Math.abs(r.hp1 - 50) <= 1, 'Marcheur de la vague 1 : ' + r.hp1 + ' de vie (environ 50)');
     for (let i = 1; i < r.p.length; i++){
       const a = r.p[i - 1], b = r.p[i];
-      ok(Math.abs(b.hp / a.hp - 1.1) < 1e-6, 'Vie vague ' + (i + 1) + ' : ×' + (b.hp / a.hp));
-      ok(Math.abs(b.dmg / a.dmg - 1.1) < 1e-6, 'Dégâts vague ' + (i + 1));
+      ok(Math.abs(b.hp / a.hp - (r.hpG || 1.1)) < 1e-6, 'Vie vague ' + (i + 1) + ' : ×' + (b.hp / a.hp));
+      ok(Math.abs(b.dmg / a.dmg - (r.dmgG || 1.1)) < 1e-6, 'Dégâts vague ' + (i + 1));
       ok(Math.abs(b.cash / a.cash - 1.1) < 1e-6, 'Argent par zombie vague ' + (i + 1));
     }
     const k = r.p[30].n / r.p[20].n;

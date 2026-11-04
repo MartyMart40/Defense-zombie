@@ -12,7 +12,9 @@
 // gameOver, victory, showEnd, showScreen, goMap, renderMap.
 
 const INF_CASH = 1000;               // argent de départ
-const INF_GROW = 1.1;                // +10 % par vague (nombre, vie et dégâts, argent par zombie)
+const INF_GROW = 1.1;                // +10 % par vague : nombre de zombies et argent par zombie
+// Vie et dégâts montent plus vite que l'argent : les armes sans plafond ne suffisent plus à suivre (vague 20 : vie ×23, dégâts ×12)
+const INF_HP_GROW = 1.18, INF_DMG_GROW = 1.14;
 const INF_BASE_N = 50;               // zombies à la vague 1
 const INF_BASE_HP = 50 / ZTYPES.walker.hp; // un marcheur a environ 50 de vie à la vague 1
 const INF_LOC = { diff:2, off:0, xp:2.4, waves:1e9 }; // même difficulté quelle que soit la ville (diff : ferraille par zombie)
@@ -46,11 +48,12 @@ function infRestore(s){ P.best = JSON.parse(s.best); P.wins = JSON.parse(s.wins)
 
 /* ---------- Vagues ---------- */
 const infPow = w => Math.pow(INF_GROW, Math.max(1, w) - 1);
+const infHpPow = w => Math.pow(INF_HP_GROW, Math.max(1, w) - 1), infDmgPow = w => Math.pow(INF_DMG_GROW, Math.max(1, w) - 1);
 const infTotal = w => Math.round(INF_BASE_N * infPow(w));
 // Part de chaque type spécial selon la vague (le reste : marcheurs). Plus de colosses, cracheurs et volants avec les vagues.
 function infMix(w){
   const f = (start, step, max) => w >= start ? Math.min(max, step * (w - start + 1)) : 0;
-  return { runner:f(2, .03, .28), jumper:f(2, .015, .12), spitter:f(3, .012, .14), flyer:f(4, .012, .14), brute:f(4, .008, .1), colossus:f(6, .002, .05) };
+  return { runner:f(2, .035, .3), jumper:f(2, .02, .14), spitter:f(3, .015, .16), flyer:f(4, .015, .16), brute:f(3, .012, .14), colossus:f(5, .004, .07) };
 }
 // Plan de base de la vague w (échantillon de 1000 zombies pour le mélange) : hordePlan le met à l'échelle.
 function infBasePlan(w){
@@ -59,8 +62,8 @@ function infBasePlan(w){
   Object.keys(m).forEach(t => { const n = Math.min(room, Math.round(N * m[t])); room -= n; for (let i = 0; i < n; i++) q.push(t); });
   for (let i = 0; i < room; i++) q.push('walker');
   const g = infPow(w);
-  return { queue:q, total:q.length, hpMult:INF_BASE_HP * g, dmgMult:g, cashMult:g, spdMult:Math.min(1.6, 1 + .02 * (w - 1)),
-    interval:Math.max(.06, 1.2 / Math.sqrt(w)), maxAlive:aliveCap(w, INF_CAP_LOC), xp:INF_LOC.xp, inf:true };
+  return { queue:q, total:q.length, hpMult:INF_BASE_HP * infHpPow(w), dmgMult:infDmgPow(w), cashMult:g, spdMult:Math.min(1.7, 1 + .025 * (w - 1)),
+    interval:Math.max(.05, 1 / Math.sqrt(w)), maxAlive:aliveCap(w, INF_CAP_LOC), xp:INF_LOC.xp, inf:true };
 }
 function infPlan(w){
   const total = infTotal(w);
@@ -287,5 +290,5 @@ showScreen = function(id){
 })();
 
 // Accès pour les tests automatiques
-window.__inf = { INF, INF_LOC, INF_CASH, INF_GROW, INF_BASE_N, INF_BASE_HP, INF_UNCAP, infStart, infLeave, infNorm, infUnlocked, infWonCount, infBest,
+window.__inf = { INF, INF_LOC, INF_CASH, INF_GROW, INF_HP_GROW, INF_DMG_GROW, INF_BASE_N, INF_BASE_HP, INF_UNCAP, infStart, infLeave, infNorm, infUnlocked, infWonCount, infBest,
   infPlan, infBasePlan, infMix, infTotal, infPow, infLabels, get run(){ return INF.run; }, get active(){ return infActive(); } };

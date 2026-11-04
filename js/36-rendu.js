@@ -117,7 +117,7 @@ function gfxSmokeStep(dt){
   }
   // Feux du décor : une bouffée régulière
   const fs = gfxQ().fireSmoke;
-  if (fs && typeof fires !== 'undefined' && fires.length && state === 'playing'){
+  if (fs && typeof fires !== 'undefined' && fires.length && (state === 'playing' || state === 'mech')){
     GFX.fireT -= dt;
     if (GFX.fireT <= 0){
       GFX.fireT = fs;
@@ -178,7 +178,7 @@ for (let i = 0; i < GFX_Q.haut.embers; i++){ const s = new THREE.Sprite(gfxEmber
 let gfxEmberT = 0, gfxEmberI = 0;
 function gfxEmberStep(dt){
   const cap = gfxQ().embers;
-  if (cap && typeof fires !== 'undefined' && fires.length && state === 'playing'){
+  if (cap && typeof fires !== 'undefined' && fires.length && (state === 'playing' || state === 'mech')){
     gfxEmberT -= dt;
     while (gfxEmberT <= 0){
       gfxEmberT += .12;
@@ -199,7 +199,7 @@ function gfxEmberStep(dt){
 const gfxC = new THREE.Color();
 function gfxWeather(){ return (typeof __amb === 'object' && __amb.weather) || 'clair'; }
 function gfxStep(dt){
-  const Q = gfxQ(), w = gfxWeather(), W = (typeof WEATHERS === 'object' && WEATHERS[w]) || {}, live = state === 'playing' || state === 'paused' || state === 'shop';
+  const Q = gfxQ(), w = gfxWeather(), W = (typeof WEATHERS === 'object' && WEATHERS[w]) || {}, live = state === 'playing' || state === 'paused' || state === 'shop' || state === 'mech' || state === 'mechover';
   GFX.t += dt;
   // Nuages : blancs au beau temps, gris sous la pluie, sombres la nuit, roses à l'aube et au coucher
   let cc = 0xffffff, cop = .8, nC = Q.clouds;

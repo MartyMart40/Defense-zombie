@@ -28,6 +28,7 @@
     exiger(); reset();
     const r = J(new Function(calme + `
       var R = calme(), C = __rtsCmd, o = {};
+      for (var f = 0; f < 3; f++) visuals(1 / 30); // la caméra du RTS se place
       C.rtsRallyToggle(); o.attend = R.rallyPick === true;
       __rts.rtsTap(innerWidth / 2, innerHeight / 2, false); o.place = !!R.rally && R.rallyPick === false;
       C.rtsRallySet(20, -20); S.money = 99999; var u = __rts.rtsBuy('gunner');

@@ -198,6 +198,12 @@ function rtsUnitNear(cx, cy, r){
   }
   return best;
 }
+// Point du sol sous le doigt (sans s'occuper des unités ni des bâtiments)
+function rtsGround(cx, cy){
+  camera.updateMatrixWorld(); rtsRay.setFromCamera(rtsNdc(cx, cy), camera);
+  const o = rtsRay.ray.origin, d = rtsRay.ray.direction; if (d.y >= -1e-4) return null;
+  const t = -o.y / d.y; return { x:o.x + d.x * t, z:o.z + d.z * t };
+}
 function rtsPick(cx, cy){
   camera.updateMatrixWorld(); rtsRoot.updateMatrixWorld(true); rtsRay.setFromCamera(rtsNdc(cx, cy), camera); rtsRay.far = Infinity;
   const meshes = []; RTS.units.forEach(u => { if (!u.dead) meshes.push(u.m); }); RTS.nests.forEach(n => { if (!n.dead) meshes.push(n.m); });
@@ -244,7 +250,7 @@ function rtsTapUnit(u, mode){
 }
 function rtsTap(cx, cy, add, long){
   const p = rtsPick(cx, cy);
-  if (RTS.rallyPick){ if (p.x != null && typeof rtsRallySet === 'function') rtsRallySet(p.x, p.z); return; } // point de ralliement (js/49)
+  if (RTS.rallyPick){ const g = rtsGround(cx, cy); if (g && typeof rtsRallySet === 'function') rtsRallySet(g.x, g.z); return; } // point de ralliement (js/49) : toujours le sol, même sous une unité
   if (RTS.place){ if (p.x != null){ if (isTouch) rtsGhostAt(p.x, p.z); else rtsPlaceAt(p.x, p.z); } return; }
   if (p.unit){ rtsTapUnit(p.unit, isTouch ? (long ? 'long' : 'tap') : (add ? 'add' : 'click')); return; }
   if (p.bld && !RTS.sel.length){ RTS.bsel = p.bld; rtsInfoShow(); return; }
@@ -415,4 +421,4 @@ document.addEventListener('pointerlockchange', () => { if (state === 'rts' && RT
 // Accès pour les tests automatiques
 window.__rts = { RTS, RTS_UNITS, RTS_CFG, RTS_BLD, RTS_UPG, RTS_ROAD, RTS_BOSS, rtsStart, rtsQuit, rtsBuy, rtsStep, rtsSelect, rtsOrder, rtsPick, rtsSpawnUnit, rtsSpawnAt, rtsNestDie, rtsEnd, rtsPause,
   rtsBuild, rtsBldOk, rtsPlaceBld, rtsTurretUp, rtsSell, rtsUpgBuy, rtsUpgCost, rtsStat, rtsTStat, rtsStartPlace, rtsPlaceAt, rtsTap, rtsTab, rtsInfoShow,
-  rtsGhostAt, rtsSnap, rtsRotate, rtsUnitNear, rtsTapUnit, RTS_TAP_R, RTS_LONG_MS, rtsFold, rtsCamHome, RTS_FLAT_R, rtsGunship, RTS_UPG_SPEC, rtsUpgPanel, rtsTurretPilot, rtsMortarSpot, rtsPilot, rtsUnpilot, rtsPilotSel, rtsPilotStep, rtsValleyX, rtsRoadDist, rtsClampValley, rtsRoadNext, rtsRoadX, rtsAddNest, rtsFront, rtsPickTarget, RTS_KITE };
+  rtsGhostAt, rtsSnap, rtsRotate, rtsUnitNear, rtsTapUnit, rtsGround, RTS_TAP_R, RTS_LONG_MS, rtsFold, rtsCamHome, RTS_FLAT_R, rtsGunship, RTS_UPG_SPEC, rtsUpgPanel, rtsTurretPilot, rtsMortarSpot, rtsPilot, rtsUnpilot, rtsPilotSel, rtsPilotStep, rtsValleyX, rtsRoadDist, rtsClampValley, rtsRoadNext, rtsRoadX, rtsAddNest, rtsFront, rtsPickTarget, RTS_KITE };

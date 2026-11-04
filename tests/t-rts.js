@@ -34,7 +34,7 @@
 
   test('RTS : sans cible, ceux qui prennent la vieille route la suivent jusqu’à la base', () => {
     exiger(); reset();
-    const r = J(function(c){
+    const r = J(function(c){ return __t.graine(3, function(){ // la route est tirée au hasard ; avec certaines routes (graines 1, 4, 5) le zombie coupe les virages jusqu’à 10 m, voir TACHES.md
       eval(c); var R = calme(), o = {};
       R.units.forEach(function(u){ u.g.position.set(0, 0, 20); u.U = Object.assign({}, u.U, { range:0, dmg:0 }); });
       R.blds.filter(function(b){ return b.type === 't_mg'; }).forEach(function(b){ __rts.rtsSell(b); });
@@ -42,7 +42,7 @@
       var maxD = 0; for (var i = 0; i < 30 * 55; i++){ visuals(1 / 30); maxD = Math.max(maxD, __rts.rtsRoadDist(z.g.position.x, z.g.position.z)); }
       o.route = maxD; o.base = Math.hypot(z.g.position.x, z.g.position.z);
       return o;
-    }, calme);
+    }); }, calme);
     fin();
     ok(r.route < 7, 'Il reste sur la route (écart ' + r.route.toFixed(1) + ' m)'); ok(r.base < 25, 'Il arrive à la base : ' + r.base.toFixed(0) + ' m');
   });

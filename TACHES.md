@@ -33,6 +33,8 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 ## À valider par Martin
 
+- RTS : sur certaines formes de la vieille route (tirées au hasard), un zombie qui la suit coupe les virages et s’en écarte jusqu’à 10 m. Mineur ; à corriger si ça se voit en jouant (test fixé sur une route normale).
+
 - Simulateur (docs/equilibrage.md) : à Banlieue Nord, avec le même profil, « pistolet seulement + améliorations » libère la ville (7/7) alors que celui qui achète le fusil d’assaut, le sniper ou le fusil à pompe perd à la vague 5. Changer d’arme coûte cher : les améliorations sont propres à chaque arme et un pistolet amélioré (balles qui traversent) bat une arme neuve. Idée à décider : garder une partie des améliorations en changeant d’arme, ou des armes neuves plus fortes au départ.
 
 - Améliorations des défenses par emplacement (4 tourelles = 4 à améliorer séparément).

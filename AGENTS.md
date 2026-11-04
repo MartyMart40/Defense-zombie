@@ -15,12 +15,13 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | `TACHES.md` | En cours, à faire, à valider par Martin, dernières tâches faites |
 | `docs/historique.md` | Toutes les tâches faites plus anciennes |
 | `tests/LISEZMOI.md` | Comment marchent les tests |
+| `docs/equilibrage.md` | Dernier rapport du simulateur d'équilibrage (`node outils/simulateur.js`) |
 
 ## Carte du code
 - `index.html` : écrans, HUD, boutons et la liste des scripts, dans l'ordre. `css/style.css` : tout le style.
 - `lib/three.min.js` : Three.js r128 (ne pas modifier ; secours sur cdnjs si absent).
 - `manifest.webmanifest`, `sw.js`, `icones/` : application installable. `sw.js` sert la copie en cache seulement sans réseau.
-- `outils/` : `lancer-tests.js` (toute la suite dans Chromium), `version.sh` (change les ?v= avant une mise en ligne). `.github/workflows/tests.yml` lance les tests sur GitHub à chaque push.
+- `outils/` : `lancer-tests.js` (toute la suite dans Chromium), `version.sh` (change les ?v= avant une mise en ligne), `simulateur.js` et `sim-bot.js` (simulateur d'équilibrage, rapport dans `docs/equilibrage.md`). `.github/workflows/tests.yml` lance les tests sur GitHub à chaque push.
 - `js/NN-nom.js`, chargés dans l'ordre du numéro :
 
 | Fichiers | Rôle |
@@ -53,6 +54,7 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 41 à 44 | Mode RTS (`docs/rts.md`) |
 | 45 sauvegarde RTS | Partie RTS en cours gardée (dt_rts_partie), bouton « Continuer la guerre » |
 | 46 application | Jeu installable (avec `manifest.webmanifest`, `sw.js`, `icones/`) : plein écran, marche sans réseau |
+| 47 astuces RTS | Bulles d'astuces des premières parties RTS, une fois chacune (dt_rts_astuces) |
 | 90 branchements | Branche le registre `Jeu` sur le jeu commun ; toujours le dernier |
 
 Les const, let et function de haut niveau sont partagés entre tous les fichiers (portée globale). Un fichier peut appeler une fonction d'un fichier plus loin **seulement à l'intérieur d'une fonction**, jamais au chargement. Chaque fichier commence par `'use strict';`.

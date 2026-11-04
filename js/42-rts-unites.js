@@ -163,6 +163,7 @@ function rtsStart(save){
     for (let i = 0; i < 3; i++){ const u = rtsSpawnUnit('rifle', -3 + i * 3, -12); u.tx = -3 + i * 3; u.tz = -16; u.cmd = 'move'; }
   }
   rtsBaseSize(); RTS.saveT = 30;
+  if (typeof RTS_TIP === 'object'){ RTS_TIP.cur = null; RTS_TIP.gap = 3; }
   state = 'rts';
   showScreen(null); rtsPanel.classList.add('hide');
   $('hud').classList.add('hide'); $('touch').classList.add('hide'); $('cross').classList.add('hide');
@@ -215,6 +216,7 @@ function rtsPause(){
     [['Reprendre', () => { RTS.paused = false; rtsPanel.classList.add('hide'); if (RTS.pilot && !isTouch && typeof lockPointer === 'function') lockPointer(); }]]
       .concat(RTS.pilot ? [['Retour à la carte', () => { rtsUnpilot(); RTS.paused = false; rtsPanel.classList.add('hide'); }]] : []).concat([['Sauver et quitter', () => { if (typeof rtsSave === 'function') rtsSave(); rtsQuit(); }],
         ['Abandonner (efface la partie)', () => { if (typeof rtsSaveClear === 'function') rtsSaveClear(); rtsQuit(); }]]));
+  if (typeof rtsTipPauseBtn === 'function') rtsTipPauseBtn();
 }
 
 /* ---------- Zombies : la route, les cibles, les boss ---------- */

@@ -11,7 +11,8 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | `js/43-rts-pilotage.js` | Pilotage à la première personne de n'importe quelle unité, tourelles et mortier contrôlés, vue du canonnier de l'AC-130 |
 | `js/44-rts-interface.js` | Menus du bas (onglets, menu repliable), panneaux, pose des bâtiments sur quadrillage, commandes (souris, clavier, doigt), inscription du mode (`Jeu.mode('rts')`) |
 | `js/45-rts-sauvegarde.js` | Partie en cours gardée toutes les 30 s, à la pause et quand le cell met le jeu de côté ; reprise par « Continuer la guerre » |
-| `tests/t-rts.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js` | Tests |
+| `js/47-rts-astuces.js` | Astuces des premières parties : une bulle à la fois, au bon moment, une fois chacune ; « Plus d’astuces » les coupe, la pause permet de les revoir |
+| `tests/t-rts.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js` | Tests |
 
 ## Règles et chiffres actuels
 - Départ : 900 $, QG, usine de robots, 3 tourelles mitrailleuses, 3 fantassins.
@@ -54,5 +55,6 @@ Les prix exacts sont dans `RTS_UNITS` et `RTS_BLD` (`js/41-rts.js`) : si un chif
 - Commencer une nouvelle partie quand une partie est sauvée demande une confirmation (deuxième clic).
 
 ## À équilibrer en jouant
+- Simulateur (`docs/equilibrage.md`, 2026-11-04) : avec la stratégie simple du robot-joueur, le QG tombe vers 5 à 7 minutes, avec environ 500 zombies en vie dès la 5e minute. La menace monte avec chaque zombie tué (1 + tués / 160 + minutes / 2,5 + 0,4 par nid), donc mieux on se défend, plus il en vient : à vérifier en jouant.
 - Prix des véhicules et des avions, force des boss.
 - Pilotage au doigt sur un vrai cell, plafond de 300 zombies au cell.

@@ -540,3 +540,12 @@ canvas.rt-ac{ filter:grayscale(1) contrast(1.35) brightness(1.1); }
 /* RTS : tourelle contrôlée (pas de manette de marche, toute la largeur sert à viser) */
 #rtPilot.tur #rtrpJoy{ display:none !important; }
 #rtPilot.touch.tur #rtrpAim{ left:0; }
+/* RTS : bulle d'astuce (js/47-rts-astuces.js) */
+#rtTip{ position:fixed; z-index:9; left:50%; top:calc(88px + env(safe-area-inset-top,0px)); transform:translateX(-50%); width:min(480px, calc(100vw - 32px)); display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; padding:10px 12px; border-radius:10px; border:1px solid #ffd060; background:rgba(10,20,14,.92); color:#eef4ea; font-size:15px; line-height:1.25; box-shadow:0 8px 24px rgba(0,0,0,.5); }
+#rtTip.hide{ display:none; }
+#rtTip .rt-tip-i{ font-size:20px; }
+#rtTipTxt{ flex:1 1 220px; }
+#rtTip .rt-tip-b{ display:flex; gap:6px; margin-left:auto; }
+#rtTip button{ padding:6px 12px; border-radius:6px; border:0; background:#ffd060; color:#2a1a08; font-weight:800; font-size:13px; }
+#rtTip #rtTipOff{ background:transparent; border:1px solid #c8b890; color:#eef4ea; font-weight:600; }
+@media (max-height:520px){ #rtTip{ top:calc(78px + env(safe-area-inset-top,0px)); font-size:13px; padding:7px 10px; } }

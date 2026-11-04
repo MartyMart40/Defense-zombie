@@ -200,3 +200,36 @@
   });
 })();
 
+/* Haute définition, séance 3 : zombies détaillés, sang au sol, flou en visant */
+(function(){
+  if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
+  test('Style Haute définition : zombies physiques, sang au sol, flou de profondeur en visant ; tout part en quittant le style', async () => {
+    if (lire('typeof __zhd === "object" && typeof __styleHD === "object"') !== true) ignorer('Zombies HD absents (js/60-graphismes-zombies.js)');
+    reset(); J('startLocation(0)'); J('__t.geler()');
+    J("__style.styleSet('hd')"); await J('__styleHD.styleHDCharger()');
+    const r = J(function(){
+      var Z = __zhd.ZHD, o = {};
+      var a = __t.placer('walker', 0, -20), b = __t.placer('walker', 2, -25);
+      for (var i = 0; i < 3; i++) visuals(1 / 30);
+      o.std = zInstRoot.children.filter(function(im){ return im.material && im.material.isMeshStandardMaterial && im.material.userData.zhd; }).length;
+      o.lam = zInstRoot.children.filter(function(im){ return im.visible && im.material && im.material.type === 'MeshLambertMaterial'; }).length;
+      kill(a, false, a.g.position.clone()); kill(b, true, b.g.position.clone());
+      o.sang = Z.sang ? Z.sang.count : 0; o.sangRue = !!Z.sang && Z.sang.parent === world;
+      Z.forceVise = 1; visuals(1 / 30); o.rendu = __style.styleRendu(); o.dof = !!Z.dof && Z.dof.enabled;
+      Z.forceVise = 0; visuals(1 / 30); o.dof0 = !!Z.dof && Z.dof.enabled; Z.forceVise = null;
+      startLocation(1); visuals(1 / 30); o.propre = !Z.sang || Z.sang.count === 0 || Z.sang.parent !== world;
+      __style.styleSet('ameliore'); visuals(1 / 30);
+      o.apres = zInstRoot.children.filter(function(im){ return im.material && im.material.userData.zhd; }).length;
+      __style.styleSet('actuel');
+      return o;
+    });
+    ok(r.std >= 3, 'Zombies en matériaux physiques : ' + r.std + ' lots');
+    egal(r.lam, 0, 'Plus aucun lot de zombies visible en Lambert');
+    ok(r.sang === 2 && r.sangRue, 'Une flaque de sang par zombie tombé : ' + r.sang);
+    ok(r.rendu === true && r.dof, 'Flou de profondeur actif en visant');
+    egal(r.dof0, false, 'Pas de flou sans viser');
+    ok(r.propre, 'Nouvelle rue : sol propre');
+    egal(r.apres, 0, 'Retour à Amélioré : zombies d\'origine');
+  });
+})();
+

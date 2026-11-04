@@ -20,6 +20,7 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 | # | Tâche | Date |
 |---|-------|------|
+| 86 | Graphismes, Haute définition séance 3 improvisée (sans téléchargement) : zombies en matériaux physiques (crasse, sang séché et frais, griffures, relief ; couleurs plus justes), flaque de sang où chaque zombie tombe, flou de profondeur en visant (net au point visé) (js/60-graphismes-zombies.js, tests/t-style.js) | 2026-11-04 |
 | 85 | Graphismes, Haute définition, décor improvisé (sans téléchargement) : autos détaillées (vraies roues, vitres qui reflètent, phares, feux, pare-chocs, rétroviseurs), fils électriques entre les lampadaires, débris dans la rue (papiers, briques, planches, pneus, sacs, canettes) ; autos marquées dans js/03-scene.js (1 ligne) (js/59-graphismes-decor.js, tests/t-style.js) | 2026-11-04 |
 | 84 | Graphismes, Haute définition séance 2 (partie sans téléchargement) : la nuit, les lampadaires éclairent vraiment la rue (8 projecteurs, ombres des 4 plus proches) avec un cône de brume éclairée ; textures photo encore en attente (sites bloqués par le réseau) (js/58-graphismes-hd.js, tests/t-style.js) | 2026-11-04 |
 | 83 | RTS : la rangée « Unités » est repliée par défaut (une pastille « 👥 Unités · N » et les groupes) ; la toucher montre une pastille par unité à choisir une par une, la retoucher la referme (choix gardé, dt_rts_liste) (js/48-rts-liste.js, tests/t-rts-selection.js) | 2026-11-04 |
@@ -29,11 +30,11 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 | 79 | RTS, petits robots : jambes qui font des pas en marchant ; poste de pilotage pour chaque robot (visière, bras et sa propre arme, recul, éclair, 3 paliers de détails avec Armes et Cadence, « ARME n % » dans le viseur) ; défaut corrigé : les mains et l’arme du toit restaient visibles pendant le pilotage (js/41-rts.js, js/42-rts-*.js, js/56-rts-postes-robots.js, tests/t-rts-robots.js) | 2026-11-04 |
 | 78 | RTS : les armes des véhicules embellissent avec leurs améliorations : niveau visuel par arme (0 à 1), traînée, son, explosion, secousse, recul et éclair qui grossissent, détails du modèle du poste à 3 paliers ; au début, un petit « pew pew » (js/55-rts-niveaux.js, tests/t-rts-niveaux.js) | 2026-11-04 |
 | 77 | RTS : les tirs du joueur partent du bout du canon visible ; canon rotatif de l’Apache épeurant (26 coups/s, montée en régime, grondement du minigun, vibrations) ; défaut corrigé : les armes rapides des véhicules ne tiraient qu’une image sur deux ; AC-130 : tir seulement par le flanc gauche, visée fixée au sol dans un champ qui suit l’avion | 2026-11-04 |
-| 76 | RTS, véhicules réalistes : tank (obus de 120 mm lent et fort, canon qui recule dans la vue), Apache (nouveau modèle, canon rotatif de 30 mm et Hellfire dès l’achat, vue du casque avec verrière, écrans, canon qui tourne et missiles sur les ailettes), chasseur et Warthog (canon puissant, munitions limitées, retour à l’aérodrome pour refaire le plein), 2 avions par aérodrome, AC-130 à 3 postes (cockpit, 40 mm, 105 mm ; la caméra suit l’arme qui tire ; bouton Vue), 105 mm plus fort avec une grosse explosion (js/54-rts-postes.js, tests/t-rts-postes.js) | 2026-11-04 |
 
 ## À valider par Martin
 
 - RTS (tâche 83) : liste des unités repliée par défaut. Dire si on veut qu’elle se referme seule après avoir choisi une unité.
+- Zombies Haute définition (tâche 86) : dire si le flou en visant est trop fort ou pas assez, et si le sang au sol est de trop.
 - Décor Haute définition (tâche 85) : dire s'il y a trop ou pas assez de débris dans la rue.
 - Haute définition la nuit (tâche 84) : essayer une nuit (Banlieue Nord) en Haute définition, dire si les lampadaires sont trop forts ou trop faibles.
 

@@ -16,7 +16,7 @@
       o.state = state; o.nids = R.nests.length; o.robots = R.units.length; o.argent = S.money;
       o.types = R.blds.map(function(x){ return x.type; }).sort().join(',');
       o.nord = R.nests.every(function(n){ return n.z < -70 && Math.abs(Math.atan2(n.x, -n.z)) < Math.PI / 4 + .1; });
-      o.route = R.nests.every(function(n){ return __rts.rtsRoadDist(n.x, n.z) < 26; });
+      var xs = R.nests.map(function(n){ return n.x; }); o.route = Math.max.apply(null, xs) - Math.min.apply(null, xs) > 30;
       o.dalle = !!R.pad && R.pad.scale.x === R.baseR;
       o.barricade = world.children.some(function(g){ return g.isGroup && g.children.length >= 6 && g.children.every(function(c){ return Math.abs(c.position.z - BAR_Z) < 1.4; }); });
       camera.updateMatrixWorld(); var d = new THREE.Vector3(); camera.getWorldDirection(d); o.bas = d.y < -.8 && camera.position.y > 24;
@@ -26,19 +26,19 @@
     });
     fin();
     ok(r.btn, 'Bouton'); egal(r.state, 'rts', 'État');
-    egal(r.nids, 6, 'Nids'); ok(r.nord, 'Nids au nord, dans l’ouverture de 90°'); ok(r.route, 'Nids le long de la route');
+    egal(r.nids, 6, 'Nids'); ok(r.nord, 'Nids au nord, dans l’ouverture de 90°'); ok(r.route, 'Nids étalés sur tout le secteur, pas seulement le long de la route');
     egal(r.types, 'factory,hq,t_mg,t_mg,t_mg', 'Bâtiments de départ'); egal(r.robots, 3, 'Robots de départ'); egal(r.argent, 900, 'Argent de départ');
     ok(!r.barricade, 'Plus de rue : pas de barricade'); ok(r.dalle, 'Dalle de la base'); ok(r.bas, 'Vue de dessus');
     ok(r.mur && r.sud, 'Montagnes : on ne passe ni par les côtés ni par le sud');
   });
 
-  test('RTS : sans cible, les zombies suivent la vieille route jusqu’à la base', () => {
+  test('RTS : sans cible, ceux qui prennent la vieille route la suivent jusqu’à la base', () => {
     exiger(); reset();
     const r = J(function(c){
       eval(c); var R = calme(), o = {};
       R.units.forEach(function(u){ u.g.position.set(0, 0, 20); u.U = Object.assign({}, u.U, { range:0, dmg:0 }); });
       R.blds.filter(function(b){ return b.type === 't_mg'; }).forEach(function(b){ __rts.rtsSell(b); });
-      var E = __rts.RTS_ROAD[7], z = __t.placer('walker', E[0], E[1]); z.speed = 6; z.hp = z.maxHp = 1e9;
+      var E = __rts.RTS_ROAD[7], z = __t.placer('walker', E[0], E[1]); z.useRoad = true; z.speed = 6; z.hp = z.maxHp = 1e9;
       var maxD = 0; for (var i = 0; i < 30 * 55; i++){ visuals(1 / 30); maxD = Math.max(maxD, __rts.rtsRoadDist(z.g.position.x, z.g.position.z)); }
       o.route = maxD; o.base = Math.hypot(z.g.position.x, z.g.position.z);
       return o;
@@ -187,6 +187,29 @@
     ok(r.vue && r.obus, 'AC-130 piloté : vue du canonnier, obus de 105 ' + JSON.stringify(r)); ok(r.fin, 'Vue normale au retour');
   });
 
+  test('RTS : améliorations de l’AC-130 (gatling de 25 mm, rechargement, obus incendiaires, capteurs)', () => {
+    exiger(); reset();
+    const r = J(function(c){
+      eval(c); var R = calme(), o = {}; S.money = 1e7;
+      var a = __rts.rtsSpawnUnit('bomber', 0, -60), r0 = __rts.rtsStat(a, 'range');
+      o.liste = Object.keys(__rts.RTS_UPG_SPEC.bomber).join(',');
+      o.achats = ['g25', 'cal105', 'fire', 'sensor'].every(function(k){ return __rts.rtsUpgBuy('bomber', k); });
+      o.capteurs = __rts.rtsStat(a, 'range') > r0 * 1.1; o.maxFeu = !__rts.rtsUpgBuy('bomber', 'fire');
+      __rts.rtsUpgPanel(); o.panneau = /Gatling de 25 mm/.test(document.getElementById('rtsPanel').textContent) && /Obus incendiaires/.test(document.getElementById('rtsPanel').textContent);
+      R.paused = false; document.getElementById('rtsPanel').classList.add('hide');
+      R.blds.filter(function(b){ return b.type === 't_mg'; }).forEach(function(b){ __rts.rtsSell(b); });
+      R.units.forEach(function(u){ if (u !== a){ u.g.position.set(-30, 0, 20); u.hx = -30; u.hz = 20; u.U = Object.assign({}, u.U, { range:0 }); } });
+      var zs = [[0, -90], [3, -91], [-3, -92]].map(function(p){ var z = __t.placer('walker', p[0], p[1]); z.hp = z.maxHp = 1e6; z.speed = 0; return z; });
+      var gat = 0; for (var i = 0; i < 30 * 12; i++){ var c3 = a.cd3; visuals(1 / 30); if (a.cd3 > (c3 || 0)) gat++; }
+      o.gatling = gat > 10; o.feu = zs.some(function(z){ return z.burnT > 0; });
+      return o;
+    }, calme);
+    fin();
+    egal(r.liste, 'g25,cal105,fire,sensor', 'Améliorations propres à l’AC-130'); ok(r.achats && r.maxFeu, 'Achats');
+    ok(r.capteurs, 'Les capteurs allongent la portée'); ok(r.panneau, 'Dans le panneau des améliorations');
+    ok(r.gatling, 'La gatling de 25 mm tire'); ok(r.feu, 'Les obus incendiaires mettent le feu');
+  });
+
   test('RTS : piloter une unité à la première personne (bouger, viser, tirer, revenir)', () => {
     exiger(); reset();
     const r = J(function(c){
@@ -289,7 +312,7 @@
       R.blds.filter(function(b){ return b.type === 't_mg'; }).forEach(function(b){ __rts.rtsSell(b); });
       // Horde : du bord du désert
       R.hordeT = 0; visuals(1 / 30); R.hordeT = 1e9;
-      var zs = zombies.filter(function(z){ return !z.dead; }); o.horde = zs.length; o.bord = zs.every(function(z){ return z.g.position.z < -260; });
+      var zs = zombies.filter(function(z){ return !z.dead; }); o.horde = zs.length; o.bord = zs.every(function(z){ return z.g.position.z < -150; }); var hx = zs.map(function(z){ return z.g.position.x; }); o.large = Math.max.apply(null, hx) - Math.min.apply(null, hx) > 60; o.route = zs.filter(function(z){ return z.useRoad; }).length; o.droit = zs.filter(function(z){ return !z.useRoad; }).length;
       clearZombies();
       // Une barricade entre le zombie et le QG : il l'attaque d'abord
       var w = __rts.rtsBuild('wall', 0, -16); var z = __t.placer('walker', 0, -26); var h0 = w.hp, q0 = R.base.hp;
@@ -307,7 +330,7 @@
       return o;
     }, calme);
     fin();
-    ok(r.horde >= 10 && r.bord, 'Horde du nord, au bout de la route : ' + r.horde);
+    ok(r.horde >= 10 && r.bord, 'Horde du nord : ' + r.horde); ok(r.large, 'La horde arrive sur toute la largeur du secteur de 90°'); ok(r.droit > r.route, 'La plupart coupent tout droit (' + r.droit + ') au lieu de suivre la route (' + r.route + ')');
     ok(r.mur && r.qgIntact, 'Le zombie attaque la barricade d’abord');
     ok(r.avant && r.plus && r.apres, 'La base s’agrandit : on peut construire plus loin');
     egal(r.fin, 'rts', 'La partie continue'); egal(r.actifs, 6, 'Toujours 6 nids actifs');

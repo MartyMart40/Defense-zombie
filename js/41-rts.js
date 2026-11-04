@@ -42,6 +42,16 @@ const RTS_UPG = {
   rate: { name:'Cadence',  max:5, k:.1,  desc:'+10 % de cadence' },
   spd:  { name:'Moteurs',  max:3, k:.1,  desc:'+10 % de vitesse et +6 % de portée' }
 };
+// Améliorations propres à une unité (en plus des 4 de base)
+const RTS_UPG_SPEC = {
+  bomber: {
+    g25:    { name:'Gatling de 25 mm',     max:3, desc:'Ajoute une gatling (rafales traçantes), plus forte à chaque niveau' },
+    cal105: { name:'Obusier : rechargement', max:4, desc:'+20 % de cadence du 105 mm par niveau' },
+    fire:   { name:'Obus incendiaires',    max:1, desc:'Le 105 mm met le feu aux zombies touchés' },
+    sensor: { name:'Capteurs infrarouges', max:3, desc:'+15 % de portée et +10 % de zone d’explosion par niveau' }
+  }
+};
+const rtsUpgDef = (type, k) => RTS_UPG[k] || (RTS_UPG_SPEC[type] || {})[k];
 const RTS_BLD = {
   hq:       { name:'QG',                     hp:6000, size:6,   cost:0,    fixed:true },
   factory:  { name:'Usine de robots',        hp:2000, size:4,   cost:500,  desc:'Fantassins, mitrailleurs, tireurs d’élite, lance-flammes.' },
@@ -74,7 +84,7 @@ function rtsRoadX(z){
 }
 const RTS_BOSS = ['titan', 'broodmother', 'behemoth'];
 const RTS = { on:false, paused:false, units:[], nests:[], blds:[], base:null, sel:[], bsel:null, place:null, tab:'rob', upg:{}, t:0, kills:0, threat:1,
-  hordeT:0, hordeN:0, bossN:0, bossKills:0, nestN:0, placeRot:0, chunks:0, zMin:-300, spin:0, lost:0, baseR:30, incT:5, cam:{ x:0, z:-10, h:56 }, keys:{}, drag:null, pinch:null, sndT:0, pilot:null,
+  hordeT:0, hordeN:0, bossN:0, bossKills:0, nestN:0, placeRot:0, ruins:[], chunks:0, zMin:-300, spin:0, lost:0, baseR:30, incT:5, cam:{ x:0, z:-10, h:56 }, keys:{}, drag:null, pinch:null, sndT:0, pilot:null,
   pv:{ yaw:0, pitch:-.1, joy:{ id:null, dx:0, dy:0 }, aim:{ id:null, lx:0, ly:0 }, fire:false, fire2:false, mv:{ f:0, b:0, l:0, r:0 } }, best:+store.get('dt_rts_bestN', 0) || 0 };
 const rtsRoot = new THREE.Group(); scene.add(rtsRoot);
 const rtsMat = new THREE.MeshLambertMaterial({ vertexColors:true }); rtsMat.userData.keep = true;
@@ -293,7 +303,7 @@ function rtsDesert(){
   RTS.sky = new THREE.Mesh(new THREE.SphereGeometry(300, 24, 16), new THREE.MeshBasicMaterial({ map:skyTex, side:THREE.BackSide, fog:false, depthWrite:false })); world.add(RTS.sky);
   const sunSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, color:0xfff2d0, fog:false, depthWrite:false, blending:THREE.AdditiveBlending }));
   sunSpr.position.set(-90, 60, -250); sunSpr.scale.set(60, 60, 1); RTS.sky.add(sunSpr);
-  RTS.chunks = 0; rtsChunk(-1); rtsEnsureChunks(-300);
+  RTS.chunks = 0; RTS.ruins = []; rtsChunk(-1); rtsEnsureChunks(-300);
   RTS.pad = new THREE.Mesh(new THREE.CircleGeometry(1, 48), new THREE.MeshLambertMaterial({ color:0x8a867c })); RTS.pad.rotation.x = -Math.PI / 2; RTS.pad.position.y = .04; world.add(RTS.pad);
   RTS.edge = new THREE.Mesh(new THREE.RingGeometry(.97, 1, 64), new THREE.MeshBasicMaterial({ color:0xffd040, transparent:true, opacity:.7, side:THREE.DoubleSide, depthWrite:false })); RTS.edge.rotation.x = -Math.PI / 2; RTS.edge.position.y = .07; world.add(RTS.edge);
   try { if (typeof ambReset === 'function') ambReset(); if (typeof __amb === 'object') __amb.set(pick(['clair', 'clair', 'vent', 'coucher', 'poussiere', 'nuitClaire', 'canicule'])); } catch (e) {}
@@ -347,7 +357,7 @@ function rtsChunk(k){
     const z = rand(z0, z1); if (z > -50) continue;
     const m = rtsValleyX(z) - 8, x = rand(-m, m);
     if (rtsRoadDist(x, z) < 26) continue;
-    const w = rand(5, 11), d = rand(5, 9);
+    const w = rand(5, 11), d = rand(5, 9); RTS.ruins.push([x, z, Math.max(w, d) * .6]);
     vmPush(b, x, 0, z, 0, rand(0, 3), 0);
     for (let q = 0; q < 4; q++){ const h = rand(1.5, 7); vmBox(b, w / 4, h, .5, q % 2 ? RTS_CONC : 0x9a9080, -w / 2 + w / 8 + q * w / 4, h / 2, -d / 2, 0, 0, 0, .05); }
     for (let q = 0; q < 3; q++){ const h = rand(1, 5); vmBox(b, .5, h, d / 3, 0x9a9080, -w / 2, h / 2, -d / 2 + d / 6 + q * d / 3, 0, 0, 0, .05); }
@@ -376,7 +386,7 @@ const rtsStat = (u, k) => {
   if (k === 'hp') return U.hp * (1 + RTS_UPG.hp.k * rtsLv(t, 'hp'));
   if (k === 'rate') return U.rate * (1 + RTS_UPG.rate.k * rtsLv(t, 'rate'));
   if (k === 'speed') return U.speed * (1 + RTS_UPG.spd.k * rtsLv(t, 'spd'));
-  if (k === 'range') return U.range * (1 + .06 * rtsLv(t, 'spd'));
+  if (k === 'range') return U.range * (1 + .06 * rtsLv(t, 'spd') + .15 * rtsLv(t, 'sensor'));
   return U[k];
 };
 const rtsIsAir = u => u.U.kind !== 'ground';
@@ -444,9 +454,9 @@ function rtsBuy(type){
   if (typeof Snd === 'object' && Snd.buy) Snd.buy();
   return u;
 }
-const rtsUpgCost = (type, k) => Math.round(RTS_UNITS[type].cost * .8 * Math.pow(1.6, rtsLv(type, k)));
+const rtsUpgCost = (type, k) => Math.round(RTS_UNITS[type].cost * .8 * Math.pow(1.6, rtsLv(type, k)) * (RTS_UPG[k] ? 1 : 1.25));
 function rtsUpgBuy(type, k){
-  const U = RTS_UPG[k], C = RTS_UNITS[type]; if (!U || !C) return false;
+  const U = rtsUpgDef(type, k), C = RTS_UNITS[type]; if (!U || !C) return false;
   const l = rtsLv(type, k), cost = rtsUpgCost(type, k);
   if (l >= U.max || S.money < cost) return false;
   S.money -= cost; RTS.upg[type] = RTS.upg[type] || {}; RTS.upg[type][k] = l + 1;
@@ -472,8 +482,15 @@ function rtsSell(o){
 // Nids : le long de la vieille route, de chaque côté, de plus en plus loin au nord
 function rtsAddNest(x, z){
   const i = RTS.nestN++;
-  if (x == null){ const m = rtsValleyX(z) - 10; x = clamp(rtsRoadX(z) + (i % 2 ? 1 : -1) * rand(13, 18), -m, m); }
   rtsEnsureChunks(z);
+  if (x == null){ // n'importe où dans le secteur de 90°, loin des ruines et des autres nids
+    const w = Math.max(15, Math.min(-z * .95, rtsValleyX(z) - 10));
+    for (let k = 0; k < 16; k++){
+      x = rand(-w, w);
+      const near = RTS.ruins.some(r => Math.hypot(r[0] - x, r[1] - z) < r[2] + 8) || RTS.nests.some(n => !n.dead && Math.hypot(n.x - x, n.z - z) < 28);
+      if (!near) break;
+    }
+  }
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = Math.atan2(-x, -z); rtsRoot.add(g);
   const mm = new THREE.Mesh(rtsNestGeo(), rtsMat); g.add(mm);
   // Chaque nouveau nid est plus solide et pond plus vite que le précédent
@@ -483,11 +500,9 @@ function rtsAddNest(x, z){
   return o;
 }
 function rtsMakeNests(){
-  const idx = [2, 3, 4, 5, 6, 7];
-  for (let i = 0; i < RTS_CFG.nests; i++){
-    const P2 = RTS_ROAD[idx[i % idx.length]], sd = i % 2 ? 1 : -1, m = rtsValleyX(P2[1]) - 10;
-    rtsAddNest(clamp(P2[0] + sd * rand(13, 18), -m, m), P2[1] + rand(-5, 5));
-  }
+  // Six nids étalés dans tout le secteur de 90° au nord (de 85 à 290 m environ)
+  const zs = [-84, -124, -164, -204, -244, -292];
+  for (let i = 0; i < RTS_CFG.nests; i++) rtsAddNest(null, zs[i] + rand(-5, 5));
 }
 const rtsNestsAlive = () => RTS.nests.filter(n => !n.dead);
 const rtsFront = () => { let z = 0; RTS.nests.forEach(n => { if (n.z < z) z = n.z; }); return z; };
@@ -518,7 +533,7 @@ function rtsStart(){
   document.body.classList.add('rts');
   rtsUI.classList.remove('hide'); rtsUI.classList.toggle('touch', isTouch); rtsTab('rob');
   if (typeof unlockPointer === 'function') unlockPointer();
-  banner('Base assiégée', 'Ils arrivent du nord par la vieille route. Chaque nid détruit en fait apparaître un plus fort, plus loin.', 3200);
+  banner('Base assiégée', 'Ils arrivent de partout au nord : défends tout l’avant de la base. Chaque nid détruit en fait apparaître un plus fort, plus loin.', 3200);
 }
 function rtsQuit(){
   RTS.on = false; RTS.paused = false;
@@ -565,7 +580,7 @@ function rtsSpawnAt(x, z, n, spread, type){
   let alive = zAliveCount(), k = 0; spread = spread || 3;
   for (let i = 0; i < n && (alive < plan.maxAlive || type); i++){
     const t = type || rtsPickType(), zz = spawnZombie(t); if (!zz) continue;
-    zz.g.position.set(x + rand(-spread, spread), zz.g.position.y, z + rand(-spread, spread)); zz.rtsT = 0; zz.wp = null; alive++; k++;
+    zz.g.position.set(x + rand(-spread, spread), zz.g.position.y, z + rand(-spread, spread)); zz.rtsT = 0; zz.wp = null; zz.useRoad = Math.random() < .3; alive++; k++; // 3 sur 10 suivent la vieille route, les autres coupent tout droit
     if (RTS_BOSS.indexOf(t) >= 0){ zz.maxHp = zz.hp = zz.maxHp * RTS_CFG.bossHp; zz.rtsBoss = true; zz.abT = 3; }
   }
   return k;
@@ -642,7 +657,7 @@ function rtsZombies(dt){
     // Sans cible proche, il suit la vieille route jusqu'à la base, puis va vers le QG
     let T = z.rtsTgt, tp;
     if (T) tp = rtsPos(T);
-    else { const P2 = fly ? null : rtsRoadNext(z); if (P2) tp = rtsV3.set(P2[0], 0, P2[1]); else { T = RTS.base; if (!T) continue; tp = rtsPos(T); } }
+    else { const P2 = fly || !z.useRoad ? null : rtsRoadNext(z); if (P2) tp = rtsV3.set(P2[0], 0, P2[1]); else { T = RTS.base; if (!T) continue; tp = rtsPos(T); } }
     const dx = tp.x - gp.x, dz = tp.z - gp.z, d = Math.hypot(dx, dz);
     const reach = T ? (T.r || 1) + .9 * ((ZTYPES[z.type] || {}).scale || 1) : 0;
     z.g.rotation.y = Math.atan2(dx, dz);
@@ -686,7 +701,8 @@ function rtsBldDie(o, sold){
 function rtsShotSnd(id){ if (RTS.sndT > 0 || typeof Snd !== 'object') return; RTS.sndT = .07; try { Snd.shot(id); } catch (e) {} }
 // Explosion au sol (roquettes, obus, bombes)
 function rtsBlast(x, z, S2){
-  for (const zz of zombies){ if (zz.dead) continue; const d = Math.hypot(zz.g.position.x - x, zz.g.position.z - z); if (d < S2.splash) damage(zz, S2.dmg * (1 - .5 * d / S2.splash), false, zz.g.position.clone()); }
+  for (const zz of zombies){ if (zz.dead) continue; const d = Math.hypot(zz.g.position.x - x, zz.g.position.z - z); if (d < S2.splash){ damage(zz, S2.dmg * (1 - .5 * d / S2.splash), false, zz.g.position.clone()); if (S2.burn && !zz.dead){ zz.burnT = 5; zz.burnDps = 45; } } }
+  if (S2.burn) burst(rtsV.set(x, .6, z), PMATS.ember ? 'ember' : 'dust', 10, 3);
   for (const n of RTS.nests){ if (n.dead) continue; if (Math.hypot(n.x - x, n.z - z) < S2.splash + n.r){ n.hp -= S2.dmg * .8; rtsHpSet(n.hpb, n.hp / n.maxHp); if (n.hp <= 0) rtsNestDie(n); } }
   if (typeof rueBoom === 'function') rueBoom(x, 1.2, z, S2.splash * 2.4);
   if (typeof Snd === 'object' && Snd.boom && Math.random() < .5) Snd.boom(S2.bomb ? 1 : .45);
@@ -752,11 +768,19 @@ function rtsNestDie(n){
   const nd = RTS.nests.filter(x => x.dead).length;
   banner('Nid détruit ! (' + nd + ')', '+' + fmt(bounty) + (nn ? ' · nouveau nid repéré au nord, niveau ' + (nn.idx + 1) : ''), 2600);
 }
-const rtsS2 = u => ({ dmg:rtsStat(u, 'dmg'), snd:u.U.snd, beam:u.U.beam, pierce:u.U.pierce, splash:u.U.splash, flame:u.U.flame, bomb:u.U.bomb, range:rtsStat(u, 'range') });
+const rtsS2 = u => ({ dmg:rtsStat(u, 'dmg'), snd:u.U.snd, beam:u.U.beam, pierce:u.U.pierce, splash:u.U.splash && u.U.splash * (1 + .1 * rtsLv(u.type, 'sensor')), flame:u.U.flame, bomb:u.U.bomb, range:rtsStat(u, 'range') });
 const rtsMuzzle = (u, out) => { const p = u.g.position; return out.set(p.x, u.U.big ? 5.2 : u.U.kind === 'ground' ? (u.U.cat === 'rob' ? (u.type === 'heavy' ? 3.4 : 2.2) * RTS_SC : 2) : p.y - .5, p.z); };
 // Arme secondaire (roquettes du Mech de combat) : mêmes améliorations d'armes et de cadence
-const rtsS2b = u => { const W = u.U.w2, k = 1 + RTS_UPG.arm.k * rtsLv(u.type, 'arm'); return { dmg:W.dmg * k, snd:W.snd, splash:W.splash, range:W.range * (1 + .06 * rtsLv(u.type, 'spd')) }; };
-const rtsRate2 = u => u.U.w2.rate * (1 + RTS_UPG.rate.k * rtsLv(u.type, 'rate'));
+const rtsS2b = u => { const W = u.U.w2, k = 1 + RTS_UPG.arm.k * rtsLv(u.type, 'arm'), se = rtsLv(u.type, 'sensor'); return { dmg:W.dmg * k, snd:W.snd, splash:W.splash * (1 + .1 * se), range:W.range * (1 + .06 * rtsLv(u.type, 'spd') + .15 * se), burn:rtsLv(u.type, 'fire') > 0 }; };
+const rtsRate2 = u => u.U.w2.rate * (1 + RTS_UPG.rate.k * rtsLv(u.type, 'rate')) * (1 + .2 * rtsLv(u.type, 'cal105'));
+// Gatling de 25 mm de l'AC-130 (amélioration) : rafales traçantes rapides
+const rtsS25 = u => { const l = rtsLv(u.type, 'g25'); return { dmg:22 * (1 + .35 * (l - 1)) * (1 + RTS_UPG.arm.k * rtsLv(u.type, 'arm')), snd:'minigun', beam:0xffd890, range:rtsStat(u, 'range') }; };
+function rtsGat(u, dt, tgt, pilot){
+  if (!rtsLv(u.type, 'g25')) return;
+  u.cd3 = (u.cd3 || 0) - dt; if (u.cd3 > 0 || !tgt) return;
+  u.cd3 = 1 / (10 * (1 + RTS_UPG.rate.k * rtsLv(u.type, 'rate')));
+  if (pilot) rtsPilotShot(u, rtsS25(u), -1); else rtsHit(rtsMuzzle(u, new THREE.Vector3()), tgt, tgt.g ? 'z' : 'nest', rtsS25(u));
+}
 // Choix de la cible : tireur d'élite = le plus gros ; explosifs = là où ils sont le plus serrés ; sinon le plus proche
 function rtsPickTarget(u, r, splash){
   const gp = u.g.position, r2 = r * r; let best = null, bs = -1e9, n = 0;
@@ -837,6 +861,7 @@ function rtsGunship(u, dt, cx, cz){
   const t = u.tgt && !u.tgt.dead ? u.tgt : null, n = u.nest && !u.nest.dead && Math.hypot(u.nest.x - gp.x, u.nest.z - gp.z) < rtsStat(u, 'range') ? u.nest : null;
   if (u.cd <= 0 && (t || n)){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(from, t || n, t ? 'z' : 'nest', rtsS2(u)); }
   if (u.cd2 <= 0 && (t || n)){ u.cd2 = 1 / rtsRate2(u); rtsHit(from, t || n, t ? 'z' : 'nest', rtsS2b(u)); }
+  rtsGat(u, dt, t || n, false);
 }
 function rtsUnits(dt){
   for (const u of RTS.units){
@@ -945,12 +970,17 @@ function rtsStep(dt){
     if (n.spawnT <= 0){ n.spawnT = Math.max(1.6, rand(6, 9) / Math.sqrt(RTS.threat) / n.pow); const a = Math.atan2(-n.z, -n.x); rtsSpawnAt(n.x + Math.cos(a) * 6, n.z + Math.sin(a) * 6, 1 + Math.floor(RTS.threat * .8 + n.idx / 3)); }
     n.m.scale.setScalar(1 + Math.sin(RTS.t * 2.2 + n.idx) * .015);
   }
-  // Hordes : toujours du nord, par la vieille route ; un boss toutes les RTS_CFG.bossEvery hordes
+  // Hordes : du nord, réparties sur tout le secteur de 90° ; un boss toutes les RTS_CFG.bossEvery hordes
   RTS.hordeT -= dt;
   if (RTS.hordeT <= 0){
     RTS.hordeT = RTS_CFG.hordeEvery; RTS.hordeN++;
-    const ez = rtsFront() - 30, E = [rtsRoadX(ez), ez], n = rtsSpawnAt(E[0], E[1], 10 + Math.round(RTS.threat * 5), 10);
-    let sub = n + ' zombies arrivent du nord par la vieille route';
+    // Plusieurs groupes répartis sur tout le secteur de 90° devant la base (pas seulement par la route)
+    const R0 = -rtsFront() + 30, tot = 10 + Math.round(RTS.threat * 5), ng = 3 + Math.floor(Math.random() * 3); let n = 0, E = null;
+    for (let gi = 0; gi < ng; gi++){
+      const a = (-1 + 2 * (gi + rand(.15, .85)) / ng) * Math.PI / 4, zz = -R0 * Math.cos(a), m = rtsValleyX(zz) - 6, xx = clamp(R0 * Math.sin(a), -m, m);
+      n += rtsSpawnAt(xx, zz, Math.ceil(tot / ng), 7); if (!E || Math.random() < .4) E = [xx, zz];
+    }
+    let sub = n + ' zombies arrivent de partout au nord';
     if (RTS.hordeN % RTS_CFG.bossEvery === 0){ const bt = RTS_BOSS[RTS.bossN++ % RTS_BOSS.length]; if (ZTYPES[bt] && rtsSpawnAt(E[0], E[1] + 6, 1, 2, bt)) sub = 'Un boss arrive : ' + ZTYPES[bt].name + ' !'; }
     banner('Horde n° ' + RTS.hordeN + ' !', sub, 2400);
     if (typeof Snd === 'object' && Snd.groan) Snd.groan();
@@ -1060,6 +1090,7 @@ function rtsPilotStep(dt){
   }
   // Tir : vers ce qui est au centre de l'écran (zombie, nid, sinon le sol)
   const firing = P2.fire || (isTouch && P2.aim.id !== null);
+  if (U.gunship) rtsGat(u, dt, (P2.fire || (isTouch && P2.aim.id !== null)) ? true : null, true);
   if (U.gunship && P2.fire2 && u.cd2 <= 0){ u.cd2 = 1 / rtsRate2(u); rtsPilotShot(u, rtsS2b(u)); shake = Math.max(shake, .25); }
   if (U.big){ // minigun : elle monte en régime avant de tirer, avec le vrai son continu du mode robot
     RTS.spin = clamp(RTS.spin + (firing ? dt / .35 : -dt / .8), 0, 1);
@@ -1169,9 +1200,9 @@ function rtsUpgPanel(){
     h += '<h4 class="wuh">' + c[1] + '</h4>';
     RTS_ORDER.filter(t => RTS_UNITS[t].cat === c[0]).forEach(t => {
       h += '<div class="rt-ut">' + RTS_UNITS[t].name + '</div>';
-      Object.keys(RTS_UPG).forEach(k => {
-        const U = RTS_UPG[k], l = rtsLv(t, k), max = l >= U.max, cost = rtsUpgCost(t, k);
-        h += '<div class="row"><div class="info"><div class="nm">' + U.name + ' <span class="inf-lv">' + l + ' / ' + U.max + '</span></div><div class="ds">' + U.desc + ' par niveau</div></div>'
+      Object.keys(RTS_UPG).concat(Object.keys(RTS_UPG_SPEC[t] || {})).forEach(k => {
+        const U = rtsUpgDef(t, k), l = rtsLv(t, k), max = l >= U.max, cost = rtsUpgCost(t, k);
+        h += '<div class="row"><div class="info"><div class="nm">' + U.name + ' <span class="inf-lv">' + l + ' / ' + U.max + '</span></div><div class="ds">' + U.desc + (RTS_UPG[k] ? ' par niveau' : '') + '</div></div>'
           + '<button type="button" data-u="' + t + ':' + k + '"' + (max || S.money < cost ? ' disabled' : '') + '>' + (max ? 'Max' : fmt(cost)) + '</button></div>';
       });
     });
@@ -1463,4 +1494,4 @@ document.addEventListener('pointerlockchange', () => { if (state === 'rts' && RT
 // Accès pour les tests automatiques
 window.__rts = { RTS, RTS_UNITS, RTS_CFG, RTS_BLD, RTS_UPG, RTS_ROAD, RTS_BOSS, rtsStart, rtsQuit, rtsBuy, rtsStep, rtsSelect, rtsOrder, rtsPick, rtsSpawnUnit, rtsSpawnAt, rtsNestDie, rtsEnd, rtsPause,
   rtsBuild, rtsBldOk, rtsPlaceBld, rtsTurretUp, rtsSell, rtsUpgBuy, rtsUpgCost, rtsStat, rtsTStat, rtsStartPlace, rtsPlaceAt, rtsTap, rtsTab, rtsInfoShow,
-  rtsGhostAt, rtsSnap, rtsRotate, rtsGunship, rtsPilot, rtsUnpilot, rtsPilotSel, rtsPilotStep, rtsValleyX, rtsRoadDist, rtsClampValley, rtsRoadNext, rtsRoadX, rtsAddNest, rtsFront, rtsPickTarget, RTS_KITE };
+  rtsGhostAt, rtsSnap, rtsRotate, rtsGunship, RTS_UPG_SPEC, rtsUpgPanel, rtsPilot, rtsUnpilot, rtsPilotSel, rtsPilotStep, rtsValleyX, rtsRoadDist, rtsClampValley, rtsRoadNext, rtsRoadX, rtsAddNest, rtsFront, rtsPickTarget, RTS_KITE };

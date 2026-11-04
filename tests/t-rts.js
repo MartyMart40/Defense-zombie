@@ -160,6 +160,33 @@
     ok(r.recule, 'Il recule devant un zombie trop proche'); ok(r.laisse, 'Il ne part pas à la poursuite trop loin de son poste'); ok(r.repare, 'Abîmé, il va se faire réparer à l’atelier');
   });
 
+  test('RTS : rotation des bâtiments, AC-130 qui tourne en rond et tire, Mech de combat signalé', () => {
+    exiger(); reset();
+    const r = J(function(c){
+      eval(c); var R = calme(), o = {}; S.money = 1e6; R.baseR = 70;
+      __rts.rtsStartPlace('factory'); var k = __rts.rtsRotate(); o.fantome = k === 1;
+      o.pose = __rts.rtsPlaceAt(-24, -12); var f = R.blds[R.blds.length - 1]; o.tourne = f.type === 'factory' && Math.abs(f.m.rotation.y - Math.PI / 2) < 1e-6 && f.rot === 1;
+      R.placeRot = 0;
+      __rts.rtsTab('rob'); visuals(1 / 30); var bt = document.querySelector('#rtBar .rt-buy[data-t="mech"]');
+      o.mech = !!bt && bt.classList.contains('rt-star') && /Usine lourde/.test(bt.textContent);
+      R.blds.filter(function(b){ return b.type === 't_mg'; }).forEach(function(b){ __rts.rtsSell(b); });
+      R.units.forEach(function(u){ u.g.position.set(-30, 0, 20); u.hx = -30; u.hz = 20; u.U = Object.assign({}, u.U, { range:0 }); });
+      var a = __rts.rtsSpawnUnit('bomber', 0, -60); var zs = [[0, -90], [2, -91], [-2, -92]].map(function(p){ var z = __t.placer('walker', p[0], p[1]); z.hp = z.maxHp = 1e6; z.speed = 0; return z; });
+      var dmin = 1e9, dmax = 0, roll = 0;
+      for (var i = 0; i < 30 * 20; i++){ visuals(1 / 30); if (i > 30 * 10){ var d = Math.hypot(a.g.position.x - a.oc[0], a.g.position.z - a.oc[1]); dmin = Math.min(dmin, d); dmax = Math.max(dmax, d); roll = a.g.rotation.z; } }
+      o.orbite = dmin > 20 && dmax < 70; o.penche = roll > .2; o.tir = zs.filter(function(z){ return z.hp < 1e6; }).length >= 2;
+      __rts.rtsSelect([a], false); __rts.rtsPilotSel(); visuals(1 / 30);
+      o.vue = camera.fov < 50 && canvas.classList.contains('rt-ac') && camera.position.y > 20; o.dbg = [camera.fov, canvas.className, camera.position.y.toFixed(1), !!R.pilot].join(',');
+      R.pv.fire2 = true; var cd = a.cd2; visuals(1 / 30); R.pv.fire2 = false; o.obus = a.cd2 > 1;
+      __rts.rtsUnpilot(); o.fin = camera.fov > 50 && !canvas.classList.contains('rt-ac');
+      return o;
+    }, calme);
+    fin();
+    ok(r.fantome && r.pose && r.tourne, 'Le bâtiment posé garde sa rotation'); ok(r.mech, 'Mech de combat mis en avant, avec le bâtiment requis');
+    ok(r.orbite && r.penche, 'AC-130 : il tourne en rond, penché'); ok(r.tir, 'AC-130 : il tire sur les zombies');
+    ok(r.vue && r.obus, 'AC-130 piloté : vue du canonnier, obus de 105 ' + JSON.stringify(r)); ok(r.fin, 'Vue normale au retour');
+  });
+
   test('RTS : piloter une unité à la première personne (bouger, viser, tirer, revenir)', () => {
     exiger(); reset();
     const r = J(function(c){

@@ -25,9 +25,10 @@ const RTS_UNITS = {
   heli:    { name:'Hélicoptère',     cost:2200, hp:1200, dmg:90,  rate:2.2, range:28, speed:12,  r:2.6, snd:'gl',      col:0x3a4a3a, splash:3, fac:'heliport', kind:'heli', alt:11, cat:'veh' },
   jet:     { name:'Chasseur',        cost:3000, hp:800,  dmg:280, rate:1.2, range:34, speed:32,  r:3,   snd:'rocket',  col:0x6a7080, splash:3.5, fac:'airfield', kind:'air', alt:20, orbit:30, turn:1.3, cat:'veh' },
   warthog: { name:'Warthog',         cost:3800, hp:1500, dmg:40,  rate:22,  range:30, speed:18,  r:3,   snd:'mg50',    col:0x6a7058, beam:0xffd890, fac:'airfield', kind:'air', alt:14, orbit:22, turn:1, cat:'veh' },
-  mech:    { name:'Mech de combat',  cost:6000, hp:5000, dmg:16,  rate:20,  range:26, speed:4.5, r:2.6, snd:'minigun', col:0x5a5d50, beam:0xffd890, fac:'heavyfac', kind:'ground', cat:'rob', big:true,
+  mech:    { name:'⭐ Mech de combat', w1:'Minigun',  cost:6000, hp:5000, dmg:16,  rate:20,  range:26, speed:4.5, r:2.6, snd:'minigun', col:0x5a5d50, beam:0xffd890, fac:'heavyfac', kind:'ground', cat:'rob', big:true,
              w2:{ name:'Roquettes', dmg:260, rate:1.5, range:34, splash:4.5, snd:'rocket' } },
-  bomber:  { name:'Bombardier',      cost:4500, hp:1800, dmg:420, rate:4,   range:7,  speed:15,  r:4,   snd:'rocket',  col:0x4a4e56, splash:7, bomb:true, fac:'airfield', kind:'air', alt:26, orbit:0, turn:.8, cat:'veh' }
+  bomber:  { name:'AC-130',          cost:4500, hp:2400, dmg:110, rate:2.5, range:62, speed:16,  r:4,   snd:'sniper',  col:0x5a6068, splash:3, gunship:true, fac:'airfield', kind:'air', alt:30, orbit:40, turn:.7, cat:'veh',
+             w1:'40 mm', w2:{ name:'105 mm', dmg:650, rate:.33, range:62, splash:8, snd:'rocket' } }
 };
 const RTS_ORDER = Object.keys(RTS_UNITS);
 const RTS_HOTKEY = ['rifle', 'gunner', 'sniper', 'flamebot', 'rocket', 'heavy', 'mech', 'tank', 'heli'];
@@ -73,7 +74,7 @@ function rtsRoadX(z){
 }
 const RTS_BOSS = ['titan', 'broodmother', 'behemoth'];
 const RTS = { on:false, paused:false, units:[], nests:[], blds:[], base:null, sel:[], bsel:null, place:null, tab:'rob', upg:{}, t:0, kills:0, threat:1,
-  hordeT:0, hordeN:0, bossN:0, bossKills:0, nestN:0, chunks:0, zMin:-300, spin:0, lost:0, baseR:30, incT:5, cam:{ x:0, z:-10, h:56 }, keys:{}, drag:null, pinch:null, sndT:0, pilot:null,
+  hordeT:0, hordeN:0, bossN:0, bossKills:0, nestN:0, placeRot:0, chunks:0, zMin:-300, spin:0, lost:0, baseR:30, incT:5, cam:{ x:0, z:-10, h:56 }, keys:{}, drag:null, pinch:null, sndT:0, pilot:null,
   pv:{ yaw:0, pitch:-.1, joy:{ id:null, dx:0, dy:0 }, aim:{ id:null, lx:0, ly:0 }, fire:false, fire2:false, mv:{ f:0, b:0, l:0, r:0 } }, best:+store.get('dt_rts_bestN', 0) || 0 };
 const rtsRoot = new THREE.Group(); scene.add(rtsRoot);
 const rtsMat = new THREE.MeshLambertMaterial({ vertexColors:true }); rtsMat.userData.keep = true;
@@ -157,12 +158,21 @@ function rtsUnitGeo(type){
       vmBox(b, .7, .05, .4, [3, .3, .2], 0, .4, 3.9, 0, 0, 0, 0);                                                                   // dents peintes
       return;
     }
-    if (type === 'bomber'){
-      vmCyl(b, 1.1, 12, c, 0, 0, 0, 0, 0, 0, 12, .45); vmBox(b, 1.1, .6, 1.4, RTS_GLASS, 0, .8, 4.6, 0, 0, 0, .2);
-      vmBox(b, 18, .25, 2.6, c, 0, .2, .5, 0, 0, 0, .06);
-      for (const s of [-1, 1]) for (const x of [3, 6.2]){ vmCyl(b, .45, 1.8, RTS_DARK, s * x, -.2, 1.2, 0, 0, 0, 10); vmCyl(b, .5, .1, [3, 1.2, .3], s * x, -.2, .25, 0, 0, 0, 10); }
-      vmBox(b, .16, 2.4, 2, c, 0, 1.4, -5.4, 0, 0, 0, .04); vmBox(b, 5.4, .14, 1.6, c, 0, .6, -5.4, 0, 0, 0, 0);
-      vmBox(b, 1.4, .1, 4, RTS_DARK, 0, -1.05, .4, 0, 0, 0, 0);                                                                      // trappe à bombes
+    if (type === 'bomber'){ // AC-130 : avion-canonnière, aile haute, 4 hélices, canons sur le flanc gauche
+      vmCyl(b, 1.35, 14, c, 0, 0, 0, 0, 0, 0, 12, .55); vmCyl(b, 1.3, 2.4, c, 0, .1, 7.6, 0, 0, 0, 12, .35);       // fuselage et nez
+      vmBox(b, 1.6, .5, 1.2, RTS_GLASS, 0, .95, 7.6, .3, 0, 0, .2);                                                 // vitres du poste
+      vmBox(b, 22, .3, 2.6, c, 0, 1.35, 1.2, 0, 0, 0, .08);                                                        // aile haute
+      for (const sd of [-1, 1]) for (const x of [3.6, 7.2]){
+        vmCyl(b, .5, 2.6, RTS_DARK, sd * x, 1, 2.4, 0, 0, 0, 10);                                                  // moteur
+        vmBox(b, 3.2, .12, .22, 0x2a2a2a, sd * x, 1, 3.75, 0, 0, .5, 0); vmBox(b, 3.2, .12, .22, 0x2a2a2a, sd * x, 1, 3.75, 0, 0, -1.07, 0); // hélice
+      }
+      vmBox(b, .2, 4, 2.8, c, 0, 2.6, -7, -.15, 0, 0, .05); vmBox(b, 8, .18, 2, c, 0, .9, -7, 0, 0, 0, .04);         // dérive et stabilisateur
+      // Flanc gauche : obusier de 105, canon de 40 et gatling de 25
+      vmCyl(b, .2, 2, RTS_DARK, -1.8, -.3, -2, 0, Math.PI / 2, 0, 10); vmCyl(b, .3, .4, RTS_DARK, -2.7, -.3, -2, 0, Math.PI / 2, 0, 10);
+      vmCyl(b, .12, 1.4, RTS_DARK, -1.7, -.4, 1, 0, Math.PI / 2, 0, 8);
+      for (let i = 0; i < 5; i++) vmCyl(b, .04, 1.1, VC.blue, -1.6, -.5 + Math.sin(i * 1.26) * .1, 3.4 + Math.cos(i * 1.26) * .1, 0, Math.PI / 2, 0, 6);
+      vmBox(b, 1.2, .12, 4, [.6, 2.6, .8], -1.36, .3, 0, 0, 0, Math.PI / 2, 0);                                        // capteurs
+      vmBox(b, .4, .4, .4, [2.6, .5, .3], 0, -1.3, 4, 0, 0, 0, .1);                                                 // tourelle infrarouge
       return;
     }
     const k = type === 'heavy' ? 1.5 : 1;
@@ -384,13 +394,13 @@ function rtsSpawnUnit(type, x, z){
   m.userData.rtsUnit = u; RTS.units.push(u); rtsHpSet(hp, 1);
   return u;
 }
-function rtsPlaceBld(type, x, z, free){
+function rtsPlaceBld(type, x, z, free, rot){
   const B = RTS_BLD[type], g = new THREE.Group(); g.position.set(x, 0, z); rtsRoot.add(g);
-  const m = new THREE.Mesh(rtsBldGeo(type), rtsMat); g.add(m);
+  const m = new THREE.Mesh(rtsBldGeo(type), rtsMat); m.rotation.y = ((rot || 0) % 4) * Math.PI / 2; g.add(m); // rotation par quarts de tour
   let head = null; if (B.turret){ head = new THREE.Mesh(rtsHeadGeo(type), rtsMat); head.position.y = 1.5; g.add(head); }
   const ring = new THREE.Mesh(new THREE.RingGeometry(B.size + .3, B.size + .7, 32), rtsRingMat); ring.rotation.x = -Math.PI / 2; ring.position.y = .1; ring.visible = false; g.add(ring);
   const hpb = rtsHpBar(g, type === 'hq' ? 15 : B.turret ? 4.2 : 7, Math.max(2.2, Math.min(8, B.size * 1.2)));
-  const o = { type, B, g, m, head, ring, hpb, hp:B.hp, maxHp:B.hp, x, z, r:B.size, lv:1, cd:rand(0, .5), tgt:null, scanT:0, spent:free ? 0 : B.cost, dead:false };
+  const o = { type, B, g, m, head, ring, hpb, hp:B.hp, maxHp:B.hp, x, z, rot:(rot || 0) % 4, r:B.size, lv:1, cd:rand(0, .5), tgt:null, scanT:0, spent:free ? 0 : B.cost, dead:false };
   m.userData.rtsBld = o; if (head) head.userData.rtsBld = o;
   RTS.blds.push(o); rtsHpSet(hpb, 1);
   if (type === 'hq') RTS.base = o;
@@ -403,12 +413,12 @@ function rtsBldOk(type, x, z){
   for (const o of RTS.blds) if (!o.dead && Math.hypot(o.x - x, o.z - z) < o.r + B.size + .5) return 'Trop près d’un autre bâtiment';
   return '';
 }
-function rtsBuild(type, x, z){
+function rtsBuild(type, x, z, rot){
   const B = RTS_BLD[type]; if (!B || B.fixed) return null;
   if (S.money < B.cost){ if (typeof toast === 'function') toast('Pas assez d’argent : ' + B.name + ' (' + fmt(B.cost) + ')'); return null; }
   const why = rtsBldOk(type, x, z); if (why){ if (typeof toast === 'function') toast(why); return null; }
   S.money -= B.cost;
-  const o = rtsPlaceBld(type, x, z);
+  const o = rtsPlaceBld(type, x, z, false, rot);
   rtsV.set(x, .5, z); burst(rtsV, 'dust', 12, 3);
   if (typeof Snd === 'object' && Snd.buy) Snd.buy();
   return o;
@@ -785,6 +795,8 @@ function rtsAir(u, dt){
     if (u.huntT <= 0){ u.huntT = 1; const q = rtsNearestZ(0, -10, 150); u.hunt = q ? [q.g.position.x, q.g.position.z] : null; }
     if (u.hunt){ cx = u.hunt[0]; cz = u.hunt[1]; }
   }
+  u.oc = [cx, cz];
+  if (U.gunship){ rtsGunship(u, dt, cx, cz); return; }
   const dx = cx - gp.x, dz = cz - gp.z, d = Math.hypot(dx, dz), R = U.orbit;
   let want = Math.atan2(dx, dz);
   if (d < R) want += Math.PI / 2 * (1 - d / R) * 1.1;                     // tangente : il tourne en rond (le bombardier, lui, repasse droit dessus)
@@ -804,6 +816,27 @@ function rtsAir(u, dt){
   const t = rtsNearestZ(gp.x, gp.z, rtsStat(u, 'range') + U.alt, fx, fz, -.3);
   if (t){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(rtsMuzzle(u, new THREE.Vector3()), t, 'z', S2); }
   else if (u.nest && !u.nest.dead){ const n = u.nest, nd = Math.hypot(n.x - gp.x, n.z - gp.z) || 1; if (nd < S2.range + n.r + U.alt && ((n.x - gp.x) * fx + (n.z - gp.z) * fz) / nd > -.3){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(rtsMuzzle(u, new THREE.Vector3()), n, 'nest', S2); } }
+}
+// AC-130 : il tourne en virage à gauche autour d'un point, les canons du flanc gauche pointés vers le centre
+function rtsGunshipFly(u, dt, cx, cz){
+  const U = u.U, gp = u.g.position, spd = rtsStat(u, 'speed'), R = U.orbit;
+  const a = Math.atan2(gp.x - cx, gp.z - cz), d = Math.hypot(gp.x - cx, gp.z - cz);
+  const aim = d > R * 1.6 ? null : a - .35;            // un point un peu plus loin sur le cercle (sens des aiguilles vu de haut = virage à gauche)
+  const tx = aim == null ? cx : cx + Math.sin(aim) * R, tz = aim == null ? cz : cz + Math.cos(aim) * R;
+  const want = Math.atan2(tx - gp.x, tz - gp.z), df = Math.atan2(Math.sin(want - u.head), Math.cos(want - u.head));
+  u.head += clamp(df, -U.turn * dt, U.turn * dt);
+  gp.x += Math.sin(u.head) * spd * dt; gp.z += Math.cos(u.head) * spd * dt; gp.y += (U.alt - gp.y) * Math.min(1, dt);
+  u.g.rotation.set(0, u.head, d < R * 1.6 ? .32 : 0);    // il penche vers le centre
+  rtsClampValley(gp, true);
+}
+function rtsGunship(u, dt, cx, cz){
+  rtsGunshipFly(u, dt, cx, cz);
+  const gp = u.g.position, from = rtsMuzzle(u, new THREE.Vector3());
+  u.scanT = (u.scanT || 0) - dt;
+  if (u.scanT <= 0){ u.scanT = .3; u.tgt = rtsPickTarget(u, rtsStat(u, 'range'), 6); }
+  const t = u.tgt && !u.tgt.dead ? u.tgt : null, n = u.nest && !u.nest.dead && Math.hypot(u.nest.x - gp.x, u.nest.z - gp.z) < rtsStat(u, 'range') ? u.nest : null;
+  if (u.cd <= 0 && (t || n)){ u.cd = 1 / rtsStat(u, 'rate'); rtsHit(from, t || n, t ? 'z' : 'nest', rtsS2(u)); }
+  if (u.cd2 <= 0 && (t || n)){ u.cd2 = 1 / rtsRate2(u); rtsHit(from, t || n, t ? 'z' : 'nest', rtsS2b(u)); }
 }
 function rtsUnits(dt){
   for (const u of RTS.units){
@@ -936,6 +969,7 @@ function rtsCamStep(dt){
 function rtsFrame(dt){
   if (!RTS.on) return;
   if (RTS.pilot) rtsPilotCam(); else if (state === 'rts' || state === 'rtsover') rtsCamStep(dt);
+  if (RTS.pilot && RTS.pilot.U.gunship && camera.fov !== 38){ camera.fov = 38; camera.updateProjectionMatrix(); } // zoom du canonnier (le zoom du jeu ne s'en mêle pas)
   if (RTS.sky) RTS.sky.position.set(camera.position.x, 0, camera.position.z); // le ciel suit la caméra
   // En pilotage, les barres de vie trop proches des yeux sont cachées (sinon elles bouchent la vue)
   if (RTS.pilot || RTS.hpHid){
@@ -954,7 +988,7 @@ function rtsFrame(dt){
 
 /* ---------- Pilotage à la première personne ---------- */
 // Robots, tank et hélicoptère : on avance dans la direction du regard ; avions : toujours en avant, on vire à gauche ou à droite.
-const RTS_EYE = { rob:2.6, tank:3.1, heli:.4, air:.6, big:5.4 };
+const RTS_EYE = { rob:2.6, tank:3.1, heli:.4, air:.6, big:5.4, gun:-1.6 };
 function rtsPilot(u){
   if (!u || u.dead || state !== 'rts' || !RTS.on) return false;
   if (RTS.pilot) rtsUnpilot();
@@ -966,7 +1000,14 @@ function rtsPilot(u){
   rtsInfo.classList.add('hide');
   document.body.classList.add('piloting'); rtsUI.classList.add('piloting'); rtsPilotUI.classList.remove('hide'); rtsPilotUI.classList.toggle('touch', isTouch); $('cross').classList.remove('hide');
   $('rtrpName').textContent = '🎮 ' + u.U.name;
-  rtsPilotUI.classList.toggle('w2', !!u.U.w2); $('rtrpFire').textContent = u.U.w2 ? 'Minigun' : 'Tir';
+  rtsPilotUI.classList.toggle('w2', !!u.U.w2); $('rtrpFire').textContent = u.U.w1 || 'Tir'; $('rtrpFire2').textContent = u.U.w2 ? u.U.w2.name : '';
+  rtsPilotUI.classList.toggle('ac', !!u.U.gunship);
+  if (u.U.gunship){
+    const c = u.oc || [u.g.position.x, u.g.position.z - 30]; RTS.acC = { x:c[0], z:c[1] };
+    const gp = u.g.position, dx = RTS.acC.x - gp.x, dz = RTS.acC.z - gp.z;
+    P2.yaw = Math.atan2(-dx, -dz); P2.pitch = -Math.atan2(gp.y, Math.hypot(dx, dz) || 1);
+    RTS.fov0 = camera.fov; camera.fov = 38; camera.updateProjectionMatrix(); canvas.classList.add('rt-ac');
+  }
   rtsPilotUI.classList.toggle('rp-mech', !!u.U.big);
   if (!isTouch && typeof lockPointer === 'function') lockPointer();
   return true;
@@ -980,6 +1021,7 @@ function rtsUnpilot(){
     u.hpb.bg.visible = u.hpb.fg.visible = true; u.cmd = 'idle'; u.nest = null; u.retreat = false; u.tx = u.hx = u.g.position.x; u.tz = u.hz = u.g.position.z;
     RTS.cam.x = u.g.position.x; RTS.cam.z = u.g.position.z;
   }
+  if (RTS.fov0){ camera.fov = RTS.fov0; camera.updateProjectionMatrix(); RTS.fov0 = 0; } canvas.classList.remove('rt-ac');
   RTS.sel.length = 0; RTS.bsel = null; if (typeof rtsInfo !== 'undefined' && rtsInfo) rtsInfo.classList.add('hide');
   document.body.classList.remove('piloting');
   if (rtsUI){ rtsUI.classList.remove('piloting'); rtsPilotUI.classList.add('hide'); }
@@ -992,7 +1034,15 @@ function rtsPilotStep(dt){
   const U = u.U, gp = u.g.position, spd = rtsStat(u, 'speed');
   P2.pitch = clamp(P2.pitch, -1.2, .5);
   const fwdIn = clamp(P2.mv.f - P2.mv.b - P2.joy.dy, -1, 1), sideIn = clamp(P2.mv.r - P2.mv.l + P2.joy.dx, -1, 1);
-  if (U.kind === 'air'){
+  if (U.gunship){
+    const C = RTS.acC, sy = Math.sin(P2.yaw), cy = Math.cos(P2.yaw), mv = 14 * dt;
+    C.x += (-sy * fwdIn + cy * sideIn) * mv; C.z += (-cy * fwdIn - sy * sideIn) * mv;
+    C.x = clamp(C.x, -160, 160); C.z = clamp(C.z, RTS.zMin, 20);
+    const b0 = Math.atan2(-(C.x - gp.x), -(C.z - gp.z));
+    rtsGunshipFly(u, dt, C.x, C.z);
+    // La vue reste accrochée au sol pendant que l'avion tourne
+    const b1 = Math.atan2(-(C.x - gp.x), -(C.z - gp.z)); P2.yaw += Math.atan2(Math.sin(b1 - b0), Math.cos(b1 - b0));
+  } else if (U.kind === 'air'){
     P2.yaw -= sideIn * U.turn * dt * 1.3;                                       // on vire
     const k = 1 + Math.max(0, fwdIn) * .4 - Math.max(0, -fwdIn) * .4;           // un peu plus ou moins vite
     gp.x += -Math.sin(P2.yaw) * spd * k * dt; gp.z += -Math.cos(P2.yaw) * spd * k * dt; gp.y += (U.alt - gp.y) * Math.min(1, dt);
@@ -1010,6 +1060,7 @@ function rtsPilotStep(dt){
   }
   // Tir : vers ce qui est au centre de l'écran (zombie, nid, sinon le sol)
   const firing = P2.fire || (isTouch && P2.aim.id !== null);
+  if (U.gunship && P2.fire2 && u.cd2 <= 0){ u.cd2 = 1 / rtsRate2(u); rtsPilotShot(u, rtsS2b(u)); shake = Math.max(shake, .25); }
   if (U.big){ // minigun : elle monte en régime avant de tirer, avec le vrai son continu du mode robot
     RTS.spin = clamp(RTS.spin + (firing ? dt / .35 : -dt / .8), 0, 1);
     try { if (typeof Snd === 'object' && Snd.mgTick) Snd.mgTick(RTS.spin, firing && RTS.spin >= 1); } catch (e) {}
@@ -1020,6 +1071,7 @@ function rtsPilotStep(dt){
   u.cd = 1 / rtsStat(u, 'rate');
   const S2 = rtsS2(u);
   if (U.bomb){ rtsHit(rtsMuzzle(u, new THREE.Vector3()), { x:gp.x + rand(-1, 1), z:gp.z + rand(-1, 1) }, 'pt', S2); return; }
+  if (U.gunship){ rtsPilotShot(u, S2); return; }
   if (U.big) S2.snd = null; // le son vient de mgTick
   rtsPilotShot(u, S2, U.big ? -1.8 : 0);
 }
@@ -1053,9 +1105,9 @@ function rtsPilotCam(){
   const u = RTS.pilot; if (!u) return;
   const P2 = RTS.pv, gp = u.g.position, U = u.U, cat = U.cat === 'rob' ? 'rob' : u.type === 'tank' ? 'tank' : U.kind === 'heli' ? 'heli' : 'air';
   const bob = cat === 'rob' ? Math.abs(Math.sin(u.step * 2)) * .12 : 0;
-  const ey = U.big ? RTS_EYE.big + Math.sin(u.step * 2) * .09 : (U.kind === 'ground' ? RTS_EYE[cat] * (cat === 'rob' ? RTS_SC * (u.type === 'heavy' ? 1.5 : 1) : 1) : gp.y + RTS_EYE[cat]) + bob;
+  const ey = U.gunship ? gp.y + RTS_EYE.gun : U.big ? RTS_EYE.big + Math.sin(u.step * 2) * .09 : (U.kind === 'ground' ? RTS_EYE[cat] * (cat === 'rob' ? RTS_SC * (u.type === 'heavy' ? 1.5 : 1) : 1) : gp.y + RTS_EYE[cat]) + bob;
   camera.position.set(gp.x - Math.sin(P2.yaw) * .4, ey, gp.z - Math.cos(P2.yaw) * .4);
-  camera.rotation.order = 'YXZ'; camera.rotation.set(P2.pitch, P2.yaw, U.kind === 'air' ? u.g.rotation.z * .5 : 0);
+  camera.rotation.order = 'YXZ'; camera.rotation.set(P2.pitch, P2.yaw, U.gunship ? 0 : U.kind === 'air' ? u.g.rotation.z * .5 : 0);
 }
 
 /* ---------- Affichage ---------- */
@@ -1064,13 +1116,14 @@ rtsUI.innerHTML = '<div id="rtTop"><span id="rtMoney"></span><span id="rtThreat"
   + '<div id="rtBase"><span>QG</span><div class="mk-bar"><i id="rtBaseFill"></i></div></div>'
   + '<div id="rtBoss" class="hide"><span id="rtBossName"></span><div class="mk-bar"><i id="rtBossFill"></i></div></div>'
   + '<button id="rtPause" type="button" aria-label="Pause">❚❚</button>'
-  + '<div id="rtPlace" class="hide"><span id="rtPlaceTxt"></span><button type="button" id="rtOk">Poser ici</button><button type="button" id="rtCancel">Annuler</button></div>'
+  + '<div id="rtPlace" class="hide"><span id="rtPlaceTxt"></span><button type="button" id="rtRot">↻ Tourner</button><button type="button" id="rtOk">Poser ici</button><button type="button" id="rtCancel">Annuler</button></div>'
   + '<div id="rtDock"><div id="rtTabs"><button type="button" data-tab="rob">Robots</button><button type="button" data-tab="veh">Véhicules</button><button type="button" data-tab="bat">Bâtiments</button><button type="button" data-tab="tour">Tourelles</button><button type="button" data-tab="upg">Améliorations</button></div><div id="rtBar"></div></div>';
 document.body.appendChild(rtsUI);
 const rtsPilotUI = document.createElement('div'); rtsPilotUI.id = 'rtPilot'; rtsPilotUI.className = 'hide';
 rtsPilotUI.innerHTML = '<div id="rtrpTop"><span id="rtrpName"></span><button type="button" id="rtrpExit">Retour à la carte</button></div>'
+  + '<div id="rtrpAc"><i></i><i></i><i></i><i></i><span>AC-130 · manette : déplacer la zone visée</span></div>'
   + '<div id="rtrpJoy"><div id="rtrpKnob"></div></div><div id="rtrpAim"></div><button type="button" id="rtrpFire">Tir</button><button type="button" id="rtrpFire2">Roquettes</button>'
-  + '<div id="rtrpHelp">ZQSD ou WASD : bouger · souris : viser · clic : tirer · clic droit : roquettes (Mech) · F ou Échap : retour à la carte</div>';
+  + '<div id="rtrpHelp">ZQSD ou WASD : bouger · souris : viser · clic : tirer · clic droit : arme lourde (Mech, AC-130) · F ou Échap : retour à la carte</div>';
 document.body.appendChild(rtsPilotUI);
 const rtsInfo = document.createElement('div'); rtsInfo.id = 'rtInfo'; rtsInfo.className = 'hide'; document.body.appendChild(rtsInfo);
 const rtsPanel = document.createElement('div'); rtsPanel.id = 'rtsPanel'; rtsPanel.className = 'hide'; document.body.appendChild(rtsPanel);
@@ -1086,7 +1139,7 @@ function rtsTab(t){
   rtsUI.querySelectorAll('#rtTabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   const bar = $('rtBar'); let h = '';
   if (t === 'rob' || t === 'veh'){
-    h = RTS_ORDER.filter(k => RTS_UNITS[k].cat === t).map(k => { const i = RTS_HOTKEY.indexOf(k); return '<button type="button" class="rt-buy" data-t="' + k + '">' + RTS_UNITS[k].name + '<b>' + fmt(RTS_UNITS[k].cost) + '</b>' + (isTouch || i < 0 ? '' : '<i>' + (i + 1) + '</i>') + '</button>'; }).join('')
+    h = RTS_ORDER.filter(k => RTS_UNITS[k].cat === t).map(k => { const i = RTS_HOTKEY.indexOf(k); return '<button type="button" class="rt-buy' + (RTS_UNITS[k].big ? ' rt-star' : '') + '" data-t="' + k + '">' + RTS_UNITS[k].name + '<b>' + fmt(RTS_UNITS[k].cost) + '</b><em></em>' + (isTouch || i < 0 ? '' : '<i>' + (i + 1) + '</i>') + '</button>'; }).join('')
       + '<button type="button" id="rtAll">Tout choisir</button><button type="button" id="rtStop">Arrêt</button><button type="button" id="rtPil">🎮 Piloter</button>';
   } else if (t === 'bat' || t === 'tour'){
     h = RTS_BUILD_TABS[t].map(k => '<button type="button" class="rt-bld" data-b="' + k + '">' + RTS_BLD[k].name + '<b>' + fmt(RTS_BLD[k].cost) + '</b></button>').join('');
@@ -1165,7 +1218,10 @@ function rtsHUD(){
   let boss = null; for (const z of zombies) if (!z.dead && z.rtsBoss){ boss = z; break; }
   const bb = $('rtBoss'); if (bb){ if (bb.classList.contains('hide') === !!boss) bb.classList.toggle('hide', !boss); if (boss){ set('rtBossName', '☠ ' + ZTYPES[boss.type].name); $('rtBossFill').style.width = (clamp(boss.hp / boss.maxHp, 0, 1) * 100).toFixed(1) + '%'; } }
   if (RTS.pilot){ const u = RTS.pilot; set('rtrpName', '🎮 ' + u.U.name + ' · ' + Math.ceil(u.hp) + ' / ' + Math.ceil(u.maxHp)); }
-  rtsUI.querySelectorAll('.rt-buy').forEach(b => { const off = S.money < RTS_UNITS[b.dataset.t].cost || !rtsFactoryFor(b.dataset.t); if (b.classList.contains('off') !== off) b.classList.toggle('off', off); });
+  rtsUI.querySelectorAll('.rt-buy').forEach(b => {
+    const fac = rtsFactoryFor(b.dataset.t), off = S.money < RTS_UNITS[b.dataset.t].cost || !fac; if (b.classList.contains('off') !== off) b.classList.toggle('off', off);
+    const em = b.querySelector('em'), need = fac ? '' : 'Il faut : ' + RTS_BLD[RTS_UNITS[b.dataset.t].fac].name; if (em && em.textContent !== need) em.textContent = need;
+  });
   rtsUI.querySelectorAll('.rt-bld').forEach(b => { const off = S.money < RTS_BLD[b.dataset.b].cost; if (b.classList.contains('off') !== off) b.classList.toggle('off', off); });
   if ((RTS.bsel || RTS.sel.length === 1) && !RTS.pilot && !rtsInfo.classList.contains('hide') && Math.random() < .1) rtsInfoShow();
 }
@@ -1197,7 +1253,7 @@ function rtsStartPlace(type){
   rtsCancelPlace();
   RTS.place = type; RTS.sel.length = 0; RTS.bsel = null; rtsInfoShow();
   rtsGridBuild();
-  rtsGhost = new THREE.Mesh(rtsBldGeo(type), rtsGhostOk); scene.add(rtsGhost);
+  rtsGhost = new THREE.Mesh(rtsBldGeo(type), rtsGhostOk); rtsGhost.rotation.y = RTS.placeRot * Math.PI / 2; scene.add(rtsGhost);
   rtsFoot = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), rtsFootOk); rtsFoot.rotation.x = -Math.PI / 2; rtsFoot.scale.set(B.size * 2, B.size * 2, 1); scene.add(rtsFoot);
   // Départ : au centre de l'écran s'il est dans la base, sinon un peu au nord du QG
   const inB = Math.hypot(RTS.cam.x, RTS.cam.z) < RTS.baseR - B.size;
@@ -1218,10 +1274,12 @@ function rtsGhostAt(x, z){
   rtsGhost.position.set(x, .05, z); rtsGhost.material = why ? rtsGhostNo : rtsGhostOk;
   if (rtsFoot){ rtsFoot.position.set(x, .12, z); rtsFoot.material = why ? rtsFootNo : rtsFootOk; }
   RTS.ghost = { x, z, ok:!why };
-  const t = $('rtPlaceTxt'); if (t) t.textContent = B.name + ' : ' + (why || (isTouch ? 'glisse-le sur la grille, puis Poser ici' : 'clique pour poser'));
+  const t = $('rtPlaceTxt'); if (t) t.textContent = B.name + ' : ' + (why || (isTouch ? 'glisse-le sur la grille, puis Poser ici' : 'clique pour poser, R pour tourner'));
   const ok = $('rtOk'); if (ok) ok.disabled = !!why;
 }
-function rtsPlaceAt(x, z){ const t = RTS.place; if (!t) return false; const o = rtsBuild(t, rtsSnap(x), rtsSnap(z)); if (o){ rtsCancelPlace(); return true; } return false; }
+// Tourner le bâtiment d'un quart de tour (bouton ou touche R) ; l'angle est gardé pour le suivant
+function rtsRotate(){ RTS.placeRot = ((RTS.placeRot || 0) + 1) % 4; if (rtsGhost) rtsGhost.rotation.y = RTS.placeRot * Math.PI / 2; return RTS.placeRot; }
+function rtsPlaceAt(x, z){ const t = RTS.place; if (!t) return false; const o = rtsBuild(t, rtsSnap(x), rtsSnap(z), RTS.placeRot || 0); if (o){ rtsCancelPlace(); return true; } return false; }
 
 /* ---------- Commandes ---------- */
 function rtsNdc(cx, cy){ return new THREE.Vector2(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1); }
@@ -1299,6 +1357,7 @@ const RTS_KEYS = { KeyW:'f', KeyZ:'f', ArrowUp:'f', KeyS:'b', ArrowDown:'b', Key
 document.addEventListener('keydown', e => {
   if (state !== 'rts') return;
   if (RTS_KEYS[e.code]){ if (RTS.pilot) RTS.pv.mv[RTS_KEYS[e.code]] = 1; else RTS.keys[RTS_KEYS[e.code]] = 1; e.preventDefault(); }
+  else if (e.code === 'KeyR' && RTS.place){ rtsRotate(); }
   else if (e.code === 'KeyF' && !RTS.paused){ if (RTS.pilot) rtsUnpilot(); else rtsPilotSel(); }
   else if (!RTS.pilot && /^Digit[1-9]$/.test(e.code)){ const t = RTS_HOTKEY[+e.code.slice(-1) - 1]; if (t) rtsBuy(t); }
   else if (e.code === 'Space'){ if (RTS.pilot) RTS.pv.fire = true; else rtsSelect(RTS.units.filter(u => !u.dead), false); e.preventDefault(); }
@@ -1374,6 +1433,7 @@ document.addEventListener('keyup', e => { if (RTS_KEYS[e.code]){ RTS.keys[RTS_KE
 rtsUI.querySelectorAll('#rtTabs button').forEach(b => b.addEventListener('click', () => rtsTab(b.dataset.tab)));
 $('rtPause').addEventListener('click', () => rtsPause());
 $('rtCancel').addEventListener('click', () => rtsCancelPlace());
+$('rtRot').addEventListener('click', () => rtsRotate());
 $('rtOk').addEventListener('click', () => { if (RTS.ghost) rtsPlaceAt(RTS.ghost.x, RTS.ghost.z); });
 (function(){
   const ref = $('btnMech') || $('btnStart');
@@ -1403,4 +1463,4 @@ document.addEventListener('pointerlockchange', () => { if (state === 'rts' && RT
 // Accès pour les tests automatiques
 window.__rts = { RTS, RTS_UNITS, RTS_CFG, RTS_BLD, RTS_UPG, RTS_ROAD, RTS_BOSS, rtsStart, rtsQuit, rtsBuy, rtsStep, rtsSelect, rtsOrder, rtsPick, rtsSpawnUnit, rtsSpawnAt, rtsNestDie, rtsEnd, rtsPause,
   rtsBuild, rtsBldOk, rtsPlaceBld, rtsTurretUp, rtsSell, rtsUpgBuy, rtsUpgCost, rtsStat, rtsTStat, rtsStartPlace, rtsPlaceAt, rtsTap, rtsTab, rtsInfoShow,
-  rtsGhostAt, rtsSnap, rtsPilot, rtsUnpilot, rtsPilotSel, rtsPilotStep, rtsValleyX, rtsRoadDist, rtsClampValley, rtsRoadNext, rtsRoadX, rtsAddNest, rtsFront, rtsPickTarget, RTS_KITE };
+  rtsGhostAt, rtsSnap, rtsRotate, rtsGunship, rtsPilot, rtsUnpilot, rtsPilotSel, rtsPilotStep, rtsValleyX, rtsRoadDist, rtsClampValley, rtsRoadNext, rtsRoadX, rtsAddNest, rtsFront, rtsPickTarget, RTS_KITE };

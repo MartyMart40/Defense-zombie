@@ -53,6 +53,8 @@ Les prix exacts sont dans `RTS_UNITS` et `RTS_BLD` (`js/41-rts.js`) : si un chif
 - Apache (l'hélicoptère) : canon rotatif de 30 mm sous le nez et missiles Hellfire dès l'achat (les améliorations les renforcent), roquettes Hydra. Poste : vue du casque, verrière, écrans, canon qui tourne quand il tire, Hellfire sur les ailettes qui disparaissent quand ils partent.
 - Chasseur : canon de 20 mm (75 dégâts, 10 coups/s), 200 obus ; Warthog : canon de 30 mm, 660 obus. AC-130 : 100 obus de 40 mm et 20 de 105 mm. À sec, l'avion retourne à l'aérodrome le plus proche refaire le plein (3 à 6 s au-dessus). Piloté : on y retourne soi-même, le viseur donne la distance.
 - 2 avions par aérodrome : pour plus d'avions, il faut plus d'aérodromes.
+- AC-130 : vole à 60 m (il était à 30 m : le sol défilait trop vite pour viser), portée 95 m, zoom 30° au 40 mm et 20° au 105 mm.
+- 2e arme (Hellfire, 105 mm, roquettes du Mech) : gros texte au centre quand elle part ; si on appuie avant qu'elle soit prête, le temps restant ou « À SEC ». Les petits robots n'ont qu'une arme.
 - À l'ordi : clic gauche = 1re arme, clic droit ou touche E = 2e arme ; les deux marchent ensemble (le clic droit pendant qu'on tient le clic gauche est lu dans l'état des boutons).
 - Les tirs du joueur partent du bout du canon qu'on voit à l'écran (canon du tank, coaxiale, canon rotatif et nacelles de l'Apache, canon du chasseur, 40 mm et 105 mm).
 - Apache : canon rotatif de 30 mm à 26 coups/s, montée en régime, grondement continu du minigun, poste et écran qui vibrent.

@@ -143,7 +143,7 @@ function rtsPilotStep(dt){
   if (U.big){ // minigun : elle monte en régime avant de tirer, avec le vrai son continu du mode robot
     RTS.spin = clamp(RTS.spin + (firing ? dt / .35 : -dt / .8), 0, 1);
     try { if (typeof Snd === 'object' && Snd.mgTick) Snd.mgTick(RTS.spin, firing && RTS.spin >= 1); } catch (e) { errNote(e); }
-    if (P2.fire2 && u.cd2 <= 0){ u.cd2 = 1 / rtsRate2(u); rtsPilotShot(u, rtsS2b(u), 1.8); try { Snd.shot('rocket'); } catch (e) { errNote(e); } if (typeof mechFlashR !== 'undefined'){ mechFlashR.visible = true; setTimeout(() => { mechFlashR.visible = false; }, 70); } }
+    if (P2.fire2 && u.cd2 <= 0){ u.cd2 = 1 / rtsRate2(u); rtsPilotShot(u, rtsS2b(u), 1.8); if (typeof rtsArme2Flash === 'function') rtsArme2Flash(u); try { Snd.shot('rocket'); } catch (e) { errNote(e); } if (typeof mechFlashR !== 'undefined'){ mechFlashR.visible = true; setTimeout(() => { mechFlashR.visible = false; }, 70); } }
     if (firing && RTS.spin < 1) return;
   }
   if (!firing || u.cd > 0) return;

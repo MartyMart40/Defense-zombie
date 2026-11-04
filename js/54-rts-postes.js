@@ -167,6 +167,7 @@ function rtsPosteNext(){ const L = ['ck', 'c40', 'c105']; return rtsPosteSet(L[(
 // Un tir du joueur : recul, éclair, missile qui part
 function rtsPosteShot(u, kind){
   if (!u || RTS.pilot !== u) return;
+  if (kind === 'w2') rtsArme2Flash(u); // gros texte au centre : on voit bien que la 2e arme est partie
   if (u.U.gunship){ rtsPosteSet(kind === 'w2' ? 'c105' : 'c40'); PT.k[kind === 'w2' ? 'ac105' : 'ac40'] = 1; if (kind === 'w2') shake = Math.max(shake, .08 + .35 * ptAmp()); return; }
   const id = rtsPosteId(u); if (!id) return;
   if (id === 'heli' && kind === 'w2'){ const m = PT.mis.find(x => x.visible); if (m){ m.visible = false; setTimeout(() => { m.visible = true; }, 2800); } return; }
@@ -205,7 +206,7 @@ function rtsPosteCam(u){
   camera.position.set(gp.x + Math.sin(f) * 9, gp.y + 1.2, gp.z + Math.cos(f) * 9);
   camera.rotation.order = 'YXZ'; camera.rotation.set(-.16, f + Math.PI, -(u.g.rotation.z || 0) * .6);
 }
-function rtsPosteFov(u){ if (!u.U.gunship) return null; return PT.acPost === 'ck' ? 62 : PT.acPost === 'c105' ? 26 : 38; }
+function rtsPosteFov(u){ if (!u.U.gunship) return null; return PT.acPost === 'ck' ? 62 : PT.acPost === 'c105' ? 20 : 30; } // plus serré : l'avion vole deux fois plus haut
 
 /* ---------- AC-130 : les canons sont sur le flanc gauche ---------- */
 // Le champ de tir est fixé à l'avion : 34° de chaque côté de la perpendiculaire gauche, et une plage de hauteur.
@@ -267,6 +268,7 @@ rtsViewBtn.addEventListener('click', () => rtsPosteNext()); rtsViewBtn.addEventL
 rtsPilotUI.appendChild(rtsViewBtn);
 document.addEventListener('keydown', e => { if (state === 'rts' && RTS.pilot && !RTS.paused && e.code === 'KeyV') rtsPosteNext(); });
 function rtsPosteHud(now, dt){
+  PT.clk = (PT.clk || 0) + (dt || 0); rtsArme2Appui();
   PT.hudT -= dt || 0; if (!now && PT.hudT > 0) return; PT.hudT = .15;
   const u = RTS.pilot; if (!u || !u.U){ rtsPosteHudEl.textContent = ''; return; }
   const s = x => Math.max(0, x).toFixed(1).replace('.', ',') + ' s';
@@ -281,8 +283,48 @@ function rtsPosteHud(now, dt){
     if (a.w1 <= 0){ const N = rtsNearAirfield(u.g.position.x, u.g.position.z); t += ' · À SEC : ' + (N ? 'retourne à l’aérodrome (' + Math.round(N.d) + ' m)' : 'aucun aérodrome'); }
     if (u.rearmT > 0) t += ' · PLEIN EN COURS';
   }
+  if (u.U.big) t = 'MINIGUN';
+  const e2 = rtsArme2Etat(u);
+  if (e2 && u.type !== 'heli') t += (t ? ' · ' : '') + rtsArme2Nom(u).toUpperCase() + ' ' + e2;
+  if (e2 && !isTouch) t += ' · 2e arme : clic droit ou E';
   rtsPosteHudEl.textContent = t;
+  rtsArme2Bouton(u, e2);
+}
+
+/* ---------- 2e arme : bien la voir (Hellfire, 105 mm, roquettes du Mech) ---------- */
+// Au tir : gros texte au centre (« HELLFIRE ! »), secousse. Si elle n'est pas prête : « HELLFIRE : 2,1 s » ou « À SEC ».
+// Au cell, le bouton jaune affiche son état et pâlit quand elle recharge.
+const rtsA2El = document.createElement('div'); rtsA2El.id = 'rtrpA2'; rtsPilotUI.appendChild(rtsA2El);
+const rtsArme2Nom = u => (u.U.w2 ? u.U.w2.name : (u.U.w2n || ''));
+function rtsArme2Etat(u){
+  const s = x => Math.max(0, x).toFixed(1).replace('.', ',') + ' s';
+  if (u.type === 'heli') return (u.cd4 || 0) > 0 ? s(u.cd4) : 'PRÊT';
+  if (!u.U.w2) return null;
+  if (RTS_AMMO[u.type] && RTS_AMMO[u.type].w2 != null && rtsAmmoInit(u).w2 <= 0) return 'À SEC';
+  return u.cd2 > 0 ? s(u.cd2) : 'PRÊT';
+}
+function rtsA2Texte(txt, classe){
+  rtsA2El.textContent = txt; rtsA2El.className = '';
+  void rtsA2El.offsetWidth; rtsA2El.className = classe; // relance l'animation
+  PT.a2 = { txt, classe };
+}
+function rtsArme2Flash(u){
+  rtsA2Texte('🚀 ' + rtsArme2Nom(u).toUpperCase() + ' !', 'tir'); PT.a2tir = PT.clk || 0;
+  shake = Math.max(shake, .3);
+  try { if (typeof Snd === 'object' && Snd.shot && !u.U.gunship) Snd.shot('rocket'); } catch (e) { errNote(e); }
+}
+// On appuie sur la 2e arme alors qu'elle n'est pas prête : on le dit (sinon on croit que le bouton ne marche pas)
+function rtsArme2Appui(){
+  const u = RTS.pilot, f2 = !!(RTS.pv && RTS.pv.fire2);
+  if (u && u.U && f2 && !PT.f2av && !(PT.a2tir != null && (PT.clk || 0) - PT.a2tir < .2)){ const e2 = rtsArme2Etat(u); if (e2 && e2 !== 'PRÊT') rtsA2Texte(rtsArme2Nom(u).toUpperCase() + ' : ' + e2, 'attente'); }
+  PT.f2av = f2;
+}
+function rtsArme2Bouton(u, e2){
+  const b = $('rtrpFire2'); if (!b || !e2) return;
+  const html = rtsArme2Nom(u) + '<br><small>' + (e2 === 'PRÊT' ? 'prêt' : e2) + '</small>';
+  if (b.innerHTML !== html) b.innerHTML = html;
+  b.classList.toggle('recharge', e2 !== 'PRÊT');
 }
 
 // Accès pour les tests automatiques
-window.__rtsPostes = { AC_CONE, rtsAcCone, rtsAcFlanc, rtsAcLeft, rtsPosteMuzzle, rtsApacheGun, RTS_AMMO, RTS_AIR_CAP, PT, rtsAmmoUse, rtsAmmoInit, rtsAmmoFill, rtsAirRoom, rtsRearmAI, rtsRearmPilot, rtsNearAirfield, rtsPosteId, rtsPosteOn, rtsPosteOff, rtsPosteSet, rtsPosteNext, rtsPosteShot, rtsPosteFrame, rtsPosteFov };
+window.__rtsPostes = { rtsArme2Etat, rtsArme2Flash, rtsArme2Nom, AC_CONE, rtsAcCone, rtsAcFlanc, rtsAcLeft, rtsPosteMuzzle, rtsApacheGun, RTS_AMMO, RTS_AIR_CAP, PT, rtsAmmoUse, rtsAmmoInit, rtsAmmoFill, rtsAirRoom, rtsRearmAI, rtsRearmPilot, rtsNearAirfield, rtsPosteId, rtsPosteOn, rtsPosteOff, rtsPosteSet, rtsPosteNext, rtsPosteShot, rtsPosteFrame, rtsPosteFov };

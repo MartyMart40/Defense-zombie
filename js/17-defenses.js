@@ -402,3 +402,5 @@ window.__atelier = { DEF_TYPES, DEF_SLOTS, DEF_ORDER, DEF_LINES, defStats, defSo
   openAtelier, renderAtelier, defRebuild, defUpdate, get RT(){ return RT; }, defRoot, fxRoot, clearFx,
   SYN_SAME, SYN_SAME_NUKE, SYN_COMBOS, SYN, defSynergies, defSynMods, defStatsSyn, defSynText, TICK, splash, get synLinks(){ return synLinks; } };
 window.__syn = { SYN_SAME, SYN_SAME_NUKE, SYN_COMBOS, SYN, defSynergies, defSynMods, defStatsSyn, defSynText, defSynGain, renderSynergies, TICK, updateFx, get RT(){ return RT; }, get synLinks(){ return synLinks; } };
+// Les tours du toit n'ont rien à faire dans la vallée du RTS : cachées pendant la guerre des robots
+Jeu.on('image', () => { defRoot.visible = !(typeof RTS !== 'undefined' && RTS.on); });

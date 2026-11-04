@@ -601,3 +601,12 @@ canvas.rt-ac105{ filter:grayscale(1) invert(1) contrast(1.5) brightness(.95); } 
 #rtrpView{ position:absolute; z-index:3; left:calc(14px + env(safe-area-inset-left,0px)); top:calc(150px + env(safe-area-inset-top,0px)); pointer-events:auto; touch-action:manipulation; padding:10px 14px; font-size:15px; border-radius:8px; border:1px solid #9aff70; background:rgba(10,20,14,.85); color:#9aff70; font-weight:800; }
 #rtrpView.hide{ display:none; }
 #rtPilot.touch #rtrpView{ top:auto; left:calc(26px + env(safe-area-inset-left,0px)); bottom:calc(172px + env(safe-area-inset-bottom,0px)); }
+
+/* 2e arme du pilotage RTS (js/54-rts-postes.js) : gros texte au tir, rappel quand elle recharge */
+#rtrpA2{ position:absolute; left:50%; top:30%; transform:translate(-50%,-50%); font-weight:900; font-size:30px; letter-spacing:.08em; color:#ffd040; text-shadow:0 2px 8px #000, 0 0 18px rgba(255,140,40,.8); opacity:0; pointer-events:none; white-space:nowrap; }
+#rtrpA2.tir{ animation:rtA2tir 1.1s ease-out forwards; }
+#rtrpA2.attente{ color:#ffffff; font-size:18px; text-shadow:0 1px 4px #000; animation:rtA2att 1.2s ease-out forwards; }
+@keyframes rtA2tir{ 0%{ opacity:1; transform:translate(-50%,-50%) scale(1.6); } 25%{ opacity:1; transform:translate(-50%,-50%) scale(1); } 100%{ opacity:0; transform:translate(-50%,-60%) scale(1); } }
+@keyframes rtA2att{ 0%{ opacity:1; } 70%{ opacity:1; } 100%{ opacity:0; } }
+#rtrpFire2 small{ font-weight:700; font-size:11px; }
+#rtrpFire2.recharge{ opacity:.55; }

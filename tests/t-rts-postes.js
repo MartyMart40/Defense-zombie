@@ -58,9 +58,9 @@
       h.cd4 = 0; R.pv.fire2 = true; visuals(1 / 30); R.pv.fire2 = false; o.hellfire = h.cd4 > 1 && P.PT.mis.some(function(m){ return !m.visible; });
       __rts.rtsUnpilot();
       var a = __rts.rtsSpawnUnit('bomber', 0, -40); __rts.rtsPilot(a); visuals(1 / 30);
-      o.ac40 = P.PT.cur === 'ac40' && camera.fov === 38;
+      o.ac40 = P.PT.cur === 'ac40' && camera.fov === 30;
       a.cd2 = 0; R.pv.fire2 = true; visuals(1 / 30); R.pv.fire2 = false; visuals(1 / 30);
-      o.ac105 = P.PT.cur === 'ac105' && camera.fov === 26 && canvas.classList.contains('rt-ac105');
+      o.ac105 = P.PT.cur === 'ac105' && camera.fov === 20 && canvas.classList.contains('rt-ac105');
       document.dispatchEvent(new KeyboardEvent('keydown', { code:'KeyV', bubbles:true })); visuals(1 / 30);
       o.ck = P.PT.cur === 'acCk' && camera.fov === 62 && !canvas.classList.contains('rt-ac');
       a.cd = 0; R.pv.fire = true; visuals(1 / 30); R.pv.fire = false; o.retour40 = P.PT.cur === 'ac40';
@@ -159,5 +159,30 @@
     ok(r.deux, 'Les deux armes ensemble'); ok(r.hellfire, 'Hellfire parti en tenant le canon');
     ok(r.droitLache, 'Clic droit lâché : la 2e arme arrête, le canon continue'); ok(r.tousLaches, 'Tout lâché');
     ok(r.e && r.eLache, 'Touche E : 2e arme'); ok(r.obus, '105 mm de l’AC-130 parti avec E');
+  });
+
+  test('Postes : la 2e arme se voit (texte au tir, temps restant si pas prête) ; AC-130 deux fois plus haut ; pas de tours du toit au RTS', () => {
+    exiger(); reset();
+    const r = J(new Function(calme + `
+      var R = calme(), o = {}, P = __rtsPostes; for (var i = 0; i < 3; i++) visuals(1 / 30);
+      o.tours = defRoot.visible;
+      var h = __rts.rtsSpawnUnit('heli', 0, -40); __rts.rtsPilot(h); visuals(1 / 30);
+      h.cd4 = 0; R.pv.fire2 = true; visuals(1 / 30); R.pv.fire2 = false; visuals(1 / 30);
+      var el = document.getElementById('rtrpA2'); o.tir = el.className === 'tir' && /HELLFIRE/.test(el.textContent);
+      for (i = 0; i < 10; i++) visuals(1 / 30); /* un peu plus tard, on réappuie */
+      R.pv.fire2 = true; visuals(1 / 30); R.pv.fire2 = false; visuals(1 / 30);
+      o.attente = el.className === 'attente' && /HELLFIRE : [0-9]/.test(el.textContent);
+      o.etat = P.rtsArme2Etat(h);
+      __rts.rtsUnpilot();
+      var a = __rts.rtsSpawnUnit('bomber', 0, -40); for (i = 0; i < 90; i++) visuals(1 / 30);
+      o.alt = Math.round(a.g.position.y);
+      o.etatAc = P.rtsArme2Etat(a);
+      __rts.rtsQuit(); visuals(1 / 30); o.toursToit = defRoot.visible;
+      return o;
+    `));
+    fin();
+    egal(r.tours, false, 'Les tours du toit sont cachées dans le RTS'); egal(r.toursToit, true, 'Elles reviennent hors du RTS');
+    ok(r.tir, 'Texte « HELLFIRE ! » au tir'); ok(r.attente, 'Texte du temps restant quand elle recharge'); ok(/s$/.test(r.etat), 'État : ' + r.etat);
+    ok(r.alt >= 55, 'AC-130 à 60 m : ' + r.alt); egal(r.etatAc, 'PRÊT', '105 mm prêt');
   });
 })();

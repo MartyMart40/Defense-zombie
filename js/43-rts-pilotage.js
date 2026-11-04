@@ -85,7 +85,7 @@ function rtsUnpilot(){
     return;
   }
   RTS.pv.fire = RTS.pv.fire2 = false; RTS.pv.joy.id = RTS.pv.aim.id = null; RTS.pv.joy.dx = RTS.pv.joy.dy = 0; RTS.spin = 0;
-  if (u && u.U.big){ try { if (typeof Snd === 'object' && Snd.mg) Snd.mgTick(0, false); if (typeof mechCk !== 'undefined') mechCk.visible = false; if (typeof mechArms === 'function') mechArms(); } catch (e) {} }
+  if (u && u.U.big){ try { if (typeof Snd === 'object' && Snd.mg) Snd.mgTick(0, false); if (typeof mechCk !== 'undefined') mechCk.visible = false; if (typeof mechArms === 'function') mechArms(); } catch (e) { errNote(e); } }
   if (u && !u.dead){
     u.m.visible = true; if (u.rotor) u.rotor.visible = true; if (u.g.userData.tail) u.g.userData.tail.visible = true;
     u.hpb.bg.visible = u.hpb.fg.visible = true; u.cmd = 'idle'; u.nest = null; u.retreat = false; u.tx = u.hx = u.g.position.x; u.tz = u.hz = u.g.position.z;
@@ -137,8 +137,8 @@ function rtsPilotStep(dt){
   if (U.gunship && P2.fire2 && u.cd2 <= 0){ u.cd2 = 1 / rtsRate2(u); rtsPilotShot(u, rtsS2b(u)); shake = Math.max(shake, .25); }
   if (U.big){ // minigun : elle monte en régime avant de tirer, avec le vrai son continu du mode robot
     RTS.spin = clamp(RTS.spin + (firing ? dt / .35 : -dt / .8), 0, 1);
-    try { if (typeof Snd === 'object' && Snd.mgTick) Snd.mgTick(RTS.spin, firing && RTS.spin >= 1); } catch (e) {}
-    if (P2.fire2 && u.cd2 <= 0){ u.cd2 = 1 / rtsRate2(u); rtsPilotShot(u, rtsS2b(u), 1.8); try { Snd.shot('rocket'); } catch (e) {} if (typeof mechFlashR !== 'undefined'){ mechFlashR.visible = true; setTimeout(() => { mechFlashR.visible = false; }, 70); } }
+    try { if (typeof Snd === 'object' && Snd.mgTick) Snd.mgTick(RTS.spin, firing && RTS.spin >= 1); } catch (e) { errNote(e); }
+    if (P2.fire2 && u.cd2 <= 0){ u.cd2 = 1 / rtsRate2(u); rtsPilotShot(u, rtsS2b(u), 1.8); try { Snd.shot('rocket'); } catch (e) { errNote(e); } if (typeof mechFlashR !== 'undefined'){ mechFlashR.visible = true; setTimeout(() => { mechFlashR.visible = false; }, 70); } }
     if (firing && RTS.spin < 1) return;
   }
   if (!firing || u.cd > 0) return;

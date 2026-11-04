@@ -425,7 +425,7 @@ function rueFlameCone(id){
 }
 
 /* ---------- Crochets sur le code commun (par réaffectation) ---------- */
-try { const _b = startWave; startWave = function(){ const r = _b.apply(this, arguments); try { rueWave(); } catch (e) {} return r; }; } catch (e) {}
+try { const _b = startWave; startWave = function(){ const r = _b.apply(this, arguments); try { rueWave(); } catch (e) { errNote(e); } return r; }; } catch (e) { errNote(e); }
 try {
   const _b = update;
   update = function(dt){
@@ -435,13 +435,13 @@ try {
     if (state === 'playing') rueStep(dt);
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _b = visuals;
   visuals = function(dt){ const r = _b.apply(this, arguments); if (RUE.active && state !== 'playing' && state !== 'paused') rueClear(); return r; };
-} catch (e) {}
-try { const _b = clearZombies; clearZombies = function(){ const r = _b.apply(this, arguments); rueClear(); return r; }; } catch (e) {}
-try { const _b = buildWorld; buildWorld = function(){ const r = _b.apply(this, arguments); rueClear(); return r; }; } catch (e) {}
+} catch (e) { errNote(e); }
+try { const _b = clearZombies; clearZombies = function(){ const r = _b.apply(this, arguments); rueClear(); return r; }; } catch (e) { errNote(e); }
+try { const _b = buildWorld; buildWorld = function(){ const r = _b.apply(this, arguments); rueClear(); return r; }; } catch (e) { errNote(e); }
 // Rage de tir : dégâts doublés pour les tirs du joueur (balles, flammes, carreaux, roquettes, brûlure)
 try {
   const _b = fire;
@@ -451,46 +451,46 @@ try {
     if (RUE.furyT > 0 && S) S.ammo[S.cur] = magSize(S.cur);
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   if (typeof armStep === 'function'){
     const _b = armStep;
     armStep = function(){ RUE.shot = true; try { return _b.apply(this, arguments); } finally { RUE.shot = false; } };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _b = damage;
   damage = function(z, amt, head, point){
     if (RUE.furyT > 0 && RUE.shot) amt *= RUE_CFG.furyMult;
     return _b.call(this, z, amt, head, point);
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   if (typeof armFlame === 'function'){ const _b = armFlame; armFlame = function(id){ const r = _b.apply(this, arguments); rueFlameCone(id); return r; }; }
-} catch (e) {}
+} catch (e) { errNote(e); }
 // Explosions des autres systèmes : elles font sauter les barils proches
 try {
   if (typeof armExplode === 'function'){
     const _b = armExplode;
     armExplode = function(pos, id){ const r = _b.apply(this, arguments); rueNearBlast(pos.x, pos.y, pos.z, wRadius(id), true); return r; };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   if (typeof pwBlast === 'function'){
     const _b = pwBlast;
     pwBlast = function(x, y, z0, r){ const n = _b.apply(this, arguments); rueNearBlast(x, y, z0, r, true); return n; };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   if (typeof splash === 'function'){
     const _b = splash;
     splash = function(x, z0, r){ const n = _b.apply(this, arguments); rueNearBlast(x, 0, z0, r, false); return n; };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _b = updateHUD;
   updateHUD = function(){ const r = _b.apply(this, arguments); if (RUE.furyT > 0 && S && state === 'playing') setTxt('ammo', '∞ Rage ' + Math.ceil(RUE.furyT) + ' s'); return r; };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
 window.__rue = { RUE, RUE_CFG, RUE_BONUS, rueRoot, rueWave, rueStep, rueClear, rueSpawnBarrel, rueSpawnCrate, rueSpawnCiv, rueBarrelBlow, rueNearBlast, rueCrateGive, rueCivShot, rueCivProgress,
@@ -533,7 +533,7 @@ function survIncomeTxt(){
 // sans tir à la tête. Valeurs de secours si le compagnon n'est pas chargé.
 const SURV_GUN = { part:.3, rate:2.5, dmg:33, range:-75, spread:.4 }; // part du tireur d'élite, s entre deux tirs, dégâts (× force de la vague), portée (z), écart du rythme
 function survGunSync(){
-  try { if (typeof cpnStats === 'function'){ const c = cpnStats('sniper', {}); if (c && c.rate > 0){ SURV_GUN.rate = 1 / c.rate; SURV_GUN.dmg = c.dmg * SURV_GUN.part; } } } catch (e) {}
+  try { if (typeof cpnStats === 'function'){ const c = cpnStats('sniper', {}); if (c && c.rate > 0){ SURV_GUN.rate = 1 / c.rate; SURV_GUN.dmg = c.dmg * SURV_GUN.part; } } } catch (e) { errNote(e); }
 }
 const SURV_X = [4.2, -5.6, 6.4, -7.6, 8.6, -9.6, 10.6, -11.6];
 const survRoofMat = [lam(0xd8d0b8), lam(0x6a8ab0), lam(0x3a3a44), lam(0xc8a080), lam(0x2a2826)];
@@ -672,9 +672,9 @@ try { const _b = update; update = function(dt){ const r = _b.apply(this, argumen
       RUE_V.set(0, 9.6, -6); rueFloat('Survivants +' + fmt(pay), RUE_V, '#9aff70', false); }
   }
   if (state === 'playing') survShoot(dt);
-  return r; }; } catch (e) {}
-try { const _b = updateHUD; updateHUD = function(){ const r = _b.apply(this, arguments); survIncomeTxt(); return r; }; } catch (e) {}
-try { const _b = newGame; newGame = function(){ const r = _b.apply(this, arguments); if (S) S.survivors = 0; SURV.payT = 0; survClearChase(); survRoofSync(); survIncomeTxt(); return r; }; } catch (e) {}
+  return r; }; } catch (e) { errNote(e); }
+try { const _b = updateHUD; updateHUD = function(){ const r = _b.apply(this, arguments); survIncomeTxt(); return r; }; } catch (e) { errNote(e); }
+try { const _b = newGame; newGame = function(){ const r = _b.apply(this, arguments); if (S) S.survivors = 0; SURV.payT = 0; survClearChase(); survRoofSync(); survIncomeTxt(); return r; }; } catch (e) { errNote(e); }
 const _survClear = rueClear;
 rueClear = function(){ const r = _survClear.apply(this, arguments); survClearChase(); return r; };
 window.__surv = { SURV, SURV_CFG, SURV_GUN, survRoofSync, survLeft, survShoot, get shots(){ return survShots; } };

@@ -30,7 +30,7 @@ function appBtn(){
 function appInstall(){
   const p = APP.invite; if (!p) return false;
   APP.invite = null; appBtn();
-  try { p.prompt(); if (p.userChoice) p.userChoice.then(r => { if (r && r.outcome === 'accepted') APP.installe = true; appBtn(); }).catch(() => {}); } catch (e) {}
+  try { p.prompt(); if (p.userChoice) p.userChoice.then(r => { if (r && r.outcome === 'accepted') APP.installe = true; appBtn(); }).catch(() => {}); } catch (e) { errNote(e); }
   return true;
 }
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); APP.invite = e; appBtn(); });

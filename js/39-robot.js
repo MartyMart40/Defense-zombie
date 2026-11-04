@@ -223,7 +223,7 @@ function mechStreet(first){
   const L = (RT && RT.loc) || LOCS[(MECH.street - 1) % LOCS.length];
   curLoc = L;
   buildWorld(L);
-  try { if (typeof __amb === 'object') __amb.set(RT && RT.weather ? RT.weather : first ? 'soleil' : __amb.pick(L, MECH.street + 1)); } catch (e) {}
+  try { if (typeof __amb === 'object') __amb.set(RT && RT.weather ? RT.weather : first ? 'soleil' : __amb.pick(L, MECH.street + 1)); } catch (e) { errNote(e); }
   mechHideBarricade();
   world.position.z = 0; MECH.dist = 0; MECH.x = 0; MECH.bossDone = false;
   clearZombies();
@@ -235,7 +235,7 @@ function mechStreet(first){
 }
 function mechStart(){
   if (typeof Snd === 'object') Snd.init();
-  if (typeof infLeave === 'function') try { infLeave(); } catch (e) {}
+  if (typeof infLeave === 'function') try { infLeave(); } catch (e) { errNote(e); }
   newGame();
   MECH.on = true; MECH.paused = false; MECH.street = 1; MECH.kills = 0; MECH.heat = 0; MECH.hot = 0; MECH.rcd = 0; MECH.step = 0;
   MECH.mini = MECH.rocket = false; Object.keys(MECH.mv).forEach(k => { MECH.mv[k] = 0; });
@@ -389,7 +389,7 @@ function mechStep(dt){
 function mechStomp(){
   shake = Math.max(shake, .14);
   if (typeof Snd === 'object' && Snd.ctx && Snd._nz){
-    try { const t = Snd.ctx.currentTime; Snd._nz(t, 'lowpass', 260, 1, .3, .35); Snd._osc(t, 'sine', 62, 34, .28, .45); Snd._nz(t + .05, 'bandpass', 1400, 4, .06, .05); } catch (e) {}
+    try { const t = Snd.ctx.currentTime; Snd._nz(t, 'lowpass', 260, 1, .3, .35); Snd._osc(t, 'sine', 62, 34, .28, .45); Snd._nz(t + .05, 'bandpass', 1400, 4, .06, .05); } catch (e) { errNote(e); }
   }
   if (typeof vib === 'function') vib(28, 2);
 }
@@ -549,20 +549,20 @@ try {
     mkR.set(1, 0, 0).applyQuaternion(camera.quaternion); mkU.set(0, 1, 0).applyQuaternion(camera.quaternion); mkF.set(0, 0, -1).applyQuaternion(camera.quaternion);
     return out.copy(camera.position).addScaledVector(mkF, 2.2).addScaledVector(mkR, side * 1.25).addScaledVector(mkU, -.9);
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 // Pas de douilles de l'arme en main (cachée) dans le cockpit
-try { const _e = vmEject; vmEject = function(){ if (MECH.on) return; return _e.apply(this, arguments); }; } catch (e) {}
+try { const _e = vmEject; vmEject = function(){ if (MECH.on) return; return _e.apply(this, arguments); }; } catch (e) { errNote(e); }
 // Les armes du robot frappent fort (et de plus en plus fort à chaque rue)
-try { const _d = damage; damage = function(z, amt){ if (MECH.on && state === 'mech') amt *= MECH.pow * (1 + .12 * mUp(MECH.src === 'rocket' || MECH.src === 'right' ? 'rdmg' : 'mdmg')); arguments[1] = amt; return _d.apply(this, arguments); }; } catch (e) {}
+try { const _d = damage; damage = function(z, amt){ if (MECH.on && state === 'mech') amt *= MECH.pow * (1 + .12 * mUp(MECH.src === 'rocket' || MECH.src === 'right' ? 'rdmg' : 'mdmg')); arguments[1] = amt; return _d.apply(this, arguments); }; } catch (e) { errNote(e); }
 // Les explosions des roquettes comptent pour l'amélioration « Roquettes : dégâts »
-try { if (typeof armExplode === 'function'){ const _x = armExplode; armExplode = function(){ const s0 = MECH.src; MECH.src = 'rocket'; try { return _x.apply(this, arguments); } finally { MECH.src = s0; } }; } } catch (e) {}
+try { if (typeof armExplode === 'function'){ const _x = armExplode; armExplode = function(){ const s0 = MECH.src; MECH.src = 'rocket'; try { return _x.apply(this, arguments); } finally { MECH.src = s0; } }; } } catch (e) { errNote(e); }
 // Tomber en mode infini débloque le robot
-try { const _g = gameOver; gameOver = function(){ const inf = typeof infActive === 'function' && infActive(); const r = _g.apply(this, arguments); if (inf) mechUnlock(); return r; }; } catch (e) {}
+try { const _g = gameOver; gameOver = function(){ const inf = typeof infActive === 'function' && infActive(); const r = _g.apply(this, arguments); if (inf) mechUnlock(); return r; }; } catch (e) { errNote(e); }
 // Un zombie qui frappe « la barricade » frappe le robot, s'il est devant lui
 try {
   const _h = hitBarricade;
   hitBarricade = function(z){ if (MECH.on && z && z.g && (Math.abs(z.g.position.x - MECH.x) > 6 || z.g.position.z > MECH_CAM.z + 5 || z.g.position.z < MECH_CAM.z - 14)) return; return _h.apply(this, arguments); };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
 window.__mech = { MECH_W, mW, mechWeapon, mechArms, mechArmsG, MECH_UPG, mUp, mechUpgBuy, mechUpgCost, mechUnlocked, mechUnlock, mechGarage, mechNorm, mechBtn, MECH, MECH_LEN, MECH_HEAT, mechStart, mechQuit, mechStep, mechStreet, mechPause, mechResume, mechOver, mechPlan, mechCk };

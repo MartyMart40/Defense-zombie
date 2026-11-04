@@ -200,10 +200,10 @@ function msCtx(src, f, self, args){ const s0 = MSX.src; MSX.src = src; try { ret
 try {
   const _b = fire;
   fire = function(){ MSX.fid++; return msCtx('w:' + (S ? S.cur : ''), _b, this, arguments); };
-} catch (e) {}
-try { if (typeof armFlame === 'function'){ const _b = armFlame; armFlame = function(){ return msCtx('flame', _b, this, arguments); }; } } catch (e) {}
-try { if (typeof armStep === 'function'){ const _b = armStep; armStep = function(){ return msCtx('arm', _b, this, arguments); }; } } catch (e) {}
-try { if (typeof armExplode === 'function'){ const _b = armExplode; armExplode = function(){ return msCtx('w:rocket', _b, this, arguments); }; } } catch (e) {}
+} catch (e) { errNote(e); }
+try { if (typeof armFlame === 'function'){ const _b = armFlame; armFlame = function(){ return msCtx('flame', _b, this, arguments); }; } } catch (e) { errNote(e); }
+try { if (typeof armStep === 'function'){ const _b = armStep; armStep = function(){ return msCtx('arm', _b, this, arguments); }; } } catch (e) { errNote(e); }
+try { if (typeof armExplode === 'function'){ const _b = armExplode; armExplode = function(){ return msCtx('w:rocket', _b, this, arguments); }; } } catch (e) { errNote(e); }
 try {
   if (typeof rueBarrelBlow === 'function'){
     const _b = rueBarrelBlow;
@@ -213,13 +213,13 @@ try {
       return r;
     };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   if (typeof rueCivSaved === 'function'){
     const _b = rueCivSaved;
     rueCivSaved = function(){ const r = _b.apply(this, arguments); msAdd('surv'); mEv('surv'); return r; };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _b = damage;
   damage = function(z, amt, head, point){
@@ -234,7 +234,7 @@ try {
     }
     return _b.apply(this, arguments);
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _b = kill;
   kill = function(z, head, point){
@@ -242,7 +242,7 @@ try {
     if (was && z.dead) msOnKill(z, head, point);
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 function msOnKill(z, head, point){
   msAdd('kills'); mEv('kill', z.type);
   const w = msWeapon(point); if (w) mEv('killw', w);
@@ -263,7 +263,7 @@ try {
     MSX.run = []; MSX.endDone = false;
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _b = startWave;
   startWave = function(){
@@ -273,11 +273,11 @@ try {
       try {
         if (WORDER.every(id => S.owned[id])) msMax('arsenal', 1);
         if (Array.isArray(P.slots) && P.slots.length >= 4 && P.slots.every(s => s && typeof defSynMods === 'function' && defSynMods(s.type).names.length > 0)) msMax('syn4', 1);
-      } catch (e) {}
+      } catch (e) { errNote(e); }
     }
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _b = endWave;
   endWave = function(){
@@ -290,7 +290,7 @@ try {
     saveP(); // sauvegarde regroupée, une fois par vague
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   // Plus bas niveau de la barricade (partie et vague) : une division par image
   const _b = update;
@@ -303,7 +303,7 @@ try {
     }
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 // Réparation à la boutique : bouton « Réparer », ou barricade renforcée alors qu'elle était abîmée (elle la répare)
 (function(){
   const sh = $('scrShop'); if (!sh || !sh.addEventListener) return;
@@ -333,7 +333,7 @@ function msEnd(won){
       achCheck('defi'); achCheck('cities');
     }
     if (msInfOn()) msMax('inf', Math.max(0, (S.wave || 1) - 1));
-  } catch (e) {}
+  } catch (e) { errNote(e); }
   saveP();
 }
 function msEndHTML(){
@@ -346,10 +346,10 @@ try {
   showEnd = function(won){
     msEnd(!!won);
     const r = _b.apply(this, arguments);
-    try { const st = $('overStats'); if (st){ const h = msEndHTML(); if (h) st.innerHTML += h; } } catch (e) {}
+    try { const st = $('overStats'); if (st){ const h = msEndHTML(); if (h) st.innerHTML += h; } } catch (e) { errNote(e); }
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 /* ---------- Écran Succès ---------- */
 let msBack = 'scrTitle';
@@ -397,7 +397,7 @@ try {
     if (id === 'scrTitle' || id === 'scrMap') msLabels();
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 (function(){
   const on = (id, f) => { const el = $(id); if (el && el.addEventListener) el.addEventListener('click', f); };
   on('btnSuccesTitle', () => { if (typeof Snd === 'object') Snd.init(); openSucces('scrTitle'); });

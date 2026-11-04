@@ -14,7 +14,7 @@ function mechSaveGet(){
   const d = store.get(MECH_SAVE_KEY, null);
   return d && d.v === MECH_SAVE_V && d.street >= 1 && d.barMax > 0 ? d : null;
 }
-function mechSaveClear(){ try { localStorage.removeItem(MECH_SAVE_KEY); } catch (e) {} mechSaveBtn(); }
+function mechSaveClear(){ try { localStorage.removeItem(MECH_SAVE_KEY); } catch (e) { errNote(e); } mechSaveBtn(); }
 function mechSave(){
   if (!MECH.on || !S) return false;
   store.set(MECH_SAVE_KEY, { v:MECH_SAVE_V, date:Date.now(), street:MECH.street, bar:Math.round(S.bar), barMax:Math.round(S.barMax), kills:MECH.kills || 0,
@@ -39,19 +39,19 @@ function mechResumeRun(d){
 try {
   const _st = mechStreet;
   mechStreet = function(first){ const r = _st.apply(this, arguments); if (MECH.on && !MECH_SV.reprise) mechSave(); return r; };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _go = mechStart;
   mechStart = function(){ if (!MECH_SV.reprise) mechSaveClear(); return _go.apply(this, arguments); };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _ov = mechOver;
   mechOver = function(){ const r = _ov.apply(this, arguments); mechSaveClear(); return r; };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _q = mechQuit;
   mechQuit = function(){ if (state === 'mech' && MECH.on) mechSave(); const r = _q.apply(this, arguments); mechSaveBtn(); return r; };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 /* ---------- Écran titre ---------- */
 function mechSaveBtn(){

@@ -24,6 +24,24 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
+/* ---------- Journal des erreurs cachées ---------- */
+// Beaucoup de crochets sont dans des try { } catch (e) { errNote(e); } : le jeu continue même si un morceau casse.
+// errNote garde les vraies erreurs de programmation (TypeError, ReferenceError...) dans JOURNAL, pour qu'un test
+// (tests/t-journal.js) les voie. Les refus normaux du navigateur (son, vibration, stockage, plein écran : DOMException)
+// et les sauvegardes illisibles (SyntaxError de JSON.parse) sont ignorés.
+const JOURNAL = [];
+function errNote(e, ou){
+  try {
+    if (!e || (typeof DOMException !== 'undefined' && e instanceof DOMException) || e.name === 'SyntaxError' || e.name === 'NotAllowedError' || e.name === 'SecurityError' || e.name === 'AbortError') return false;
+    const pile = String(e.stack || '').split('\n').slice(1, 3).map(l => l.trim().replace(/^at /, '').replace(/\(?https?:[^)]*\/(js\/[^?:]+)[^)]*\)?/, '$1')).join(' < ');
+    const t = (e.name || 'Erreur') + ' : ' + (e.message || e) + (ou ? ' [' + ou + ']' : '') + (pile ? ' (' + pile + ')' : '');
+    if (JOURNAL.length < 50 && JOURNAL.indexOf(t) < 0) JOURNAL.push(t);
+    if (typeof console === 'object' && console.warn) console.warn('Erreur cachée :', t);
+  } catch (x) {}
+  return true;
+}
+window.__journal = JOURNAL;
+
 /* ---------- Registre des modes et des événements ---------- */
 // Un mode de jeu (robot, RTS, et les prochains) s'inscrit ici au lieu de remplacer visuals, kill, etc.
 // Le branchement sur le jeu commun est fait UNE fois, dans js/90-branchements.js (chargé en dernier).
@@ -39,7 +57,7 @@ const Jeu = {
   modes: {},
   ecoute: {},
   mode(nom, def){ def.nom = nom; def.etats = def.etats || {}; this.modes[nom] = def; return def; },
-  actif(){ for (const k in this.modes){ const m = this.modes[k]; try { if (m.actif && m.actif()) return m; } catch (e) {} } return null; },
+  actif(){ for (const k in this.modes){ const m = this.modes[k]; try { if (m.actif && m.actif()) return m; } catch (e) { errNote(e, "mode " + k); } } return null; },
   on(evt, fn){ (this.ecoute[evt] = this.ecoute[evt] || []).push(fn); return fn; },
   off(evt, fn){ const l = this.ecoute[evt]; if (l){ const i = l.indexOf(fn); if (i >= 0) l.splice(i, 1); } },
   emit(evt, a, b, c){

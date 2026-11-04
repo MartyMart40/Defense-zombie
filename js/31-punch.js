@@ -35,7 +35,7 @@ let pknCap = PKN_MAX;                   // nombre affiché à la fois (baisse se
 function pkFmt(n){
   n = Math.round(+n || 0);
   if (n < 1000) return String(n);
-  if (n >= 10000 && typeof fmtN === 'function'){ try { const s = fmtN(n); if (typeof s === 'string' && s) return s; } catch (e) {} }
+  if (n >= 10000 && typeof fmtN === 'function'){ try { const s = fmtN(n); if (typeof s === 'string' && s) return s; } catch (e) { errNote(e); } }
   const U = ['k', 'M', 'G', 'T', 'P', 'E']; let v = n, i = -1;
   while (v >= 999.5 && i < U.length - 1){ v /= 1000; i++; }
   return (v < 10 ? v.toFixed(1) : String(Math.round(v))).replace('.', ',').replace(/,0$/, '') + ' ' + U[i];
@@ -199,7 +199,7 @@ try {
     if (d > 0) pkDealt(z, d, hp0, head, point, sf.s, w ? 'w' : head ? 'h' : sf.f ? 'f' : 'n');
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   if (typeof defHit === 'function'){
     const _defHitPk = defHit;
@@ -212,25 +212,25 @@ try {
       return r;
     };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   if (typeof weakHit === 'function'){
     const _weakPk = weakHit;
     weakHit = function(){ PK.weak++; try { return _weakPk.apply(this, arguments); } finally { PK.weak--; } };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 // Contexte de la source (statistiques par arme, couleur du feu) : fonctions globales réaffectées, vues partout
-try { if (typeof pwUpdate === 'function'){ const _b = pwUpdate; pwUpdate = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'pow'; PK.fireK = 1; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; } }; } } catch (e) {}
-try { if (typeof pwBlast === 'function'){ const _b = pwBlast; pwBlast = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'pow'; PK.fireK = 0; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; } }; } } catch (e) {}
-try { if (typeof cpnShootSniper === 'function'){ const _b = cpnShootSniper; cpnShootSniper = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'cpn'; PK.fireK = 0; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; } }; } } catch (e) {}
-try { if (typeof cpnShootGunner === 'function'){ const _b = cpnShootGunner; cpnShootGunner = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'cpn'; PK.fireK = 0; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; } }; } } catch (e) {}
-try { if (typeof rueBarrelBlow === 'function'){ const _b = rueBarrelBlow; rueBarrelBlow = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'rue'; PK.fireK = 0; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; } }; } } catch (e) {}
+try { if (typeof pwUpdate === 'function'){ const _b = pwUpdate; pwUpdate = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'pow'; PK.fireK = 1; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; } }; } } catch (e) { errNote(e); }
+try { if (typeof pwBlast === 'function'){ const _b = pwBlast; pwBlast = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'pow'; PK.fireK = 0; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; } }; } } catch (e) { errNote(e); }
+try { if (typeof cpnShootSniper === 'function'){ const _b = cpnShootSniper; cpnShootSniper = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'cpn'; PK.fireK = 0; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; } }; } } catch (e) { errNote(e); }
+try { if (typeof cpnShootGunner === 'function'){ const _b = cpnShootGunner; cpnShootGunner = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'cpn'; PK.fireK = 0; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; } }; } } catch (e) { errNote(e); }
+try { if (typeof rueBarrelBlow === 'function'){ const _b = rueBarrelBlow; rueBarrelBlow = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'rue'; PK.fireK = 0; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; } }; } } catch (e) { errNote(e); }
 try {
   if (typeof armFlame === 'function'){
     const _b = armFlame;
     armFlame = function(id){ const s0 = PK.src, f0 = PK.fireK; PK.src = id || 'flamer'; PK.fireK = 1; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; } };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 // Tir multiple : plusieurs zombies abattus d'un coup (balles, plombs, roquette)
 function pkMulti(n, src){
   const st = pkSt();
@@ -250,7 +250,7 @@ try {
       return r;
     };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   if (typeof armStep === 'function'){
     const _b = armStep;
@@ -268,7 +268,7 @@ try {
       return r;
     };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _firePk = fire;
   fire = function(){
@@ -285,7 +285,7 @@ try {
     }
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _killPk = kill;
   kill = function(z){
@@ -299,7 +299,7 @@ try {
     }
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   if (typeof comboKill === 'function'){
     const _b = comboKill;
@@ -310,7 +310,7 @@ try {
       return r;
     };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 /* ---------- Boucle : échelle de temps sur update(), chiffres et effet dans visuals() ---------- */
 try {
@@ -320,13 +320,13 @@ try {
     const st = pkSt(); if (st) st.time += dt; // temps de jeu réel
     return _updPk.call(this, dt * k);
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   if (typeof updateParts === 'function'){
     const _b = updateParts;
     updateParts = function(dt){ return _b.call(this, state === 'playing' ? dt * PK.ts : dt); };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _visPk = visuals;
   visuals = function(dt){
@@ -344,7 +344,7 @@ try {
     } else if (state !== 'paused' && pknActive()) pknClear();
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _ngPk = newGame;
   newGame = function(){
@@ -353,8 +353,8 @@ try {
     pkSlowStop(); PK.slowCd = 0; pknClear(); PK.shotHits = PK.shotKills = 0;
     return r;
   };
-} catch (e) {}
-try { const _b = clearZombies; clearZombies = function(){ const r = _b.apply(this, arguments); pknClear(); return r; }; } catch (e) {}
+} catch (e) { errNote(e); }
+try { const _b = clearZombies; clearZombies = function(){ const r = _b.apply(this, arguments); pknClear(); return r; }; } catch (e) { errNote(e); }
 
 /* ---------- Argent dépensé : achats de la boutique (différence autour du clic) ---------- */
 (function(){
@@ -457,10 +457,10 @@ try {
   showEnd = function(){
     pkSlowStop(); pknClear();
     const r = _endPk.apply(this, arguments);
-    try { pkEndRender(); } catch (e) {}
+    try { pkEndRender(); } catch (e) { errNote(e); }
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques et tests/perf.html
 window.__punch = { PK, PKN, PK_SLOW, PKN_MAX, pkFmt, pkSlow, pkSlowStop, pkSlowStep, pkNum, pknFrame, pknClear, pknActive, pkSetSlow, pkSetNums,

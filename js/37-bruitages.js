@@ -32,8 +32,8 @@ function brAt(x, y, z, f){
     else g.connect(Snd.master);
     const o = Snd._out; Snd._out = g;
     try { f(); } finally { Snd._out = o; }
-    setTimeout(() => { try { g.disconnect(); } catch (e) {} }, 4000);
-  } catch (e) {}
+    setTimeout(() => { try { g.disconnect(); } catch (e) { errNote(e); } }, 4000);
+  } catch (e) { errNote(e); }
 }
 
 /* ---------- Douilles qui tombent sur le toit ---------- */
@@ -52,7 +52,7 @@ function brTink(shell){
       Snd._osc(ti, 'triangle', f * rand(.97, 1.03), f * .98, big ? .12 : .07, (big ? .06 : .045) * v * k);
       Snd._osc(ti, 'sine', f * 2.7, f * 2.6, .04, .015 * v * k);
     }
-  } catch (e) {}
+  } catch (e) { errNote(e); }
 }
 
 /* ---------- Zombies abattus ---------- */
@@ -92,7 +92,7 @@ function brHorde(dt){
       const t = Snd.ctx.currentTime;
       BR.horde.g.gain.setTargetAtTime(Math.max(0.0001, .11 * BR.hordeLvl), t, .4);
       BR.horde.f1.frequency.setTargetAtTime(330 + 120 * BR.hordeLvl, t, .8);
-      if (BR.hordeLvl <= .01 && state !== 'playing' && state !== 'mech' && state !== 'rts'){ const h = BR.horde; BR.horde = null; h.g.gain.setTargetAtTime(0.0001, t, .2); try { h.s.stop(t + 1); h.lfo.stop(t + 1); } catch (e) {} }
+      if (BR.hordeLvl <= .01 && state !== 'playing' && state !== 'mech' && state !== 'rts'){ const h = BR.horde; BR.horde = null; h.g.gain.setTargetAtTime(0.0001, t, .2); try { h.s.stop(t + 1); h.lfo.stop(t + 1); } catch (e) { errNote(e); } }
     }
   } catch (e) { BR.horde = null; }
 }
@@ -109,7 +109,7 @@ function brCreak(dt){
       f.type = 'bandpass'; f.frequency.value = rand(700, 1100); f.Q.value = 9;
       g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(.12, t + .05); g.gain.exponentialRampToValueAtTime(0.001, t + d);
       o.connect(f); f.connect(g); g.connect(Snd._out || Snd.master); o.start(t); o.stop(t + d + .05);
-    } catch (e) {}
+    } catch (e) { errNote(e); }
   });
 }
 
@@ -123,7 +123,7 @@ try {
     const z = list[Math.floor(Math.random() * list.length)], gp = z.g.position, args = arguments;
     brAt(gp.x, gp.y + 1.5, gp.z, () => _g.apply(this, args));
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 // Coups sur la barricade : le bruit vient du côté du zombie qui frappe
 try {
   const _h = hitBarricade;
@@ -133,15 +133,15 @@ try {
     brAt(z.g.position.x, 1, BAR_Z, () => { r = _h.apply(this, args); });
     return r;
   };
-} catch (e) {}
-try { const _k = kill; kill = function(z, head){ const r = _k.apply(this, arguments); try { brKill(z, head); } catch (e) {} return r; }; } catch (e) {}
+} catch (e) { errNote(e); }
+try { const _k = kill; kill = function(z, head){ const r = _k.apply(this, arguments); try { brKill(z, head); } catch (e) { errNote(e); } return r; }; } catch (e) { errNote(e); }
 try {
   if (typeof vmEject === 'function'){
     const _e = vmEject;
     vmEject = function(id){ const r = _e.apply(this, arguments); const ud = VMS[id] && VMS[id].userData; if (ud && ud.eject && (id !== 'minigun' || Math.random() < .5)) brTink(ud.shell || 0); return r; };
   }
-} catch (e) {}
-try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); try { brHorde(dt || 0); brCreak(dt || 0); } catch (e) {} return r; }; } catch (e) {}
+} catch (e) { errNote(e); }
+try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); try { brHorde(dt || 0); brCreak(dt || 0); } catch (e) { errNote(e); } return r; }; } catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
 window.__br = { BR, brSpot, brTink, brKill, brHorde, brCreak };

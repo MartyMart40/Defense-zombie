@@ -71,7 +71,7 @@ function rtsTipStep(dt){
   const seen = rtsTipSeen();
   for (const T of RTS_TIPS){
     if (seen.indexOf(T.id) >= 0) continue;
-    let ok = false; try { ok = !!T.cond(RTS); } catch (e) {}
+    let ok = false; try { ok = !!T.cond(RTS); } catch (e) { errNote(e); }
     if (ok){ rtsTipShow(T); return T; }
   }
   return null;

@@ -146,7 +146,7 @@ function rtsClearAll(){
 function rtsStart(save){
   if (save && !(typeof rtsSaveOk === 'function' && rtsSaveOk(save))) save = null;
   if (typeof Snd === 'object') Snd.init();
-  if (typeof infLeave === 'function') try { infLeave(); } catch (e) {}
+  if (typeof infLeave === 'function') try { infLeave(); } catch (e) { errNote(e); }
   newGame(); clearZombies(); rtsClearAll();
   curLoc = LOCS[0];
   Object.assign(RTS, { on:true, paused:false, t:0, kills:0, threat:1, hordeT:RTS_CFG.hordeEvery, hordeN:0, bossN:0, bossKills:0, nestN:0, lost:0, upg:{}, baseR:RTS_CFG.baseR0, incT:5, tab:'rob', xp0:P.xp || 0, scr0:P.scrap || 0, zMin:-300, spin:0, shells:[] });
@@ -355,7 +355,7 @@ function rtsBldDie(o, sold){
   rtsRoot.remove(o.g); if (RTS.bsel === o){ RTS.bsel = null; rtsInfoShow(); }
   if (o.type === 'hq' && state === 'rts') rtsEnd(false);
 }
-function rtsShotSnd(id){ if (RTS.sndT > 0 || typeof Snd !== 'object') return; RTS.sndT = .07; try { Snd.shot(id); } catch (e) {} }
+function rtsShotSnd(id){ if (RTS.sndT > 0 || typeof Snd !== 'object') return; RTS.sndT = .07; try { Snd.shot(id); } catch (e) { errNote(e); } }
 // Explosion au sol (roquettes, obus, bombes)
 function rtsBlast(x, z, S2){
   for (const zz of zombies){ if (zz.dead) continue; const d = Math.hypot(zz.g.position.x - x, zz.g.position.z - z); if (d < S2.splash){ damage(zz, S2.dmg * (1 - .5 * d / S2.splash), false, zz.g.position.clone()); if (S2.burn && !zz.dead){ zz.burnT = 5; zz.burnDps = 45; } } }

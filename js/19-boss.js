@@ -257,7 +257,7 @@ try {
     if (z && z.type === 'boss' && !head) amt *= BOSS_ARMOR;
     return _damageBase(z, amt, head, point);
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   // Mort du boss : annonce et effets (la récompense est versée par kill())
   const _killBase = kill;
@@ -267,7 +267,7 @@ try {
     if (wasBoss && z.dead) bossDown(z, head);
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   // Annonce dès le début de la vague qu'un boss viendra
   const _startWaveBase = startWave;
@@ -276,7 +276,7 @@ try {
     if (plan && plan.boss){ const el = $('bSub'); if (el){ const t = el.textContent.trim(); el.textContent = !t ? 'Un boss viendra.' : /[.!?]$/.test(t) ? t + ' Un boss viendra.' : t + ', dont un boss !'; } }
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 function bossDown(z, head){
   const pay = Math.round(z.reward * (1 + .08 * T('scavenger')) * (head ? 1.5 : 1));
   const scr = typeof scrapFor === 'function' ? scrapFor('boss', curLoc) : 0;
@@ -310,7 +310,7 @@ function bossFrame(){
 try {
   const _visualsBase = visuals;
   visuals = function(dt){ const r = _visualsBase(dt); bossFrame(); return r; };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
 window.__boss = { BOSS_VAR, BOSS_KIND, BOSS_ARMOR, bossVariant, bossReady, isBossWave, bossBarSync, bossFrame, bossCars, liveBoss, bossClearFx };

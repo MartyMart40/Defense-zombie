@@ -16,7 +16,7 @@ function savCollect(){
       const k = localStorage.key(i);
       if (k && k.indexOf('dt_') === 0) cles[k] = localStorage.getItem(k);
     }
-  } catch (e) {}
+  } catch (e) { errNote(e); }
   return { jeu:SAV_JEU, version:1, date:new Date().toISOString(), cles };
 }
 // Vérifie un fichier lu : rend { ok, err, data }
@@ -53,7 +53,7 @@ function savMsg(t, bad){ const el = $('savMsg'); if (!el) return; el.textContent
 function savRender(){ const el = $('savNow'); if (el) el.textContent = 'Dans ce navigateur : ' + savSummary(P); }
 
 async function savExport(){
-  try { saveP(); } catch (e) {}
+  try { saveP(); } catch (e) { errNote(e); }
   const txt = JSON.stringify(savCollect(), null, 1);
   const blob = new Blob([txt], { type:'application/json' });
   // Cell : feuille de partage avec le fichier (OneDrive, Drive, courriel...)
@@ -97,7 +97,7 @@ function savImportFile(file){
 try {
   const _b = showScreen;
   showScreen = function(id){ const r = _b.apply(this, arguments); const el = $('scrSave'); if (el) el.classList.toggle('hide', id !== 'scrSave'); return r; };
-} catch (e) {}
+} catch (e) { errNote(e); }
 (function(){
   const on = (id, ev, f) => { const el = $(id); if (el && el.addEventListener) el.addEventListener(ev, f); };
   on('btnSaveTitle', 'click', () => { savMsg(''); savRender(); showScreen('scrSave'); });

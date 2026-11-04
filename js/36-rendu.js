@@ -245,10 +245,10 @@ function gfxApply(){
     const Q = gfxQ(), dpr = window.devicePixelRatio || 1;
     renderer.setPixelRatio(Math.min(dpr, Q.pr, isTouch ? 1.5 : 2));
     if (typeof resize === 'function') resize();
-  } catch (e) {}
+  } catch (e) { errNote(e); }
   gfxSmoke.forEach((o, i) => { if (i >= gfxQ().smoke){ o.s.visible = false; o.life = 0; } });
   gfxEmbers.forEach((o, i) => { if (i >= gfxQ().embers){ o.s.visible = false; o.life = 0; } });
-  try { gfxPlaceDebris(); } catch (e) {}
+  try { gfxPlaceDebris(); } catch (e) { errNote(e); }
   gfxBtn();
 }
 function gfxSet(p){ if (GFX_ORDER.indexOf(p) < 0) p = 'auto'; GFX.pref = p; store.set('dt_gfx', p); gfxApply(); }
@@ -267,12 +267,12 @@ function gfxBtn(){
 })();
 
 /* ---------- Crochets ---------- */
-try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); try { gfxStep(dt || 0); } catch (e) {} return r; }; } catch (e) {}
-try { const _b = buildWorld; buildWorld = function(){ const r = _b.apply(this, arguments); gfxPlacePuddles(); gfxPlaceDebris(); gfxPlaceHalos(); GFX.wet = 0; gfxSmoke.forEach(o => { o.s.visible = false; o.life = 0; }); return r; }; } catch (e) {}
+try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); try { gfxStep(dt || 0); } catch (e) { errNote(e); } return r; }; } catch (e) { errNote(e); }
+try { const _b = buildWorld; buildWorld = function(){ const r = _b.apply(this, arguments); gfxPlacePuddles(); gfxPlaceDebris(); gfxPlaceHalos(); GFX.wet = 0; gfxSmoke.forEach(o => { o.s.visible = false; o.life = 0; }); return r; }; } catch (e) { errNote(e); }
 // Explosions : un panache de fumée noire
-try { if (typeof rueBoom === 'function'){ const _b = rueBoom; rueBoom = function(x, y, z, size){ const r = _b.apply(this, arguments); if (size >= 10) gfxBoomSmoke(x, y, z, size / 3); return r; }; } } catch (e) {}
-try { if (typeof armExplode === 'function'){ const _b = armExplode; armExplode = function(pos, id){ const r = _b.apply(this, arguments); gfxBoomSmoke(pos.x, pos.y, pos.z, wRadius(id) * .8); return r; }; } } catch (e) {}
-try { if (typeof pwBoom === 'function'){ const _b = pwBoom; pwBoom = function(x, y, z, size){ const r = _b.apply(this, arguments); gfxBoomSmoke(x, y, z, (size || 6) / 3); return r; }; } } catch (e) {}
+try { if (typeof rueBoom === 'function'){ const _b = rueBoom; rueBoom = function(x, y, z, size){ const r = _b.apply(this, arguments); if (size >= 10) gfxBoomSmoke(x, y, z, size / 3); return r; }; } } catch (e) { errNote(e); }
+try { if (typeof armExplode === 'function'){ const _b = armExplode; armExplode = function(pos, id){ const r = _b.apply(this, arguments); gfxBoomSmoke(pos.x, pos.y, pos.z, wRadius(id) * .8); return r; }; } } catch (e) { errNote(e); }
+try { if (typeof pwBoom === 'function'){ const _b = pwBoom; pwBoom = function(x, y, z, size){ const r = _b.apply(this, arguments); gfxBoomSmoke(x, y, z, (size || 6) / 3); return r; }; } } catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
 window.__gfx = { gfxDeb, gfxHalos, gfxEmbers, GFX, GFX_Q, gfxLevel, gfxSet, gfxStep, gfxPuff, gfxClouds, gfxMist, gfxPuddles, gfxShadows, gfxSmoke, gfxPuddleMat };

@@ -242,7 +242,7 @@ function rtsTapUnit(u, mode){
   const i = RTS.sel.indexOf(u);
   if (mode === 'long' || mode === 'add'){
     if (i >= 0){ RTS.sel.splice(i, 1); rtsInfoShow(); } else rtsSelect([u], true);
-    if (mode === 'long' && navigator.vibrate) try { navigator.vibrate(25); } catch (e) {}
+    if (mode === 'long' && navigator.vibrate) try { navigator.vibrate(25); } catch (e) { errNote(e); }
   }
   else if (mode === 'tap' && i >= 0 && RTS.sel.length === 1){ RTS.sel.length = 0; rtsInfoShow(); }
   else rtsSelect([u], false);

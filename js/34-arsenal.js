@@ -512,16 +512,16 @@ try {
         for (let i = 0; i < 4; i++) this._nz(t + i * rand(.012, .03), 'bandpass', rand(2000, 5000), rand(3, 8), rand(.02, .05), rand(.1, .2) * v);
         this._osc(t, 'square', 60 * p, 55, .18, .05 * v); this._osc(t, 'sawtooth', 900 * p, 3000, .06, .03 * v);
       }
-    } catch (e) {}
+    } catch (e) { errNote(e); }
     return true;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 /* ---------- Silencieux : tir étouffé ---------- */
 try {
   const _s = Snd.shot;
   Snd.shot = function(kind){ const q = !!(S && accOwned(kind, 'rsupp')); this.quiet = q; try { return _s.apply(this, arguments); } finally { this.quiet = false; } };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 /* ---------- Boutique : section Accessoires sous les améliorations de l'arme ---------- */
 function accHTML(id){
@@ -537,7 +537,7 @@ function accHTML(id){
   });
   return h;
 }
-try { const _b = wupgHTML; wupgHTML = function(){ const h = _b.apply(this, arguments); return h + accHTML(shopWSel); }; } catch (e) {}
+try { const _b = wupgHTML; wupgHTML = function(){ const h = _b.apply(this, arguments); return h + accHTML(shopWSel); }; } catch (e) { errNote(e); }
 (function(){
   const el = $('scrShop'); if (!el || !el.addEventListener) return;
   el.addEventListener('click', e => {
@@ -571,7 +571,7 @@ function arsGuide(dt){
     arsGuided++;
   }
 }
-try { if (typeof armStep === 'function'){ const _b = armStep; armStep = function(dt){ try { arsGuide(dt || 0); } catch (e) {} return _b.apply(this, arguments); }; } } catch (e) {}
+try { if (typeof armStep === 'function'){ const _b = armStep; armStep = function(dt){ try { arsGuide(dt || 0); } catch (e) { errNote(e); } return _b.apply(this, arguments); }; } } catch (e) { errNote(e); }
 
 /* ---------- Secousse de l'écran par arme (les grosses armes secouent plus) ---------- */
 // Valeur de shake (15-boucle.js : décalage de la caméra, amorti en environ 0,2 s). Un peu moins en visée.
@@ -595,11 +595,11 @@ try {
     if (W.chain) arsChain(id, first);
     return r;
   };
-} catch (e) {}
-try { const _b = equip; equip = function(id){ const r = _b.apply(this, arguments); if (S && S.cur === id && VMS[id] && flash.parent === VMS[id]) flash.position.z = VMS[id].userData.muzzle; return r; }; } catch (e) {}
-try { const _b = newGame; newGame = function(){ accClearAll(); const r = _b.apply(this, arguments); if (S) S.acc = {}; return r; }; } catch (e) {}
-try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); arsFxStep(dt); return r; }; } catch (e) {}
-try { const _b = clearZombies; clearZombies = function(){ const r = _b.apply(this, arguments); arsFxClear(); return r; }; } catch (e) {}
+} catch (e) { errNote(e); }
+try { const _b = equip; equip = function(id){ const r = _b.apply(this, arguments); if (S && S.cur === id && VMS[id] && flash.parent === VMS[id]) flash.position.z = VMS[id].userData.muzzle; return r; }; } catch (e) { errNote(e); }
+try { const _b = newGame; newGame = function(){ accClearAll(); const r = _b.apply(this, arguments); if (S) S.acc = {}; return r; }; } catch (e) { errNote(e); }
+try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); arsFxStep(dt); return r; }; } catch (e) { errNote(e); }
+try { const _b = clearZombies; clearZombies = function(){ const r = _b.apply(this, arguments); arsFxClear(); return r; }; } catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
 window.__ars = { get guided(){ return arsGuided; }, ARS_SHAKE, ARS_W, ACC, ACC_ORDER, accName, accMul, accAdd, accBuy, accCost, accOwned, accSync, arsChain, arsFirst,

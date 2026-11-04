@@ -91,7 +91,7 @@ try {
     if (CB.ctx > 0 && z && !z.dead) CB.hits++;
     return _dmgCb.apply(this, arguments);
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   // Tir à balles ou à plombs : aucun zombie touché = combo perdu
   const _fireCb = fire;
@@ -105,7 +105,7 @@ try {
     if (r !== false && W && !W.kind && !touche && CB.hits === h0) comboMiss();
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   // Carreaux, roquettes, flammes et brûlure : ce sont tes tirs ; un carreau qui se plante sans toucher personne = raté
   if (typeof armStep === 'function'){
@@ -130,7 +130,7 @@ try {
       return r;
     };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   // Baril que TU fais sauter (23-rue.js) : ses abattus comptent, même en chaîne
   if (typeof rueBarrelBlow === 'function'){
@@ -141,31 +141,31 @@ try {
       try { return _rbCb.apply(this, arguments); } finally { CB.ctx--; }
     };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _updCb = update;
   update = function(dt){ const r = _updCb.apply(this, arguments); if (state === 'playing') comboTick(dt); return r; };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _visCb = visuals;
   visuals = function(dt){ const r = _visCb.apply(this, arguments); if (weakT > 0) weakT -= dt; return r; };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _hudCb = updateHUD;
   updateHUD = function(){ const r = _hudCb.apply(this, arguments); comboHUD(); return r; };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _ngCb = newGame;
   newGame = function(){ comboEnd(); const r = _ngCb.apply(this, arguments); if (S) S.comboBest = 0; CB.recStart = P.comboBest || 0; return r; };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _swCb = startWave;
   startWave = function(){ comboEnd(); return _swCb.apply(this, arguments); };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _ewCb = endWave; // fin de vague : le combo s'arrête (pas de compteur figé pendant la boutique)
   endWave = function(){ comboEnd(); return _ewCb.apply(this, arguments); };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _endCb = showEnd;
   showEnd = function(won, extra){
@@ -178,7 +178,7 @@ try {
     }
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
 window.__combos = { CB, COMBO_PALIERS, COMBO_DELAI, comboMult, comboTier, comboKill, comboEnd, comboMiss, comboTick, comboHUD, comboEndHTML };

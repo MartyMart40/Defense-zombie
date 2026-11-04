@@ -716,7 +716,7 @@ function vmHook(){
   try {
     const _fireVm = fire;
     fire = function(){ const r = _fireVm.apply(this, arguments); if (r !== false) vmShot(); return r; };
-  } catch (e) {}
+  } catch (e) { errNote(e); }
 }
 const vmSm = t => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
 function vmAnim(dt){

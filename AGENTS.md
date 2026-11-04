@@ -26,7 +26,7 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 
 | Fichiers | Rôle |
 |----------|------|
-| 00 base | Outils (`$`, `store`, `fmt`, `rand`, `clamp`), registre des modes `Jeu` |
+| 00 base | Outils (`$`, `store`, `fmt`, `rand`, `clamp`), journal des erreurs cachées (`errNote`, `JOURNAL`), registre des modes `Jeu` |
 | 01 son | Sons et musique (`Snd`) |
 | 02 villes | Les 5 villes (`LOCS`) |
 | 03 scène | Scène, caméra, rendu, décor de la rue (`buildWorld`) |
@@ -70,8 +70,9 @@ Les const, let et function de haut niveau sont partagés entre tous les fichiers
 4. Français partout dans l'interface et la documentation, sans tiret quadratin.
 5. Sauvegarde : `store.get` / `store.set` (localStorage, avec try/catch). Le profil permanent est `P`, sauvé par `saveP()`. Ne casse pas les sauvegardes existantes : ajoute des champs avec une valeur par défaut.
 6. Doit marcher sur cell (tactile, vertical et horizontal) et sur ordi (souris).
-7. Vérifie la syntaxe : `cat js/*.js > /tmp/all.js && node --check /tmp/all.js`.
-8. Tests : `tests/` (page en ligne /tests/, résultat dans window.RESULTATS). Ajoute des tests pour ce que tu bâtis, de façon défensive (typeof). Lance toute la suite avant de pousser : `python3 -m http.server 8765` puis `node outils/lancer-tests.js`.
-9. Mise en ligne : seulement si Martin l'a autorisé dans la session (il le fait d'habitude). Avant le commit, `bash outils/version.sh` (sinon les navigateurs gardent les vieux fichiers). Puis push sur la branche de travail, puis sur main (GitHub Pages). Les tests roulent aussi sur GitHub (onglet Actions) : vérifie qu'ils sont verts. Ne lis pas et ne copie pas `.github-token`.
-10. Chaque tâche faite est ajoutée en haut de la table « Fait » de `TACHES.md`, avec un numéro qui suit. Quand la table dépasse 10 lignes, déplace les plus vieilles dans `docs/historique.md`. Mets aussi à jour la fiche du mode touché (`docs/*.md`) si des chiffres ou des décisions changent.
-11. Termine par un rapport court, en français simple : ce qui est fait, ce qui n'est pas vérifié.
+7. Un `try` qui protège un crochet finit par `catch (e) { errNote(e); }`, jamais `catch (e) {}` : l'erreur est gardée dans `JOURNAL` et le test `tests/t-journal.js` (chargé en dernier) échoue s'il en reste.
+8. Vérifie la syntaxe : `cat js/*.js > /tmp/all.js && node --check /tmp/all.js`.
+9. Tests : `tests/` (page en ligne /tests/, résultat dans window.RESULTATS). Ajoute des tests pour ce que tu bâtis, de façon défensive (typeof). Lance toute la suite avant de pousser : `python3 -m http.server 8765` puis `node outils/lancer-tests.js`.
+10. Mise en ligne : seulement si Martin l'a autorisé dans la session (il le fait d'habitude). Avant le commit, `bash outils/version.sh` (sinon les navigateurs gardent les vieux fichiers). Puis push sur la branche de travail, puis sur main (GitHub Pages). Les tests roulent aussi sur GitHub (onglet Actions) : vérifie qu'ils sont verts. Ne lis pas et ne copie pas `.github-token`.
+11. Chaque tâche faite est ajoutée en haut de la table « Fait » de `TACHES.md`, avec un numéro qui suit. Quand la table dépasse 10 lignes, déplace les plus vieilles dans `docs/historique.md`. Mets aussi à jour la fiche du mode touché (`docs/*.md`) si des chiffres ou des décisions changent.
+12. Termine par un rapport court, en français simple : ce qui est fait, ce qui n'est pas vérifié.

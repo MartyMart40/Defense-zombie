@@ -8,7 +8,7 @@ const VIB = {
   on: store.get('dt_vib', true) !== false,
   ok: typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function',
   until:0, last:0, n:0, gap:.06,
-  send(p){ try { navigator.vibrate(p); } catch (e) {} } // remplacé par les tests
+  send(p){ try { navigator.vibrate(p); } catch (e) { errNote(e); } } // remplacé par les tests
 };
 const vibNow = () => (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
 // ms : durée ; force : priorité (une vibration plus forte coupe la plus faible en cours)
@@ -46,17 +46,17 @@ function vibSet(on){ VIB.on = !!on; store.set('dt_vib', VIB.on); vibBtn(); if (V
 })();
 
 /* ---------- Crochets ---------- */
-try { const _b = fire; fire = function(){ const id = S && S.cur; const r = _b.apply(this, arguments); if (r !== false && (state === 'playing' || state === 'mech')) vibShot(id); return r; }; } catch (e) {}
+try { const _b = fire; fire = function(){ const id = S && S.cur; const r = _b.apply(this, arguments); if (r !== false && (state === 'playing' || state === 'mech')) vibShot(id); return r; }; } catch (e) { errNote(e); }
 // Explosions : toutes passent par Snd.boom (barils, roquettes, grenades, gonflés, mortier, ogive)
 try {
   const _b = Snd.boom;
   Snd.boom = function(power){ const r = _b.apply(this, arguments); if (state === 'playing' || state === 'mech' || state === 'rts') vibBoom(power, null); return r; };
-} catch (e) {}
+} catch (e) { errNote(e); }
 // Gros coups sur la barricade (colosse, boss) : une secousse dans la main
 try {
   const _h = hitBarricade;
   hitBarricade = function(z, dmg, shk){ const r = _h.apply(this, arguments); if (shk >= .45 && (state === 'playing' || state === 'mech')) vib(Math.round(40 + 80 * Math.min(1, shk)), 8); return r; };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
 window.__vib = { VIB, VIB_ARME, vib, vibShot, vibBoom, vibSet };

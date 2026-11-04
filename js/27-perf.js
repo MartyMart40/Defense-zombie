@@ -38,7 +38,7 @@ function setFps(on){ perfFps = !!on; store.set('dt_fps', perfFps); fpsN = 0; fps
 try {
   const _visualsPerf = visuals;
   visuals = function(dt){ const r = _visualsPerf(dt); zInstSync(); fpsTick(); return r; };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques et tests/perf.html
 window.__zperf = {

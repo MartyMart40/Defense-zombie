@@ -146,7 +146,7 @@ startWave = function(){
     if (plan.boss) sub += S.wave === 1 ? ' Un boss viendra.' : ', dont un boss !';
     if (best && S.wave === best + 1) sub += ' Record à battre !';
     $('bSub').textContent = sub;
-  } catch (e) {}
+  } catch (e) { errNote(e); }
   return r;
 };
 const _infEndWave = endWave;
@@ -196,7 +196,7 @@ renderShop = function(){
     });
     const nw = S.wave + 1;
     $('btnNext').textContent = 'Lancer la vague ' + nw + (typeof isBossWave === 'function' && isBossWave(nw) ? ' (boss)' : '');
-  } catch (e) {}
+  } catch (e) { errNote(e); }
   return r;
 };
 
@@ -234,7 +234,7 @@ showEnd = function(won){
     const ob = $('overBest'); if (ob && ob.classList) ob.classList.toggle('inf-rec', !!R.newRec);
     againNext = false;
     $('btnAgain').textContent = 'Rejouer le mode infini';
-  } catch (e) {}
+  } catch (e) { errNote(e); }
   return r;
 };
 
@@ -253,7 +253,7 @@ renderMap = function(){
         + '<button class="inf-btn" data-inf="' + i + '"' + (open ? '' : ' aria-disabled="true" aria-label="Mode infini verrouillé"') + '>' + (open ? 'Mode infini' : '🔒 Mode infini') + '</button>';
       info.appendChild(d);
     });
-  } catch (e) {}
+  } catch (e) { errNote(e); }
   return r;
 };
 function infLabels(){

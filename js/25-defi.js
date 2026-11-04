@@ -51,7 +51,7 @@ function defiKeyAdd(k, n){
 }
 function defiDateTxt(k){
   const p = defiParse(k); if (!p) return k;
-  try { const t = new Date(p[0], p[1] - 1, p[2]).toLocaleDateString('fr-CA', { weekday:'long', day:'numeric', month:'long', year:'numeric' }); if (t) return t.charAt(0).toUpperCase() + t.slice(1); } catch (e) {}
+  try { const t = new Date(p[0], p[1] - 1, p[2]).toLocaleDateString('fr-CA', { weekday:'long', day:'numeric', month:'long', year:'numeric' }); if (t) return t.charAt(0).toUpperCase() + t.slice(1); } catch (e) { errNote(e); }
   return k;
 }
 
@@ -181,7 +181,7 @@ wavePlan = function(w, L){
       p.queue.splice(Math.round(p.queue.length * .4), 0, 'boss');
       p.total = p.queue.length; p.boss = typeof bossVariant === 'function' ? bossVariant(w, curLoc).name : 'Boss';
     }
-  } catch (e) {}
+  } catch (e) { errNote(e); }
   return p;
 };
 // Nouvelle partie : arme imposée, barricade fragile
@@ -250,7 +250,7 @@ renderShop = function(){
     if (defiMod('sansRep')) defiShopWall();
     if (S.wave === 0) $('shopTitle').textContent = 'Défi du jour';
     $('shopStats').innerHTML += '<span class="defi-tag">Défi : <strong>' + defiModNames(DEFI.run.mods) + '</strong></span>';
-  } catch (e) {}
+  } catch (e) { errNote(e); }
   return r;
 };
 
@@ -312,7 +312,7 @@ showEnd = function(won){
     $('overBest').textContent = msg + (old ? ' ' + old : '');
     againNext = false;
     $('btnAgain').textContent = won ? 'Rejouer le défi' : 'Réessayer le défi';
-  } catch (e) {}
+  } catch (e) { errNote(e); }
   return r;
 };
 // « Rejouer » de l'écran de fin : startLocation(LOCS.indexOf(copie)) = startLocation(-1)

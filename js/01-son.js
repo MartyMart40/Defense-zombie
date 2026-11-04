@@ -102,7 +102,7 @@ const Snd = {
     if (!this.ctx) return;
     try { const t = this.ctx.currentTime, p = rand(.85, 1.15);
       this._nz(t, 'lowpass', 1400 * p, 1, .06, .14); this._osc(t, 'sine', 190 * p, 80, .07, .1); this._nz(t, 'bandpass', 3200 * p, 4, .02, .05);
-    } catch (e) {}
+    } catch (e) { errNote(e); }
   },
   // Recharge : déclic du chargeur, chargeur qui glisse, claque en place, culasse armée
   reload(){
@@ -112,17 +112,17 @@ const Snd = {
       this._nz(t + .12, 'bandpass', 1500 * p, 2, .14, .06, null, 900);
       this._nz(t + .5, 'bandpass', 2300 * p, 5, .04, .16); this._osc(t + .5, 'sine', 160 * p, 90, .06, .08);
       this._nz(t + .72, 'bandpass', 2800 * p, 6, .03, .12); this._nz(t + .82, 'bandpass', 2000 * p, 6, .04, .14);
-    } catch (e) {}
+    } catch (e) { errNote(e); }
   },
   // Chargeur vide : percuteur qui claque à sec
-  empty(){ if (!this.ctx) return; try { const t = this.ctx.currentTime; this._nz(t, 'bandpass', 4200, 9, .02, .1); this._nz(t + .012, 'bandpass', 1800, 6, .02, .05); } catch (e) {} },
+  empty(){ if (!this.ctx) return; try { const t = this.ctx.currentTime; this._nz(t, 'bandpass', 4200, 9, .02, .1); this._nz(t + .012, 'bandpass', 1800, 6, .02, .05); } catch (e) { errNote(e); } },
   // Coup sur la barricade : bois qui craque, choc sourd
   thud(){
     if (!this.ctx) return;
     try { const t = this.ctx.currentTime, p = rand(.85, 1.15);
       this._nz(t, 'lowpass', 700 * p, 1, .25, .4, null, 150); this._osc(t, 'sine', 95 * p, 45, .2, .3); this._nz(t, 'bandpass', 1700 * p, 3, .06, .15);
       if (Math.random() < .4) this._nz(t + rand(.03, .08), 'bandpass', rand(2200, 3200), 5, .05, .08); // éclat de bois
-    } catch (e) {}
+    } catch (e) { errNote(e); }
   },
   buy(){ this.tone(700, .08, 'triangle', .12); this.tone(1050, .12, 'triangle', .12, null, .08); this.tone(1580, .14, 'sine', .05, null, .16); },
   // Grognement : voix rauque (dent de scie avec vibrato) passée dans deux formants, et un souffle
@@ -138,7 +138,7 @@ const Snd = {
       o.connect(f1); o.connect(f2); f1.connect(g); f2.connect(g); g.connect(this._out || this.master);
       o.start(t); lfo.start(t); o.stop(t + d + .05); lfo.stop(t + d + .05);
       this._nz(t, 'bandpass', rand(600, 900), 1.5, d * .8, .035, null, 300, .15);
-    } catch (e) {}
+    } catch (e) { errNote(e); }
   },
   // Explosion : claquement, boule de feu grave, grondement qui roule dans la rue, débris qui retombent
   boom(power, delay){
@@ -149,7 +149,7 @@ const Snd = {
       this._osc(t, 'sine', 70, 22, .8 + .4 * p, .8 * Math.min(p, 1.5), o);
       this._nz(t + .05, 'lowpass', 400, 1, 1.6 + p, .45 * Math.min(p, 1.6), o, 60, .1);
       for (let i = 0; i < 4; i++) this._nz(t + rand(.25, .9), 'bandpass', rand(1500, 4000), 6, rand(.03, .08), rand(.03, .08), o);
-    } catch (e) {}
+    } catch (e) { errNote(e); }
   },
   /* ---------- Réverbération de rue (tirs et explosions) ----------
      Bus fxBus : son direct vers master + envoi dans une réverbération (réponse générée : échos sur les façades, queue de 1,5 s). */
@@ -245,7 +245,7 @@ const Snd = {
   _mgStop(){
     const M = this.mg; this.mg = null; this.mgFiring = false; if (!M || !this.ctx) return;
     const t = this.ctx.currentTime;
-    try { M.mgn.gain.setTargetAtTime(0.0001, t, .05); M.bg.gain.setTargetAtTime(0.0001, t, .02); [M.mo, M.m2, M.sub].concat(M.srcs || [M.bs]).forEach(o => o.stop(t + .4)); } catch (e) {}
+    try { M.mgn.gain.setTargetAtTime(0.0001, t, .05); M.bg.gain.setTargetAtTime(0.0001, t, .02); [M.mo, M.m2, M.sub].concat(M.srcs || [M.bs]).forEach(o => o.stop(t + .4)); } catch (e) { errNote(e); }
   },
   // Tonnerre : grondement grave, un peu après l'éclair (delay en secondes)
   thunder(delay, power){
@@ -322,7 +322,7 @@ const Snd = {
     N.g.gain.setTargetAtTime(v > 0 ? .11 * Math.min(v, 1.6) : 0.0001, t, .9);
     if (v <= 0){
       const n = N; this.rainNodes = null; this.rainSrc = null; this.rainGain = null;
-      try { n.ps.stop(t + 3); n.bs.stop(t + 3); } catch (e) {}
+      try { n.ps.stop(t + 3); n.bs.stop(t + 3); } catch (e) { errNote(e); }
       return;
     }
     // Filtres qui dérivent lentement (nouvelle cible toutes les 2 à 5 s, glissement doux)
@@ -377,7 +377,7 @@ const Snd = {
       if (!any){
         const n = A; this.ambNodes = null;
         n.wg.gain.setTargetAtTime(0.0001, t, .5); n.rg.gain.setTargetAtTime(0.0001, t, .5);
-        try { n.ws.stop(t + 2.5); n.rs.stop(t + 2.5); } catch (e) {}
+        try { n.ws.stop(t + 2.5); n.rs.stop(t + 2.5); } catch (e) { errNote(e); }
         return;
       }
       // Grêle : impacts durs et nombreux sur la tôle (cliquetis métallique)

@@ -50,6 +50,8 @@ Les fichiers 04 à 38 se branchent encore par **réaffectation** : `const _b = v
 - une erreur dans un `try { } catch (e) {}` passe en silence ;
 - chaque enveloppe tourne à chaque image, même hors du toit.
 
+Les `catch (e) {}` sont devenus `catch (e) { errNote(e); }` (tâche 70) : une erreur de programmation n'est plus avalée en silence, elle va dans `JOURNAL` (`js/00-base.js`) et `tests/t-journal.js` la signale.
+
 Règle : **pas de nouveau crochet par réaffectation pour un mode**. Utiliser `Jeu.mode` et `Jeu.on`. On convertit les vieux crochets petit à petit, quand on touche le fichier, avec les tests comme filet. Les crochets qui changent un calcul (ex. le robot qui multiplie `damage`, ou `hitBarricade`) restent des réaffectations pour l'instant.
 
 ## Ajouter un nouveau mode : liste à suivre

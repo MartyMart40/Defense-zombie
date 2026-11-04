@@ -128,7 +128,7 @@ function rtsAlertCheck(dt){
     RTS_AL.cd = 8; RTS_AL.t = 6; RTS_AL.o = o;
     rtsAlert.textContent = '⚠ Base attaquée : ' + o.B.name + (o.type === 'hq' ? ' !' : '') + ' (toucher pour y aller)';
     rtsAlert.classList.remove('hide');
-    if (typeof Snd === 'object' && Snd.tone){ Snd.tone(520, .12, 'square', .06, 380); setTimeout(() => { try { Snd.tone(520, .12, 'square', .06, 380); } catch (e) {} }, 180); }
+    if (typeof Snd === 'object' && Snd.tone){ Snd.tone(520, .12, 'square', .06, 380); setTimeout(() => { try { Snd.tone(520, .12, 'square', .06, 380); } catch (e) { errNote(e); } }, 180); }
     return o;
   }
   return null;

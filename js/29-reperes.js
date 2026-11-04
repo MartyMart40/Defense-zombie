@@ -159,7 +159,7 @@ function rpPlace(A, s){
 
 /* ---------- 2. Flash de la barricade ---------- */
 function rpFlash(side, k){ if (!RP.cues) return; RP.fl[side] = Math.max(RP.fl[side], clamp(k, 0, 1)); rpFlashDraw(); }
-function rpHitAt(x, y, z, k){ if (!RP.cues) return; try { rpFlash(rpSideOf(x, y, z), k); } catch (e) {} }
+function rpHitAt(x, y, z, k){ if (!RP.cues) return; try { rpFlash(rpSideOf(x, y, z), k); } catch (e) { errNote(e); } }
 function rpFlashDraw(){
   ['L', 'R', 'B'].forEach(s => {
     const v = Math.round(RP.fl[s] * 50) / 50;
@@ -244,7 +244,7 @@ function rpSetSubs(on){ RP.subs = !!on; store.set('dt_subs', RP.subs); if (!RP.s
 
 /* ---------- Enveloppes (sans changer les sons ni les règles) ---------- */
 const rpName = z => { const T = z && ZTYPES[z.type]; return (T && T.name ? T.name : 'zombie').toLowerCase(); };
-try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); try { rpFrame(dt); } catch (e) {} return r; }; } catch (e) {}
+try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); try { rpFrame(dt); } catch (e) { errNote(e); } return r; }; } catch (e) { errNote(e); }
 // Coups sur la barricade (zombies ordinaires, colosse, volant)
 try {
   const _b = hitBarricade;
@@ -253,7 +253,7 @@ try {
     if (RP.cues && z && z.g){ const big = z.type === 'colossus' || z.type === 'boss'; rpHitAt(z.g.position.x, 1, BAR_Z, big ? .95 : clamp(.3 + (shk || 0) * .55, .3, .9)); }
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 // Crachats qui touchent la barricade
 const rpSpitWas = [];
 try {
@@ -275,7 +275,7 @@ try {
       return o;
     };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 // Boss : rugissement, autos lancées, coups de poing
 try {
   if (typeof bossAnnounce === 'function'){
@@ -309,9 +309,9 @@ try {
       return r;
     };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 // Frappe aérienne
-try { if (typeof pwStrike === 'function'){ const _b = pwStrike; pwStrike = function(){ const r = _b.apply(this, arguments); if (r) rpCaption('[Avion en approche]'); return r; }; } } catch (e) {}
+try { if (typeof pwStrike === 'function'){ const _b = pwStrike; pwStrike = function(){ const r = _b.apply(this, arguments); if (r) rpCaption('[Avion en approche]'); return r; }; } } catch (e) { errNote(e); }
 // Tonnerre et pluie (Snd est un objet : on enveloppe ses méthodes, le son reste le même)
 try {
   const _t = Snd.thunder;
@@ -323,7 +323,7 @@ try {
     RP.rainV = v;
     return _r.apply(this, arguments);
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 // Chien : aboiements avec la menace et sa direction
 try {
   if (typeof cpnBark === 'function'){
@@ -335,7 +335,7 @@ try {
       return r;
     };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 // Survivant et caisses
 try {
   if (typeof rueSpawnCiv === 'function'){
@@ -350,7 +350,7 @@ try {
     const _b = rueSpawnCrate;
     rueSpawnCrate = function(){ const c = _b.apply(this, arguments); if (c) rpCaption('[Caisse larguée]'); return c; };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 // Munitions : chargeur vide, recharge terminée
 try {
   const _f = fire;
@@ -366,7 +366,7 @@ try {
     if (was && reloadT <= 0 && state === 'playing' && S && S.ammo[S.cur] > 0) rpCaption('[Recharge terminée]');
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
 window.__reperes = {

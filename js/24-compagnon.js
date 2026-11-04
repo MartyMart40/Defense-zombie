@@ -536,15 +536,15 @@ function cpnNews(before){
 const cpnMetMap = () => { const o = {}; CPN_ORDER.forEach(id => { o[id] = cpnReqMet(id); }); return o; };
 
 /* ---------- Crochets sur le code commun (par réaffectation) ---------- */
-try { const _b = update; update = function(dt){ const r = _b.apply(this, arguments); if (state === 'playing') cpnUpdate(dt); return r; }; } catch (e) {}
-try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); cpnFrame(dt); return r; }; } catch (e) {}
-try { const _b = newGame; newGame = function(){ const r = _b.apply(this, arguments); cpnReset(); return r; }; } catch (e) {}
-try { const _b = startWave; startWave = function(){ cpnReset(); return _b.apply(this, arguments); }; } catch (e) {}
-try { const _b = clearZombies; clearZombies = function(){ cpnClearFx(); return _b.apply(this, arguments); }; } catch (e) {}
+try { const _b = update; update = function(dt){ const r = _b.apply(this, arguments); if (state === 'playing') cpnUpdate(dt); return r; }; } catch (e) { errNote(e); }
+try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); cpnFrame(dt); return r; }; } catch (e) { errNote(e); }
+try { const _b = newGame; newGame = function(){ const r = _b.apply(this, arguments); cpnReset(); return r; }; } catch (e) { errNote(e); }
+try { const _b = startWave; startWave = function(){ cpnReset(); return _b.apply(this, arguments); }; } catch (e) { errNote(e); }
+try { const _b = clearZombies; clearZombies = function(){ cpnClearFx(); return _b.apply(this, arguments); }; } catch (e) { errNote(e); }
 try {
   const _b = startReload;
   startReload = function(){ const was = reloadT; const r = _b.apply(this, arguments); if (!(was > 0) && reloadT > 0) cpnOnReload(); return r; };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _b = damage;
   damage = function(z, amt){
@@ -553,7 +553,7 @@ try {
     const a = Array.prototype.slice.call(arguments); a[1] = amt * m;
     return _b.apply(this, a);
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _b = victory;
   victory = function(){
@@ -561,7 +561,7 @@ try {
     if (msg.length){ const el = $('overBest'); if (el) el.textContent = (el.textContent ? el.textContent + ' ' : '') + msg.join(' '); }
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _b = addXP;
   addXP = function(){
@@ -569,10 +569,10 @@ try {
     if ((P.level || 1) > lv0){ const msg = cpnNews(before); if (msg.length) setTimeout(() => toast(msg[0]), 5200); }
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   if (typeof renderAtelier === 'function'){ const _b = renderAtelier; renderAtelier = function(){ const r = _b.apply(this, arguments); cpnRenderShop(); return r; }; }
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 // Ancienne sauvegarde qui remplit déjà une condition : on donne le compagnon tout de suite
 cpnSync(); cpnApply(); cpnReset();

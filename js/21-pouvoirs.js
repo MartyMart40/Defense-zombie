@@ -476,11 +476,11 @@ function pwRenderShop(){
 })();
 
 /* ---------- Crochets sur le code commun (par réaffectation) ---------- */
-try { const _b = update; update = function(dt){ const r = _b.apply(this, arguments); if (state === 'playing') pwUpdate(dt); return r; }; } catch (e) {}
-try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); pwFrame(); return r; }; } catch (e) {}
-try { const _b = updateHUD; updateHUD = function(){ const r = _b.apply(this, arguments); pwHUD(); return r; }; } catch (e) {}
-try { const _b = newGame; newGame = function(){ const r = _b.apply(this, arguments); pwReset(); return r; }; } catch (e) {}
-try { const _b = startWave; startWave = function(){ pwReset(); return _b.apply(this, arguments); }; } catch (e) {}
+try { const _b = update; update = function(dt){ const r = _b.apply(this, arguments); if (state === 'playing') pwUpdate(dt); return r; }; } catch (e) { errNote(e); }
+try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); pwFrame(); return r; }; } catch (e) { errNote(e); }
+try { const _b = updateHUD; updateHUD = function(){ const r = _b.apply(this, arguments); pwHUD(); return r; }; } catch (e) { errNote(e); }
+try { const _b = newGame; newGame = function(){ const r = _b.apply(this, arguments); pwReset(); return r; }; } catch (e) { errNote(e); }
+try { const _b = startWave; startWave = function(){ pwReset(); return _b.apply(this, arguments); }; } catch (e) { errNote(e); }
 try {
   const _b = addXP;
   addXP = function(){
@@ -491,10 +491,10 @@ try {
     }
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   if (typeof renderAtelier === 'function'){ const _b = renderAtelier; renderAtelier = function(){ const r = _b.apply(this, arguments); pwRenderShop(); return r; }; }
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
 window.__pouvoirs = { PW, PW_ORDER, PW_LINES, PW_MAX, pwStats, pwNorm, pwLv, pwUnlocked, pwUpgCost, pwUpgrade, powUse, pwTry, pwUpdate, pwClearFx, pwReset, pwRefill,
@@ -563,4 +563,4 @@ function pwPreview(){
     pwArc.material.color.setHex(ok ? 0xffd8a0 : 0x888888); pwArc.visible = true;
   } else pwArc.visible = false;
 }
-try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); pwPreview(); return r; }; } catch (e) {}
+try { const _b = visuals; visuals = function(dt){ const r = _b.apply(this, arguments); pwPreview(); return r; }; } catch (e) { errNote(e); }

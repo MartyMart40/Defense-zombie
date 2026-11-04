@@ -17,7 +17,7 @@ try {
     Jeu.emit('image', dt);
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 // Zombie tué : le mode actif est prévenu, puis l'événement 'tue' (z, etaitVivant)
 try {
@@ -30,7 +30,7 @@ try {
     Jeu.emit('tue', z, was);
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 // Musique : le mode actif choisit, sinon le jeu du toit choisit
 try {
@@ -42,7 +42,7 @@ try {
       return _b.apply(this, arguments);
     };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
 window.__jeu = Jeu;

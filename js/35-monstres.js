@@ -21,7 +21,7 @@ Object.assign(ZTYPES, {
   shield:   { name:'Bouclier',   hp:170, speed:1.15, dmg:10, reward:45, scale:1.08, skin:0x7d9466 }
 });
 Object.assign(ZXP, { crawler:2, bloater:8, gargoyle:18, crow:1, shield:12 });
-try { Object.assign(SCRAP_Z, { crawler:.3, bloater:1.2, gargoyle:3, crow:.15, shield:2 }); } catch (e) {}
+try { Object.assign(SCRAP_Z, { crawler:.3, bloater:1.2, gargoyle:3, crow:.15, shield:2 }); } catch (e) { errNote(e); }
 const MN_TYPES = ['crawler', 'bloater', 'gargoyle', 'crow', 'shield'];
 const MN = { child:false, booms:0, blocks:0 };
 const MN_PACK = 5, MN_FLOCK = isTouch ? 7 : 11; // petits par meute de rampants, corbeaux par nuée
@@ -52,7 +52,7 @@ function mnSnd(kind){
     else if (kind === 'clang'){ Snd._osc(t, 'triangle', rand(1400, 1900), 1200, .12, .05); Snd._nz(t, 'bandpass', 3200, 6, .03, .08); }
     else if (kind === 'stone'){ Snd._nz(t, 'bandpass', rand(1800, 2600), 5, .03, .06); }
     else if (kind === 'gurgle'){ Snd._osc(t, 'sine', rand(90, 130), 60, .3, .06); Snd._nz(t, 'lowpass', 500, 2, .3, .05); }
-  } catch (e) {}
+  } catch (e) { errNote(e); }
 }
 // Fait apparaître les petits d'une meute ou d'une nuée autour du chef (sans qu'ils en créent d'autres)
 function mnSpawnGroup(lead, type, n, spread){
@@ -288,7 +288,7 @@ try {
     if (!(z.blockT > now - .6)){ z.blockT = now; if (typeof ecrPush === 'function') ecrPush(wk.effet === 'pierre' ? 'Pierre : ricochet' : 'Bloqué par le bouclier', 'weak'); mnSnd(wk.effet === 'pierre' ? 'stone' : 'clang'); }
     return true;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 /* ---------- Vagues : ils remplacent des marcheurs ---------- */
 function mnReplace(q, type, n){
@@ -320,10 +320,10 @@ try {
         const tot = p.queue.filter(t => t !== 'boss').length, c = mnCounts(w, L, tot);
         MN_TYPES.forEach(t => mnReplace(p.queue, t, c[t]));
       }
-    } catch (e) {}
+    } catch (e) { errNote(e); }
     return p;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 /* ---------- Repères hors champ : la gargouille comme un volant, le gonflé près de la barricade ---------- */
 try {
@@ -335,7 +335,7 @@ try {
       return _r.apply(this, arguments);
     };
   }
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
 window.__mn = { MN, MN_TYPES, MN_W, MN_BOOM, MN_PACK, MN_FLOCK, mnCounts, mnExplode };

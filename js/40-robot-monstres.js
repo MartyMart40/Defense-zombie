@@ -20,19 +20,19 @@ Object.assign(ZTYPES, {
   behemoth:    { name:'Béhémoth ailé', hp:30000, speed:1.6, dmg:50, reward:2500, scale:3,    skin:0x6a6a5a, xp:350 }
 });
 Object.assign(ZXP, { stalker:14, spider:6, abomination:60 });
-try { Object.assign(SCRAP_Z, { stalker:2.5, spider:1, abomination:12, titan:150, broodmother:120, behemoth:120 }); } catch (e) {}
+try { Object.assign(SCRAP_Z, { stalker:2.5, spider:1, abomination:12, titan:150, broodmother:120, behemoth:120 }); } catch (e) { errNote(e); }
 const MB_BOSS = ['titan', 'broodmother', 'behemoth'];
 const MB_WEAK = { coeur:{ mult:3, effet:'coeur' }, oeufs:{ mult:2.5, effet:'oeufs' } };
 const MB = { waveN:0, waveT:0, routeN:0, spawned:{}, stomps:0, broods:0, spits:0 };
 const MW_EVERY = 28;       // secondes entre deux vagues
 // Le robot doit pouvoir poursuivre ceux qui marchent (39-robot.js : poursuite par derrière)
-try { Object.assign(MECH_GROUND, { stalker:1, spider:1, abomination:1 }); } catch (e) {}
+try { Object.assign(MECH_GROUND, { stalker:1, spider:1, abomination:1 }); } catch (e) { errNote(e); }
 const mbV = new THREE.Vector3();
 function mbRoar(big){
   if (typeof Snd !== 'object' || !Snd.ctx || !Snd._osc) return;
   try { const t = Snd.ctx.currentTime, o = Snd._fx ? Snd._fx() : null;
     Snd._osc(t, 'sawtooth', big ? 70 : 140, big ? 38 : 70, 1.4, .25, o); Snd._osc(t, 'square', big ? 105 : 190, big ? 52 : 95, 1.2, .08, o); Snd._nz(t, 'bandpass', 500, 1.5, 1.3, .18, o, 200, .1);
-  } catch (e) {}
+  } catch (e) { errNote(e); }
 }
 
 /* ---------- Rôdeur : grand, maigre, longues griffes ; bondit quand il arrive près ---------- */
@@ -212,10 +212,10 @@ try {
       // Règle de la rue choisie au carrefour
       if (RT.zMult){ const k = RT.zMult; p.maxAlive = Math.min(DEV_CAP, Math.round(p.maxAlive * k)); p.interval /= k; }
       if (RT.spd) p.spdMult *= RT.spd;
-    } catch (e) {}
+    } catch (e) { errNote(e); }
     return p;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 /* ---------- Vagues : de tous les côtés, régulièrement ---------- */
 const MB_SIDE = ['walker', 'runner', 'crawler', 'spider', 'stalker', 'bloater', 'shield'];
@@ -299,7 +299,7 @@ try {
     }
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _s = mechStreet;
   mechStreet = function(first){
@@ -309,15 +309,15 @@ try {
     if (!first && MECH.route && MECH.route.repairFull && S) S.bar = S.barMax;
     return r;
   };
-} catch (e) {}
-try { const _h = mechHUD; mechHUD = function(){ const r = _h.apply(this, arguments); mbBossHUD(); return r; }; } catch (e) {}
+} catch (e) { errNote(e); }
+try { const _h = mechHUD; mechHUD = function(){ const r = _h.apply(this, arguments); mbBossHUD(); return r; }; } catch (e) { errNote(e); }
 // Ferraille de la rue choisie (Ruelles sombres ×2, etc.)
-try { const _sf = scrapFor; scrapFor = function(){ const v = _sf.apply(this, arguments); return MECH.on && MECH.route && MECH.route.scrap ? v * MECH.route.scrap : v; }; } catch (e) {}
+try { const _sf = scrapFor; scrapFor = function(){ const v = _sf.apply(this, arguments); return MECH.on && MECH.route && MECH.route.scrap ? v * MECH.route.scrap : v; }; } catch (e) { errNote(e); }
 // Musique de boss pour les boss du robot : voir musique() du mode 'robot' (js/39-robot.js)
 // Pendant le choix du carrefour, la pause et la reprise ne font rien (le choix reste à l'écran)
-try { const _pz = mechPause; mechPause = function(){ if (MECH.choosing) return; return _pz.apply(this, arguments); }; mechPause.again = _pz.again; } catch (e) {}
-try { const _rs = mechResume; mechResume = function(){ if (MECH.choosing) return; return _rs.apply(this, arguments); }; } catch (e) {}
-try { const _q = mechQuit; mechQuit = function(){ MECH.choosing = false; MECH.route = null; mbBar.classList.add('hide'); return _q.apply(this, arguments); }; } catch (e) {}
+try { const _pz = mechPause; mechPause = function(){ if (MECH.choosing) return; return _pz.apply(this, arguments); }; mechPause.again = _pz.again; } catch (e) { errNote(e); }
+try { const _rs = mechResume; mechResume = function(){ if (MECH.choosing) return; return _rs.apply(this, arguments); }; } catch (e) { errNote(e); }
+try { const _q = mechQuit; mechQuit = function(){ MECH.choosing = false; MECH.route = null; mbBar.classList.add('hide'); return _q.apply(this, arguments); }; } catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
 window.__mb = { MB, MB_BOSS, MB_RULES, MW_EVERY, mbWave, mbCrossroads, mbGo, mbRoutes, mbBossAlive };

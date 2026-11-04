@@ -269,7 +269,7 @@ function armClear(){
 try {
   const _updateArm = update;
   update = function(dt){ armStep(dt); return _updateArm(dt); };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _visualsArm = visuals;
   visuals = function(dt){
@@ -278,11 +278,11 @@ try {
     if (ARM.active && state !== 'playing' && state !== 'paused' && state !== 'mech') armClear(); // fin de vague : plus rien en l'air (le robot garde ses roquettes)
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _clearZArm = clearZombies;
   clearZombies = function(){ const r = _clearZArm.apply(this, arguments); armClear(); return r; };
-} catch (e) {}
+} catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
 window.__armes = { ARM, armLaunch, armFlame, armExplode, armIgnite, armStep, armClear, get spin(){ return spin; }, setSpin(v){ spin = v; },

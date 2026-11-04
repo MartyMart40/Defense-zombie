@@ -39,10 +39,10 @@ function ecrPush(txt, kind, color){
 }
 function ecrClear(){ ECR.items.forEach(it => clearTimeout(it.to)); ECR.items.length = 0; if (ECR.box) while (ECR.box.firstChild) ECR.box.removeChild(ECR.box.firstChild); }
 
-try { floatText = function(txt, pos, head){ ecrPush(txt, head ? 'head' : ''); }; } catch (e) {}
-try { weakText = function(txt){ ecrPush(txt, 'weak'); }; } catch (e) {}
-try { rueFloat = function(txt, pos, color, big){ ecrPush(txt, big ? 'head' : '', color); }; } catch (e) {}
+try { floatText = function(txt, pos, head){ ecrPush(txt, head ? 'head' : ''); }; } catch (e) { errNote(e); }
+try { weakText = function(txt){ ecrPush(txt, 'weak'); }; } catch (e) { errNote(e); }
+try { rueFloat = function(txt, pos, color, big){ ecrPush(txt, big ? 'head' : '', color); }; } catch (e) { errNote(e); }
 // Hors partie (menus, fin), la colonne se vide
-try { const _b = showScreen; showScreen = function(){ ecrClear(); return _b.apply(this, arguments); }; } catch (e) {}
+try { const _b = showScreen; showScreen = function(){ ecrClear(); return _b.apply(this, arguments); }; } catch (e) { errNote(e); }
 
 window.__ecr = { ECR, ECR_MAX, ecrPush, ecrClear };

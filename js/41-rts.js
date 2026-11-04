@@ -326,8 +326,8 @@ function rtsDesert(){
   RTS.chunks = 0; RTS.ruins = []; rtsChunk(-1); rtsEnsureChunks(-300);
   RTS.pad = new THREE.Mesh(new THREE.CircleGeometry(1, 48), new THREE.MeshLambertMaterial({ color:0x8a867c })); RTS.pad.rotation.x = -Math.PI / 2; RTS.pad.position.y = .04; world.add(RTS.pad);
   RTS.edge = new THREE.Mesh(new THREE.RingGeometry(.97, 1, 64), new THREE.MeshBasicMaterial({ color:0xffd040, transparent:true, opacity:.7, side:THREE.DoubleSide, depthWrite:false })); RTS.edge.rotation.x = -Math.PI / 2; RTS.edge.position.y = .07; world.add(RTS.edge);
-  try { if (typeof ambReset === 'function') ambReset(); if (typeof __amb === 'object') __amb.set(pick(['clair', 'clair', 'vent', 'coucher', 'poussiere', 'nuitClaire', 'canicule'])); } catch (e) {}
-  try { if (typeof gfxPlaceDebris === 'function') gfxPlaceDebris(); if (typeof gfxPlaceHalos === 'function') gfxPlaceHalos(); } catch (e) {}
+  try { if (typeof ambReset === 'function') ambReset(); if (typeof __amb === 'object') __amb.set(pick(['clair', 'clair', 'vent', 'coucher', 'poussiere', 'nuitClaire', 'canicule'])); } catch (e) { errNote(e); }
+  try { if (typeof gfxPlaceDebris === 'function') gfxPlaceDebris(); if (typeof gfxPlaceHalos === 'function') gfxPlaceHalos(); } catch (e) { errNote(e); }
 }
 // La carte est faite de tronçons de 100 m (sable, montagnes des côtés, route, ruines, épaves), ajoutés au nord au besoin
 function rtsEnsureChunks(z){

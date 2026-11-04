@@ -35,7 +35,7 @@ function rtsSave(){
   return true;
 }
 function rtsSaveGet(){ const d = store.get(RTS_SAVE_KEY, null); return rtsSaveOk(d) ? d : null; }
-function rtsSaveClear(){ try { localStorage.removeItem(RTS_SAVE_KEY); } catch (e) {} rtsSaveBtn(); }
+function rtsSaveClear(){ try { localStorage.removeItem(RTS_SAVE_KEY); } catch (e) { errNote(e); } rtsSaveBtn(); }
 // Une sauvegarde lisible : bonne version, un QG, une route et des nids
 function rtsSaveOk(d){
   return !!d && typeof d === 'object' && d.v === RTS_SAVE_V && Array.isArray(d.blds) && Array.isArray(d.units) && Array.isArray(d.nests)

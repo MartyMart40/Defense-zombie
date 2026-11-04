@@ -365,7 +365,7 @@ function ambMusic(dt){
 }
 const ambSndLvl = { wind:0, birds:0, hail:0, crickets:0, cicadas:0, rumble:0 };
 function ambFrame(dt){
-  try { ambParticles(dt); ambLightning(dt); ambMusic(dt); } catch (e) {}
+  try { ambParticles(dt); ambLightning(dt); ambMusic(dt); } catch (e) { errNote(e); }
 }
 
 /* ---------- Réglage « Musique » dans l'écran Pause ---------- */
@@ -387,8 +387,8 @@ function ambMusicUI(){
 /* ---------- Crochets ---------- */
 try {
   const _bwAmb = buildWorld;
-  buildWorld = function(){ const r = _bwAmb.apply(this, arguments); try { ambReset(); } catch (e) {} return r; };
-} catch (e) {}
+  buildWorld = function(){ const r = _bwAmb.apply(this, arguments); try { ambReset(); } catch (e) { errNote(e); } return r; };
+} catch (e) { errNote(e); }
 try {
   const _swAmb = startWave;
   startWave = function(){
@@ -396,28 +396,28 @@ try {
     try {
       const w = ambSet(ambPick(curLoc, S ? S.wave : 1)), nm = WEATHERS[w].name;
       if (nm){ const el = $('bSub'); if (el){ const t = String(el.textContent || '').trim(); el.textContent = t ? t + ' · ' + nm : nm; } }
-    } catch (e) {}
+    } catch (e) { errNote(e); }
     return r;
   };
-} catch (e) {}
+} catch (e) { errNote(e); }
 try {
   const _gmAmb = goMap;
-  goMap = function(){ const r = _gmAmb.apply(this, arguments); try { ambSet('clair'); } catch (e) {} return r; };
-} catch (e) {}
+  goMap = function(){ const r = _gmAmb.apply(this, arguments); try { ambSet('clair'); } catch (e) { errNote(e); } return r; };
+} catch (e) { errNote(e); }
 try {
   const _vicAmb = victory;
-  victory = function(){ const r = _vicAmb.apply(this, arguments); try { Snd.musFanfare(); } catch (e) {} return r; };
-} catch (e) {}
+  victory = function(){ const r = _vicAmb.apply(this, arguments); try { Snd.musFanfare(); } catch (e) { errNote(e); } return r; };
+} catch (e) { errNote(e); }
 try {
   const _goAmb = gameOver;
-  gameOver = function(){ const r = _goAmb.apply(this, arguments); try { Snd.musDefeat(); } catch (e) {} return r; };
-} catch (e) {}
+  gameOver = function(){ const r = _goAmb.apply(this, arguments); try { Snd.musDefeat(); } catch (e) { errNote(e); } return r; };
+} catch (e) { errNote(e); }
 try {
   const _visAmb = visuals;
   visuals = function(dt){ const r = _visAmb.apply(this, arguments); ambFrame(dt); return r; };
-} catch (e) {}
-try { ambReset(); } catch (e) {}
-try { ambMusicUI(); } catch (e) {}
+} catch (e) { errNote(e); }
+try { ambReset(); } catch (e) { errNote(e); }
+try { ambMusicUI(); } catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
 window.__amb = {

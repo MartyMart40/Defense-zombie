@@ -10,7 +10,8 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | `js/42-rts-unites.js` | Unités, bâtiments, nids, début et fin de partie, zombies (route, cibles, boss), IA des unités, boucle `rtsStep` |
 | `js/43-rts-pilotage.js` | Pilotage à la première personne de n'importe quelle unité, tourelles et mortier contrôlés, vue du canonnier de l'AC-130 |
 | `js/44-rts-interface.js` | Menus du bas (onglets, menu repliable), panneaux, pose des bâtiments sur quadrillage, commandes (souris, clavier, doigt), inscription du mode (`Jeu.mode('rts')`) |
-| `tests/t-rts.js`, `tests/t-cell.js` | Tests |
+| `js/45-rts-sauvegarde.js` | Partie en cours gardée toutes les 30 s, à la pause et quand le cell met le jeu de côté ; reprise par « Continuer la guerre » |
+| `tests/t-rts.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js` | Tests |
 
 ## Règles et chiffres actuels
 - Départ : 900 $, QG, usine de robots, 3 tourelles mitrailleuses, 3 fantassins.
@@ -45,6 +46,12 @@ Les prix exacts sont dans `RTS_UNITS` et `RTS_BLD` (`js/41-rts.js`) : si un chif
 - Pose des bâtiments sur un quadrillage de 2 m, rotation par quarts de tour (R ou bouton), gardée pour le suivant.
 - Le bombardier est devenu un AC-130 : il tourne en virage à gauche autour de la zone visée.
 - Au cell, le menu du bas se replie (choix gardé dans `dt_rtsFold`) ; au cell couché, une seule rangée qui défile de côté.
+
+## Sauvegarde de la partie
+- Gardé : argent, temps, menace, hordes, boss, améliorations, taille de la base, la route, tous les nids (détruits compris), bâtiments (niveau, vie, rotation), unités (vie, poste).
+- Pas gardé : les zombies en vie, les obus en vol, le pilotage. La partie reprend sur la carte avec un instant de calme.
+- Pause : « Sauver et quitter » ou « Abandonner (efface la partie) ». La sauvegarde est aussi effacée quand le QG tombe.
+- Commencer une nouvelle partie quand une partie est sauvée demande une confirmation (deuxième clic).
 
 ## À équilibrer en jouant
 - Prix des véhicules et des avions, force des boss.

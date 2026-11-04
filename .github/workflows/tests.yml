@@ -1,0 +1,30 @@
+# Lance toute la suite de tests du jeu (tests/) dans Chromium à chaque push et à chaque demande de fusion.
+# Résultat : onglet « Actions » du dépôt sur GitHub (vert si tout passe, rouge sinon, avec le nom des tests qui échouent).
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Installer Playwright et Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.63.0
+          npx playwright install --with-deps chromium
+      - name: Vérifier la syntaxe
+        run: cat js/*.js > /tmp/all.js && node --check /tmp/all.js && node --check sw.js
+      - name: Servir le jeu
+        run: |
+          python3 -m http.server 8765 >/dev/null 2>&1 &
+          sleep 2
+      - name: Lancer les tests
+        run: node outils/lancer-tests.js http://localhost:8765/

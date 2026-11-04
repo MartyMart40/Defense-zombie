@@ -173,6 +173,8 @@ function outilsJeu(){
   o.reset = function(defauts, profil){
     state = 'test'; firing = false; zoomed = false; reloadT = 0;
     try { clearZombies(); } catch (e) {}
+    // Pas de partie RTS sauvée d'un test à l'autre (le bouton Guerre des robots demanderait une confirmation)
+    try { localStorage.removeItem('dt_rts_partie'); if (typeof rtsSaveBtn === 'function') rtsSaveBtn(); } catch (e) {}
     Object.keys(P).forEach(function(k){ delete P[k]; });
     Object.assign(P, JSON.parse(JSON.stringify(defauts)), profil || {});
     saveP();

@@ -16,7 +16,7 @@
 | 16 à 38 | Systèmes du toit : atelier, défenses, types de zombies, boss, armes, pouvoirs, ambiance, rue, compagnons, défi, combos, perf, infini, repères, missions, punch, sauvegarde, écritures, arsenal, monstres, rendu, bruitages, vibrations |
 | 39 à 40 | Mode robot |
 | 41 à 44 | Mode RTS « Guerre des robots » |
-| 45 à 49 | Libre (petits ajouts aux modes existants) |
+| 45 à 49 | Petits ajouts : 45 sauvegarde de la partie RTS, 46 application installable ; 47 à 49 libres |
 | 50 à 59 | Prochain gros mode ou système |
 | 60 à 89 | Modes suivants (une dizaine chacun) |
 | 90 | `90-branchements.js` : branche le registre des modes sur le jeu commun. Toujours le dernier. |
@@ -62,7 +62,17 @@ Règle : **pas de nouveau crochet par réaffectation pour un mode**. Utiliser `J
 7. `window.__nom = { ... }` pour les tests, un fichier `tests/t-nom.js`, ajouté dans `tests/index.html`.
 8. Une fiche `docs/nom.md` (modèle : `docs/rts.md`) et une ligne dans la carte du code de `AGENTS.md`.
 
+## Application installable et cache
+- `manifest.webmanifest` (nom, icônes de `icones/`, plein écran) et `sw.js` (service worker), enregistré par `js/46-application.js`.
+- `sw.js` va au réseau d'abord et garde une copie de chaque fichier ; sans réseau, il sert la copie (en ignorant le `?v=`). La page de tests passe toujours par le réseau. Changer `CACHE` dans `sw.js` jette toutes les vieilles copies.
+- Les `?v=...` dans `index.html` forcent les navigateurs à recharger : `bash outils/version.sh` avant chaque mise en ligne.
+
+## Sauvegardes
+- Profil permanent `P` (`dt_prof`), réglages `dt_...` : `store.get` / `store.set`. Toutes les clés `dt_` partent dans le fichier de sauvegarde OneDrive (`js/32-sauvegarde.js`).
+- Partie RTS en cours : `dt_rts_partie` (`js/45-rts-sauvegarde.js`), avec un numéro de version `v`. Changer le format : monter `RTS_SAVE_V` et accepter l'ancien, ou l'ignorer (une sauvegarde illisible est ignorée sans erreur).
+
 ## Tests
 - `tests/index.html` charge le jeu dans un iframe et lance tous les `tests/t-*.js`. Résultat dans `window.RESULTATS`.
 - `__t.graine(n, fn)` fixe le hasard pour un test qui en dépend.
-- Pour les lancer sans téléphone : un serveur local (`python3 -m http.server`) et Chromium (Playwright), page `/tests/`.
+- Pour les lancer sans téléphone : `python3 -m http.server 8765` puis `node outils/lancer-tests.js` (Chromium avec Playwright). Code de sortie 1 si un test échoue.
+- Sur GitHub : `.github/workflows/tests.yml` lance la même chose à chaque push ; résultat dans l'onglet Actions du dépôt.

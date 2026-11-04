@@ -19,6 +19,8 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 ## Carte du code
 - `index.html` : écrans, HUD, boutons et la liste des scripts, dans l'ordre. `css/style.css` : tout le style.
 - `lib/three.min.js` : Three.js r128 (ne pas modifier ; secours sur cdnjs si absent).
+- `manifest.webmanifest`, `sw.js`, `icones/` : application installable. `sw.js` sert la copie en cache seulement sans réseau.
+- `outils/` : `lancer-tests.js` (toute la suite dans Chromium), `version.sh` (change les ?v= avant une mise en ligne). `.github/workflows/tests.yml` lance les tests sur GitHub à chaque push.
 - `js/NN-nom.js`, chargés dans l'ordre du numéro :
 
 | Fichiers | Rôle |
@@ -49,6 +51,8 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 37 bruitages, 38 vibrations | Sons placés, vibrations du cell |
 | 39 à 40 | Mode robot (`docs/robot.md`) |
 | 41 à 44 | Mode RTS (`docs/rts.md`) |
+| 45 sauvegarde RTS | Partie RTS en cours gardée (dt_rts_partie), bouton « Continuer la guerre » |
+| 46 application | Jeu installable (avec `manifest.webmanifest`, `sw.js`, `icones/`) : plein écran, marche sans réseau |
 | 90 branchements | Branche le registre `Jeu` sur le jeu commun ; toujours le dernier |
 
 Les const, let et function de haut niveau sont partagés entre tous les fichiers (portée globale). Un fichier peut appeler une fonction d'un fichier plus loin **seulement à l'intérieur d'une fonction**, jamais au chargement. Chaque fichier commence par `'use strict';`.
@@ -61,7 +65,7 @@ Les const, let et function de haut niveau sont partagés entre tous les fichiers
 5. Sauvegarde : `store.get` / `store.set` (localStorage, avec try/catch). Le profil permanent est `P`, sauvé par `saveP()`. Ne casse pas les sauvegardes existantes : ajoute des champs avec une valeur par défaut.
 6. Doit marcher sur cell (tactile, vertical et horizontal) et sur ordi (souris).
 7. Vérifie la syntaxe : `cat js/*.js > /tmp/all.js && node --check /tmp/all.js`.
-8. Tests : `tests/` (page en ligne /tests/, résultat dans window.RESULTATS). Ajoute des tests pour ce que tu bâtis, de façon défensive (typeof). Lance toute la suite avant de pousser.
-9. Mise en ligne : seulement si Martin l'a autorisé dans la session (il le fait d'habitude). Alors commit et push sur la branche de travail, puis sur main (GitHub Pages). Ne lis pas et ne copie pas `.github-token`.
+8. Tests : `tests/` (page en ligne /tests/, résultat dans window.RESULTATS). Ajoute des tests pour ce que tu bâtis, de façon défensive (typeof). Lance toute la suite avant de pousser : `python3 -m http.server 8765` puis `node outils/lancer-tests.js`.
+9. Mise en ligne : seulement si Martin l'a autorisé dans la session (il le fait d'habitude). Avant le commit, `bash outils/version.sh` (sinon les navigateurs gardent les vieux fichiers). Puis push sur la branche de travail, puis sur main (GitHub Pages). Les tests roulent aussi sur GitHub (onglet Actions) : vérifie qu'ils sont verts. Ne lis pas et ne copie pas `.github-token`.
 10. Chaque tâche faite est ajoutée en haut de la table « Fait » de `TACHES.md`, avec un numéro qui suit. Quand la table dépasse 10 lignes, déplace les plus vieilles dans `docs/historique.md`. Mets aussi à jour la fiche du mode touché (`docs/*.md`) si des chiffres ou des décisions changent.
 11. Termine par un rapport court, en français simple : ce qui est fait, ce qui n'est pas vérifié.

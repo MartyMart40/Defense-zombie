@@ -4,6 +4,7 @@ Les tâches plus anciennes que les 10 dernières (les récentes sont dans `TACHE
 
 | # | Tâche | Date |
 |---|-------|------|
+| 54 | RTS : vallée fermée par des montagnes au sud et sur les côtés, zombies qui arrivent du nord (90°) en suivant une vieille route d'asphalte à moitié détruite, nids le long de la route ; boss avec les hordes (Titan qui piétine, Mère pondeuse, Béhémoth ailé qui crache) et barre de vie ; nouveaux robots (tireur d'élite, lance-flammes) ; tank, hélicoptère, chasseur, Warthog et bombardier avec garage de blindés, héliport et aérodrome, tous améliorables ; pilotage à la première personne de n'importe quelle unité (ordi et cell) | 2026-11-04 |
 | 53 | RTS : base militaire dans le désert (ruines, épaves, nids tout autour, hordes de partout), bâtiments à acheter et placer (usines, usine lourde, récupérateur, atelier de réparation, barricades), 5 tourelles améliorables (6 niveaux), améliorations des robots, base qui s'agrandit à chaque nid | 2026-11-04 |
 | 52 | Mode RTS « Guerre des robots » : vue de dessus, QG, 4 robots à acheter (fantassin, mitrailleur, lance-roquettes, mech lourd), sélection et ordres, 5 bâtiments infectés à détruire, menace qui monte, hordes, victoire ou défaite (js/41-rts.js) | 2026-11-04 |
 | 51 | Robot : bibites monstrueuses (rôdeur, araignée, abomination), 3 boss (Titan, Mère pondeuse, Béhémoth ailé) avec barre de vie, vagues de tous les côtés toutes les 28 s, carrefours pour choisir la rue suivante (6 règles) (js/40-robot-monstres.js) | 2026-11-04 |

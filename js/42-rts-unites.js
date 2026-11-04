@@ -141,27 +141,36 @@ function rtsClearAll(){
   while (rtsRoot.children.length) rtsRoot.remove(rtsRoot.children[0]);
   RTS.units.length = 0; RTS.nests.length = 0; RTS.blds.length = 0; RTS.sel.length = 0; RTS.bsel = null; RTS.base = null; rtsCancelPlace();
 }
-function rtsStart(){
+// save : partie sauvée (js/45-rts-sauvegarde.js) à reprendre ; sans save, nouvelle partie
+function rtsStart(save){
+  if (save && !(typeof rtsSaveOk === 'function' && rtsSaveOk(save))) save = null;
   if (typeof Snd === 'object') Snd.init();
   if (typeof infLeave === 'function') try { infLeave(); } catch (e) {}
   newGame(); clearZombies(); rtsClearAll();
   curLoc = LOCS[0];
   Object.assign(RTS, { on:true, paused:false, t:0, kills:0, threat:1, hordeT:RTS_CFG.hordeEvery, hordeN:0, bossN:0, bossKills:0, nestN:0, lost:0, upg:{}, baseR:RTS_CFG.baseR0, incT:5, tab:'rob', xp0:P.xp || 0, scr0:P.scrap || 0, zMin:-300, spin:0, shells:[] });
-  rtsRoadReset(); rtsDesert(); rtsMakeNests(); rtsBaseSize();
+  rtsRoadReset(); if (save) rtsLoadRoad(save);
+  rtsDesert();
+  if (save) rtsLoadNests(save); else rtsMakeNests();
   S.money = RTS_CFG.money; S.wave = 1;
   rtsCamHome();
   plan = { queue:[], total:0, hpMult:1, spdMult:1, dmgMult:1, cashMult:1.6, xp:1.5, maxAlive:isTouch ? RTS_CFG.maxZTouch : RTS_CFG.maxZ, interval:1 };
-  rtsPlaceBld('hq', 0, 0, true);
-  rtsPlaceBld('factory', -12, 6, true);
-  rtsPlaceBld('t_mg', 7, -12, true); rtsPlaceBld('t_mg', -7, -13, true); rtsPlaceBld('t_mg', 14, -3, true);
-  for (let i = 0; i < 3; i++){ const u = rtsSpawnUnit('rifle', -3 + i * 3, -12); u.tx = -3 + i * 3; u.tz = -16; u.cmd = 'move'; }
+  if (save) rtsLoadRest(save);
+  else {
+    rtsPlaceBld('hq', 0, 0, true);
+    rtsPlaceBld('factory', -12, 6, true);
+    rtsPlaceBld('t_mg', 7, -12, true); rtsPlaceBld('t_mg', -7, -13, true); rtsPlaceBld('t_mg', 14, -3, true);
+    for (let i = 0; i < 3; i++){ const u = rtsSpawnUnit('rifle', -3 + i * 3, -12); u.tx = -3 + i * 3; u.tz = -16; u.cmd = 'move'; }
+  }
+  rtsBaseSize(); RTS.saveT = 30;
   state = 'rts';
   showScreen(null); rtsPanel.classList.add('hide');
   $('hud').classList.add('hide'); $('touch').classList.add('hide'); $('cross').classList.add('hide');
   document.body.classList.add('rts');
   rtsUI.classList.remove('hide'); rtsUI.classList.toggle('touch', isTouch); rtsTab('rob'); rtsFold(!!store.get('dt_rtsFold', false));
   if (typeof unlockPointer === 'function') unlockPointer();
-  banner('Base assiégée', 'Ils arrivent de partout au nord : défends tout l’avant de la base. Chaque nid détruit en fait apparaître un plus fort, plus loin.', 3200);
+  if (save) banner('Partie reprise', 'Nids détruits : ' + RTS.nests.filter(n => n.dead).length + ' · la guerre continue', 2600);
+  else banner('Base assiégée', 'Ils arrivent de partout au nord : défends tout l’avant de la base. Chaque nid détruit en fait apparaître un plus fort, plus loin.', 3200);
 }
 // Caméra de départ : la base au centre de la partie visible (au-dessus du menu du bas).
 // Cell couché : écran bas et large, donc caméra plus proche et un peu plus au sud.
@@ -179,11 +188,13 @@ function rtsQuit(){
   state = 'menu'; curLoc = LOCS[0]; buildWorld(curLoc); newGame(); plan = wavePlan(1);
   if (typeof saveP === 'function') saveP();
   showScreen('scrTitle'); $('hud').classList.add('hide');
+  if (typeof rtsSaveBtn === 'function') rtsSaveBtn();
 }
 function rtsEnd(won){
   if (state === 'rtsover') return;
   rtsUnpilot();
   state = 'rtsover'; RTS.paused = false; rtsCancelPlace();
+  if (typeof rtsSaveClear === 'function') rtsSaveClear(); // partie finie : plus rien à reprendre
   const min = Math.floor(RTS.t / 60), sec = Math.floor(RTS.t % 60), nd = RTS.nests.filter(n => n.dead).length;
   const rec = nd > RTS.best; if (rec){ RTS.best = nd; store.set('dt_rts_bestN', nd); }
   if (typeof Snd === 'object' && Snd.boom) Snd.boom(2.2);
@@ -199,9 +210,11 @@ function rtsEnd(won){
 function rtsPause(){
   if (state !== 'rts' || RTS.paused) return;
   RTS.paused = true; if (typeof unlockPointer === 'function') unlockPointer();
+  if (typeof rtsSave === 'function') rtsSave();
   rtsShowPanel('<h2 class="title sm">Pause</h2><p class="lead">Menace ' + RTS.threat.toFixed(1).replace('.', ',') + ' · ' + fmtN(RTS.kills) + ' zombies abattus</p>',
     [['Reprendre', () => { RTS.paused = false; rtsPanel.classList.add('hide'); if (RTS.pilot && !isTouch && typeof lockPointer === 'function') lockPointer(); }]]
-      .concat(RTS.pilot ? [['Retour à la carte', () => { rtsUnpilot(); RTS.paused = false; rtsPanel.classList.add('hide'); }]] : []).concat([['Abandonner', rtsQuit]]));
+      .concat(RTS.pilot ? [['Retour à la carte', () => { rtsUnpilot(); RTS.paused = false; rtsPanel.classList.add('hide'); }]] : []).concat([['Sauver et quitter', () => { if (typeof rtsSave === 'function') rtsSave(); rtsQuit(); }],
+        ['Abandonner (efface la partie)', () => { if (typeof rtsSaveClear === 'function') rtsSaveClear(); rtsQuit(); }]]));
 }
 
 /* ---------- Zombies : la route, les cibles, les boss ---------- */

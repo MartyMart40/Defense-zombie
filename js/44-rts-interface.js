@@ -341,7 +341,17 @@ $('rtOk').addEventListener('click', () => { if (RTS.ghost) rtsPlaceAt(RTS.ghost.
   if (ref && ref.parentNode && !$('btnRts')){
     const b = document.createElement('button'); b.className = 'ghost rts-btn'; b.id = 'btnRts'; b.type = 'button'; b.textContent = '⚔ Guerre des robots (stratégie)';
     ref.parentNode.insertBefore(b, ref.nextSibling);
-    b.addEventListener('click', () => rtsStart());
+    // Une partie est sauvée : il faut confirmer avant d'en commencer une nouvelle (elle effacerait la sauvegarde)
+    b.addEventListener('click', () => {
+      if (typeof rtsSaveGet === 'function' && rtsSaveGet() && b.dataset.ok !== '1'){
+        b.dataset.ok = '1'; b.textContent = 'Confirmer : nouvelle partie (la partie sauvée sera effacée)';
+        setTimeout(() => { b.dataset.ok = ''; b.textContent = '⚔ Guerre des robots (stratégie)'; }, 4000);
+        return;
+      }
+      b.dataset.ok = ''; b.textContent = '⚔ Guerre des robots (stratégie)';
+      if (typeof rtsSaveClear === 'function') rtsSaveClear();
+      rtsStart();
+    });
   }
 })();
 

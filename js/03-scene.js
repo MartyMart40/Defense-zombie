@@ -49,7 +49,7 @@ function makeFire(x, y, z, size){
   fires.push({ cones, light, base: 2 }); return g;
 }
 function car(x, z, rot, mat, burnt){
-  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; world.add(g);
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; world.add(g); g.userData.auto = { burnt: !!burnt }; // détails en Haute définition (js/59)
   box(2, .8, 4.3, burnt ? lam(0x1a1614) : mat, 0, .7, 0, g); box(1.8, .6, 2.2, burnt ? lam(0x141110) : mat, 0, 1.4, -.2, g);
   const wm = lam(0x111111); [[-1, -1.4], [1, -1.4], [-1, 1.4], [1, 1.4]].forEach(p => box(.3, .6, .6, wm, p[0], .3, p[1], g));
   return g;

@@ -169,3 +169,34 @@
   });
 })();
 
+/* Haute définition, séance 2 : décor (autos détaillées, fils, débris) */
+(function(){
+  if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
+  test('Style Haute définition : autos détaillées, fils électriques et débris ; retirés en quittant le style', async () => {
+    if (lire('typeof __decor === "object" && typeof __styleHD === "object"') !== true) ignorer('Décor HD absent (js/59-graphismes-decor.js)');
+    reset(); J('startLocation(0)');
+    J("__style.styleSet('hd')"); await J('__styleHD.styleHDCharger()');
+    const r = J(function(){
+      var D = __decor.DECOR, o = {};
+      __decor.decorMaj();
+      o.n = D.objets.length; o.caches = D.caches.length; o.inst = D.objets.filter(function(x){ return x.isInstancedMesh; }).length;
+      o.fils = D.objets.filter(function(x){ return x.geometry && x.geometry.type === 'TubeGeometry'; }).length;
+      o.autos = 0; world.traverse(function(g){ if (g.userData && g.userData.auto) o.autos++; });
+      for (var i = 0; i < 3; i++) visuals(1 / 30);
+      o.rendu = __style.styleRendu();
+      startLocation(1); __decor.decorMaj(); o.autreRue = D.monde === world && D.objets.length > 0;
+      __style.styleSet('ameliore'); __decor.decorMaj();
+      o.apres = D.objets.length; o.roues = true; world.traverse(function(g){ if (g.userData && g.userData.auto) for (var k = 2; k < 6; k++) if (g.children[k] && !g.children[k].visible) o.roues = false; });
+      __style.styleSet('actuel');
+      return o;
+    });
+    ok(r.autos >= 3 && r.caches >= r.autos * 4, 'Roues d\'origine remplacées sur les ' + r.autos + ' autos');
+    egal(r.inst, 6, 'Six sortes de débris en instances');
+    ok(r.fils >= 10, 'Fils électriques : ' + r.fils);
+    ok(r.n > 100, 'Pièces de décor ajoutées : ' + r.n);
+    ok(r.rendu === true, 'Rendu sans erreur');
+    ok(r.autreRue, 'Une nouvelle rue reçoit son décor');
+    ok(r.apres === 0 && r.roues, 'Retour à Amélioré : décor retiré, roues d\'origine remises');
+  });
+})();
+

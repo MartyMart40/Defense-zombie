@@ -7,7 +7,7 @@ Demande de Martin (2026-11-04) : des « degrés » de graphismes au choix, du je
 |--------|-------|----|--------|
 | Actuel | Le jeu tel qu'il était : couleurs unies, formes simples | Partout | Fait |
 | Amélioré | Jeu 3D des années 2005 à 2010 (genre Half-Life 2, en plus simple) : textures, vraies ombres, éclat lumineux | Toit (cell récent et ordi) | Phase 1 faite (tâche 80) |
-| Haute définition | Visée Modern Warfare : matériaux réalistes (rugosité, reflets), lumière HDR, ombres de contact, zombies plus détaillés, modèles téléchargés | Toit, ordi surtout | Séance 1 faite (tâche 82), séance 2 en partie (tâche 84) |
+| Haute définition | Visée Modern Warfare : matériaux réalistes (rugosité, reflets), lumière HDR, ombres de contact, zombies plus détaillés, modèles téléchargés | Toit, ordi surtout | Séance 1 faite (tâche 82), séance 2 sans téléchargement faite (tâches 84 et 85) |
 | Ultra | Ce qu'un ordi puissant peut donner : ombres douces partout, reflets, brume volumétrique | Ordi seulement | Plus tard |
 
 Le choix : bouton « Style » dans Pause (clé `dt_style` : `actuel`, `ameliore` ou `hd`), un clic passe au suivant. Il change tout de suite, sans recommencer la partie. Il s'ajoute au réglage « Graphismes » (qualité : résolution et nombre d'effets, `js/36-rendu.js`) : en qualité basse, pas d'éclat et carte d'ombre de 512 ; moyenne (et cell) 1024 ; haute sur ordi 2048. Si un ordi lague en Amélioré, baisser « Graphismes ».
@@ -27,6 +27,7 @@ Le choix : bouton « Style » dans Pause (clé `dt_style` : `actuel`, `ameliore`
 - Ombre du soleil : carte de 4096 sur ordi en qualité haute.
 - Les morceaux de Three.js (EXRLoader, SSAOPass) sont dans `lib/three-hd.js`, chargé seulement quand on choisit ce style. Tant qu'il n'est pas prêt, la rue est dessinée en Amélioré.
 - Nuit (séance 2, tâche 84) : quand les lampadaires sont allumés (météo de nuit, ou Banlieue Nord), chaque lampadaire des 100 premiers mètres devient un projecteur tourné vers la rue (8 en tout) ; les 4 plus proches projettent des ombres (carte de 1024 sur ordi en qualité haute, 512 sinon). Un cône de brume éclairée, très léger et sans bord net, part de chaque lampe. Les lampes rondes d'origine sont éteintes pendant ce temps et rallumées en quittant le style. Réglages : `HD_NUIT`.
+- Décor (séance 2, tâche 85, `js/59-graphismes-decor.js`) : Martin a dit d'improviser en attendant les textures photo. Autos : vraies roues (pneu et jante), vitres qui reflètent, phares, feux arrière, pare-chocs, rétroviseurs, calandre, carrosserie plus lisse et métallique (les carcasses brûlées : roues et pare-chocs seulement). Fils électriques qui pendent entre les lampadaires, deux qui traversent la rue. Débris dans les 100 premiers mètres, toujours aux mêmes places pour une ville : 40 papiers, 45 briques, 14 planches, 8 pneus, 14 sacs-poubelles (surtout sur le trottoir), 36 canettes (`DECOR.nb`), en instances (6 appels de dessin). Tout est retiré en quittant le style.
 - Les zombies restent dessinés comme avant (matériau Lambert, couleurs passées en linéaire) : ils changent à la séance 3.
 
 ## Ressources téléchargées
@@ -39,7 +40,7 @@ Avant de commencer : permettre dans les réglages de l'environnement (Network ac
 
 Niveau « Haute définition » (nouveau choix dans le bouton Style, ordi d'abord) :
 1. Séance 1, la lumière (faite, tâche 82) : matériaux physiques (MeshStandardMaterial : rugosité, métal, cartes de relief), ciel et lumière d'ambiance tirés d'une image HDR (Poly Haven), rendu en couleurs étendues avec réglage d'exposition (tone mapping ACES), ombres de contact (SSAO, `SSAOPass` de r128), carte d'ombre 4096.
-2. Séance 2, le décor (en partie, tâche 84 : lampadaires de nuit faits ; textures photo en attente du réseau) : textures photo (asphalte, briques, béton, rouille) d'ambientCG, avec relief et rugosité ; débris, poteaux, fils, autos plus détaillées ; nuit : lampadaires et feux qui éclairent vraiment et projettent des ombres.
+2. Séance 2, le décor (tâches 84 et 85 : lampadaires de nuit, autos détaillées, fils, débris ; textures photo en attente du réseau) : textures photo (asphalte, briques, béton, rouille) d'ambientCG, avec relief et rugosité ; débris, poteaux, fils, autos plus détaillées ; nuit : lampadaires et feux qui éclairent vraiment et projettent des ombres.
 3. Séance 3, les zombies et les effets : modèles téléchargés (glTF, GLTFLoader de r128) avec animations, sang et impacts collés aux murs, fumée et feu plus épais, brume qui prend la lumière, profondeur de champ en visant.
 4. Ensuite, « Ultra » (ordi seulement) et le même style pour le robot et le RTS.
 

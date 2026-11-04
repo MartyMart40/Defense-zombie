@@ -67,6 +67,7 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 56 postes des robots | Poste de pilotage des petits robots : visière et bras avec l'arme de chaque robot, détails selon les améliorations |
 | 57 graphismes | Style graphique (Pause, dt_style) : Actuel, Amélioré (textures, vraies ombres, éclat, couleurs) ou Haute définition sur le toit (`docs/graphismes.md`) |
 | 58 graphismes HD | Style Haute définition : matériaux physiques, lumière HDR (`hdri/`), couleurs linéaires, ACES, SSAO, lampadaires de nuit qui éclairent (`lib/three-hd.js` chargé au besoin) |
+| 59 décor HD | Haute définition : autos détaillées (roues, vitres, phares), fils électriques, débris dans la rue (autos marquées dans `03-scene` : `userData.auto`) |
 | 90 branchements | Branche le registre `Jeu` sur le jeu commun ; toujours le dernier |
 
 Les const, let et function de haut niveau sont partagés entre tous les fichiers (portée globale). Un fichier peut appeler une fonction d'un fichier plus loin **seulement à l'intérieur d'une fonction**, jamais au chargement. Chaque fichier commence par `'use strict';`.

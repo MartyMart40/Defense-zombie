@@ -20,6 +20,7 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 | # | Tâche | Date |
 |---|-------|------|
+| 85 | Graphismes, Haute définition, décor improvisé (sans téléchargement) : autos détaillées (vraies roues, vitres qui reflètent, phares, feux, pare-chocs, rétroviseurs), fils électriques entre les lampadaires, débris dans la rue (papiers, briques, planches, pneus, sacs, canettes) ; autos marquées dans js/03-scene.js (1 ligne) (js/59-graphismes-decor.js, tests/t-style.js) | 2026-11-04 |
 | 84 | Graphismes, Haute définition séance 2 (partie sans téléchargement) : la nuit, les lampadaires éclairent vraiment la rue (8 projecteurs, ombres des 4 plus proches) avec un cône de brume éclairée ; textures photo encore en attente (sites bloqués par le réseau) (js/58-graphismes-hd.js, tests/t-style.js) | 2026-11-04 |
 | 83 | RTS : la rangée « Unités » est repliée par défaut (une pastille « 👥 Unités · N » et les groupes) ; la toucher montre une pastille par unité à choisir une par une, la retoucher la referme (choix gardé, dt_rts_liste) (js/48-rts-liste.js, tests/t-rts-selection.js) | 2026-11-04 |
 | 82 | Graphismes, Haute définition séance 1 (la lumière) : 3e choix du bouton Style. Matériaux physiques (relief et rugosité tirés des textures : flaques d’huile et vitres qui reflètent, briques en relief), lumière d’ambiance tirée d’une vraie image HDR par ville (Poly Haven, CC0, dossier `hdri/`), rendu en couleurs linéaires et étendues avec exposition et courbe ACES, ombres de contact (SSAO), ombre du soleil 4096 sur ordi (js/58-graphismes-hd.js, lib/three-hd.js, tests/t-style.js) | 2026-11-04 |
@@ -29,11 +30,11 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 | 78 | RTS : les armes des véhicules embellissent avec leurs améliorations : niveau visuel par arme (0 à 1), traînée, son, explosion, secousse, recul et éclair qui grossissent, détails du modèle du poste à 3 paliers ; au début, un petit « pew pew » (js/55-rts-niveaux.js, tests/t-rts-niveaux.js) | 2026-11-04 |
 | 77 | RTS : les tirs du joueur partent du bout du canon visible ; canon rotatif de l’Apache épeurant (26 coups/s, montée en régime, grondement du minigun, vibrations) ; défaut corrigé : les armes rapides des véhicules ne tiraient qu’une image sur deux ; AC-130 : tir seulement par le flanc gauche, visée fixée au sol dans un champ qui suit l’avion | 2026-11-04 |
 | 76 | RTS, véhicules réalistes : tank (obus de 120 mm lent et fort, canon qui recule dans la vue), Apache (nouveau modèle, canon rotatif de 30 mm et Hellfire dès l’achat, vue du casque avec verrière, écrans, canon qui tourne et missiles sur les ailettes), chasseur et Warthog (canon puissant, munitions limitées, retour à l’aérodrome pour refaire le plein), 2 avions par aérodrome, AC-130 à 3 postes (cockpit, 40 mm, 105 mm ; la caméra suit l’arme qui tire ; bouton Vue), 105 mm plus fort avec une grosse explosion (js/54-rts-postes.js, tests/t-rts-postes.js) | 2026-11-04 |
-| 75 | Tutoriel du toit facultatif : proposé une fois à un nouveau joueur (« Première partie ? » Oui / Non merci), 6 bulles au bon moment (viser, tirer, recharger, barricade, boutique, grenade) avec « Passer le tutoriel », « Revoir le tutoriel » dans Comment jouer ; rien n’est mis en pause (js/53-tutoriel.js, tests/t-tutoriel.js) | 2026-11-04 |
 
 ## À valider par Martin
 
 - RTS (tâche 83) : liste des unités repliée par défaut. Dire si on veut qu’elle se referme seule après avoir choisi une unité.
+- Décor Haute définition (tâche 85) : dire s'il y a trop ou pas assez de débris dans la rue.
 - Haute définition la nuit (tâche 84) : essayer une nuit (Banlieue Nord) en Haute définition, dire si les lampadaires sont trop forts ou trop faibles.
 
 - Style Haute définition (tâche 82) : à essayer sur l’ordi en mode performance (Pause, « Style » deux fois ; en mode économie d’énergie, l’ordi lague). Dire combien d’images par seconde, et si c’est trop sombre, trop clair ou trop « délavé » (réglages `HD_REGL`). Les zombies et les textures photo viennent aux séances 2 et 3.

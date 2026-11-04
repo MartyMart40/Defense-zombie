@@ -4,6 +4,9 @@
 //   Toucher une pastille choisit cette unité seule et amène la caméra dessus, même si elle est loin.
 //   Retoucher la pastille de l'unité choisie la relâche.
 // - Ordi : double-clic sur une unité = toutes celles du même type visibles à l'écran ; Tab = unité suivante (Maj+Tab : précédente).
+// - Groupes enregistrés (5 au plus) : pastille « ＋ Groupe » = enregistrer les unités choisies ; « G1 »... = les choisir
+//   (retoucher = la caméra y va) ; appui long ou clic droit = remplacer par les unités choisies (ou supprimer sans choix).
+//   Ordi : Ctrl+1 à 5 enregistre, Maj+1 à 5 rappelle (les chiffres seuls achètent des robots). Gardés dans la sauvegarde (js/45).
 // - Le toucher, l'appui long (ajouter au groupe) et le rayon autour du doigt sont dans js/44-rts-interface.js (rtsTap, rtsPick).
 
 const RTS_ICON = { rob:'🤖', veh:'🛡' };
@@ -12,6 +15,29 @@ const RTS_SHORT = { rifle:'Fantassin', gunner:'Mitrailleur', sniper:'Tireur', fl
 const rtsIds = new WeakMap(); let rtsIdN = 0;
 const rtsId = u => { let i = rtsIds.get(u); if (!i){ i = ++rtsIdN; rtsIds.set(u, i); } return i; };
 const rtsIcon = u => RTS_KIND_ICON[u.U.kind] || RTS_ICON[u.U.cat] || '🤖';
+
+/* ---------- Groupes enregistrés ---------- */
+const RTS_GROUPS = 5;
+const rtsGrpOf = i => (RTS.groups && RTS.groups[i] ? RTS.groups[i] : []).filter(u => !u.dead);
+function rtsGroupsReset(){ RTS.groups = []; for (let i = 0; i < RTS_GROUPS; i++) RTS.groups.push([]); }
+function rtsGroupSave(i){
+  if (!RTS.groups) rtsGroupsReset();
+  const list = RTS.sel.filter(u => !u.dead);
+  if (i == null){ i = RTS.groups.findIndex(g => !g.some(u => !u.dead)); if (i < 0){ if (typeof toast === 'function') toast('Déjà ' + RTS_GROUPS + ' groupes : garde le doigt sur un groupe pour le remplacer'); return -1; } }
+  if (!list.length){ RTS.groups[i] = []; if (typeof toast === 'function') toast('Groupe ' + (i + 1) + ' supprimé'); }
+  else { RTS.groups[i] = list.slice(); if (typeof toast === 'function') toast('Groupe ' + (i + 1) + ' : ' + list.length + ' unité' + (list.length > 1 ? 's' : '')); }
+  rtsRosterDraw(true);
+  return i;
+}
+function rtsGroupPick(i){
+  const g = rtsGrpOf(i); if (!g.length) return null;
+  const same = RTS.sel.length === g.length && g.every(u => RTS.sel.indexOf(u) >= 0);
+  if (same){ let x = 0, z = 0; g.forEach(u => { x += u.g.position.x; z += u.g.position.z; }); RTS.cam.x = x / g.length; RTS.cam.z = z / g.length; }
+  else rtsSelect(g, false);
+  rtsRosterDraw(true);
+  return g;
+}
+rtsGroupsReset();
 
 const rtsRoster = document.createElement('div'); rtsRoster.id = 'rtRoster'; rtsRoster.className = 'hide'; rtsRoster.setAttribute('aria-label', 'Unités');
 (function(){ const dock = $('rtDock'); if (dock) dock.insertBefore(rtsRoster, dock.firstChild); })();
@@ -25,20 +51,23 @@ function rtsRosterList(){
 }
 function rtsRosterDraw(force){
   const list = rtsRosterList();
-  const show = state === 'rts' && !RTS.pilot && list.length > 0;
+  const grp = []; for (let i = 0; i < RTS_GROUPS; i++){ const g = rtsGrpOf(i); if (g.length) grp.push([i, g]); }
+  const show = state === 'rts' && !RTS.pilot && (list.length > 0 || grp.length > 0) && (RTS.tab === 'rob' || RTS.tab === 'veh');
   rtsRoster.classList.toggle('hide', !show); if (!show){ RL.sig = ''; return list; }
-  const sig = list.map(u => rtsId(u) + (RTS.sel.indexOf(u) >= 0 ? '*' : '')).join(',');
+  const sig = grp.map(([i, g]) => i + ':' + g.length + (g.every(u => RTS.sel.indexOf(u) >= 0) && RTS.sel.length === g.length ? '*' : '')).join(',') + '|' + (RTS.sel.length ? 'p' : '') + '|' + list.map(u => rtsId(u) + (RTS.sel.indexOf(u) >= 0 ? '*' : '')).join(',');
   if (force || sig !== RL.sig){
     RL.sig = sig;
     const n = {};
-    rtsRoster.innerHTML = list.map(u => {
+    const gh = grp.map(([i, g]) => '<button type="button" class="rt-g' + (RTS.sel.length === g.length && g.every(u => RTS.sel.indexOf(u) >= 0) ? ' on' : '') + '" data-g="' + i + '" aria-label="Groupe ' + (i + 1) + '"><span>👥 G' + (i + 1) + ' · ' + g.length + '</span></button>').join('')
+      + (RTS.sel.length ? '<button type="button" class="rt-g rt-gplus" data-gplus="1"><span>＋ Groupe</span></button>' : '');
+    rtsRoster.innerHTML = gh + list.map(u => {
       n[u.type] = (n[u.type] || 0) + 1;
       return '<button type="button" class="rt-u' + (RTS.sel.indexOf(u) >= 0 ? ' on' : '') + '" data-id="' + rtsId(u) + '" aria-label="' + u.U.name.replace(/[⭐ ]+$/, '') + ' ' + n[u.type] + '">'
         + '<span>' + rtsIcon(u) + ' ' + (RTS_SHORT[u.type] || u.U.name) + ' ' + n[u.type] + '</span><i><b></b></i></button>';
     }).join('');
   }
-  // Barres de vie
-  const bs = rtsRoster.children;
+  // Barres de vie (après les pastilles de groupe)
+  const bs = rtsRoster.querySelectorAll('button[data-id]');
   for (let i = 0; i < bs.length && i < list.length; i++){ const u = list[i], k = clamp(u.hp / u.maxHp, 0, 1), b = bs[i].querySelector('b'); if (b){ b.style.width = Math.round(k * 100) + '%'; b.className = k < .35 ? 'bas' : ''; } }
   return list;
 }
@@ -51,7 +80,20 @@ function rtsRosterPick(id){
   return u;
 }
 function rtsCamTo(u){ RTS.cam.x = u.g.position.x; RTS.cam.z = u.g.position.z; }
-rtsRoster.addEventListener('click', e => { const b = e.target.closest('button[data-id]'); if (b) rtsRosterPick(b.dataset.id); });
+rtsRoster.addEventListener('click', e => {
+  if (RL.long){ RL.long = false; return; } // l'appui long a déjà agi
+  const g = e.target.closest('button[data-g]'); if (g){ rtsGroupPick(+g.dataset.g); return; }
+  if (e.target.closest('button[data-gplus]')){ rtsGroupSave(null); return; }
+  const b = e.target.closest('button[data-id]'); if (b) rtsRosterPick(b.dataset.id);
+});
+// Appui long (doigt) ou clic droit sur un groupe : le remplacer par les unités choisies (ou le supprimer)
+rtsRoster.addEventListener('contextmenu', e => { const g = e.target.closest('button[data-g]'); if (g){ e.preventDefault(); rtsGroupSave(+g.dataset.g); } });
+rtsRoster.addEventListener('pointerdown', e => {
+  const g = e.target.closest('button[data-g]'); if (!g || e.pointerType === 'mouse') return;
+  clearTimeout(RL.lt); RL.long = false;
+  RL.lt = setTimeout(() => { RL.long = true; rtsGroupSave(+g.dataset.g); if (navigator.vibrate) try { navigator.vibrate(25); } catch (x) { errNote(x); } }, RTS_LONG_MS);
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(t => rtsRoster.addEventListener(t, () => clearTimeout(RL.lt)));
 
 // Ordi : unité suivante (Tab) ou précédente (Maj+Tab), parmi toutes les unités
 function rtsCycle(dir){
@@ -73,9 +115,13 @@ function rtsSameType(u){
   return list;
 }
 document.addEventListener('keydown', e => {
-  if (state !== 'rts' || RTS.pilot || RTS.paused || e.code !== 'Tab') return;
-  e.preventDefault(); rtsCycle(e.shiftKey ? -1 : 1);
-});
+  if (state !== 'rts' || RTS.pilot || RTS.paused) return;
+  if (e.code === 'Tab'){ e.preventDefault(); rtsCycle(e.shiftKey ? -1 : 1); return; }
+  // Groupes : Ctrl+1 à 5 enregistre, Maj+1 à 5 rappelle (l'achat au chiffre seul, js/44, ne se fait pas avec Ctrl ou Maj)
+  const m = /^Digit([1-5])$/.exec(e.code); if (!m || !(e.ctrlKey || e.metaKey || e.shiftKey)) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  if (e.ctrlKey || e.metaKey) rtsGroupSave(+m[1] - 1); else rtsGroupPick(+m[1] - 1);
+}, true);
 canvas.addEventListener('dblclick', e => {
   if (state !== 'rts' || RTS.pilot || RTS.place || isTouch) return;
   const p = rtsPick(e.clientX, e.clientY); if (p.unit) rtsSameType(p.unit);
@@ -89,4 +135,4 @@ Jeu.on('image', dt => {
 });
 
 // Accès pour les tests automatiques
-window.__rtsListe = { rtsRosterList, rtsRosterDraw, rtsRosterPick, rtsCycle, rtsSameType, rtsId, RTS_SHORT };
+window.__rtsListe = { rtsRosterList, rtsRosterDraw, rtsRosterPick, rtsCycle, rtsSameType, rtsId, RTS_SHORT, RTS_GROUPS, rtsGroupSave, rtsGroupPick, rtsGroupsReset, rtsGrpOf };

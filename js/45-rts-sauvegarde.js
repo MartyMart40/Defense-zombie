@@ -21,6 +21,7 @@ function rtsSaveData(){
     xpG: Math.max(0, Math.round((P.xp || 0) - R.xp0)), scrG: Math.max(0, Math.round((P.scrap || 0) - R.scr0)),
     cam: { x: rtsR1(R.cam.x), z: rtsR1(R.cam.z), h: rtsR1(R.cam.h) },
     rally: R.rally ? { x: rtsR1(R.rally.x), z: rtsR1(R.rally.z) } : null,
+    groups: (R.groups || []).map(g => { const vivants = R.units.filter(u => !u.dead); return g.filter(u => !u.dead).map(u => vivants.indexOf(u)).filter(i => i >= 0); }),
     road: RTS_ROAD.map(p => [rtsR1(p[0]), rtsR1(p[1])]),
     nests: R.nests.map(n => ({ x: rtsR1(n.x), z: rtsR1(n.z), hp: Math.round(n.hp), d: n.dead ? 1 : 0, st: rtsR1(n.spawnT) })),
     blds: R.blds.filter(o => !o.dead).map(o => ({ t: o.type, x: o.x, z: o.z, r: o.rot || 0, hp: Math.round(o.hp), lv: o.lv || 1, s: o.spent || 0 })),
@@ -80,14 +81,18 @@ function rtsLoadRest(d){
     if (o.B.turret && lv > 1){ o.lv = lv; o.maxHp *= Math.pow(1.15, lv - 1); if (o.head) o.head.scale.setScalar(1 + .07 * (lv - 1)); }
     o.hp = clamp(+b.hp || o.maxHp, 1, o.maxHp); rtsHpSet(o.hpb, o.hp / o.maxHp);
   }
-  for (const s of d.units){
+  const parIndex = []; // unité recréée pour chaque rang de la liste sauvée (pour les groupes)
+  for (let k = 0; k < d.units.length; k++){
+    const s = d.units[k];
     if (!s || !RTS_UNITS[s.t] || !isFinite(s.x) || !isFinite(s.z)) continue;
     if (R.units.length >= RTS_CFG.maxUnits) break;
-    const u = rtsSpawnUnit(s.t, +s.x, +s.z);
+    const u = rtsSpawnUnit(s.t, +s.x, +s.z); parIndex[k] = u;
     u.hp = clamp(+s.hp || u.maxHp, 1, u.maxHp); rtsHpSet(u.hpb, u.hp / u.maxHp);
     u.hx = u.tx = isFinite(s.hx) ? +s.hx : u.g.position.x; u.hz = u.tz = isFinite(s.hz) ? +s.hz : u.g.position.z;
     u.head = +s.hd || 0; u.cmd = u.U.kind === 'air' ? 'idle' : 'move'; u.hold = !!s.ho;
   }
+  // Groupes enregistrés (js/48-rts-liste.js)
+  if (Array.isArray(d.groups) && R.groups) d.groups.forEach((g, i) => { if (i < R.groups.length && Array.isArray(g)) R.groups[i] = g.map(k => parIndex[k]).filter(u => u && !u.dead); });
 }
 
 /* ---------- Écran titre : bouton « Continuer la guerre » ---------- */

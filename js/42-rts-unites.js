@@ -150,6 +150,7 @@ function rtsStart(save){
   newGame(); clearZombies(); rtsClearAll();
   curLoc = LOCS[0];
   Object.assign(RTS, { on:true, paused:false, t:0, kills:0, threat:1, hordeT:RTS_CFG.hordeEvery, hordeN:0, bossN:0, bossKills:0, nestN:0, lost:0, upg:{}, baseR:RTS_CFG.baseR0, incT:5, tab:'rob', xp0:P.xp || 0, scr0:P.scrap || 0, zMin:-300, spin:0, shells:[] });
+  if (typeof rtsGroupsReset === 'function') rtsGroupsReset(); // groupes vides (la sauvegarde les remet ensuite)
   rtsRoadReset(); if (save) rtsLoadRoad(save);
   rtsDesert();
   if (save) rtsLoadNests(save); else rtsMakeNests();

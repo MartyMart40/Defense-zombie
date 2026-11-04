@@ -13,7 +13,7 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | `js/44-rts-interface.js` | Menus du bas (onglets, menu repliable), panneaux, pose des bâtiments sur quadrillage, commandes (souris, clavier, doigt), inscription du mode (`Jeu.mode('rts')`) |
 | `js/45-rts-sauvegarde.js` | Partie en cours gardée toutes les 30 s, à la pause et quand le cell met le jeu de côté ; reprise par « Continuer la guerre » |
 | `js/47-rts-astuces.js` | Astuces des premières parties : une bulle à la fois, au bon moment, une fois chacune ; « Plus d’astuces » les coupe, la pause permet de les revoir |
-| `js/48-rts-liste.js` | Choisir les unités une par une : rangée « Unités » (pastilles avec la vie), Tab pour la suivante, double-clic pour le même type |
+| `js/48-rts-liste.js` | Choisir les unités une par une : rangée « Unités » (pastilles avec la vie), Tab pour la suivante, double-clic pour le même type ; groupes enregistrés (5 au plus) |
 | `js/49-rts-commandement.js` | Mini-carte (toucher pour y aller), point de ralliement, alerte « Base attaquée », « ✋ Tenir » (u.hold), mode photo (dans la pause) |
 | `tests/t-rts.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js` | Tests |
 
@@ -46,6 +46,7 @@ Usine de robots 500 $, usine lourde 1 200 $, garage de blindés 1 500 $, hélipo
 Les prix exacts sont dans `RTS_UNITS` et `RTS_BLD` (`js/41-rts.js`) : si un chiffre change dans le code, changer ce tableau aussi.
 
 ## Décisions prises
+- Groupes enregistrés : « ＋ Groupe » enregistre les unités choisies, « G1 »... les choisit (retoucher : la caméra y va), appui long ou clic droit : remplacer (ou supprimer sans choix). Ordi : Ctrl+1 à 5 enregistre, Maj+1 à 5 rappelle ; les chiffres seuls achètent toujours des robots. Gardés dans la sauvegarde.
 - Choisir les unités : au doigt, toucher une unité la choisit seule (retoucher la relâche), un appui long l'ajoute au groupe ou l'en retire ; un toucher à moins de 34 pixels d'une unité la prend (19 pixels quand des unités sont déjà choisies, pour pouvoir les déplacer juste à côté). À la souris : clic = seule, Maj+clic = ajoute ou retire, glisser = cadre, double-clic = même type à l'écran, Tab = suivante.
 - Les avions ne sont attaqués que par les zombies volants.
 - Pose des bâtiments sur un quadrillage de 2 m, rotation par quarts de tour (R ou bouton), gardée pour le suivant.

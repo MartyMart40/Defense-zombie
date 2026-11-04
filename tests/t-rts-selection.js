@@ -86,4 +86,33 @@
     ok(r.cycle, 'Unité suivante puis précédente'); ok(r.tab, 'La touche Tab passe à la suivante');
     ok(r.meme, 'Même type : seulement les fantassins');
   });
+
+  test('RTS sélection : groupes enregistrés (pastilles, touches, sauvegarde)', () => {
+    exiger(); reset();
+    const r = J(new Function(calme + `
+      var R = calme(), L = __rtsListe, o = {};
+      S.money = 99999; __rts.rtsBuy('gunner'); __rts.rtsBuy('sniper'); __rts.rtsTab('rob');
+      var u = R.units;
+      __rts.rtsSelect([u[0], u[1]], false); L.rtsRosterDraw(true);
+      var plus = document.querySelector('#rtRoster button[data-gplus]'); o.plus = !!plus; plus.click();
+      o.g1 = L.rtsGrpOf(0).length === 2;
+      __rts.rtsSelect([u[3]], false);
+      document.dispatchEvent(new KeyboardEvent('keydown', { code:'Digit2', ctrlKey:true, bubbles:true })); o.ctrl = L.rtsGrpOf(1).length === 1 && L.rtsGrpOf(1)[0] === u[3];
+      var argent = S.money; document.dispatchEvent(new KeyboardEvent('keydown', { code:'Digit1', shiftKey:true, bubbles:true }));
+      o.maj = R.sel.length === 2 && R.sel.indexOf(u[0]) >= 0 && R.sel.indexOf(u[1]) >= 0 && S.money === argent;
+      L.rtsRosterDraw(true); var b = document.querySelector('#rtRoster button[data-g="0"]'); o.allume = !!b && b.classList.contains('on');
+      u[0].g.position.set(30, 0, -50); u[1].g.position.set(10, 0, -50); b.click(); o.camera = Math.abs(R.cam.x - 20) < .01 && Math.abs(R.cam.z + 50) < .01;
+      R.sel.length = 0; L.rtsGroupSave(1); o.supprime = L.rtsGrpOf(1).length === 0;
+      u[1].hp = 0; u[1].dead = true; o.mort = L.rtsGrpOf(0).length === 1;
+      u[1].dead = false; u[1].hp = u[1].maxHp;
+      __rtsSave.rtsSave(); __rts.rtsQuit(); __rts.rtsStart(__rtsSave.rtsSaveGet()); R = __rts.RTS;
+      o.repris = L.rtsGrpOf(0).length === 2 && L.rtsGrpOf(0).every(function(x){ return x.type === 'rifle'; });
+      return o;
+    `));
+    fin();
+    ok(r.plus, 'Pastille ＋ Groupe'); ok(r.g1, 'Groupe 1 enregistré'); ok(r.ctrl, 'Ctrl+2 enregistre le groupe 2');
+    ok(r.maj, 'Maj+1 rappelle le groupe 1 sans rien acheter'); ok(r.allume, 'Pastille du groupe choisi allumée');
+    ok(r.camera, 'Retoucher le groupe : la caméra va au milieu du groupe'); ok(r.supprime, 'Sans unité choisie, le groupe est supprimé');
+    ok(r.mort, 'Une unité morte sort du groupe'); ok(r.repris, 'Les groupes sont gardés dans la sauvegarde');
+  });
 })();

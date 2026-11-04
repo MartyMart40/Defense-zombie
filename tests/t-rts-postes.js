@@ -134,4 +134,30 @@
     ok(r.regime, 'Le canon monte en régime'); ok(r.cadence >= 30, 'Rafale dense : ' + r.cadence + ' tirs en 2 s'); ok(r.vibre, 'L’écran vibre');
     ok(r.bout, 'Les obus partent du canon rotatif'); ok(r.tank, 'L’obus du tank part du bout du canon');
   });
+
+  test('Postes : 2e arme en tenant déjà la 1re (clic droit pendant le clic gauche, ou touche E) : Hellfire et 105 mm', () => {
+    exiger(); reset();
+    const r = J(new Function(calme + `
+      var R = calme(), o = {}, cv = document.getElementById('c');
+      function ev(cible, type, bouton, boutons){ var e; try { e = new PointerEvent(type, { bubbles:true, button:bouton, buttons:boutons, pointerType:'mouse' }); } catch (x) { e = new MouseEvent(type, { bubbles:true, button:bouton, buttons:boutons }); } cible.dispatchEvent(e); }
+      var h = __rts.rtsSpawnUnit('heli', 0, -40); __rts.rtsPilot(h); visuals(1 / 30);
+      ev(cv, 'pointerdown', 0, 1);                       // clic gauche tenu : le canon
+      ev(document, 'pointermove', 2, 3);                 // clic droit en plus : le navigateur n'envoie qu'un pointermove
+      ev(document, 'pointermove', -1, 0);                // un simple mouvement ne doit rien effacer
+      o.deux = R.pv.fire && R.pv.fire2;
+      h.cd4 = 0; visuals(1 / 30); o.hellfire = h.cd4 > 1;
+      ev(document, 'pointermove', 2, 1); o.droitLache = R.pv.fire && !R.pv.fire2;
+      ev(document, 'pointerup', 0, 0); o.tousLaches = !R.pv.fire && !R.pv.fire2;
+      __rts.rtsUnpilot();
+      var a = __rts.rtsSpawnUnit('bomber', 0, -40); __rts.rtsPilot(a); visuals(1 / 30); a.cd2 = 0;
+      document.dispatchEvent(new KeyboardEvent('keydown', { code:'KeyE', bubbles:true })); o.e = R.pv.fire2;
+      visuals(1 / 30); o.obus = a.cd2 > 1;
+      document.dispatchEvent(new KeyboardEvent('keyup', { code:'KeyE', bubbles:true })); o.eLache = !R.pv.fire2;
+      return o;
+    `));
+    fin();
+    ok(r.deux, 'Les deux armes ensemble'); ok(r.hellfire, 'Hellfire parti en tenant le canon');
+    ok(r.droitLache, 'Clic droit lâché : la 2e arme arrête, le canon continue'); ok(r.tousLaches, 'Tout lâché');
+    ok(r.e && r.eLache, 'Touche E : 2e arme'); ok(r.obus, '105 mm de l’AC-130 parti avec E');
+  });
 })();

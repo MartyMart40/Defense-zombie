@@ -177,7 +177,7 @@
       o.orbite = dmin > 20 && dmax < 70; o.penche = roll > .2; o.tir = zs.filter(function(z){ return z.hp < 1e6; }).length >= 2;
       __rts.rtsSelect([a], false); __rts.rtsPilotSel(); visuals(1 / 30);
       o.vue = camera.fov < 50 && canvas.classList.contains('rt-ac') && camera.position.y > 20; o.dbg = [camera.fov, canvas.className, camera.position.y.toFixed(1), !!R.pilot].join(',');
-      R.pv.fire2 = true; var cd = a.cd2; visuals(1 / 30); R.pv.fire2 = false; o.obus = a.cd2 > 1;
+      a.cd2 = 0; /* canon rechargé : il a pu tirer seul juste avant */ R.pv.fire2 = true; var cd = a.cd2; visuals(1 / 30); R.pv.fire2 = false; o.obus = a.cd2 > 1;
       __rts.rtsUnpilot(); o.fin = camera.fov > 50 && !canvas.classList.contains('rt-ac');
       return o;
     }, calme);

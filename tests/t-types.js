@@ -25,7 +25,7 @@
   test('Types : chaque type apparaît avec une forme différente', () => {
     exiger();
     reset(); J('startLocation(0)'); J('__t.geler()');
-    const r = J(function(types){
+    const r = J(function(types){ return __t.graine(5, function(){ // la pose des zombies est tirée au hasard
       clearZombies();
       var out = {};
       types.forEach(function(t){
@@ -35,7 +35,7 @@
       });
       clearZombies();
       return out;
-    }, ['walker', 'brute'].concat(NOUVEAUX));
+    }); }, ['walker', 'brute'].concat(NOUVEAUX));
     const sigs = {};
     Object.keys(r).forEach(t => {
       egal(r[t].type, t, 'Type du zombie créé');

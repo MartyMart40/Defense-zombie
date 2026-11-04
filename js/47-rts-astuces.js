@@ -36,7 +36,7 @@ const RTS_TIPS = [
     txt:'Une unité est choisie : « 🎮 Piloter » te met à ses commandes, à la première personne.' },
   { id:'pilotage', cond: R => !!R.pilot,
     cell:'Manette à gauche pour bouger, glisse à droite pour viser, bouton Tir pour tirer. « Retour à la carte » en haut.',
-    ordi:'ZQSD pour bouger, la souris pour viser, clic pour tirer (clic droit : arme lourde). F ou Échap : retour à la carte.' },
+    ordi:'ZQSD pour bouger, la souris pour viser, clic pour tirer (clic droit ou E : 2e arme, même en tirant). F ou Échap : retour à la carte.' },
   { id:'blindes', cond: R => R.t > 150 && rtsTipBld('heavyfac') && !rtsTipBld('vehdepot') && !rtsTipBld('airfield'),
     txt:'Plus tard : Garage de blindés (tank), Héliport (hélicoptère) et Aérodrome (chasseur, Warthog, AC-130 ; 2 avions par aérodrome). Onglet Améliorations pour rendre tes unités plus fortes.' },
   { id:'sauve', cond: R => R.t > 100,

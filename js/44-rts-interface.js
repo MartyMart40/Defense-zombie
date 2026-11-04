@@ -13,7 +13,7 @@ const rtsPilotUI = document.createElement('div'); rtsPilotUI.id = 'rtPilot'; rts
 rtsPilotUI.innerHTML = '<div id="rtrpTop"><span id="rtrpName"></span><button type="button" id="rtrpExit">Retour à la carte</button></div>'
   + '<div id="rtrpAc"><i></i><i></i><i></i><i></i><span>AC-130 · manette : déplacer la zone visée</span></div>'
   + '<div id="rtrpJoy"><div id="rtrpKnob"></div></div><div id="rtrpAim"></div><button type="button" id="rtrpFire">Tir</button><button type="button" id="rtrpFire2">Roquettes</button>'
-  + '<div id="rtrpHelp">ZQSD ou WASD : bouger · souris : viser · clic : tirer · clic droit : arme lourde (Mech, AC-130) · F ou Échap : retour à la carte</div>';
+  + '<div id="rtrpHelp">ZQSD ou WASD : bouger · souris : viser · clic : tirer · clic droit ou E : 2e arme (Hellfire de l’Apache, 105 mm de l’AC-130, roquettes du Mech), même en tirant · F ou Échap : retour à la carte</div>';
 document.body.appendChild(rtsPilotUI);
 const rtsInfo = document.createElement('div'); rtsInfo.id = 'rtInfo'; rtsInfo.className = 'hide'; document.body.appendChild(rtsInfo);
 const rtsPanel = document.createElement('div'); rtsPanel.id = 'rtsPanel'; rtsPanel.className = 'hide'; document.body.appendChild(rtsPanel);
@@ -267,6 +267,13 @@ function rtsBoxSelect(x0, y0, x1, y1, add){
   RTS.units.forEach(u => { if (u.dead) return; rtsV.copy(u.g.position).project(camera); const sx = (rtsV.x + 1) / 2 * innerWidth, sy = (1 - rtsV.y) / 2 * innerHeight; if (sx >= a && sx <= b && sy >= c && sy <= d) list.push(u); });
   rtsSelect(list, add);
 }
+// Deux boutons à la fois : le navigateur n'envoie pas de « pointerdown » pour le 2e bouton enfoncé (clic droit pendant
+// qu'on tient le clic gauche), seulement un « pointermove » ; on lit donc l'état des boutons (e.buttons : 1 = gauche, 2 = droit)
+function rtsPilotBtns(e){
+  if (!RTS.pilot || e.pointerType === 'touch' || typeof e.buttons !== 'number') return;
+  if (e.button === 0) RTS.pv.fire = !!(e.buttons & 1) || !!RTS.pv.keyFire;      // seulement quand un bouton change (e.button vaut -1 sinon)
+  if (e.button === 2) RTS.pv.fire2 = !!(e.buttons & 2) || !!RTS.pv.keyFire2;
+}
 canvas.addEventListener('pointerdown', e => {
   if (state !== 'rts' || RTS.paused || e.pointerType === 'touch') return;
   if (typeof Snd === 'object') Snd.init();
@@ -276,7 +283,7 @@ canvas.addEventListener('pointerdown', e => {
 });
 document.addEventListener('pointermove', e => {
   if (state !== 'rts' || e.pointerType === 'touch') return;
-  if (RTS.pilot){ if (!RTS.paused){ RTS.pv.yaw -= (e.movementX || 0) * .0022 * sens; RTS.pv.pitch -= (e.movementY || 0) * .0022 * sens; } return; }
+  if (RTS.pilot){ rtsPilotBtns(e); if (!RTS.paused){ RTS.pv.yaw -= (e.movementX || 0) * .0022 * sens; RTS.pv.pitch -= (e.movementY || 0) * .0022 * sens; } return; }
   if (RTS.place){ const p = rtsPick(e.clientX, e.clientY); if (p.x != null) rtsGhostAt(p.x, p.z); }
   if (!RTS.drag || RTS.place) return;
   const D = RTS.drag; if (Math.hypot(e.clientX - D.x, e.clientY - D.y) > 8) D.box = true;
@@ -298,7 +305,8 @@ document.addEventListener('keydown', e => {
   else if (e.code === 'KeyR' && RTS.place){ rtsRotate(); }
   else if (e.code === 'KeyF' && !RTS.paused){ if (RTS.pilot) rtsUnpilot(); else rtsPilotSel(); }
   else if (!RTS.pilot && /^Digit[1-9]$/.test(e.code)){ const t = RTS_HOTKEY[+e.code.slice(-1) - 1]; if (t) rtsBuy(t); }
-  else if (e.code === 'Space'){ if (RTS.pilot) RTS.pv.fire = true; else rtsSelect(RTS.units.filter(u => !u.dead), false); e.preventDefault(); }
+  else if (e.code === 'KeyE' && RTS.pilot){ RTS.pv.fire2 = RTS.pv.keyFire2 = true; e.preventDefault(); } // 2e arme au clavier (Hellfire, 105 mm, roquettes du Mech)
+  else if (e.code === 'Space'){ if (RTS.pilot) RTS.pv.fire = RTS.pv.keyFire = true; else rtsSelect(RTS.units.filter(u => !u.dead), false); e.preventDefault(); }
   else if (e.code === 'Escape' || e.code === 'KeyP'){
     if (RTS.photo){ if (typeof rtsPhoto === 'function') rtsPhoto(false); }
     else if (RTS.rallyPick){ RTS.rallyPick = false; if (typeof rtsCmdBtns === 'function') rtsCmdBtns(); }
@@ -308,7 +316,7 @@ document.addEventListener('keydown', e => {
     else rtsPause();
   }
 });
-document.addEventListener('keyup', e => { if (RTS_KEYS[e.code]){ RTS.keys[RTS_KEYS[e.code]] = 0; RTS.pv.mv[RTS_KEYS[e.code]] = 0; } if (e.code === 'Space') RTS.pv.fire = false; });
+document.addEventListener('keyup', e => { if (RTS_KEYS[e.code]){ RTS.keys[RTS_KEYS[e.code]] = 0; RTS.pv.mv[RTS_KEYS[e.code]] = 0; } if (e.code === 'Space') RTS.pv.fire = RTS.pv.keyFire = false; if (e.code === 'KeyE') RTS.pv.fire2 = RTS.pv.keyFire2 = false; });
 (function(){
   const pts = new Map(); let tap = null;
   canvas.addEventListener('touchstart', e => {

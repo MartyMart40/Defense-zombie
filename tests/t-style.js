@@ -69,3 +69,26 @@
     ok(r.toit, 'Style actif sur le toit');
   });
 })();
+(function(){
+  if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
+  test('Style Amélioré : bouton en haut de la pause ; qualité basse = ombres moins fines et pas d\'éclat', () => {
+    if (lire('typeof __style === "object" && typeof __gfx === "object"') !== true) ignorer('Style ou rendu absent');
+    reset(); J('startLocation(0)');
+    const r = J(function(){
+      var pan = document.querySelector('#scrPause .panel'), o = { haut: pan.querySelector('h2').nextElementSibling.id }, p0 = __gfx.GFX.pref;
+      __style.styleSet('ameliore');
+      __gfx.gfxSet('bas'); for (var i = 0; i < 10; i++) visuals(1 / 30); __style.styleRendu();
+      var sun = world.children.find(function(c){ return c.isDirectionalLight; });
+      o.carteBas = sun.shadow.mapSize.x; o.eclatBas = __style.STY.bloom ? __style.STY.bloom.enabled : null;
+      __gfx.gfxSet('moyen'); for (i = 0; i < 10; i++) visuals(1 / 30); __style.styleRendu();
+      o.carteMoy = sun.shadow.mapSize.x; o.eclatMoy = __style.STY.bloom ? __style.STY.bloom.enabled : null;
+      __style.styleSet('actuel'); __gfx.gfxSet(p0);
+      return o;
+    });
+    egal(r.haut, 'btnStyle', 'Le bouton Style est juste sous le titre Pause');
+    egal(r.carteBas, 512, 'Carte d\'ombre en qualité basse');
+    egal(r.eclatBas, false, 'Pas d\'éclat en qualité basse');
+    egal(r.carteMoy, 1024, 'Carte d\'ombre en qualité moyenne');
+    egal(r.eclatMoy, true, 'Éclat en qualité moyenne');
+  });
+})();

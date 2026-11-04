@@ -106,23 +106,18 @@
   if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
   const exiger = () => { if (lire('typeof __mech === "object" && typeof __mech.mechGarage === "function"') !== true) ignorer('Garage du robot absent'); };
 
-  test('Robot : verrouillé au départ, débloqué en tombant en mode infini', () => {
-    exiger(); reset();
+  test('Robot : ouvert dès le départ, même sans avoir fini les 5 villes', () => {
+    exiger(); reset({ unlocked: 1, wins: {} });
     const r = J(function(){
-      var o = {}; P.mech.unlocked = false; __mech.mechBtn();
-      var b = document.getElementById('btnMech'); o.txt = b.textContent; b.click();
-      o.state = state; o.panneau = !document.getElementById('mechPanel').classList.contains('hide');
-      __inf.infStart(0, true); __t.geler(); gameOver();
-      o.debloque = __mech.mechUnlocked(); o.sauve = JSON.parse(localStorage.getItem('dt_prof')).mech.unlocked; o.txt2 = b.textContent;
-      // Une partie normale perdue ne débloque rien
-      P.mech.unlocked = false; startLocation(0); __t.geler(); gameOver(); o.normal = __mech.mechUnlocked();
+      var o = {}; __mech.mechBtn();
+      var b = document.getElementById('btnMech'); o.txt = b.textContent; o.ouvert = __mech.mechUnlocked(); o.sauve = P.mech.unlocked;
+      b.click(); o.panneau = !document.getElementById('mechPanel').classList.contains('hide');
+      document.getElementById('mechPanel').classList.add('hide'); showScreen('scrTitle');
       return o;
     });
-    ok(/🔒/.test(r.txt), 'Bouton verrouillé : ' + r.txt);
-    ok(r.state !== 'mech' && !r.panneau, 'Le robot ne doit pas démarrer verrouillé');
-    ok(r.debloque && r.sauve, 'Débloqué et sauvegardé après une chute en infini');
-    ok(!/🔒/.test(r.txt2), 'Bouton déverrouillé');
-    ok(!r.normal, 'Une partie normale perdue ne débloque pas le robot');
+    ok(r.ouvert && r.sauve, 'Robot ouvert pour un nouveau joueur');
+    ok(!/🔒/.test(r.txt), 'Bouton sans cadenas : ' + r.txt);
+    ok(r.panneau, 'Le garage du robot s\'ouvre');
   });
 
   test('Robot : garage (améliorations payées en ferraille, sauvegardées) et leurs effets', () => {

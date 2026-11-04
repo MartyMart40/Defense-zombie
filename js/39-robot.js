@@ -21,7 +21,7 @@ const MECH = { on:false, paused:false, x:0, dist:0, street:1, heat:0, hot:0, rcd
   joy:{ id:null, x:0, y:0, dx:0, dy:0 }, aim:{ id:null, lx:0, ly:0 }, mini:false, rocket:false, turn:0, autoFire:store.get('dt_mech_auto', true) !== false, rcdMax:.65, fade:0, fadeTo:null, pow:1, xp0:0, scr0:0, best:+store.get('dt_mech_best', 0) || 0 };
 
 /* ---------- Déblocage et améliorations permanentes (Garage, payées en ferraille) ---------- */
-// Le robot se débloque en tombant une première fois en mode infini (partie infinie terminée).
+// Le robot est ouvert dès le départ (demande de Martin, 2026-11-04 ; avant : il fallait tomber en mode infini).
 // Sauvegarde : P.mech = { unlocked, lv:{ clé: niveau } } (valeurs par défaut au chargement).
 const MECH_UPG = {
   armor:  { name:'Blindage',             max:10, base:80,  desc:'+15 % de blindage par niveau.' },
@@ -50,17 +50,16 @@ const MECH_W_ORDER = Object.keys(MECH_W);
 function mechNorm(){
   const o = P.mech && typeof P.mech === 'object' ? P.mech : {}, lv = {};
   MECH_UPG_ORDER.forEach(k => { const v = Math.floor(+((o.lv || {})[k]) || 0); lv[k] = clamp(v, 0, MECH_UPG[k].max); });
-  const infDone = !!(P.inf && P.inf.best && Object.keys(P.inf.best).some(k => P.inf.best[k] > 0)); // déjà tombé en infini avant cette mise à jour
   const own = { minigun:true, rocket:true };
   MECH_W_ORDER.forEach(k => { if (o.own && o.own[k]) own[k] = true; });
   const L = own[o.L] && MECH_W[o.L] && MECH_W[o.L].side === 'L' ? o.L : 'minigun', Rr = own[o.R] && MECH_W[o.R] && MECH_W[o.R].side === 'R' ? o.R : 'rocket';
-  P.mech = { unlocked: !!o.unlocked || infDone, lv, own, L, R:Rr };
+  P.mech = { unlocked: true, lv, own, L, R:Rr };
   return P.mech;
 }
 mechNorm();
 const mUp = k => ((P.mech && P.mech.lv && P.mech.lv[k]) || 0);
 const mechUpgCost = (k, l) => Math.round(MECH_UPG[k].base * Math.pow(1.55, l));
-const mechUnlocked = () => !!(P.mech && P.mech.unlocked);
+const mechUnlocked = () => true; // ouvert à tous dès le départ
 const mW = side => (P.mech && P.mech[side]) || (side === 'L' ? 'minigun' : 'rocket');
 // Acheter (si besoin) puis équiper une arme sur son bras
 function mechWeapon(id){

@@ -10,7 +10,7 @@ Demande de Martin (2026-11-04) : des « degrés » de graphismes au choix, du je
 | Haute définition | Matériaux réalistes (rugosité, reflets), éclairage plus riche, zombies plus détaillés, modèles téléchargés | Toit, ordi surtout | À faire |
 | Ultra | Ce qu'un ordi puissant peut donner : ombres douces partout, reflets, brume volumétrique | Ordi seulement | Plus tard |
 
-Le choix : bouton « Style » dans Pause (clé `dt_style` : `actuel` ou `ameliore`). Il change tout de suite, sans recommencer la partie. Il s'ajoute au réglage « Graphismes » (qualité : résolution et nombre d'effets, `js/36-rendu.js`).
+Le choix : bouton « Style » dans Pause (clé `dt_style` : `actuel` ou `ameliore`). Il change tout de suite, sans recommencer la partie. Il s'ajoute au réglage « Graphismes » (qualité : résolution et nombre d'effets, `js/36-rendu.js`) : en qualité basse, pas d'éclat et carte d'ombre de 512 ; moyenne (et cell) 1024 ; haute sur ordi 2048. Si un ordi lague en Amélioré, baisser « Graphismes ».
 
 ## Comment c'est fait (`js/57-graphismes.js`)
 - Rien n'est refait dans `js/03-scene.js` : à la fin de `buildWorld`, l'événement `Jeu.emit('monde', L)` laisse le style habiller la rue. Chaque matériau est remplacé par une version détaillée, et l'original est gardé : revenir à « Actuel » remet les originaux.

@@ -161,7 +161,8 @@ function styleOmbreSoleil(on){
   const cible = new THREE.Vector3(0, 0, -45), dir = sun.userData.pos0.clone().normalize();
   sun.target.position.copy(cible); if (!sun.target.parent) world.add(sun.target);
   sun.position.copy(cible).addScaledVector(dir, 150);
-  const S2 = sun.shadow, cam = S2.camera, n = isTouch ? 1024 : 2048;
+  const niv = typeof gfxLevel === 'function' ? gfxLevel() : 'haut';
+  const S2 = sun.shadow, cam = S2.camera, n = niv === 'bas' ? 512 : (niv === 'haut' && !isTouch) ? 2048 : 1024; // suit le réglage Graphismes
   cam.left = -48; cam.right = 48; cam.top = 32; cam.bottom = -32; cam.near = 40; cam.far = 270; cam.updateProjectionMatrix();
   if (S2.mapSize.x !== n){ S2.mapSize.set(n, n); if (S2.map){ S2.map.dispose(); S2.map = null; } }
   S2.bias = -.0006; S2.normalBias = .04; S2.radius = 2;
@@ -258,6 +259,7 @@ function styleRendu(){
       if (STY.fxaa) STY.fxaa.uniforms.resolution.value.set(1 / v.x, 1 / v.y);
     }
     STY.grade.uniforms.t.value = (STY.t % 100);
+    STY.bloom.enabled = !(typeof gfxLevel === 'function' && gfxLevel() === 'bas'); // qualité basse : pas d'éclat (plus rapide)
     c.render();
     return true;
   } catch (e) { errNote(e); STY.casse = true; return false; }
@@ -271,7 +273,7 @@ Jeu.on('image', dt => {
   if (!on) return;
   if (typeof gfxShadows !== 'undefined') gfxShadows.visible = false; // les vraies ombres remplacent les taches
   STY.ombreT -= dt || 0;
-  if (STY.ombreT <= 0){ STY.ombreT = .25; styleOmbresZombies(); }
+  if (STY.ombreT <= 0){ STY.ombreT = .25; styleOmbresZombies(); if (STY.orig.length) styleOmbreSoleil(true); }
 });
 Jeu.on('monde', L => styleMonde(L));
 
@@ -284,10 +286,11 @@ function styleSet(p){
 }
 function styleBtn(){ const b = $('btnStyle'); if (b) b.textContent = 'Style : ' + STYLE_NOM[STY.pref]; }
 (function(){
-  const ref = $('btnGfx') || $('btnResume');
-  if (ref && ref.parentNode && !$('btnStyle')){
+  // En haut de la pause, juste sous le titre : visible sans faire défiler (la liste est longue au cell couché)
+  const pan = document.querySelector('#scrPause .panel'), titre = pan && pan.querySelector('h2');
+  if (pan && !$('btnStyle')){
     const b = document.createElement('button'); b.className = 'ghost'; b.id = 'btnStyle'; b.type = 'button';
-    ref.parentNode.insertBefore(b, ref.nextSibling);
+    pan.insertBefore(b, titre ? titre.nextSibling : pan.firstChild);
     b.addEventListener('click', () => styleSet(STYLES[(STYLES.indexOf(STY.pref) + 1) % STYLES.length]));
   }
   styleBtn();

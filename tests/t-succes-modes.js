@@ -24,11 +24,11 @@
     ok(r.ach, 'Succès obtenus'); ok(r.ferraille, 'Ferraille des succès versée'); ok(r.rejoue, 'Une nouvelle partie continue de compter');
   });
 
-  test('Succès des modes : rues et zombies du robot, cachés tant que le robot est verrouillé', () => {
+  test('Succès des modes : rues et zombies du robot, visibles dès le départ (robot ouvert)', () => {
     exiger(); reset();
     const r = J(function(){
       var o = {};
-      o.cache = __succesModes.ACH_MODES.filter(function(a){ return a.id.indexOf('mech') === 0; }).every(function(a){ return a.hide(); });
+      o.cache = __succesModes.ACH_MODES.filter(function(a){ return a.id.indexOf('mech') === 0; }).every(function(a){ return !a.hide(); });
       P.mech = P.mech || {}; P.mech.unlocked = true; o.visible = !__succesModes.ACH_MODES[0].hide();
       mechStart(); visuals(1 / 30);
       for (var i = 0; i < 3; i++){ var z = __t.placer('walker', 0, -40); kill(z, false); }
@@ -37,7 +37,7 @@
       mechQuit(); if (typeof __mechSave === 'object') __mechSave.mechSaveClear();
       return o;
     });
-    ok(r.cache, 'Cachés tant que le robot est verrouillé'); ok(r.visible, 'Visibles une fois débloqué');
+    ok(r.cache, 'Visibles dès le départ'); ok(r.visible, 'Visibles une fois débloqué');
     egal(r.kills, 3, 'Zombies abattus avec le robot'); egal(r.rues, 5, 'Rues traversées (rue 6 atteinte)'); ok(r.ach, 'Succès Briseur de rues');
   });
 })();

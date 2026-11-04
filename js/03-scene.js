@@ -281,4 +281,5 @@ function buildWorld(L){
   }
   for (let x = -12; x <= 12; x += 6) box(2.4, .8, .7, concMat, x + rand(-1, 1), .4, BAR_Z + .5, barricade);
   car(-15, BAR_Z, 1.57, carMats[3]); car(15, BAR_Z, -1.5, carMats[0]);
+  Jeu.emit('monde', L); // la rue est bâtie (style graphique, js/57-graphismes.js)
 }

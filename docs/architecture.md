@@ -17,7 +17,7 @@
 | 39 à 40 | Mode robot |
 | 41 à 44 | Mode RTS « Guerre des robots » |
 | 45 à 49 | Petits ajouts : 45 sauvegarde de la partie RTS, 46 application installable, 47 astuces du RTS, 48 liste des unités du RTS, 49 commandement du RTS (plage pleine) |
-| 50 à 59 | Ajouts généraux : 50 sauvegarde du robot, 51 succès du robot et du RTS, 52 statistiques à vie, 53 tutoriel du toit, 54 postes de pilotage du RTS, 55 niveaux visuels des armes du RTS, 56 postes des petits robots ; 57 à 59 libres |
+| 50 à 59 | Ajouts généraux : 50 sauvegarde du robot, 51 succès du robot et du RTS, 52 statistiques à vie, 53 tutoriel du toit, 54 postes de pilotage du RTS, 55 niveaux visuels des armes du RTS, 56 postes des petits robots, 57 style graphique ; 58 et 59 libres |
 | 60 à 89 | Prochains gros modes (une dizaine chacun) |
 | 90 | `90-branchements.js` : branche le registre des modes sur le jeu commun. Toujours le dernier. |
 
@@ -41,7 +41,7 @@ Jeu.mode('nom', {
 ```
 
 - Un seul mode est actif à la fois (`Jeu.actif()`). Sur le toit, aucun mode n'est actif.
-- Événements communs, pour n'importe quel fichier : `Jeu.on('image', fn)` (chaque image, `fn(dt)`), `Jeu.on('tue', fn)` (`fn(z, etaitVivant)`). `Jeu.off` retire un écouteur. Une erreur dans un écouteur est affichée dans la console sans casser les autres.
+- Événements communs, pour n'importe quel fichier : `Jeu.on('image', fn)` (chaque image, `fn(dt)`), `Jeu.on('tue', fn)` (`fn(z, etaitVivant)`), `Jeu.on('monde', fn)` (`fn(L)`, une rue du toit vient d'être bâtie par `buildWorld`). `Jeu.off` retire un écouteur. Une erreur dans un écouteur est affichée dans la console sans casser les autres.
 - Le branchement est fait **une seule fois** dans `js/90-branchements.js`. Pour un nouvel événement (ex. « nouvelle partie »), l'ajouter là avec `Jeu.emit('nom', ...)` et le documenter ici.
 - Inscrits aujourd'hui : `robot` (`js/39-robot.js`) et `rts` (`js/44-rts-interface.js`).
 - Tests : `tests/t-modes.js` ; accès dans le jeu par `window.__jeu`.

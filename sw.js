@@ -4,7 +4,7 @@
    sans réseau, on sert la copie (en ignorant le ?v= des fichiers). Les autres sites (polices Google) passent tout droit.
    Changer CACHE seulement pour jeter toutes les vieilles copies. */
 const CACHE = 'dernier-toit-1';
-const BASE = ['./', 'index.html', 'css/style.css', 'lib/three.min.js', 'manifest.webmanifest', 'icones/icone-192.png', 'icones/icone-512.png'];
+const BASE = ['./', 'index.html', 'css/style.css', 'lib/three.min.js', 'lib/three-effets.js', 'manifest.webmanifest', 'icones/icone-192.png', 'icones/icone-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(BASE)).catch(() => {}).then(() => self.skipWaiting()));

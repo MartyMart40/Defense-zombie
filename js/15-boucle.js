@@ -65,7 +65,7 @@ function loop(t){
   visuals(dt);
   if (S && state !== 'menu') updateHUD();
   renderer.clear();
-  renderer.render(scene, camera);
+  if (!(typeof styleRendu === 'function' && styleRendu())) renderer.render(scene, camera); // style Amélioré : effets d'image (js/57-graphismes.js)
   renderer.clearDepth();
   renderer.render(vmScene, vmCam);
 }

@@ -20,6 +20,7 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 | # | Tâche | Date |
 |---|-------|------|
+| 80 | Graphismes, phase 1 : réglage « Style » dans Pause (Actuel, Amélioré ; dt_style). Amélioré sur le toit : vraies ombres du soleil (bâtiments, autos, zombies), textures dessinées par le code (asphalte fissuré, dalles, gazon, briques ou planches, cadres et allèges des fenêtres, bois, crasse), effets d’image (éclat lumineux, lissage FXAA, couleurs, coins assombris, grain). Effets de Three.js r128 dans `lib/three-effets.js`. Feuille de route : `docs/graphismes.md` | 2026-11-04 |
 | 79 | RTS, petits robots : jambes qui font des pas en marchant ; poste de pilotage pour chaque robot (visière, bras et sa propre arme, recul, éclair, 3 paliers de détails avec Armes et Cadence, « ARME n % » dans le viseur) ; défaut corrigé : les mains et l’arme du toit restaient visibles pendant le pilotage (js/41-rts.js, js/42-rts-*.js, js/56-rts-postes-robots.js, tests/t-rts-robots.js) | 2026-11-04 |
 | 78 | RTS : les armes des véhicules embellissent avec leurs améliorations : niveau visuel par arme (0 à 1), traînée, son, explosion, secousse, recul et éclair qui grossissent, détails du modèle du poste à 3 paliers ; au début, un petit « pew pew » (js/55-rts-niveaux.js, tests/t-rts-niveaux.js) | 2026-11-04 |
 | 77 | RTS : les tirs du joueur partent du bout du canon visible ; canon rotatif de l’Apache épeurant (26 coups/s, montée en régime, grondement du minigun, vibrations) ; défaut corrigé : les armes rapides des véhicules ne tiraient qu’une image sur deux ; AC-130 : tir seulement par le flanc gauche, visée fixée au sol dans un champ qui suit l’avion | 2026-11-04 |
@@ -29,9 +30,10 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 | 73 | Armes neuves plus fortes au départ (leurs améliorations repartent toujours à zéro) : fusil d’assaut 30 dégâts et traverse 2 zombies, sniper 240 dégâts, 1 tir/s, traverse 5, minigun 24 dégâts et traverse 2, lance-roquettes 800 dégâts et recharge 2,6 s, canon électromagnétique 1 300, arc électrique 260. Défaut corrigé : les explosions (roquettes, grenades, pouvoirs, mortier) ne blessaient presque pas le boss ni le colosse (distance mesurée jusqu’au centre de leur gros corps). Test de la vieille route réparé (seul le trajet compte, pas l’arrivée près du QG) | 2026-11-04 |
 | 72 | Statistiques à vie : bouton « 📊 Statistiques » sur l’écran titre (temps de jeu par mode, zombies, têtes, boss, survivants, vagues, records de chaque mode, arme préférée avec barres) ; temps et zombies par arme comptés par le registre Jeu (P.vie) (js/52-statistiques.js, tests/t-statistiques.js) | 2026-11-04 |
 | 71 | Code : trois gros fichiers coupés sans rien changer (04-arme-en-main en 3 : base, modèles, animations ; 23-rue en 2 : rue, survivants ; 42-rts-unites en 2 : unités et partie, combat) ; crochets d’image des repères, du rendu et des bruitages passés au registre Jeu.on('image') ; les erreurs des écouteurs vont au journal | 2026-11-04 |
-| 70 | Journal des erreurs cachées : les 227 `catch (e) {}` du jeu notent maintenant les vraies erreurs de programmation dans JOURNAL (errNote, js/00-base.js) ; les refus du navigateur et les sauvegardes illisibles sont ignorés ; tests/t-journal.js (chargé en dernier) échoue s’il y en a. Aucune trouvée dans les tests ni dans une partie de chaque mode | 2026-11-04 |
 
 ## À valider par Martin
+
+- Style Amélioré (tâche 80) : à essayer sur le S24 et l’ordi (Pause, « Style »). Dire si c’est trop sombre, trop flou ou trop granuleux, et combien d’images par seconde au cell.
 
 - RTS véhicules (tâche 76) : à essayer en pilotant. Chiffres à ajuster au goût : tank 560 dégâts toutes les 3 s, chasseur 200 obus, Warthog 660, AC-130 100 + 20, 2 avions par aérodrome.
 

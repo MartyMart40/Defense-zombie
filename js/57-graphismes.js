@@ -13,12 +13,13 @@
 // Branché : Jeu.on('monde') (fin de buildWorld) pour habiller chaque nouvelle rue, styleRendu() appelé par la boucle
 // (js/15-boucle.js) pour dessiner la scène avec les effets, Jeu.on('image') pour les ombres des zombies.
 
-const STYLES = ['actuel', 'ameliore', 'hd'];
-const STYLE_NOM = { actuel:'Actuel', ameliore:'Amélioré', hd:'Haute définition' };
+const STYLES = ['actuel', 'ameliore', 'hd', 'ultra'];
+const STYLE_NOM = { actuel:'Actuel', ameliore:'Amélioré', hd:'Haute définition', ultra:'Ultra' };
 const STY = { pref: store.get('dt_style', 'actuel'), L:null, orig:[], neufs:[], comp:null, bloom:null, grade:null, fxaa:null, w:0, h:0, t:0, ombreT:0, ombres:false, casse:false, v2:new THREE.Vector2() };
 if (STYLES.indexOf(STY.pref) < 0) STY.pref = 'actuel';
-const styleOn = () => STY.pref === 'ameliore' || STY.pref === 'hd'; // Haute définition part de la rue d'Amélioré
-const styleHD = () => STY.pref === 'hd';
+const styleOn = () => STY.pref === 'ameliore' || STY.pref === 'hd' || STY.pref === 'ultra'; // Haute définition part de la rue d'Amélioré
+const styleHD = () => STY.pref === 'hd' || STY.pref === 'ultra'; // Ultra part de la Haute définition (js/61)
+const styleUltra = () => STY.pref === 'ultra';
 const styleHDMajSur = () => { if (typeof styleHDMaj === 'function') styleHDMaj(); }; // js/58-graphismes-hd.js
 const styleToit = () => styleOn() && !Jeu.actif();
 
@@ -298,7 +299,7 @@ function styleBtn(){ const b = $('btnStyle'); if (b) b.textContent = 'Style : ' 
   if (pan && !$('btnStyle')){
     const b = document.createElement('button'); b.className = 'ghost'; b.id = 'btnStyle'; b.type = 'button';
     pan.insertBefore(b, titre ? titre.nextSibling : pan.firstChild);
-    b.addEventListener('click', () => styleSet(STYLES[(STYLES.indexOf(STY.pref) + 1) % STYLES.length]));
+    b.addEventListener('click', () => { let n = STYLES[(STYLES.indexOf(STY.pref) + 1) % STYLES.length]; if (n === 'ultra' && isTouch) n = 'actuel'; styleSet(n); }); // Ultra : ordi seulement
   }
   styleBtn();
   // La rue du titre est déjà bâtie (js/15-boucle.js) : on l'habille tout de suite
@@ -306,4 +307,4 @@ function styleBtn(){ const b = $('btnStyle'); if (b) b.textContent = 'Style : ' 
 })();
 
 // Accès pour les tests automatiques
-window.__style = { STY, STYLES, styleOn, styleHD, styleToit, styleSet, styleRendu, styleTex, styleMonde };
+window.__style = { STY, STYLES, styleOn, styleHD, styleUltra, styleToit, styleSet, styleRendu, styleTex, styleMonde };

@@ -10,7 +10,8 @@
       var b = document.getElementById('btnStyle'), o = { btn: !!b && !!b.closest('#scrPause'), p0: __style.STY.pref };
       __style.styleSet('actuel'); b.click(); o.apres = __style.STY.pref; o.sauve = store.get('dt_style', null); o.txt = b.textContent;
       b.click(); o.hd = __style.STY.pref; o.txtHd = b.textContent;
-      b.click(); o.retour = __style.STY.pref;
+      b.click(); o.ultra = __style.STY.pref; o.touch = isTouch; if (o.ultra === 'ultra') b.click(); // Ultra : ordi seulement
+      o.retour = __style.STY.pref;
       __style.styleSet('nimporte'); o.mauvais = __style.STY.pref;
       return o;
     });
@@ -21,7 +22,8 @@
     ok(/Amélioré/.test(r.txt), 'Libellé : ' + r.txt);
     egal(r.hd, 'hd', 'Deuxième clic : Haute définition');
     ok(/Haute définition/.test(r.txtHd), 'Libellé : ' + r.txtHd);
-    egal(r.retour, 'actuel', 'Troisième clic : retour à Actuel');
+    egal(r.ultra, r.touch ? 'actuel' : 'ultra', 'Troisième clic : Ultra sur ordi, Actuel au cell');
+    egal(r.retour, 'actuel', 'Puis retour à Actuel');
     egal(r.mauvais, 'actuel', 'Valeur inconnue ramenée à Actuel');
   });
 
@@ -230,6 +232,38 @@
     egal(r.dof0, false, 'Pas de flou sans viser');
     ok(r.propre, 'Nouvelle rue : sol propre');
     egal(r.apres, 0, 'Retour à Amélioré : zombies d\'origine');
+  });
+})();
+
+/* Ultra (ordi seulement) : reflets, rayons, ombres douces, ombres de contact pleines */
+(function(){
+  if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
+  test('Style Ultra : rue mouillée qui reflète, rayons de soleil, ombres douces ; retour à Haute définition sans trace', async () => {
+    if (lire('typeof __ultra === "object" && typeof __styleHD === "object"') !== true) ignorer('Ultra absent (js/61-graphismes-ultra.js)');
+    if (lire('isTouch') === true) ignorer('Ultra : ordi seulement');
+    reset(); J('startLocation(0)'); J("ambSet('pluie', true)");
+    J("__style.styleSet('ultra')"); await J('__styleHD.styleHDCharger()');
+    const r = J(function(){
+      var U = __ultra.ULT, o = {};
+      for (var i = 0; i < 3; i++) visuals(1 / 30);
+      o.actif = __ultra.ultraActif(); o.hd = __style.styleHD();
+      o.refl = !!U.refl && U.refl.parent === world; o.force = U.refl ? U.refl.material.uniforms.force.value : 0;
+      o.vsm = renderer.shadowMap.type === THREE.VSMShadowMap; o.ao = __styleHD.HD.aoDiv;
+      o.rendu = __style.styleRendu(); o.casse = __styleHD.HD.casse;
+      o.aoTaille = __styleHD.HD.ssao ? __styleHD.HD.ssao.ssaoRenderTarget.width : 0; o.w = __styleHD.HD.w;
+      startLocation(1); visuals(1 / 30); o.autreRue = !!U.refl && U.refl.parent === world;
+      __style.styleSet('hd'); visuals(1 / 30);
+      o.refl2 = !!U.refl; o.vsm2 = renderer.shadowMap.type === THREE.VSMShadowMap; o.ao2 = __styleHD.HD.aoDiv;
+      __style.styleSet('actuel'); visuals(1 / 30);
+      return o;
+    });
+    ok(r.actif && r.hd, 'Ultra actif, par-dessus la Haute définition');
+    ok(r.refl && r.force > .6, 'Miroir de la rue posé, plus fort sous la pluie : ' + r.force);
+    ok(r.vsm, 'Ombres douces (VSM)');
+    ok(r.ao === 1 && r.aoTaille === r.w, 'Ombres de contact en pleine résolution : ' + r.aoTaille + ' / ' + r.w);
+    ok(r.rendu === true && !r.casse, 'Rendu Ultra sans erreur');
+    ok(r.autreRue, 'Une nouvelle rue reçoit son miroir');
+    ok(!r.refl2 && !r.vsm2 && r.ao2 === 2, 'Retour à Haute définition : plus de miroir, ombres et contact comme avant');
   });
 })();
 

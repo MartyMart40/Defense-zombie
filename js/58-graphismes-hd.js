@@ -272,7 +272,7 @@ function styleHDComposer(){
   p.kernelRadius = HD_REGL.ao.rayon; p.minDistance = HD_REGL.ao.min; p.maxDistance = HD_REGL.ao.max;
   p.setSize = function(w, h){ // l'ombre de contact se calcule à demi-résolution (puis floutée), l'image reste pleine
     this.width = w; this.height = h; this.beautyRenderTarget.setSize(w, h);
-    const a = Math.max(1, Math.ceil(w / 2)), b = Math.max(1, Math.ceil(h / 2));
+    const k = HD.aoDiv || 2, a = Math.max(1, Math.ceil(w / k)), b = Math.max(1, Math.ceil(h / k)); // Ultra : pleine résolution (js/61)
     this.ssaoRenderTarget.setSize(a, b); this.normalRenderTarget.setSize(a, b); this.blurRenderTarget.setSize(a, b);
     this.ssaoMaterial.uniforms.resolution.value.set(a, b); this.blurMaterial.uniforms.resolution.value.set(a, b);
   };

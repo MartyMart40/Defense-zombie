@@ -8,9 +8,9 @@ Demande de Martin (2026-11-04) : des « degrés » de graphismes au choix, du je
 | Actuel | Le jeu tel qu'il était : couleurs unies, formes simples | Partout | Fait |
 | Amélioré | Jeu 3D des années 2005 à 2010 (genre Half-Life 2, en plus simple) : textures, vraies ombres, éclat lumineux | Toit (cell récent et ordi) | Phase 1 faite (tâche 80) |
 | Haute définition | Visée Modern Warfare : matériaux réalistes (rugosité, reflets), lumière HDR, ombres de contact, zombies plus détaillés, modèles téléchargés | Toit, ordi surtout | Séance 1 faite (tâche 82), séances 2 et 3 sans téléchargement faites (tâches 84 à 86) |
-| Ultra | Ce qu'un ordi puissant peut donner : ombres douces partout, reflets, brume volumétrique | Ordi seulement | Plus tard |
+| Ultra | Ce qu'un ordi puissant peut donner : ombres douces partout, reflets, brume volumétrique | Ordi seulement | Séance 1 faite (tâche 87) |
 
-Le choix : bouton « Style » dans Pause (clé `dt_style` : `actuel`, `ameliore` ou `hd`), un clic passe au suivant. Il change tout de suite, sans recommencer la partie. Il s'ajoute au réglage « Graphismes » (qualité : résolution et nombre d'effets, `js/36-rendu.js`) : en qualité basse, pas d'éclat et carte d'ombre de 512 ; moyenne (et cell) 1024 ; haute sur ordi 2048. Si un ordi lague en Amélioré, baisser « Graphismes ».
+Le choix : bouton « Style » dans Pause (clé `dt_style` : `actuel`, `ameliore`, `hd` ou `ultra`), un clic passe au suivant ; au cell, le bouton saute Ultra. Il change tout de suite, sans recommencer la partie. Il s'ajoute au réglage « Graphismes » (qualité : résolution et nombre d'effets, `js/36-rendu.js`) : en qualité basse, pas d'éclat et carte d'ombre de 512 ; moyenne (et cell) 1024 ; haute sur ordi 2048. Si un ordi lague en Amélioré, baisser « Graphismes ».
 
 ## Comment c'est fait (`js/57-graphismes.js`)
 - Rien n'est refait dans `js/03-scene.js` : à la fin de `buildWorld`, l'événement `Jeu.emit('monde', L)` laisse le style habiller la rue. Chaque matériau est remplacé par une version détaillée, et l'original est gardé : revenir à « Actuel » remet les originaux.
@@ -33,6 +33,14 @@ Le choix : bouton « Style » dans Pause (clé `dt_style` : `actuel`, `ameliore`
   - une flaque de sang reste où chaque zombie tombe (80 au plus, les plus vieilles réutilisées), effacée à chaque nouvelle rue ;
   - flou de profondeur en visant : net au point visé (centre de l'écran), doux devant et derrière ; pas avec la lunette du sniper ; coupé en qualité basse. Réglages : `ZHD.flou` (5 pixels), formule dans `ZHD_DOF`.
 
+## Ultra, séance 1 (`js/61-graphismes-ultra.js`, ordi seulement)
+- Part de la Haute définition (tout ce qui précède reste).
+- Rue mouillée : un miroir caché (Reflector de r128, à demi-résolution, couleurs étendues) redessine la scène vue d'en dessous ; un masque dessiné par le code fait des flaques et des traces de pneus qui reflètent plus, la rue entière brille un peu. Effet de Fresnel (plus de reflet en regardant loin), petites ondes, s'efface après 55 m. Plus fort sous la pluie (+0,4).
+- Rayons de soleil (ou de lune) : passe d'image qui étire la lumière du ciel vers le soleil, cachée par les maisons et les zombies (profondeur des ombres de contact).
+- Ombres douces : ombres VSM (flou de 5) pour le soleil et les lampadaires.
+- Ombres de contact en pleine résolution (au lieu de la moitié).
+- Coût : une scène de plus à dessiner (le miroir), plus le reste. Si ça lague, revenir à Haute définition.
+
 ## Ressources téléchargées
 Le réseau de la session ne laisse passer que GitHub et npm : les sites de textures et de modèles libres (polyhaven.com, ambientcg.com, kenney.nl, quaternius.com) sont encore bloqués (vérifié le 2026-11-04, séance 1). Les images HDR de Poly Haven viennent d'une copie sur npm (`@pmndrs/assets`, CC0). Pour les ajouter : réglages de l'environnement Claude Code, « Network access », ajouter ces domaines aux domaines permis. En attendant, tout est dessiné par le code.
 
@@ -45,11 +53,12 @@ Niveau « Haute définition » (nouveau choix dans le bouton Style, ordi d'abord
 1. Séance 1, la lumière (faite, tâche 82) : matériaux physiques (MeshStandardMaterial : rugosité, métal, cartes de relief), ciel et lumière d'ambiance tirés d'une image HDR (Poly Haven), rendu en couleurs étendues avec réglage d'exposition (tone mapping ACES), ombres de contact (SSAO, `SSAOPass` de r128), carte d'ombre 4096.
 2. Séance 2, le décor (tâches 84 et 85 : lampadaires de nuit, autos détaillées, fils, débris ; textures photo en attente du réseau) : textures photo (asphalte, briques, béton, rouille) d'ambientCG, avec relief et rugosité ; débris, poteaux, fils, autos plus détaillées ; nuit : lampadaires et feux qui éclairent vraiment et projettent des ombres.
 3. Séance 3, les zombies et les effets (tâche 86, sans téléchargement : zombies détaillés par le code, sang au sol, flou en visant ; modèles glTF, fumée et brume en attente) : modèles téléchargés (glTF, GLTFLoader de r128) avec animations, sang et impacts collés aux murs, fumée et feu plus épais, brume qui prend la lumière, profondeur de champ en visant.
-4. Ensuite, « Ultra » (ordi seulement) et le même style pour le robot et le RTS.
+4. Ultra, séance 1 (faite, tâche 87) : reflets de la rue mouillée, rayons de soleil, ombres douces, ombres de contact pleines. Ensuite : le même style pour le robot et le RTS.
 
 Règles : Actuel et Amélioré ne changent pas ; Haute définition se choisit dans le même bouton ; on garde Three.js r128 (le changer toucherait tout le jeu) ; images par seconde à mesurer sur l'ordi de Martin après chaque séance.
 
 ## À équilibrer en jouant
+- Ultra : force des reflets (0,5, +0,4 sous la pluie), rayons (0,5), flou des ombres (5), taille du miroir (moitié de l'écran) : `ULT.regl` dans `js/61-graphismes-ultra.js`.
 - Haute définition, zombies : force du flou en visant (5), couleur et taille des flaques de sang : `ZHD` dans `js/60-graphismes-zombies.js`.
 - Haute définition, nuit : force des lampadaires (4,5), portée (30 m), cône de brume (0,16) : `HD_NUIT`.
 - Haute définition : exposition (1,15), force de la lumière HDR (`env` 0,55), teinte de la ville (0,6), SSAO (rayon 0,7 m), éclat (0,5, seuil 0,92), lueurs et ciel (`sansOmbre`) : `HD_REGL` dans `js/58-graphismes-hd.js`. Images par seconde à mesurer sur l'ordi de Martin.

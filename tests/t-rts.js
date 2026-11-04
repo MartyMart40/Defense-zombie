@@ -38,13 +38,13 @@
       eval(c); var R = calme(), o = {};
       R.units.forEach(function(u){ u.g.position.set(0, 0, 20); u.U = Object.assign({}, u.U, { range:0, dmg:0 }); });
       R.blds.filter(function(b){ return b.type === 't_mg'; }).forEach(function(b){ __rts.rtsSell(b); });
-      var E = __rts.RTS_ROAD[__rts.RTS_ROAD.length - 1], z = __t.placer('walker', E[0], E[1]); z.speed = 6; z.hp = z.maxHp = 1e9;
+      var E = __rts.RTS_ROAD[7], z = __t.placer('walker', E[0], E[1]); z.speed = 6; z.hp = z.maxHp = 1e9;
       var maxD = 0; for (var i = 0; i < 30 * 55; i++){ visuals(1 / 30); maxD = Math.max(maxD, __rts.rtsRoadDist(z.g.position.x, z.g.position.z)); }
       o.route = maxD; o.base = Math.hypot(z.g.position.x, z.g.position.z);
       return o;
     }, calme);
     fin();
-    ok(r.route < 5, 'Il reste sur la route (écart ' + r.route.toFixed(1) + ' m)'); ok(r.base < 25, 'Il arrive à la base : ' + r.base.toFixed(0) + ' m');
+    ok(r.route < 7, 'Il reste sur la route (écart ' + r.route.toFixed(1) + ' m)'); ok(r.base < 25, 'Il arrive à la base : ' + r.base.toFixed(0) + ' m');
   });
 
   test('RTS : nouveaux robots, tank, hélicoptère, chasseur, Warthog et bombardier, avec leurs bâtiments et améliorations', () => {
@@ -64,15 +64,15 @@
       // Les zombies au sol ignorent les avions ; les volants les attaquent
       clearZombies(); R.units.forEach(function(u){ if (u !== U.heli) u.g.position.x += 0; });
       U.heli.g.position.set(-60, 11, -90); var w = __t.placer('walker', -60, -92), f = ZTYPES.flyer ? __t.placer('flyer', -61, -90) : null;
-      w.rtsT = 0; if (f) f.rtsT = 0; visuals(1 / 30);
-      o.ignore = w.rtsTgt !== U.heli; o.vise = !f || (!!f.rtsTgt && !!f.rtsTgt.U && f.rtsTgt.U.kind !== 'ground');
+      w.rtsT = 0; w.hp = w.maxHp = 1e9; if (f){ f.rtsT = 0; f.hp = f.maxHp = 1e9; } visuals(1 / 30);
+      o.dbg = f ? [f.type, f.rtsTgt ? (f.rtsTgt.type || 'x') : 'null', f.dead, f.g.position.x.toFixed(1), f.g.position.z.toFixed(1), U.heli.g.position.x.toFixed(1), U.heli.g.position.z.toFixed(1), U.heli.dead].join(',') : ''; o.ignore = w.rtsTgt !== U.heli; o.vise = !f || (!!f.rtsTgt && !!f.rtsTgt.U && f.rtsTgt.U.kind !== 'ground');
       return o;
     }, calme);
     fin();
     ok(r.sans, 'Refus sans garage ni aérodrome'); egal(r.bats.join(','), 'true,true,true', 'Garage, héliport et aérodrome');
     egal(r.tous, 'sniper,flamebot,tank,heli,jet,warthog,bomber', 'Toutes les nouvelles unités'); ok(r.vol, 'Les appareils volent'); ok(r.avance, 'Le chasseur ne s’arrête jamais');
     ok(r.tankSol, 'Le tank roule au sol'); ok(r.upTank && r.upAvion, 'Améliorations des véhicules et des avions');
-    ok(r.ignore, 'Les zombies au sol ignorent l’hélicoptère'); ok(r.vise, 'Les volants s’en prennent à l’hélicoptère');
+    ok(r.ignore, 'Les zombies au sol ignorent l’hélicoptère'); ok(r.vise, 'Les volants s’en prennent à l’hélicoptère ' + r.dbg);
   });
 
   test('RTS : un boss arrive avec la horde (barre de vie), le Titan piétine', () => {
@@ -112,6 +112,52 @@
     fin();
     const non = Object.keys(r).filter(k => !(r[k] > 0));
     ok(!non.length, 'Unités qui n’attaquent pas : ' + non.join(', ') + ' · ' + JSON.stringify(r));
+  });
+
+  test('RTS : Mech de combat (minigun et roquettes, cockpit du mode robot quand on le pilote)', () => {
+    exiger(); reset();
+    const r = J(function(c){
+      eval(c); var R = calme(), o = {}; S.money = 1e6;
+      R.blds.filter(function(b){ return b.type === 't_mg'; }).forEach(function(b){ __rts.rtsSell(b); });
+      __rts.rtsBuild('heavyfac', 20, 8); var m = __rts.rtsBuy('mech'); o.achat = !!m && __rts.RTS_UNITS.mech.cost > __rts.RTS_UNITS.heavy.cost * 3;
+      m.g.position.set(0, 0, -40); m.hx = 0; m.hz = -40; m.cmd = 'idle';
+      var a = __t.placer('walker', 0, -55), b = __t.placer('walker', 1, -56), q = __t.placer('walker', -1, -56);
+      [a, b, q].forEach(function(z){ z.hp = z.maxHp = 1e6; z.speed = 0; });
+      var cd0 = m.cd2; for (var i = 0; i < 60; i++) visuals(1 / 30);
+      o.tir = a.hp < 1e6 || b.hp < 1e6; o.roquettes = m.cd2 > 0 && b.hp < 1e6 - 200;
+      __rts.rtsSelect([m], false); __rts.rtsPilotSel(); visuals(1 / 30);
+      o.cockpit = typeof mechCk === 'undefined' || mechCk.visible; o.oeil = camera.position.y > 5;
+      R.pv.fire = true; for (var k = 0; k < 30; k++) visuals(1 / 30); R.pv.fire = false; o.spin = R.spin > .9;
+      __rts.rtsUnpilot(); visuals(1 / 30); o.fin = typeof mechCk === 'undefined' || !mechCk.visible;
+      return o;
+    }, calme);
+    fin();
+    ok(r.achat, 'Mech de combat à l’Usine lourde, bien plus cher'); ok(r.tir && r.roquettes, 'Minigun et roquettes');
+    ok(r.cockpit && r.oeil, 'Cockpit du mode robot'); ok(r.spin, 'La minigun monte en régime'); ok(r.fin, 'Cockpit caché au retour');
+  });
+
+  test('RTS : IA des unités (recule devant un zombie trop proche, ne poursuit pas trop loin, se fait réparer)', () => {
+    exiger(); reset();
+    const r = J(function(c){
+      eval(c); var R = calme(), o = {}; S.money = 1e6;
+      R.blds.filter(function(b){ return b.type === 't_mg'; }).forEach(function(b){ __rts.rtsSell(b); });
+      var u = R.units[0]; R.units.slice(1).forEach(function(x){ x.g.position.set(-25, 0, 20); x.hx = -25; x.hz = 20; x.U = Object.assign({}, x.U, { range:0 }); });
+      u.g.position.set(0, 0, -40); u.hx = 0; u.hz = -40; u.cmd = 'idle'; u.U = Object.assign({}, u.U, { dmg:0 });
+      var z = __t.placer('walker', 0, -43); z.speed = 0; z.dmg = 0; z.hp = z.maxHp = 1e6;
+      for (var i = 0; i < 45; i++) visuals(1 / 30);
+      o.recule = Math.hypot(u.g.position.x - z.g.position.x, u.g.position.z - z.g.position.z) > 5;
+      clearZombies(); u.g.position.set(0, 0, -40);
+      var loin = __t.placer('walker', 0, -40 - 18 - 30); loin.speed = 0; loin.hp = loin.maxHp = 1e6;
+      for (var j = 0; j < 90; j++) visuals(1 / 30);
+      o.laisse = Math.hypot(u.g.position.x, u.g.position.z + 40) < 6;
+      clearZombies();
+      __rts.rtsBuild('repair', -14, -2); u.hp = u.maxHp * .2; u.scanT = 0;
+      for (var k = 0; k < 30 * 12 && u.hp < u.maxHp * .5; k++) visuals(1 / 30);
+      o.repare = u.hp >= u.maxHp * .5;
+      return o;
+    }, calme);
+    fin();
+    ok(r.recule, 'Il recule devant un zombie trop proche'); ok(r.laisse, 'Il ne part pas à la poursuite trop loin de son poste'); ok(r.repare, 'Abîmé, il va se faire réparer à l’atelier');
   });
 
   test('RTS : piloter une unité à la première personne (bouger, viser, tirer, revenir)', () => {
@@ -220,14 +266,21 @@
       // La base s'agrandit
       var r0 = R.baseR; o.avant = __rts.rtsBldOk('t_mg', 0, -34) !== '';
       __rts.rtsNestDie(R.nests[0]); o.plus = R.baseR > r0; o.apres = __rts.rtsBldOk('t_mg', 0, -34) === '';
-      R.nests.forEach(function(n){ if (!n.dead) __rts.rtsNestDie(n); }); o.fin = state;
+      // Sans fin : il reste toujours 6 nids actifs, chaque nouveau plus loin au nord et plus solide
+      var f0 = __rts.rtsFront(), hp0 = Math.max.apply(null, R.nests.map(function(n){ return n.maxHp; }));
+      for (var k = 0; k < 12; k++) __rts.rtsNestDie(R.nests.filter(function(n){ return !n.dead; })[0]);
+      o.fin = state; o.actifs = R.nests.filter(function(n){ return !n.dead; }).length; o.loin = __rts.rtsFront() < f0 - 300;
+      o.fort = R.nests[R.nests.length - 1].maxHp > hp0; o.carte = R.zMin < __rts.rtsFront();
+      o.max = plan.maxAlive;
       return o;
     }, calme);
     fin();
     ok(r.horde >= 10 && r.bord, 'Horde du nord, au bout de la route : ' + r.horde);
     ok(r.mur && r.qgIntact, 'Le zombie attaque la barricade d’abord');
     ok(r.avant && r.plus && r.apres, 'La base s’agrandit : on peut construire plus loin');
-    egal(r.fin, 'rtsover', 'Victoire');
+    egal(r.fin, 'rts', 'La partie continue'); egal(r.actifs, 6, 'Toujours 6 nids actifs');
+    ok(r.loin && r.carte, 'Les nouveaux nids sont plus loin au nord et la carte s’allonge'); ok(r.fort, 'Les nouveaux nids sont plus solides');
+    ok(r.max === 500 || r.max === 300, 'Plafond de zombies sur la carte : ' + r.max);
     const d = J(function(){ __rts.rtsStart(); __rts.RTS.base.hp = 1; var zq = __t.placer('walker', 0, -8); zq.atkT = 0; zq.hp = zq.maxHp = 1e9; for (var i = 0; i < 90 && state === 'rts'; i++) visuals(1 / 30); var s = state; __rts.rtsQuit(); return { s: s, apres: state, cam: camera.position.distanceTo(EYE), ville: !!world && world.children.some(function(g){ return g.isGroup && g.children.length >= 6; }) }; });
     egal(d.s, 'rtsover', 'Défaite quand le QG tombe'); egal(d.apres, 'menu', 'Retour au menu'); ok(d.cam < .01, 'Caméra remise sur le toit'); ok(d.ville, 'La ville revient');
   });

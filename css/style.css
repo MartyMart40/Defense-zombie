@@ -491,3 +491,8 @@ body.rts.piloting #cross{ display:block !important; }
 #rtPilot.touch #rtrpAim{ display:block; position:absolute; z-index:1; left:42%; right:0; top:210px; bottom:0; pointer-events:auto; touch-action:none; }
 #rtPilot.touch #rtrpFire{ display:block; position:absolute; right:calc(18px + env(safe-area-inset-right,0px)); bottom:calc(40px + env(safe-area-inset-bottom,0px)); width:90px; height:90px; border-radius:50%; border:0; background:rgba(255,120,48,.88); color:#2a1a08; font-weight:900; font-size:18px; pointer-events:auto; touch-action:none; }
 #rtrpFire.down{ transform:scale(.92); filter:brightness(1.2); }
+/* RTS : bouton Roquettes du Mech de combat piloté */
+#rtrpFire2{ display:none; }
+#rtPilot.touch.w2 #rtrpFire2{ display:block; position:absolute; right:calc(118px + env(safe-area-inset-right,0px)); bottom:calc(40px + env(safe-area-inset-bottom,0px)); width:80px; height:80px; border-radius:50%; border:0; background:rgba(255,208,64,.88); color:#2a1a08; font-weight:900; font-size:13px; pointer-events:auto; touch-action:none; }
+#rtPilot.touch.w2 #rtrpFire{ bottom:calc(125px + env(safe-area-inset-bottom,0px)); }
+#rtrpFire2.down{ transform:scale(.92); filter:brightness(1.2); }

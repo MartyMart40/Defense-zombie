@@ -310,6 +310,33 @@
     ok(r.fantome && r.pose && r.fini, 'Pose au pointeur'); ok(r.grille && r.grilleFin, 'Quadrillage affiché pendant la pose'); ok(r.cale && r.case, 'Le bâtiment se cale sur la grille de 2 m'); ok(r.rouge, 'Emprise rouge et bouton bloqué sur une case occupée'); ok(r.vente, 'Vente : moitié du prix'); ok(r.qg, 'Le QG ne se vend pas');
   });
 
+  test('RTS : les prix montent avec le nombre déjà acheté (unités et bâtiments)', () => {
+    exiger(); reset();
+    const r = J(function(c){
+      eval(c); var R = calme(), o = {};
+      if (typeof __rts.rtsUnitCost !== 'function' || typeof __rts.rtsBldCost !== 'function') return { absent:true };
+      S.money = 1e6; R.baseR = 70; var B = __rts.RTS_BLD, U = __rts.RTS_UNITS;
+      var a0 = __rts.rtsBldCost('airfield'); o.af0 = a0 === B.airfield.cost;
+      var m0 = S.money; __rts.rtsBuild('airfield', 25, -25, 0); o.paye = m0 - S.money === a0;
+      var a1 = __rts.rtsBldCost('airfield'); o.af1 = a1 > a0;
+      var m1 = S.money; var af2 = __rts.rtsBuild('airfield', -28, -22, 0); o.paye2 = !!af2 && m1 - S.money === a1 && af2.spent === a1;
+      var b0 = __rts.rtsUnitCost('bomber'); o.b0 = b0 === U.bomber.cost;
+      var m2 = S.money; __rts.rtsBuy('bomber'); o.bPaye = m2 - S.money === b0;
+      var b1 = __rts.rtsUnitCost('bomber'); o.b1 = b1 > b0 * 1.4;
+      o.mur = __rts.rtsBldCost('wall') === B.wall.cost; __rts.rtsBuild('wall', 0, -16); o.mur2 = __rts.rtsBldCost('wall') === B.wall.cost;
+      o.usine = __rts.rtsBldCost('factory') > B.factory.cost; // l'usine de départ compte
+      var bt = document.querySelector('#rtsUI .rt-bld[data-b="factory"] b');
+      __rts.rtsTab('bat'); __rts.rtsHUD(); bt = document.querySelector('#rtsUI .rt-bld[data-b="factory"] b');
+      o.affiche = !bt || bt.textContent === fmt(__rts.rtsBldCost('factory'));
+      return o;
+    }, calme);
+    fin();
+    if (r.absent) ignorer('Prix qui montent absents');
+    ok(r.af0 && r.paye, 'Premier aérodrome au prix de base'); ok(r.af1 && r.paye2, 'Le 2e aérodrome coûte plus cher (et c’est ce qui est payé)');
+    ok(r.b0 && r.bPaye && r.b1, 'Le 2e AC-130 coûte au moins 40 % de plus'); ok(r.mur && r.mur2, 'Les barricades gardent leur prix');
+    ok(r.usine, 'L’usine de départ compte dans le prix de la 2e'); ok(r.affiche, 'Le bouton montre le prix du moment');
+  });
+
   test('RTS : robots fabriqués dans les usines (usine lourde pour les gros), améliorations des robots', () => {
     exiger(); reset();
     const r = J(function(c){

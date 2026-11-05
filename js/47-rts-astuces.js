@@ -28,7 +28,7 @@ const RTS_TIPS = [
     ordi:'Clique sur une tourelle : tu peux l’améliorer (6 niveaux), la vendre ou la contrôler toi-même avec « 🎮 Contrôler ».' },
   { id:'horde', cond: R => R.hordeN >= 1,
     txt:'Une horde arrive toutes les 45 secondes, et un boss toutes les 3 hordes. Garde des unités et des tourelles devant la base.' },
-  { id:'usine', cond: R => R.t > 35 && S.money >= RTS_BLD.heavyfac.cost && !rtsTipBld('heavyfac'),
+  { id:'usine', cond: R => R.t > 35 && S.money >= rtsBldCost('heavyfac') && !rtsTipBld('heavyfac'),
     txt:'Tu as de quoi bâtir une Usine lourde (onglet Bâtiments) : elle débloque les lance-roquettes, le Mech lourd et le Mech de combat ⭐.' },
   { id:'nid', cond: R => R.nests.some(n => n.dead),
     txt:'Nid détruit : la base grandit (le cercle jaune) et tu peux bâtir plus loin. Un nid plus fort apparaît plus au nord.' },

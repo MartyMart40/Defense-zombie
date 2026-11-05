@@ -54,12 +54,26 @@ function rtsBldOk(type, x, z){
   for (const o of RTS.blds) if (!o.dead && Math.hypot(o.x - x, o.z - z) < o.r + B.size + .5) return 'Trop près d’un autre bâtiment';
   return '';
 }
+// Prix qui montent (RTS_HAUSSE, js/41-rts.js) : le 2e, le 3e... du même type coûtent plus cher que le premier
+function rtsUnitCost(type){
+  const U = RTS_UNITS[type]; if (!U) return 0;
+  const n = RTS.units.filter(u => !u.dead && u.type === type).length;
+  const k = U.kind === 'air' ? RTS_HAUSSE.air : U.cat === 'veh' ? RTS_HAUSSE.veh : RTS_HAUSSE.rob;
+  return Math.round(U.cost * (1 + k * n) / 10) * 10;
+}
+function rtsBldCost(type){
+  const B = RTS_BLD[type]; if (!B) return 0;
+  const n = RTS.blds.filter(o => !o.dead && o.type === type).length;
+  const k = B.turret ? RTS_HAUSSE.tour : (RTS_HAUSSE[type] || 0);
+  return Math.round(B.cost * (1 + k * n) / 10) * 10;
+}
 function rtsBuild(type, x, z, rot){
   const B = RTS_BLD[type]; if (!B || B.fixed) return null;
-  if (S.money < B.cost){ if (typeof toast === 'function') toast('Pas assez d’argent : ' + B.name + ' (' + fmt(B.cost) + ')'); return null; }
+  const cost = rtsBldCost(type);
+  if (S.money < cost){ if (typeof toast === 'function') toast('Pas assez d’argent : ' + B.name + ' (' + fmt(cost) + ')'); return null; }
   const why = rtsBldOk(type, x, z); if (why){ if (typeof toast === 'function') toast(why); return null; }
-  S.money -= B.cost;
-  const o = rtsPlaceBld(type, x, z, false, rot);
+  S.money -= cost;
+  const o = rtsPlaceBld(type, x, z, false, rot); o.spent = cost;
   rtsV.set(x, .5, z); burst(rtsV, 'dust', 12, 3);
   if (typeof Snd === 'object' && Snd.buy) Snd.buy();
   return o;
@@ -76,9 +90,10 @@ function rtsBuy(type){
   const f = rtsFactoryFor(type);
   if (!f){ if (typeof toast === 'function') toast('Construis d’abord ' + RTS_FAC_NAME[U.fac]); return null; }
   if (U.kind === 'air' && typeof rtsAirRoom === 'function' && rtsAirRoom() <= 0){ if (typeof toast === 'function') toast('Aérodromes pleins : 2 avions par aérodrome, construis-en un autre'); return null; }
-  if (S.money < U.cost){ if (typeof toast === 'function') toast('Pas assez d’argent pour : ' + U.name + ' (' + fmt(U.cost) + ')'); return null; }
+  const cost = rtsUnitCost(type);
+  if (S.money < cost){ if (typeof toast === 'function') toast('Pas assez d’argent pour : ' + U.name + ' (' + fmt(cost) + ')'); return null; }
   if (RTS.units.filter(u => !u.dead).length >= RTS_CFG.maxUnits){ if (typeof toast === 'function') toast('Plein : ' + RTS_CFG.maxUnits + ' unités au plus'); return null; }
-  S.money -= U.cost;
+  S.money -= cost;
   const a = Math.atan2(-f.z - 20, -f.x) + rand(-.4, .4), out = f.r + 3;
   const u = rtsSpawnUnit(type, f.x + Math.cos(a) * out, f.z + Math.sin(a) * out);
   u.tx = u.hx = f.x + Math.cos(a) * (out + 4); u.tz = u.hz = f.z + Math.sin(a) * (out + 4); u.cmd = U.kind === 'air' ? 'idle' : 'move';

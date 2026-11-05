@@ -20,6 +20,7 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 | # | Tâche | Date |
 |---|-------|------|
+| 90 | RTS plus dur à faire grossir : véhicules, avions et gros bâtiments plus chers (AC-130 7 500 $, aérodrome 5 000 $, héliport 3 000 $...), et chaque exemplaire du même type rend le suivant plus cher (avions +60 %, aérodrome +100 %, tank et Apache +35 %, usines +50 à 60 %, tourelles +15 %, robots +10 %). Le bouton montre le prix du moment (`RTS_HAUSSE`, js/41-rts.js ; `rtsUnitCost`, `rtsBldCost`, js/42-rts-unites.js ; tests/t-rts.js) | 2026-11-05 |
 | 89 | RTS : AC-130 deux fois plus haut (60 m au lieu de 30, portée 95 m, zoom des postes resserré : 30° et 20°) pour viser plus calmement ; la 2e arme se voit (gros texte « HELLFIRE ! », « 105 MM ! », « ROQUETTES ! » au tir, temps restant ou « À SEC » si on appuie trop tôt, état dans le bandeau du poste et sur le bouton jaune au cell) ; les 4 tours du toit ne restent plus dans la vallée du RTS | 2026-11-04 |
 | 88 | RTS, pilotage à l’ordi : la 2e arme (Hellfire de l’Apache, 105 mm de l’AC-130, roquettes du Mech) ne partait pas si on tenait déjà le clic gauche (le navigateur n’envoie pas de « bouton enfoncé » pour le 2e bouton). Corrigé ; touche E pour la 2e arme ; aide du pilotage mise à jour | 2026-11-04 |
 | 87 | Graphismes, style Ultra (ordi seulement, 4e choix du bouton Style ; sauté au cell) : rue mouillée qui reflète vraiment la scène (flaques, plus fort sous la pluie), rayons de soleil dans la brume, ombres douces (VSM), ombres de contact pleine résolution (js/61-graphismes-ultra.js, Reflector ajouté à lib/three-hd.js, tests/t-style.js) | 2026-11-04 |
@@ -29,9 +30,10 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 | 83 | RTS : la rangée « Unités » est repliée par défaut (une pastille « 👥 Unités · N » et les groupes) ; la toucher montre une pastille par unité à choisir une par une, la retoucher la referme (choix gardé, dt_rts_liste) (js/48-rts-liste.js, tests/t-rts-selection.js) | 2026-11-04 |
 | 82 | Graphismes, Haute définition séance 1 (la lumière) : 3e choix du bouton Style. Matériaux physiques (relief et rugosité tirés des textures : flaques d’huile et vitres qui reflètent, briques en relief), lumière d’ambiance tirée d’une vraie image HDR par ville (Poly Haven, CC0, dossier `hdri/`), rendu en couleurs linéaires et étendues avec exposition et courbe ACES, ombres de contact (SSAO), ombre du soleil 4096 sur ordi (js/58-graphismes-hd.js, lib/three-hd.js, tests/t-style.js) | 2026-11-04 |
 | 81 | Robot de combat ouvert dès le départ (plus besoin de tomber en mode infini ni de finir les villes). Style : bouton « Style » monté en haut de la pause (visible au cell couché sans défiler) ; en qualité basse, pas d’éclat et ombres moins fines (moins de lag sur un petit ordi) | 2026-11-04 |
-| 80 | Graphismes, phase 1 : réglage « Style » dans Pause (Actuel, Amélioré ; dt_style). Amélioré sur le toit : vraies ombres du soleil (bâtiments, autos, zombies), textures dessinées par le code (asphalte fissuré, dalles, gazon, briques ou planches, cadres et allèges des fenêtres, bois, crasse), effets d’image (éclat lumineux, lissage FXAA, couleurs, coins assombris, grain). Effets de Three.js r128 dans `lib/three-effets.js`. Feuille de route : `docs/graphismes.md` | 2026-11-04 |
 
 ## À valider par Martin
+
+- RTS, prix qui montent (tâche 90) : jouer une partie et dire si c'est assez dur. 8 AC-130 coûtent maintenant environ 236 000 $ avec les 4 aérodromes (avant : 48 000 $). Les chiffres à ajuster sont dans `RTS_HAUSSE` (`js/41-rts.js`).
 
 - RTS (tâche 83) : liste des unités repliée par défaut. Dire si on veut qu’elle se referme seule après avoir choisi une unité.
 - Style Ultra (tâche 87) : à essayer sur l’ordi (Pause, « Style » trois fois), surtout une nuit de pluie. Dire les images par seconde et si la rue brille trop.
@@ -75,7 +77,7 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 - Arsenal : prix de 12 000 $ à 35 000 $ ; dans les villes courtes, ces armes seront surtout accessibles en mode infini. Accessoires achetés dans la boutique pour la partie (comme les améliorations de l'arme), à rendre permanents si Martin préfère.
 
-- RTS : boss à 25 % de leur vie du mode robot, un toutes les 3 hordes (+1 500 $). Avions : seuls les zombies volants les attaquent. Prix : tank 1 800 $, hélicoptère 2 200 $, chasseur 3 000 $, Warthog 3 800 $, bombardier 4 500 $, aérodrome 3 000 $. À équilibrer en jouant ; le pilotage au doigt n'a pas été essayé sur un vrai cell.
+- RTS : boss à 25 % de leur vie du mode robot, un toutes les 3 hordes (+1 500 $). Avions : seuls les zombies volants les attaquent. Prix (tâche 90) : tank 2 600 $, Apache 3 200 $, chasseur 4 200 $, Warthog 5 200 $, AC-130 7 500 $, aérodrome 5 000 $, plus la hausse par exemplaire. À équilibrer en jouant ; le pilotage au doigt n'a pas été essayé sur un vrai cell.
 
 - RTS sans fin : 500 zombies au plus sur ordi et 300 au cell (le plafond de l'appareil reste en vigueur pour le reste du jeu). À confirmer sur un vrai cell.
 

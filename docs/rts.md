@@ -36,15 +36,32 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | Tireur d'élite | 500 $ | Usine de robots |
 | Lance-roquettes | 700 $ | Usine lourde |
 | Mech lourd | 1 500 $ | Usine lourde |
-| Mech de combat | 6 000 $ | Usine lourde |
-| Tank | 1 800 $ | Garage de blindés |
-| Apache | 2 200 $ | Héliport |
-| Chasseur | 3 000 $ | Aérodrome |
-| Warthog | 3 800 $ | Aérodrome |
-| AC-130 | 4 500 $ | Aérodrome |
+| Mech de combat | 8 000 $ | Usine lourde |
+| Tank | 2 600 $ | Garage de blindés |
+| Apache | 3 200 $ | Héliport |
+| Chasseur | 4 200 $ | Aérodrome |
+| Warthog | 5 200 $ | Aérodrome |
+| AC-130 | 7 500 $ | Aérodrome |
 
 ### Bâtiments
-Usine de robots 500 $, usine lourde 1 200 $, garage de blindés 1 500 $, héliport 1 800 $, aérodrome 3 000 $, récupérateur 400 $, atelier de réparation 700 $, barricade 60 $. Tourelles : mitrailleuse 250 $, lance-flammes 400 $, canon 450 $, mortier 600 $, Tesla 700 $ (6 niveaux chacune).
+Usine de robots 500 $, usine lourde 1 800 $, garage de blindés 2 500 $, héliport 3 000 $, aérodrome 5 000 $, récupérateur 400 $, atelier de réparation 900 $, barricade 60 $. Tourelles : mitrailleuse 250 $, lance-flammes 400 $, canon 450 $, mortier 600 $, Tesla 700 $ (6 niveaux chacune).
+
+### Prix qui montent (tâche 90, 2026-11-05, demande de Martin : « trop facile d'avoir 8 AC-130 qui wipent tout »)
+Les prix ci-dessus sont ceux du premier exemplaire. Chaque exemplaire du même type déjà en jeu (en vie ou debout) ajoute un pourcentage du prix de base au suivant (`RTS_HAUSSE`, `rtsUnitCost`, `rtsBldCost`). Le bouton montre toujours le prix du moment ; vendre ou perdre un exemplaire fait redescendre le prix.
+
+| Quoi | Hausse par exemplaire |
+|------|----------------------|
+| Robots | +10 % |
+| Tank, Apache | +35 % |
+| Avions (chasseur, Warthog, AC-130), chacun de son côté | +60 % |
+| Usine de robots (celle du départ compte) | +50 % |
+| Usine lourde, garage, héliport, récupérateur | +60 % |
+| Aérodrome | +100 % |
+| Atelier de réparation | +40 % |
+| Tourelles (par sorte de tourelle ; les 3 du départ comptent) | +15 % |
+| Barricade | 0 |
+
+Exemple : 8 AC-130 demandent 4 aérodromes (5 000 + 10 000 + 15 000 + 20 000 = 50 000 $) et 7 500 + 12 000 + ... + 39 000 = 186 000 $ d'avions, contre 12 000 + 36 000 $ avant (236 000 $ au lieu de 48 000 $). Les améliorations des véhicules suivent leur prix de base, donc elles montent aussi.
 
 Les prix exacts sont dans `RTS_UNITS` et `RTS_BLD` (`js/41-rts.js`) : si un chiffre change dans le code, changer ce tableau aussi.
 
@@ -91,5 +108,5 @@ Démolisseur de nids (3, 15, 50), Tenir le fort (10, 30, 60 minutes dans une par
 
 ## À équilibrer en jouant
 - Menace (tâche 67) : 1 + minutes / 4 + 0,5 par nid détruit + tués / 600 (`RTS_THREAT`). Avant : 1 + minutes / 2,5 + 0,4 par nid + tués / 160, qui s'emballait (mieux on se défendait, plus il en venait). Simulateur, même robot-joueur : la base tenait 6 à 8 min, elle tient maintenant 16 à 30 min.
-- Prix des véhicules et des avions, force des boss.
+- Prix des véhicules et des avions, hausse par exemplaire (`RTS_HAUSSE`), force des boss.
 - Pilotage au doigt sur un vrai cell, plafond de 300 zombies au cell.

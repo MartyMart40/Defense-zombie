@@ -37,10 +37,10 @@ function rtsTab(t){
   rtsUI.querySelectorAll('#rtTabs button[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   const bar = $('rtBar'); let h = '';
   if (t === 'rob' || t === 'veh'){
-    h = RTS_ORDER.filter(k => RTS_UNITS[k].cat === t).map(k => { const i = RTS_HOTKEY.indexOf(k); return '<button type="button" class="rt-buy' + (RTS_UNITS[k].big ? ' rt-star' : '') + '" data-t="' + k + '">' + RTS_UNITS[k].name + '<b>' + fmt(RTS_UNITS[k].cost) + '</b><em></em>' + (isTouch || i < 0 ? '' : '<i>' + (i + 1) + '</i>') + '</button>'; }).join('')
+    h = RTS_ORDER.filter(k => RTS_UNITS[k].cat === t).map(k => { const i = RTS_HOTKEY.indexOf(k); return '<button type="button" class="rt-buy' + (RTS_UNITS[k].big ? ' rt-star' : '') + '" data-t="' + k + '">' + RTS_UNITS[k].name + '<b>' + fmt(rtsUnitCost(k)) + '</b><em></em>' + (isTouch || i < 0 ? '' : '<i>' + (i + 1) + '</i>') + '</button>'; }).join('')
       + '<button type="button" id="rtAll">Tout choisir</button><button type="button" id="rtStop">Arrêt</button><button type="button" id="rtHold">✋ Tenir</button><button type="button" id="rtRally">📍 Ralliement</button><button type="button" id="rtPil">🎮 Piloter</button>';
   } else if (t === 'bat' || t === 'tour'){
-    h = RTS_BUILD_TABS[t].map(k => '<button type="button" class="rt-bld" data-b="' + k + '">' + RTS_BLD[k].name + '<b>' + fmt(RTS_BLD[k].cost) + '</b></button>').join('');
+    h = RTS_BUILD_TABS[t].map(k => '<button type="button" class="rt-bld" data-b="' + k + '">' + RTS_BLD[k].name + '<b>' + fmt(rtsBldCost(k)) + '</b></button>').join('');
   } else h = '<button type="button" id="rtUpg">Améliorer les unités…</button>';
   bar.innerHTML = h;
   bar.querySelectorAll('.rt-buy').forEach(b => b.addEventListener('click', () => rtsBuy(b.dataset.t)));
@@ -97,7 +97,7 @@ function rtsInfoShow(){
       h += '<div class="ds">' + Math.round(rtsTStat(o, 'dmg')) + ' dégâts · ' + rtsTStat(o, 'rate').toFixed(1).replace('.', ',') + ' tirs/s · portée ' + Math.round(rtsTStat(o, 'range')) + ' m</div>';
     }
     if (o.type === 'hq') h += '<div class="ds">Si le QG tombe, la partie est perdue.</div>';
-    RTS_ORDER.forEach(k => { if (RTS_UNITS[k].fac === o.type) h += '<button type="button" data-a="mk:' + k + '">' + RTS_UNITS[k].name + ' ' + fmt(RTS_UNITS[k].cost) + '</button>'; });
+    RTS_ORDER.forEach(k => { if (RTS_UNITS[k].fac === o.type) h += '<button type="button" data-a="mk:' + k + '">' + RTS_UNITS[k].name + ' ' + fmt(rtsUnitCost(k)) + '</button>'; });
     if (!B.fixed) h += '<button type="button" class="ghost" data-a="sell">Vendre (+' + fmt(Math.round(o.spent * .5)) + ')</button>';
     h += '</div>';
   }
@@ -122,10 +122,14 @@ function rtsHUD(){
   const bb = $('rtBoss'); if (bb){ if (bb.classList.contains('hide') === !!boss) bb.classList.toggle('hide', !boss); if (boss){ set('rtBossName', '☠ ' + ZTYPES[boss.type].name); $('rtBossFill').style.width = (clamp(boss.hp / boss.maxHp, 0, 1) * 100).toFixed(1) + '%'; } }
   if (RTS.pilot){ const u = RTS.pilot; set('rtrpName', '🎮 ' + (u.U ? u.U.name : u.B.name + ' · niveau ' + u.lv) + ' · ' + Math.ceil(u.hp) + ' / ' + Math.ceil(u.maxHp)); }
   rtsUI.querySelectorAll('.rt-buy').forEach(b => {
-    const fac = rtsFactoryFor(b.dataset.t), off = S.money < RTS_UNITS[b.dataset.t].cost || !fac; if (b.classList.contains('off') !== off) b.classList.toggle('off', off);
+    const c = rtsUnitCost(b.dataset.t), fac = rtsFactoryFor(b.dataset.t), off = S.money < c || !fac; if (b.classList.contains('off') !== off) b.classList.toggle('off', off);
+    const pb = b.querySelector('b'), pt = fmt(c); if (pb && pb.textContent !== pt) pb.textContent = pt; // le prix monte avec le nombre déjà acheté
     const em = b.querySelector('em'), need = fac ? '' : 'Il faut : ' + RTS_BLD[RTS_UNITS[b.dataset.t].fac].name; if (em && em.textContent !== need) em.textContent = need;
   });
-  rtsUI.querySelectorAll('.rt-bld').forEach(b => { const off = S.money < RTS_BLD[b.dataset.b].cost; if (b.classList.contains('off') !== off) b.classList.toggle('off', off); });
+  rtsUI.querySelectorAll('.rt-bld').forEach(b => {
+    const c = rtsBldCost(b.dataset.b), off = S.money < c; if (b.classList.contains('off') !== off) b.classList.toggle('off', off);
+    const pb = b.querySelector('b'), pt = fmt(c); if (pb && pb.textContent !== pt) pb.textContent = pt;
+  });
   if ((RTS.bsel || RTS.sel.length === 1) && !RTS.pilot && !rtsInfo.classList.contains('hide') && Math.random() < .1) rtsInfoShow();
 }
 
@@ -152,7 +156,7 @@ function rtsGridBuild(){
 }
 function rtsStartPlace(type){
   if (state !== 'rts' || RTS.pilot) return;
-  const B = RTS_BLD[type]; if (S.money < B.cost){ if (typeof toast === 'function') toast('Pas assez d’argent : ' + B.name + ' (' + fmt(B.cost) + ')'); return; }
+  const B = RTS_BLD[type], cost = rtsBldCost(type); if (S.money < cost){ if (typeof toast === 'function') toast('Pas assez d’argent : ' + B.name + ' (' + fmt(cost) + ')'); return; }
   rtsCancelPlace();
   RTS.place = type; RTS.sel.length = 0; RTS.bsel = null; rtsInfoShow();
   rtsGridBuild();
@@ -427,6 +431,6 @@ Jeu.on('image', dt => { if (rtsMarkT > 0){ rtsMarkT -= dt; rtsMark.material.opac
 document.addEventListener('pointerlockchange', () => { if (state === 'rts' && RTS.pilot && !isTouch && !document.pointerLockElement && !RTS.paused) rtsUnpilot(); });
 
 // Accès pour les tests automatiques
-window.__rts = { RTS, RTS_UNITS, RTS_CFG, RTS_BLD, RTS_UPG, RTS_ROAD, RTS_BOSS, rtsStart, rtsQuit, rtsBuy, rtsStep, rtsSelect, rtsOrder, rtsPick, rtsSpawnUnit, rtsSpawnAt, rtsNestDie, rtsEnd, rtsPause,
+window.__rts = { RTS, RTS_UNITS, RTS_CFG, RTS_BLD, RTS_HAUSSE, rtsUnitCost, rtsBldCost, rtsHUD, RTS_UPG, RTS_ROAD, RTS_BOSS, rtsStart, rtsQuit, rtsBuy, rtsStep, rtsSelect, rtsOrder, rtsPick, rtsSpawnUnit, rtsSpawnAt, rtsNestDie, rtsEnd, rtsPause,
   rtsBuild, rtsBldOk, rtsPlaceBld, rtsTurretUp, rtsSell, rtsUpgBuy, rtsUpgCost, rtsStat, rtsTStat, rtsStartPlace, rtsPlaceAt, rtsTap, rtsTab, rtsInfoShow,
   rtsGhostAt, rtsSnap, rtsRotate, rtsUnitNear, rtsTapUnit, rtsGround, RTS_TAP_R, RTS_LONG_MS, rtsFold, rtsCamHome, RTS_FLAT_R, rtsGunship, RTS_UPG_SPEC, rtsUpgPanel, rtsTurretPilot, rtsMortarSpot, rtsPilot, rtsUnpilot, rtsPilotSel, rtsPilotStep, rtsValleyX, rtsRoadDist, rtsClampValley, rtsRoadNext, rtsRoadX, rtsAddNest, rtsFront, rtsPickTarget, RTS_KITE };

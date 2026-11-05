@@ -23,13 +23,13 @@ const RTS_UNITS = {
   flamebot:{ name:'Robot lance-flammes', cost:450, hp:600, dmg:18, rate:9,  range:11, speed:5,   r:.9,  snd:'flamer',  col:0x8a3a20, flame:true, fac:'factory', kind:'ground', cat:'rob' },
   rocket:  { name:'Lance-roquettes', cost:700,  hp:420,  dmg:170, rate:.8,  range:26, speed:4.5, r:.9,  snd:'gl',      col:0x8a6a2a, splash:3.5, fac:'heavyfac', kind:'ground', cat:'rob' },
   heavy:   { name:'Mech lourd',      cost:1500, hp:1600, dmg:95,  rate:1.6, range:22, speed:3.6, r:1.4, snd:'laser',   col:0x6a3a6a, beam:0x50f0ff, pierce:true, fac:'heavyfac', kind:'ground', cat:'rob' },
-  tank:    { name:'Tank',            w1:'Canon 120 mm', cost:1800, hp:3200, dmg:560, rate:.33, range:38, speed:5.5, r:2.2, snd:'mg50', col:0x5a6040, splash:5.5, fac:'vehdepot', kind:'ground', cat:'veh' },
-  heli:    { name:'Apache',          w1:'30 mm + roquettes', w2n:'Hellfire', cost:2200, hp:1200, dmg:90,  rate:2.2, range:28, speed:12,  r:2.6, snd:'gl', col:0x3a4a3a, splash:3, fac:'heliport', kind:'heli', alt:11, cat:'veh' },
-  jet:     { name:'Chasseur',        w1:'Canon 20 mm', cost:3000, hp:800,  dmg:75,  rate:10,  range:36, speed:32,  r:3,   snd:'mg50', col:0x6a7080, beam:0xffd890, fac:'airfield', kind:'air', alt:20, orbit:30, turn:1.3, cat:'veh' },
-  warthog: { name:'Warthog',         w1:'Canon 30 mm', cost:3800, hp:1500, dmg:55,  rate:22,  range:30, speed:18,  r:3,   snd:'mg50',    col:0x6a7058, beam:0xffd890, fac:'airfield', kind:'air', alt:14, orbit:22, turn:1, cat:'veh' },
-  mech:    { name:'⭐ Mech de combat', w1:'Minigun',  cost:6000, hp:5000, dmg:16,  rate:20,  range:26, speed:4.5, r:2.6, snd:'minigun', col:0x5a5d50, beam:0xffd890, fac:'heavyfac', kind:'ground', cat:'rob', big:true,
+  tank:    { name:'Tank',            w1:'Canon 120 mm', cost:2600, hp:3200, dmg:560, rate:.33, range:38, speed:5.5, r:2.2, snd:'mg50', col:0x5a6040, splash:5.5, fac:'vehdepot', kind:'ground', cat:'veh' },
+  heli:    { name:'Apache',          w1:'30 mm + roquettes', w2n:'Hellfire', cost:3200, hp:1200, dmg:90,  rate:2.2, range:28, speed:12,  r:2.6, snd:'gl', col:0x3a4a3a, splash:3, fac:'heliport', kind:'heli', alt:11, cat:'veh' },
+  jet:     { name:'Chasseur',        w1:'Canon 20 mm', cost:4200, hp:800,  dmg:75,  rate:10,  range:36, speed:32,  r:3,   snd:'mg50', col:0x6a7080, beam:0xffd890, fac:'airfield', kind:'air', alt:20, orbit:30, turn:1.3, cat:'veh' },
+  warthog: { name:'Warthog',         w1:'Canon 30 mm', cost:5200, hp:1500, dmg:55,  rate:22,  range:30, speed:18,  r:3,   snd:'mg50',    col:0x6a7058, beam:0xffd890, fac:'airfield', kind:'air', alt:14, orbit:22, turn:1, cat:'veh' },
+  mech:    { name:'⭐ Mech de combat', w1:'Minigun',  cost:8000, hp:5000, dmg:16,  rate:20,  range:26, speed:4.5, r:2.6, snd:'minigun', col:0x5a5d50, beam:0xffd890, fac:'heavyfac', kind:'ground', cat:'rob', big:true,
              w2:{ name:'Roquettes', dmg:260, rate:1.5, range:34, splash:4.5, snd:'rocket' } },
-  bomber:  { name:'AC-130',          cost:4500, hp:2400, dmg:110, rate:2.5, range:95, speed:16,  r:4,   snd:'sniper',  col:0x5a6068, splash:3, gunship:true, fac:'airfield', kind:'air', alt:60, orbit:45, turn:.7, cat:'veh',
+  bomber:  { name:'AC-130',          cost:7500, hp:2400, dmg:110, rate:2.5, range:95, speed:16,  r:4,   snd:'sniper',  col:0x5a6068, splash:3, gunship:true, fac:'airfield', kind:'air', alt:60, orbit:45, turn:.7, cat:'veh',
              w1:'40 mm', w2:{ name:'105 mm', dmg:1100, rate:.3, range:95, splash:11, snd:'rocket', big:true } }
 };
 const RTS_ORDER = Object.keys(RTS_UNITS);
@@ -71,12 +71,12 @@ const rtsUpgDef = (type, k) => RTS_UPG[k] || (RTS_UPG_SPEC[type] || {})[k];
 const RTS_BLD = {
   hq:       { name:'QG',                     hp:6000, size:6,   cost:0,    fixed:true },
   factory:  { name:'Usine de robots',        hp:2000, size:4,   cost:500,  desc:'Fantassins, mitrailleurs, tireurs d’élite, lance-flammes.' },
-  heavyfac: { name:'Usine lourde',           hp:2600, size:5,   cost:1200, desc:'Lance-roquettes et mechs lourds.' },
-  vehdepot: { name:'Garage de blindés',      hp:3000, size:5.5, cost:1500, desc:'Fabrique des tanks.' },
-  heliport: { name:'Héliport',               hp:2000, size:5,   cost:1800, desc:'Fabrique les hélicoptères Apache.' },
-  airfield: { name:'Aérodrome',              hp:3200, size:9,   cost:3000, desc:'Chasseurs, Warthogs et AC-130 : 2 avions par aérodrome, qui viennent y recharger leurs munitions.' },
+  heavyfac: { name:'Usine lourde',           hp:2600, size:5,   cost:1800, desc:'Lance-roquettes et mechs lourds.' },
+  vehdepot: { name:'Garage de blindés',      hp:3000, size:5.5, cost:2500, desc:'Fabrique des tanks.' },
+  heliport: { name:'Héliport',               hp:2000, size:5,   cost:3000, desc:'Fabrique les hélicoptères Apache.' },
+  airfield: { name:'Aérodrome',              hp:3200, size:9,   cost:5000, desc:'Chasseurs, Warthogs et AC-130 : 2 avions par aérodrome, qui viennent y recharger leurs munitions.' },
   scrap:    { name:'Récupérateur',           hp:1200, size:3,   cost:400,  income:15, desc:'+15 $ toutes les 5 s.' },
-  repair:   { name:'Atelier de réparation',  hp:1500, size:3.5, cost:700,  heal:45, healR:15, desc:'Répare robots, véhicules et bâtiments autour.' },
+  repair:   { name:'Atelier de réparation',  hp:1500, size:3.5, cost:900,  heal:45, healR:15, desc:'Répare robots, véhicules et bâtiments autour.' },
   wall:     { name:'Barricade',              hp:2500, size:2.2, cost:60,   desc:'Bloc de béton qui retient les zombies.' },
   t_mg:     { name:'Tourelle mitrailleuse',  hp:900,  size:1.8, cost:250,  turret:{ dmg:14,  rate:8,   range:20, snd:'rifle',  beam:0xffd890 }, desc:'Tir rapide.' },
   t_cannon: { name:'Tourelle canon',         hp:1300, size:2,   cost:450,  turret:{ dmg:130, rate:.9,  range:28, snd:'sniper', beam:0xffc060, pierce:true }, desc:'Obus qui traverse une file.' },
@@ -84,6 +84,9 @@ const RTS_BLD = {
   t_mortar: { name:'Mortier',                hp:900,  size:2,   cost:600,  turret:{ dmg:150, rate:.5,  range:44, snd:'gl',     splash:5, min:8 }, desc:'Longue portée, explosions.' },
   t_tesla:  { name:'Tourelle Tesla',         hp:1000, size:1.8, cost:700,  turret:{ dmg:60,  rate:1.3, range:18, snd:'arc',    chain:4 }, desc:'L’éclair saute de zombie en zombie.' }
 };
+// Prix qui montent : chaque exemplaire du même type déjà en jeu ajoute ce pourcentage du prix de base au suivant
+// (unités : robots, véhicules, avions ; bâtiments : par type ; tourelles : par type de tourelle). Voir rtsUnitCost, rtsBldCost.
+const RTS_HAUSSE = { rob:.1, veh:.35, air:.6, factory:.5, heavyfac:.6, vehdepot:.6, heliport:.6, airfield:1, scrap:.6, repair:.4, wall:0, tour:.15 };
 const RTS_BUILD_TABS = { bat:['factory', 'heavyfac', 'vehdepot', 'heliport', 'airfield', 'scrap', 'repair', 'wall'], tour:['t_mg', 't_cannon', 't_flame', 't_mortar', 't_tesla'] };
 const RTS_TMAX = 6;
 const RTS_CFG = { money:900, nests:6, nestHp:4500, hordeEvery:45, bounty:500, maxUnits:40, baseR0:30, baseRStep:8, bossEvery:3, bossHp:.25, maxZ:500, maxZTouch:300, chunk:100 };

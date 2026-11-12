@@ -44,3 +44,13 @@ Je suis dans ma fenêtre de bunker ou sur un toit d'immeuble barricadé et je ti
 - Écran titre : Jouer, Robot de combat et Guerre des robots en haut ; l'aide des commandes est repliée sous « Comment jouer ».
 - Tutoriel (2026-11-04, Martin : « seulement si on veut, et on peut le passer ») : proposé une seule fois à un nouveau joueur, jamais à un joueur qui a déjà joué ; « Revoir le tutoriel » dans Comment jouer.
 - Armes (2026-11-04, Martin) : une arme neuve repart à zéro pour ses propres améliorations, mais elle est plus forte au départ ; les améliorations générales (dégâts, recharge, chargeurs, barricade) restent. Leur force est un autre dossier, à voir.
+
+## Équilibrage des armes (2026-11-12)
+Martin : « vas-y, essai-erreur, pas besoin d'autorisation ». Mesuré avec le duel à budget égal du simulateur (`docs/equilibrage.md`).
+- Règle : une arme plus chère doit faire au moins aussi bien que « garder l'arme d'avant et l'améliorer », ou être nettement meilleure contre le boss. Avant, ce n'était vrai pour aucune arme après le fusil d'assaut.
+- Rôles, affichés dans la boutique (« Bon contre ») : fusil d'assaut, lance-flammes, minigun et mitrailleuse .50 pour la horde ; sniper, arbalète et canon électromagnétique pour les boss ; roquettes et grenades pour les groupes.
+- Prix inchangés. Difficulté des villes inchangée (le robot-joueur est plus faible qu'un vrai joueur dans les dernières villes : on ne s'y fie pas pour ça).
+- Chiffres : sniper 450 dégâts, 1,2 tir/s, chargeur 6 ; arbalète 260, 1,8 tir/s, chargeur 8, traverse 4, tête ×1,8 ; lance-flammes 13 et brûlure 40, portée 36 m ; minigun 34, dispersion 0,026 ; lance-roquettes 1 000, 4 par chargeur, 1,2 tir/s, rayon 6,5 m ; fusil à pompe 32 par plomb, pleine force jusqu'à 25 m puis 30 % à 60 m ; mitrailleuse .50 136 à 10 tirs/s, canon électromagnétique 2 080, lance-grenades 480, arc 416 ; laser inchangé (déjà le plus fort).
+- Roquette en plein sur un zombie : tous ses dégâts, peu importe sa taille (avant, un boss n'en prenait qu'environ 40 %).
+- Robot de combat : ses armes gardent leurs anciens dégâts (facteur `k` dans `MECH_W`). Seul changement pour lui : la roquette de plein fouet et un rayon d'explosion un peu plus grand.
+- À surveiller : le lance-roquettes reste derrière le minigun dans les mains du robot-joueur (il vise un seul zombie, pas le milieu du groupe) ; le canon électromagnétique ne sert que contre les boss.

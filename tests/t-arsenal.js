@@ -16,7 +16,7 @@
     const r = J(function(n){
       var R = WEAPONS.rocket, o = {};
       n.forEach(function(id){ var W = WEAPONS[id]; o[id] = { rang: WORDER.indexOf(id), prix: W && W.price, nom: W && W.name, vm: !!VMS[id], son: !!Snd.GUNS[id], upg: W && W.upg && W.upg.length,
-        dps: W ? W.dmg * W.rate * Math.max(1, Math.min(W.pierce, 3)) * (W.radius ? 3 : 1) * (W.chain ? 2 : 1) : 0 }; });
+        dps: W ? W.dmg * W.rate * Math.max(1, Math.min(W.pierce, 5)) * (W.radius ? 3 : 1) * (W.chain ? 2 : 1) : 0 }; }); // un rayon qui traverse tout compte pour 5 zombies
       return { o: o, prixR: R.price, dpsR: R.dmg * R.rate * 3, rangR: WORDER.indexOf('rocket') };
     }, NOUV);
     NOUV.forEach(id => {
@@ -192,6 +192,7 @@
     exiger(); partie();
     const r = J(function(){
       var o = {}, id = 'rocket', d0 = wDmg(id), r0 = wRadius(id), m0 = magSize(id), tris0 = vmStats(id).tris;
+      o.v0 = WEAPONS[id].speed;
       o.tandem = __ars.accBuy(id, 'rtandem'); o.dmgT = wDmg(id) / d0;
       o.frag = __ars.accBuy(id, 'rfrag'); o.ogives = ['rtandem', 'rfrag'].filter(function(k){ return __ars.accOwned(id, k); }).join(',');
       o.rad = wRadius(id) / r0; o.dmgF = wDmg(id) / d0;
@@ -213,7 +214,7 @@
     ok(Math.abs(r.rad - 1.35) < 1e-9 && Math.abs(r.dmgF - .9) < 1e-9, 'Fragmentation : rayon ×' + r.rad + ', dégâts ×' + r.dmgF);
     egal(r.mag, 1, 'Tube jumelé : une roquette de plus');
     ok(r.tris > 100 && r.appels <= 7, 'Accessoires visibles (' + r.tris + ' triangles, ' + r.appels + ' appels)');
-    ok(Math.abs(r.vit - 42 * 1.7) < .5, 'Propulseur : vitesse ' + r.vit);
+    ok(Math.abs(r.vit - r.v0 * 1.7) < .5, 'Propulseur : vitesse ' + r.vit + ' (70 % de plus que ' + r.v0 + ')');
     ok(r.guide > 0, 'Le guidage doit corriger la trajectoire');
     ok(r.touche, 'La roquette guidée doit atteindre le zombie décalé');
   });

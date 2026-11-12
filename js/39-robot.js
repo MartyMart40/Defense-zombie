@@ -37,14 +37,16 @@ const MECH_UPG = {
 const MECH_UPG_ORDER = Object.keys(MECH_UPG);
 // Armes des bras : on en achète en ferraille au garage, on en équipe une par bras.
 //   cd : secondes entre deux tirs du bras droit ; salvo : la salve s'applique ; heat : chauffe (bras gauche, réglée sur la cadence)
+//   k : part des dégâts de l'arme du toit gardée par le robot. Les armes du toit ont été renforcées le 12 novembre 2026 ;
+//       k remet au robot les dégâts qu'il avait avant (ex. minigun 34 × 0,706 = 24), pour ne pas changer son équilibrage.
 const MECH_W = {
-  minigun: { side:'L', name:'Minigun',               cost:0,    desc:'Rafale continue, chauffe.' },
-  flamer:  { side:'L', name:'Lance-flammes lourd',   cost:600,  desc:'Nappe de feu devant le robot : tout ce qui brûle continue de brûler.' },
+  minigun: { side:'L', name:'Minigun',               cost:0,    k:.706, desc:'Rafale continue, chauffe.' },
+  flamer:  { side:'L', name:'Lance-flammes lourd',   cost:600,  k:.76, desc:'Nappe de feu devant le robot : tout ce qui brûle continue de brûler.' },
   laser:   { side:'L', name:'Laser lourd',           cost:1200, desc:'Rayon instantané qui traverse toute la file.' },
-  rocket:  { side:'R', name:'Roquettes',             cost:0,    cd:.65, salvo:true, desc:'Grosses explosions.' },
-  gl:      { side:'R', name:'Lance-grenades',        cost:800,  cd:.3,  salvo:true, desc:'Trois grenades par seconde.' },
-  arc:     { side:'R', name:'Arc électrique',        cost:1000, cd:.35, desc:'L’éclair saute de zombie en zombie.' },
-  railgun: { side:'R', name:'Canon électromagnétique', cost:1500, cd:1.3, desc:'Un trait qui traverse toute la rue.' }
+  rocket:  { side:'R', name:'Roquettes',             cost:0,    k:.8, cd:.65, salvo:true, desc:'Grosses explosions.' },
+  gl:      { side:'R', name:'Lance-grenades',        cost:800,  k:.625, cd:.3,  salvo:true, desc:'Trois grenades par seconde.' },
+  arc:     { side:'R', name:'Arc électrique',        cost:1000, k:.625, cd:.35, desc:'L’éclair saute de zombie en zombie.' },
+  railgun: { side:'R', name:'Canon électromagnétique', cost:1500, k:.625, cd:1.3, desc:'Un trait qui traverse toute la rue.' }
 };
 const MECH_W_ORDER = Object.keys(MECH_W);
 function mechNorm(){
@@ -552,7 +554,7 @@ try {
 // Pas de douilles de l'arme en main (cachée) dans le cockpit
 try { const _e = vmEject; vmEject = function(){ if (MECH.on) return; return _e.apply(this, arguments); }; } catch (e) { errNote(e); }
 // Les armes du robot frappent fort (et de plus en plus fort à chaque rue)
-try { const _d = damage; damage = function(z, amt){ if (MECH.on && state === 'mech') amt *= MECH.pow * (1 + .12 * mUp(MECH.src === 'rocket' || MECH.src === 'right' ? 'rdmg' : 'mdmg')); arguments[1] = amt; return _d.apply(this, arguments); }; } catch (e) { errNote(e); }
+try { const _d = damage; damage = function(z, amt){ if (MECH.on && state === 'mech'){ const dr = MECH.src === 'rocket' || MECH.src === 'right', Wm = MECH_W[mW(dr ? 'R' : 'L')]; amt *= MECH.pow * ((Wm && Wm.k) || 1) * (1 + .12 * mUp(dr ? 'rdmg' : 'mdmg')); } arguments[1] = amt; return _d.apply(this, arguments); }; } catch (e) { errNote(e); }
 // Les explosions des roquettes comptent pour l'amélioration « Roquettes : dégâts »
 try { if (typeof armExplode === 'function'){ const _x = armExplode; armExplode = function(){ const s0 = MECH.src; MECH.src = 'rocket'; try { return _x.apply(this, arguments); } finally { MECH.src = s0; } }; } } catch (e) { errNote(e); }
 // Tomber en mode infini débloque le robot

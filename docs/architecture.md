@@ -80,6 +80,7 @@ Règle : **pas de nouveau crochet par réaffectation pour un mode**. Utiliser `J
 ## Simulateur d'équilibrage
 - `outils/sim-bot.js` : un robot-joueur injecté dans la vraie page du jeu (jamais chargé par `index.html`). Il arrête la boucle du jeu et fait avancer le temps lui-même, sans rendu, donc très vite.
 - `outils/simulateur.js` : le fait jouer et écrit `docs/equilibrage.md` (et `docs/equilibrage.json`). `python3 -m http.server 8765`, puis `node outils/simulateur.js [tout|toit|infini|rts] [moyen,bon] [graine] [patient|boutique|pistolet]`. Environ 5 minutes pour tout.
+- Pour juger une arme ou un prix : `node outils/simulateur.js duel` (environ 5 minutes). Le duel à budget égal compare, à une vague donnée et avec le même argent, « acheter l'arme » et « améliorer celle qu'on a ». Les campagnes complètes varient trop d'une partie à l'autre pour ça. Situations mesurées : `DUELS` dans `outils/simulateur.js`.
 - Joueurs : `debutant`, `moyen`, `bon`, `parfait` (erreur de visée tirée à chaque coup, part de tirs à la tête, temps pour changer de cible). Il vise toujours la tête d'un boss.
 - Les résultats varient un peu d'un lancement à l'autre (le hasard est fixé, mais pas tout le minutage) : comparer plusieurs lancements avant de conclure.
 - Après un changement de chiffres (vie, dégâts, prix), relancer et comparer avec le rapport d'avant (git garde les anciens).

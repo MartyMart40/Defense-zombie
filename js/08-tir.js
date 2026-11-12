@@ -60,9 +60,9 @@ function fire(){
         if (h.object.userData.onHit){ h.object.userData.onHit(h.point, dmg); anyHit = true; if (++pierced >= pierce) break; continue; } // baril, caisse, civil (23-rue.js)
         const z = h.object.userData.z; if (!z || z.dead || seen.has(z)) continue;
         seen.add(z);
-        const head = h.object.userData.head;
-        if (h.object.userData.weak && typeof weakHit === 'function') weakHit(z, h.object, dmg, h.point); // point faible (07-zombies.js)
-        else damage(z, dmg * (head ? headMult() : 1), head, h.point);
+        const head = h.object.userData.head, dm = W.falloff ? dmg * wFalloff(id, h.distance) : dmg; // plombs : moins forts de loin
+        if (h.object.userData.weak && typeof weakHit === 'function') weakHit(z, h.object, dm, h.point); // point faible (07-zombies.js)
+        else damage(z, dm * (head ? headMult() * (W.headX || 1) : 1), head, h.point);
         anyHit = true;
         if (++pierced >= pierce) break;
       }

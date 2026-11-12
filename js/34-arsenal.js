@@ -11,16 +11,16 @@
 
 /* ---------- Armes ---------- */
 const ARS_W = {
-  mg50:    { id:'mg50',    name:'Mitrailleuse .50',  price:12000, dmg:85,  rate:8,   mag:100, reload:4.5, pellets:1, spread:.018, pierce:3,  zoomFov:44, recoil:.03, kick:.5, ucost:650,  upg:['dmg', 'mag', 'reload', 'pierce'],
-             desc:'Grosses balles qui traversent 3 zombies. Chargeur de 100, gros recul.' },
+  mg50:    { id:'mg50',    name:'Mitrailleuse .50',  price:12000, dmg:136, rate:10,  mag:100, reload:4.5, pellets:1, spread:.018, pierce:3,  zoomFov:44, recoil:.03, kick:.5, ucost:650,  upg:['dmg', 'mag', 'reload', 'pierce'],
+             role:'la horde et les boss', desc:'Grosses balles qui traversent 3 zombies. Chargeur de 100, gros recul.' },
   laser:   { id:'laser',   name:'Fusil laser',       price:16000, dmg:60,  rate:12,  mag:60,  reload:2.5, pellets:1, spread:0,    pierce:99, zoomFov:40, recoil:.004, kick:.2, beam:{ c:0x50f0ff, w:.05, life:.06 }, ucost:780, upg:['dmg', 'rate', 'mag', 'reload'],
-             desc:'Rayon instantané qui traverse toute la file, sans dispersion.' },
-  railgun: { id:'railgun', name:'Canon électromagnétique', price:22000, dmg:1300, rate:.6, mag:4, reload:3, pellets:1, spread:0, pierce:99, zoomFov:20, recoil:.14, beam:{ c:0x60c8ff, w:.22, life:.3 }, ucost:950, upg:['dmg', 'rate', 'mag', 'reload'],
-             desc:'Projectile à vitesse folle : 900 de dégâts à tout ce qui est dans la ligne.' },
-  gl:      { id:'gl',      name:'Lance-grenades auto', price:28000, dmg:300, rate:3, mag:12, reload:3.4, pellets:1, spread:0, pierce:1, zoomFov:50, recoil:.06, kind:'rocket', speed:55, radius:4.5, ucost:1100, upg:['dmg', 'mag', 'reload', 'radius'],
-             desc:'Trois grenades explosives par seconde, barillet de 12.' },
-  arc:     { id:'arc',     name:'Fusil à arc électrique', price:35000, dmg:260, rate:4, mag:30, reload:2.6, pellets:1, spread:0, pierce:1, zoomFov:48, recoil:.02, kick:.3, chain:5, chainR:8, ucost:1300, upg:['dmg', 'rate', 'mag', 'reload'],
-             desc:'L’éclair frappe un zombie puis saute sur 5 autres autour.' }
+             role:'la horde en file', desc:'Rayon instantané qui traverse toute la file, sans dispersion.' },
+  railgun: { id:'railgun', name:'Canon électromagnétique', price:22000, dmg:2080, rate:.6, mag:4, reload:3, pellets:1, spread:0, pierce:99, zoomFov:20, recoil:.14, beam:{ c:0x60c8ff, w:.22, life:.3 }, ucost:950, upg:['dmg', 'rate', 'mag', 'reload'],
+             role:'les boss et les gros zombies', desc:'Projectile à vitesse folle qui frappe tout ce qui est dans la ligne.' },
+  gl:      { id:'gl',      name:'Lance-grenades auto', price:28000, dmg:480, rate:3, mag:12, reload:3.4, pellets:1, spread:0, pierce:1, zoomFov:50, recoil:.06, kind:'rocket', speed:55, radius:4.5, ucost:1100, upg:['dmg', 'mag', 'reload', 'radius'],
+             role:'les groupes serrés', desc:'Trois grenades explosives par seconde, barillet de 12.' },
+  arc:     { id:'arc',     name:'Fusil à arc électrique', price:35000, dmg:416, rate:4, mag:30, reload:2.6, pellets:1, spread:0, pierce:1, zoomFov:48, recoil:.02, kick:.3, chain:5, chainR:8, ucost:1300, upg:['dmg', 'rate', 'mag', 'reload'],
+             role:'la horde', desc:'L’éclair frappe un zombie puis saute sur 5 autres autour.' }
 };
 Object.keys(ARS_W).forEach(id => { WEAPONS[id] = ARS_W[id]; if (WORDER.indexOf(id) < 0) WORDER.push(id); });
 
@@ -59,7 +59,7 @@ const ACC = {
   rtandem:{ name:'Ogive tandem',     desc:'Double charge perforante : dégâts +35 %.', k:1.1, grp:'warhead', fx:{ dmg:1.35 }, on:['rocket'] },
   rfrag:  { name:'Ogive à fragmentation', desc:'Éclats partout : rayon d’explosion +35 %, dégâts −10 %.', k:1, grp:'warhead', fx:{ radius:1.35, dmg:.9 }, on:['rocket'] },
   rboost: { name:'Propulseur renforcé', desc:'La roquette file 70 % plus vite : plus facile de toucher ce qui bouge.', k:.9, fx:{ speed:1.7 }, on:['rocket'] },
-  rtwin:  { name:'Tube jumelé',      desc:'Un second tube : une roquette de plus par chargeur.', k:1.3, fx:{ mag:1.5 }, on:['rocket'] },
+  rtwin:  { name:'Tube jumelé',      desc:'Un second tube : une roquette de plus par chargeur.', k:1.3, fx:{ mag:1.25 }, on:['rocket'] },
   rguide: { name:'Guidage laser',    desc:'La roquette tourne vers le zombie le plus près de ta visée.', k:1.4, fx:{ guide:1 }, on:['rocket'] },
   // Propres à chaque autre arme (look : forme visible, dessinée par accLook)
   pcomp:  { name:'Compensateur',     desc:'Les gaz poussent le canon vers le bas : recul −40 %, dispersion −15 %.', k:.8, grp:'muzzle', look:'comp', fx:{ recoil:.6, spread:.85 }, on:['pistol'] },

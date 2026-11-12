@@ -41,7 +41,7 @@ function renderShop(){
     let b;
     if (own) b = on ? '<button disabled>En main</button>' : '<button data-act="equip" data-id="' + id + '">Prendre en main</button>';
     else b = '<button data-act="buy" data-id="' + id + '"' + (S.money < W.price ? ' disabled' : '') + '>Acheter ' + fmt(W.price) + '</button>';
-    h += '<div class="card' + (on ? ' on' : '') + '"><div class="cname">' + W.name + (isTouch ? '' : ' <span class="wkey">' + (i + 1) + '</span>') + '</div><div class="cdesc">' + W.desc + '</div>' + b + '</div>';
+    h += '<div class="card' + (on ? ' on' : '') + '"><div class="cname">' + W.name + (isTouch ? '' : ' <span class="wkey">' + (i + 1) + '</span>') + '</div>' + (W.role ? '<div class="crole">Bon contre : ' + W.role + '</div>' : '') + '<div class="cdesc">' + W.desc + '</div>' + b + '</div>';
   });
   $('shopWeapons').innerHTML = h;
   h = '';

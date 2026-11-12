@@ -86,7 +86,7 @@ function armLaunch(id){
 function armFlame(id){
   const W = WEAPONS[id], range = W.range * accK(id, 'range'), cone = W.cone * accK(id, 'cone'), dmg = wDmg(id); // buses (34-arsenal.js)
   fwd.set(0, 0, -1).applyQuaternion(camera.quaternion);
-  const minZ = BAR_Z - range; // jusqu'à environ 30 m de la barricade
+  const minZ = BAR_Z - range; // jusqu'à environ 36 m de la barricade
   let any = false;
   for (const z of zombies){
     if (z.dead || z.g.position.z < minZ) continue;
@@ -119,6 +119,7 @@ function armIgnite(z, id){
 }
 
 /* ---------- Explosion de roquette ---------- */
+let armDirect = null; // zombie frappé de plein fouet par la roquette : il prend tous les dégâts, peu importe sa taille
 function armExplode(pos, id){
   const r = wRadius(id), dmg = wDmg(id);
   for (const z of zombies){
@@ -129,6 +130,7 @@ function armExplode(pos, id){
     // largeur du corps retirée : un boss ou un colosse (7 fois plus gros) est touché quand l'explosion est contre lui
     const rad = (z.aimY != null ? z.aimY : 1.1) * .35;
     const dx = gp.x - pos.x, dz = gp.z - pos.z, dh = Math.max(0, Math.hypot(dx, dz) - rad), d = Math.sqrt(dh * dh + dy * dy);
+    if (z === armDirect){ damage(z, dmg, false, armCenter(z, armPt)); continue; }
     if (d > r) continue;
     damage(z, dmg * (1 - .6 * d / r), false, armCenter(z, armPt));
   }
@@ -189,8 +191,8 @@ function armStep(dt){
     armDir.copy(o.v).normalize();
     armRay.set(p, armDir); armRay.far = step;
     const hits = armRay.intersectObjects(hitMeshes, false);
-    let at = null;
-    for (const h of hits){ const z = h.object.userData.z; if ((z && !z.dead) || h.object.userData.onHit){ at = h.point; break; } }
+    let at = null, touche = null;
+    for (const h of hits){ const z = h.object.userData.z; if ((z && !z.dead) || h.object.userData.onHit){ at = h.point; touche = z && !z.dead ? z : null; break; } }
     if (!at){
       p.addScaledVector(o.v, dt);
       // Fusée de proximité : explose en frôlant un zombie (volants qui louvoient, sauteurs en l'air)
@@ -206,7 +208,7 @@ function armStep(dt){
     }
     o.tail.material.rotation = Math.random() * 6; const ts = rand(.9, 1.4); o.tail.scale.set(ts, ts, 1);
     o.smokeT -= dt; if (o.smokeT <= 0){ o.smokeT = .05; armTmp.copy(p).addScaledVector(armDir, -.7); burst(armTmp, 'dust', 1, .4); }
-    if (at){ armTmp.copy(at); o.m.visible = false; armExplode(armTmp, o.id); }
+    if (at){ armTmp.copy(at); o.m.visible = false; armDirect = touche; try { armExplode(armTmp, o.id); } finally { armDirect = null; } }
   }
   // Flammes
   for (const f of ARM.flames){

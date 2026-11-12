@@ -1,14 +1,86 @@
 # Équilibrage : résultats du simulateur
 
-Rapport écrit par `outils/simulateur.js` le 2026-11-04 (graine 1). Un robot-joueur joue le vrai jeu en accéléré.
-Il vise le zombie le plus proche de la barricade avec une erreur de visée selon le niveau du joueur, achète entre les vagues (l’arme suivante, puis toujours l’amélioration la moins chère), place ses talents et achète des défenses avec la ferraille.
+Rapport écrit par `outils/simulateur.js` le 2026-11-12 (graine 1). Un robot-joueur joue le vrai jeu en accéléré.
+Il vise comme un joueur qui connaît le jeu : le zombie à moins de 8 m de la barricade d’abord, sinon un cracheur arrêté, sinon la tête du boss, sinon le plus proche. Il a une erreur de visée selon son niveau, vise dans la mire de loin, retient une partie du recul et prend l’arme qui convient à la cible parmi celles qu’il possède. Entre les vagues, il achète ses armes selon une stratégie, puis toujours l’amélioration la moins chère (pour l’arme qu’il a le plus tenue), place ses talents et achète des défenses avec la ferraille.
 Il lance ses pouvoirs (grenade, Molotov, frappe aérienne) dans les groupes serrés et améliore les pouvoirs avec une partie de sa ferraille.
-Il ne se sert pas des accessoires, des compagnons ni du contrôle des tourelles : un vrai joueur fait un peu mieux.
+Il ne se sert pas des accessoires, des compagnons ni du contrôle des tourelles : un vrai joueur fait mieux, surtout dans les dernières villes. Les campagnes varient beaucoup d’une partie à l’autre : pour juger une arme, se fier au duel à budget égal.
 Ces chiffres servent à comparer avant et après un changement d’équilibrage, pas à remplacer les essais de Martin.
 
 - Débutant : erreur de visée d’environ 0,6° (à chaque coup), 10 % des tirs visés à la tête, 0,6 s pour changer de cible.
 - Moyen : environ 0,35°, 30 % à la tête, 0,4 s.
 - Bon : environ 0,17°, 60 % à la tête, 0,25 s.
+
+## Duel à budget égal : est-ce que l’arme vaut son prix ?
+
+La mesure la plus fiable de ce rapport. À une vague donnée, avec l’argent qu’un joueur a eu jusque-là, chaque ligne achète ses armes puis met tout le reste en améliorations (la moins chère d’abord). Joueur moyen, barricade infinie, sans pouvoirs ni défenses, moyenne de 2 parties. On mesure les dégâts que la barricade encaisse pendant la vague sans son boss (plus bas = mieux, le meilleur est en gras), et le temps pour tuer le boss seul. Règle visée : une arme plus chère doit faire au moins aussi bien que « garder l’arme d’avant et l’améliorer », ou être nettement meilleure contre le boss.
+
+### Saint-Clou, vague 4, 1 300 $ à dépenser
+
+| Armes achetées | Arme améliorée avec le reste | Dégâts encaissés face à la horde | Secondes pour tuer le boss |
+|---|---|---|---|
+| aucune (pistolet) | Pistolet | **0** | 22 |
+| Fusil à pompe | Fusil à pompe | **0** | 14 |
+| Fusil d’assaut | Fusil d’assaut | **0** | 17 |
+
+### Val-des-Cendres, vague 5, 2 500 $ à dépenser
+
+| Armes achetées | Arme améliorée avec le reste | Dégâts encaissés face à la horde | Secondes pour tuer le boss |
+|---|---|---|---|
+| aucune (pistolet) | Pistolet | 97 | 21 |
+| Fusil d’assaut | Fusil d’assaut | **0** | 16 |
+| Sniper, Fusil d’assaut | Fusil d’assaut | 219 | 11 |
+
+### Banlieue Nord, vague 5, 4 500 $ à dépenser
+
+| Armes achetées | Arme améliorée avec le reste | Dégâts encaissés face à la horde | Secondes pour tuer le boss |
+|---|---|---|---|
+| aucune (pistolet) | Pistolet | 1 475 | 21 |
+| Fusil d’assaut | Fusil d’assaut | **0** | 17 |
+| Arbalète, Fusil d’assaut | Fusil d’assaut | 997 | 9 |
+| Lance-flammes, Fusil d’assaut | Fusil d’assaut | 50 | 34 |
+
+### Centre-ville, vague 5, 7 000 $ à dépenser
+
+| Armes achetées | Arme améliorée avec le reste | Dégâts encaissés face à la horde | Secondes pour tuer le boss |
+|---|---|---|---|
+| aucune (pistolet) | Pistolet | 12 179 | 25 |
+| Fusil d’assaut | Fusil d’assaut | **85** | 19 |
+| Lance-flammes, Fusil d’assaut | Fusil d’assaut | 183 | 28 |
+| Minigun | Minigun | 212 | 13 |
+
+### Centre-ville, vague 7, 11 000 $ à dépenser
+
+| Armes achetées | Arme améliorée avec le reste | Dégâts encaissés face à la horde | Secondes pour tuer le boss |
+|---|---|---|---|
+| Fusil d’assaut | Fusil d’assaut | 1 280 | 18 |
+| Minigun | Minigun | **93** | 11 |
+| Lance-roquettes | Lance-roquettes | 7 884 | 27 |
+
+### Port industriel, vague 6, 14 000 $ à dépenser
+
+| Armes achetées | Arme améliorée avec le reste | Dégâts encaissés face à la horde | Secondes pour tuer le boss |
+|---|---|---|---|
+| Fusil d’assaut | Fusil d’assaut | 28 729 | 22 |
+| Minigun | Minigun | **837** | 12 |
+| Lance-roquettes | Lance-roquettes | 9 123 | 27 |
+
+### Port industriel, vague 8, 22 000 $ à dépenser
+
+| Armes achetées | Arme améliorée avec le reste | Dégâts encaissés face à la horde | Secondes pour tuer le boss |
+|---|---|---|---|
+| Minigun | Minigun | 3 182 | 11 |
+| Lance-roquettes | Lance-roquettes | 5 634 | 23 |
+| Mitrailleuse .50 | Mitrailleuse .50 | **2 279** | 8 |
+| Fusil laser | Fusil laser | 4 414 | 14 |
+
+### Port industriel, vague 9, 30 000 $ à dépenser
+
+| Armes achetées | Arme améliorée avec le reste | Dégâts encaissés face à la horde | Secondes pour tuer le boss |
+|---|---|---|---|
+| Minigun | Minigun | 1 905 | 10 |
+| Mitrailleuse .50 | Mitrailleuse .50 | 3 227 | 8 |
+| Fusil laser | Fusil laser | **68** | 11 |
+| Canon électromagnétique, Minigun | Minigun | 74 536 | 11 |
 
 ## Saint-Clou selon la façon d’acheter les armes : joueur moyen
 
@@ -16,32 +88,33 @@ Une partie par stratégie, profil neuf.
 
 | Stratégie | Résultat | Vagues | Barricade à la fin (plus bas) | Arme à la fin |
 |---|---|---|---|---|
-| l’arme suivante dès qu’on peut | Perdue | 4 / 5 | 0 % (0 %) | Fusil d’assaut |
+| l’arme suivante dès qu’on peut | Libérée | 5 / 5 | 84 % (84 %) | Fusil d’assaut |
 | l’arme suivante avec deux fois son prix en poche, sans les armes de près | Libérée | 5 / 5 | 84 % (84 %) | Pistolet |
-| le pistolet seulement, et des améliorations | Libérée | 5 / 5 | 62 % (62 %) | Pistolet |
-| le fusil à pompe dès qu’on peut, puis des améliorations | Libérée | 5 / 5 | 69 % (69 %) | Fusil à pompe |
+| le pistolet seulement, et des améliorations | Libérée | 5 / 5 | 84 % (84 %) | Pistolet |
+| le fusil à pompe dès qu’on peut, puis des améliorations | Libérée | 5 / 5 | 84 % (84 %) | Pistolet |
+| selon le besoin : les armes de horde d’abord (fusil d’assaut, lance-flammes, minigun), le sniper pour les boss | Libérée | 5 / 5 | 84 % (84 %) | Fusil d’assaut |
 
 ## Campagne : joueur moyen
 
-Achat des armes : l’arme suivante avec deux fois son prix en poche, sans les armes de près. Jusqu’à 3 essais par ville, le profil (niveau, talents, ferraille, défenses) est gardé d’une partie à l’autre.
+Achat des armes : selon le besoin : les armes de horde d’abord (fusil d’assaut, lance-flammes, minigun), le sniper pour les boss. Jusqu’à 3 essais par ville, le profil (niveau, talents, ferraille, défenses) est gardé d’une partie à l’autre.
 
 | Ville | Essai | Résultat | Vagues | Barricade à la fin (plus bas) | Argent à la fin | Niveau | Arme | Pouvoirs lancés | Minutes de jeu |
 |---|---|---|---|---|---|---|---|---|---|
-| Saint-Clou | 1 | Perdue | 4 / 5 | 0 % (0 %) | 2 298 $ | 5 | Pistolet | 19 | 7,6 |
-| Saint-Clou | 2 | Libérée | 5 / 5 | 84 % (84 %) | 2 435 $ | 8 | Pistolet | 19 | 7,5 |
-| Val-des-Cendres | 1 | Libérée | 6 / 6 | 100 % (39 %) | 2 582 $ | 11 | Fusil d’assaut | 27 | 9,3 |
-| Banlieue Nord | 1 | Perdue | 4 / 7 | 0 % (0 %) | 3 671 $ | 13 | Fusil d’assaut | 26 | 6,9 |
-| Banlieue Nord | 2 | Perdue | 4 / 7 | 0 % (0 %) | 3 518 $ | 14 | Fusil d’assaut | 30 | 6,9 |
-| Banlieue Nord | 3 | Perdue | 4 / 7 | 0 % (0 %) | 3 546 $ | 15 | Fusil d’assaut | 34 | 6,7 |
+| Saint-Clou | 1 | Libérée | 5 / 5 | 84 % (84 %) | 2 376 $ | 6 | Fusil d’assaut | 9 | 7,3 |
+| Val-des-Cendres | 1 | Libérée | 6 / 6 | 100 % (100 %) | 2 867 $ | 10 | Fusil d’assaut | 12 | 8,7 |
+| Banlieue Nord | 1 | Libérée | 7 / 7 | 100 % (73 %) | 4 634 $ | 14 | Fusil d’assaut | 43 | 10,3 |
+| Centre-ville | 1 | Libérée | 8 / 8 | 97 % (78 %) | 7 306 $ | 17 | Minigun | 80 | 12,7 |
+| Port industriel | 1 | Perdue | 4 / 10 | 0 % (0 %) | 6 727 $ | 18 | Fusil d’assaut | 40 | 6,2 |
+| Port industriel | 2 | Libérée | 10 / 10 | 100 % (64 %) | 17 242 $ | 21 | Minigun | 124 | 16,7 |
 
-Fin : niveau 15, 483 ferrailles.
+Fin : niveau 21, 4551 ferrailles.
 
-### Mode infini (profil où la campagne s’est arrêtée, forcé même si le mode n’est pas débloqué)
+### Mode infini (profil de fin de campagne)
 
 | Ville | Vagues tenues | Zombies abattus | Arme | Minutes de jeu |
 |---|---|---|---|---|
-| Saint-Clou | 9 | 886 | Sniper | 11,5 |
-| Port industriel | 9 | 882 | Sniper | 10,8 |
+| Saint-Clou | 23 | 4 721 | Minigun | 33,3 |
+| Port industriel | 25 | 5 882 | Mitrailleuse .50 | 36,7 |
 
 ## Saint-Clou selon la façon d’acheter les armes : joueur bon
 
@@ -49,31 +122,32 @@ Une partie par stratégie, profil neuf.
 
 | Stratégie | Résultat | Vagues | Barricade à la fin (plus bas) | Arme à la fin |
 |---|---|---|---|---|
-| l’arme suivante dès qu’on peut | Perdue | 4 / 5 | 0 % (0 %) | Fusil d’assaut |
+| l’arme suivante dès qu’on peut | Libérée | 5 / 5 | 84 % (84 %) | Pistolet |
 | l’arme suivante avec deux fois son prix en poche, sans les armes de près | Libérée | 5 / 5 | 84 % (84 %) | Pistolet |
 | le pistolet seulement, et des améliorations | Libérée | 5 / 5 | 84 % (84 %) | Pistolet |
-| le fusil à pompe dès qu’on peut, puis des améliorations | Libérée | 5 / 5 | 57 % (57 %) | Fusil à pompe |
+| le fusil à pompe dès qu’on peut, puis des améliorations | Libérée | 5 / 5 | 84 % (84 %) | Pistolet |
+| selon le besoin : les armes de horde d’abord (fusil d’assaut, lance-flammes, minigun), le sniper pour les boss | Libérée | 5 / 5 | 84 % (84 %) | Fusil d’assaut |
 
 ## Campagne : joueur bon
 
-Achat des armes : l’arme suivante avec deux fois son prix en poche, sans les armes de près. Jusqu’à 3 essais par ville, le profil (niveau, talents, ferraille, défenses) est gardé d’une partie à l’autre.
+Achat des armes : selon le besoin : les armes de horde d’abord (fusil d’assaut, lance-flammes, minigun), le sniper pour les boss. Jusqu’à 3 essais par ville, le profil (niveau, talents, ferraille, défenses) est gardé d’une partie à l’autre.
 
 | Ville | Essai | Résultat | Vagues | Barricade à la fin (plus bas) | Argent à la fin | Niveau | Arme | Pouvoirs lancés | Minutes de jeu |
 |---|---|---|---|---|---|---|---|---|---|
-| Saint-Clou | 1 | Libérée | 5 / 5 | 88 % (88 %) | 2 873 $ | 6 | Pistolet | 7 | 7,4 |
-| Val-des-Cendres | 1 | Libérée | 6 / 6 | 95 % (64 %) | 2 679 $ | 10 | Fusil d’assaut | 19 | 8,6 |
-| Banlieue Nord | 1 | Perdue | 4 / 7 | 0 % (0 %) | 2 020 $ | 12 | Fusil d’assaut | 30 | 6,8 |
-| Banlieue Nord | 2 | Perdue | 3 / 7 | 0 % (0 %) | 1 003 $ | 13 | Fusil d’assaut | 12 | 4,4 |
-| Banlieue Nord | 3 | Perdue | 5 / 7 | 0 % (0 %) | 1 517 $ | 14 | Sniper | 36 | 8 |
+| Saint-Clou | 1 | Libérée | 5 / 5 | 84 % (84 %) | 2 203 $ | 6 | Fusil d’assaut | 4 | 6,3 |
+| Val-des-Cendres | 1 | Libérée | 6 / 6 | 100 % (82 %) | 2 541 $ | 10 | Fusil d’assaut | 4 | 7,5 |
+| Banlieue Nord | 1 | Libérée | 7 / 7 | 100 % (81 %) | 5 395 $ | 14 | Fusil d’assaut | 23 | 9,5 |
+| Centre-ville | 1 | Libérée | 8 / 8 | 100 % (77 %) | 8 558 $ | 17 | Minigun | 49 | 11,5 |
+| Port industriel | 1 | Libérée | 10 / 10 | 82 % (38 %) | 16 822 $ | 21 | Minigun | 117 | 15,3 |
 
-Fin : niveau 14, 778 ferrailles.
+Fin : niveau 21, 3396 ferrailles.
 
-### Mode infini (profil où la campagne s’est arrêtée, forcé même si le mode n’est pas débloqué)
+### Mode infini (profil de fin de campagne)
 
 | Ville | Vagues tenues | Zombies abattus | Arme | Minutes de jeu |
 |---|---|---|---|---|
-| Saint-Clou | 10 | 1 004 | Arbalète | 12,6 |
-| Port industriel | 14 | 1 758 | Arbalète | 18,6 |
+| Saint-Clou | 24 | 5 351 | Minigun | 33,5 |
+| Port industriel | 23 | 4 761 | Lance-roquettes | 30,8 |
 
 ## Guerre des robots (RTS)
 
@@ -84,24 +158,25 @@ Le robot-joueur bâtit une usine lourde, un récupérateur, un atelier de répar
 | Minute | Nids détruits | Unités | Tourelles | Argent | Menace | Vie du QG | Zombies en vie | Zombies tués | Unités perdues | Boss abattus |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 0 | 0 | 4 | 3 | 350 $ | 1 | 100 % | 0 | 0 | 0 | 0 |
-| 5 | 1 | 16 | 8 | 823 $ | 4,5 | 100 % | 495 | 1079 | 0 | 0 |
-| 10 | 1 | 19 | 10 | 1 228 $ | 8,7 | 100 % | 500 | 2822 | 8 | 2 |
-| 15 | 1 | 22 | 11 | 1 463 $ | 13,5 | 100 % | 501 | 4949 | 13 | 4 |
-| 19,8 | 1 | 26 | 13 | 779 $ | 18,1 | 0 % | 498 | 6992 | 20 | 6 |
+| 5 | 1 | 16 | 8 | 689 $ | 4,6 | 100 % | 498 | 1110 | 0 | 0 |
+| 10 | 1 | 19 | 10 | 1 076 $ | 8,5 | 100 % | 500 | 2704 | 23 | 2 |
+| 15 | 1 | 22 | 11 | 1 755 $ | 13 | 100 % | 500 | 4622 | 30 | 4 |
+| 20 | 1 | 26 | 10 | 536 $ | 17,6 | 100 % | 499 | 6647 | 45 | 6 |
+| 23,2 | 1 | 27 | 6 | 579 $ | 20,5 | 0 % | 499 | 7895 | 60 | 7 |
 
-**Le QG est tombé à 19,8 min.**
+**Le QG est tombé à 23,2 min.**
 
 ### Il reste à la base
 
 | Minute | Nids détruits | Unités | Tourelles | Argent | Menace | Vie du QG | Zombies en vie | Zombies tués | Unités perdues | Boss abattus |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 0 | 0 | 4 | 3 | 350 $ | 1 | 100 % | 0 | 0 | 0 | 0 |
-| 5 | 0 | 13 | 6 | 685 $ | 4,1 | 100 % | 494 | 1100 | 0 | 0 |
-| 10 | 0 | 16 | 8 | 575 $ | 8,5 | 100 % | 496 | 3029 | 0 | 2 |
-| 15 | 0 | 19 | 9 | 780 $ | 13,7 | 100 % | 500 | 5351 | 0 | 4 |
-| 20 | 0 | 18 | 2 | 230 $ | 18,6 | 0 % | 500 | 7572 | 12 | 6 |
+| 5 | 0 | 13 | 6 | 601 $ | 4,1 | 100 % | 502 | 1110 | 0 | 0 |
+| 10 | 0 | 16 | 8 | 1 464 $ | 8,5 | 100 % | 500 | 2999 | 0 | 3 |
+| 15 | 0 | 19 | 8 | 422 $ | 13,5 | 100 % | 499 | 5261 | 1 | 4 |
+| 19,5 | 0 | 12 | 1 | 371 $ | 18,2 | 0 % | 499 | 7369 | 20 | 6 |
 
-**Le QG est tombé à 20 min.**
+**Le QG est tombé à 19,5 min.**
 
 
-_Simulation faite en 361 s._
+_Simulation faite en 791 s._

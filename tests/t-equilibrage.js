@@ -2,6 +2,7 @@
 /* Tests d'équilibrage : réglages décidés avec le simulateur (docs/equilibrage.md) */
 (function(){
   if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
+  const proche = (v, att, tol, msg) => ok(typeof v === 'number' && Math.abs(v - att) <= tol, msg + ' : attendu environ ' + att + ', obtenu ' + v);
 
   test('Équilibrage : le fusil à pompe bat le pistolet de près et reste utile au milieu de la rue', () => {
     reset(); J('startLocation(0)'); J('__t.geler()');
@@ -24,10 +25,61 @@
     ok(r.pierce >= 2, 'Les plombs traversent au moins deux zombies');
   });
 
-  test('Équilibrage : les armes neuves sont plus fortes au départ (fusil d’assaut, sniper, minigun, roquettes)', () => {
-    const r = J(function(){ var W = WEAPONS; return { r: W.rifle.dmg >= 30 && W.rifle.pierce >= 2, s: W.sniper.dmg >= 240 && W.sniper.pierce >= 5, m: W.minigun.dmg >= 24 && W.minigun.pierce >= 2, k: W.rocket.dmg >= 800 }; });
-    ok(r.r, 'Fusil d’assaut : 30 dégâts, traverse 2 zombies'); ok(r.s, 'Sniper : 240 dégâts, traverse 5 zombies');
-    ok(r.m, 'Minigun : 24 dégâts, traverse 2 zombies'); ok(r.k, 'Lance-roquettes : 800 dégâts');
+  test('Équilibrage : chaque arme plus chère vaut son prix (échelle du 12 novembre 2026)', () => {
+    const r = J(function(){
+      var W = WEAPONS, o = {};
+      // Dégâts par seconde sur papier, chargeur et recharge comptés
+      var dps = function(id){ var w = W[id]; return w.dmg * w.pellets * w.mag / (w.mag / w.rate + w.reload); };
+      o.fusil = dps('rifle'); o.minigun = dps('minigun'); o.mg50 = dps('mg50'); o.pistolet = dps('pistol');
+      o.sniper = W.sniper.dmg * W.sniper.mag / (W.sniper.mag / W.sniper.rate + W.sniper.reload);
+      o.roq = W.rocket.dmg * W.rocket.mag / (W.rocket.mag / W.rocket.rate + W.rocket.reload);
+      o.portee = W.flamer.range; o.roles = WORDER.filter(function(id){ return !W[id].role; });
+      o.r = W.rifle.dmg >= 30 && W.rifle.pierce >= 2; o.s = W.sniper.dmg >= 450 && W.sniper.pierce >= 5;
+      return o;
+    });
+    ok(r.r, 'Fusil d’assaut : 30 dégâts, traverse 2 zombies'); ok(r.s, 'Sniper : 450 dégâts, traverse 5 zombies');
+    ok(r.fusil > r.pistolet * 2, 'Fusil d’assaut : plus du double du pistolet (' + Math.round(r.fusil) + ' contre ' + Math.round(r.pistolet) + ')');
+    ok(r.sniper > r.fusil * 2, 'Sniper : plus du double du fusil d’assaut sur une grosse cible (' + Math.round(r.sniper) + ' contre ' + Math.round(r.fusil) + ')');
+    ok(r.minigun > r.fusil * 2.2, 'Minigun : au moins 2,2 fois le fusil d’assaut (' + Math.round(r.minigun) + ' contre ' + Math.round(r.fusil) + ')');
+    ok(r.roq > r.minigun, 'Lance-roquettes : plus que le minigun, et en explosion (' + Math.round(r.roq) + ' contre ' + Math.round(r.minigun) + ')');
+    ok(r.mg50 > r.minigun * 1.5, 'Mitrailleuse .50 : au moins 1,5 fois le minigun (' + Math.round(r.mg50) + ' contre ' + Math.round(r.minigun) + ')');
+    ok(r.portee >= 36, 'Lance-flammes : porte à 36 m (les cracheurs s’arrêtent entre 25 et 40 m) : ' + r.portee);
+    egal(r.roles.join(','), '', 'Armes sans étiquette « Bon contre »');
+  });
+
+  test('Équilibrage : les plombs du fusil à pompe perdent de la force avec la distance, pas les autres armes', () => {
+    const r = J(function(){ return { p10: wFalloff('shotgun', 10), p25: wFalloff('shotgun', 25), p42: wFalloff('shotgun', 42.5), p60: wFalloff('shotgun', 60), p90: wFalloff('shotgun', 90), fusil: wFalloff('rifle', 90), sniper: wFalloff('sniper', 150) }; });
+    egal(r.p10, 1, 'À 10 m : pleine force'); egal(r.p25, 1, 'À 25 m : pleine force');
+    proche(r.p42, .65, .01, 'À 42,5 m : 65 %'); proche(r.p60, .3, .001, 'À 60 m : 30 %'); proche(r.p90, .3, .001, 'Plus loin : jamais sous 30 %');
+    egal(r.fusil, 1, 'Fusil d’assaut : aucune perte'); egal(r.sniper, 1, 'Sniper : aucune perte');
+  });
+
+  test('Équilibrage : une roquette en plein sur le boss lui fait tous ses dégâts (moins son blindage)', () => {
+    reset(); J('startLocation(0)'); J('__t.geler()');
+    const r = J(function(){
+      clearZombies(); spawnZombie('boss'); var b = zombies[zombies.length - 1]; b.g.position.set(0, 0, -45); b.speed = 0; b.hp = b.maxHp = 1e6; b.g.updateMatrixWorld(true);
+      S.owned.rocket = true; equip('rocket'); __t.viser(b, true); zoomed = false; recoilAcc = 0; reloadT = 0; cool = 0; S.ammo.rocket = magSize('rocket');
+      var h0 = b.hp; fire();
+      for (var i = 0; i < 240 && b.hp === h0; i++) __armes.armStep(1 / 60);
+      var perdu = h0 - b.hp; clearZombies();
+      return { perdu: perdu, plein: wDmg('rocket') * __boss.BOSS_ARMOR };
+    });
+    ok(r.perdu > 0, 'La roquette a touché le boss');
+    proche(r.perdu, r.plein, r.plein * .02, 'Dégâts de plein fouet (avant : environ 40 %)');
+  });
+
+  test('Équilibrage : la boutique dit contre quoi chaque arme est bonne', () => {
+    reset(); J('startLocation(0)'); J("state = 'shop'");
+    const r = J(function(){ S.money = 0; renderShop(); var c = document.querySelectorAll('#shopWeapons .card'), n = 0; c.forEach(function(e){ var x = e.querySelector('.crole'); if (x && /^Bon contre : .+/.test(x.textContent)) n++; }); return { cartes: c.length, roles: n, sniper: WEAPONS.sniper.role }; });
+    ok(r.cartes >= 8, 'Cartes d’armes : ' + r.cartes); egal(r.roles, r.cartes, 'Étiquettes « Bon contre »');
+    ok(/boss/.test(r.sniper), 'Le sniper est annoncé contre les boss : ' + r.sniper);
+  });
+
+  test('Équilibrage : le robot garde les dégâts qu’il avait avant le renforcement des armes du toit', () => {
+    if (lire('typeof MECH_W === "object"') !== true) ignorer('Mode robot absent');
+    const r = J(function(){ var o = {}; Object.keys(MECH_W).forEach(function(id){ o[id] = WEAPONS[id].dmg * (MECH_W[id].k || 1); }); return o; });
+    const avant = { minigun:24, flamer:10, laser:60, rocket:800, gl:300, arc:260, railgun:1300 };
+    Object.keys(avant).forEach(id => proche(r[id], avant[id], avant[id] * .02, 'Robot, ' + id));
   });
 
   test('Équilibrage : une explosion contre un boss le blesse (la largeur du corps compte)', () => {

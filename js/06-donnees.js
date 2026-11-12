@@ -1,20 +1,22 @@
 'use strict';
 /* ================= Données de jeu ================= */
 const WEAPONS = {
-  pistol:  { id:'pistol',  name:'Pistolet',         price:0,    dmg:30,  rate:3.2, mag:12, reload:1.1, pellets:1, spread:.0015, pierce:1, zoomFov:56, recoil:.03, ucost:70,  upg:['dmg', 'rate', 'reload', 'pierce'], desc:'Précis et rapide à recharger.' },
-  shotgun: { id:'shotgun', name:'Fusil à pompe',     price:350,  dmg:30,  rate:1.5, mag:8, reload:1.5, pellets:8, spread:.03, pierce:2, zoomFov:60, recoil:.08, ucost:110, upg:['dmg', 'mag', 'reload', 'pellets'], desc:'Dévastateur de près, bon jusqu’au milieu de la rue. Les plombs traversent deux zombies.' },
-  rifle:   { id:'rifle',   name:'Fusil d’assaut',   price:900,  dmg:30,  rate:9,   mag:30, reload:1.8, pellets:1, spread:.014, pierce:2, zoomFov:50, recoil:.022, ucost:160, upg:['dmg', 'mag', 'reload', 'spread'], desc:'Tir automatique, garde le doigt sur la gâchette.' },
-  sniper:  { id:'sniper',  name:'Sniper',           price:1600, dmg:240, rate:1,   mag:5,  reload:2.4, pellets:1, spread:0,    pierce:5, zoomFov:18, recoil:.11, ucost:220, upg:['dmg', 'rate', 'reload', 'pierce'], desc:'Énormes dégâts, traverse jusqu’à 4 zombies. Lunette quand tu vises.' },
+  pistol:  { id:'pistol',  name:'Pistolet',         price:0,    dmg:30,  rate:3.2, mag:12, reload:1.1, pellets:1, spread:.0015, pierce:1, zoomFov:56, recoil:.03, ucost:70,  upg:['dmg', 'rate', 'reload', 'pierce'], role:'un peu de tout', desc:'Précis et rapide à recharger.' },
+  shotgun: { id:'shotgun', name:'Fusil à pompe',     price:350,  dmg:32,  rate:1.5, mag:8, reload:1.5, pellets:8, spread:.03, pierce:2, falloff:[25, 60, .3], zoomFov:60, recoil:.08, ucost:110, upg:['dmg', 'mag', 'reload', 'pellets'], role:'tout ce qui est proche', desc:'Dévastateur de près, bon jusqu’au milieu de la rue. Les plombs traversent deux zombies.' },
+  rifle:   { id:'rifle',   name:'Fusil d’assaut',   price:900,  dmg:30,  rate:9,   mag:30, reload:1.8, pellets:1, spread:.014, pierce:2, zoomFov:50, recoil:.022, ucost:160, upg:['dmg', 'mag', 'reload', 'spread'], role:'la horde', desc:'Tir automatique, garde le doigt sur la gâchette.' },
+  sniper:  { id:'sniper',  name:'Sniper',           price:1600, dmg:450, rate:1.2, mag:6,  reload:2.1, pellets:1, spread:0,    pierce:5, zoomFov:18, recoil:.11, ucost:220, upg:['dmg', 'rate', 'reload', 'pierce'], role:'les boss et les gros zombies', desc:'Énormes dégâts, traverse jusqu’à 4 zombies. Lunette quand tu vises.' },
   // Nouvelles armes (projectiles, flammes et montée en régime : 20-armes.js)
-  crossbow:{ id:'crossbow', name:'Arbalète',        price:2200, dmg:150, rate:1.2, mag:6,  reload:2.2, pellets:1, spread:0,    pierce:3, zoomFov:34, recoil:.05, kind:'bolt', speed:150, headX:1.6, ucost:260, upg:['dmg', 'mag', 'reload', 'pierce'],
-             desc:'Silencieuse. Le carreau traverse 3 zombies et fait très mal à la tête.' },
-  flamer:  { id:'flamer',  name:'Lance-flammes',    price:3500, dmg:10,   rate:15,  mag:120, reload:3.2, pellets:1, spread:0,   pierce:99, zoomFov:62, recoil:.002, kind:'flame', range:30, cone:.17, burn:3, burnDps:30, kick:.12, ucost:330, upg:['dmg', 'mag', 'reload', 'burn'],
-             desc:'Cône de flammes jusqu’à 30 m de la barricade. Ce qui brûle continue de brûler.' },
-  minigun: { id:'minigun', name:'Minigun',          price:5500, dmg:24,  rate:20,  mag:200, reload:5,  pellets:1, spread:.032, pierce:2, zoomFov:56, recoil:.0055, spin:1.1, kick:.35, ucost:420, upg:['dmg', 'mag', 'reload', 'spin'],
-             desc:'Cadence énorme après une seconde de lancement. Chargeur de 200, longue recharge.' },
-  rocket:  { id:'rocket',  name:'Lance-roquettes',  price:8000, dmg:800, rate:.85, mag:2,  reload:2.6, pellets:1, spread:0,    pierce:1, zoomFov:52, recoil:.13, kind:'rocket', speed:42, radius:5.5, magStep:1, ucost:540, upg:['dmg', 'mag', 'reload', 'radius'],
-             desc:'Roquette lente qui explose et déchire tout autour. Seulement 2 par chargeur.' }
+  crossbow:{ id:'crossbow', name:'Arbalète',        price:2200, dmg:260, rate:1.8, mag:8,  reload:2.2, pellets:1, spread:0,    pierce:4, zoomFov:34, recoil:.05, kind:'bolt', speed:190, headX:1.8, ucost:260, upg:['dmg', 'mag', 'reload', 'pierce'],
+             role:'les boss, à la tête', desc:'Silencieuse. Le carreau traverse 4 zombies et fait très mal à la tête.' },
+  flamer:  { id:'flamer',  name:'Lance-flammes',    price:3500, dmg:13,   rate:15,  mag:120, reload:3.2, pellets:1, spread:0,   pierce:99, zoomFov:62, recoil:.002, kind:'flame', range:36, cone:.17, burn:3, burnDps:40, kick:.12, ucost:330, upg:['dmg', 'mag', 'reload', 'burn'],
+             role:'la horde qui approche', desc:'Cône de flammes jusqu’à 36 m de la barricade. Ce qui brûle continue de brûler.' },
+  minigun: { id:'minigun', name:'Minigun',          price:5500, dmg:34,  rate:20,  mag:200, reload:5,  pellets:1, spread:.026, pierce:2, zoomFov:56, recoil:.0055, spin:1.1, kick:.35, ucost:420, upg:['dmg', 'mag', 'reload', 'spin'],
+             role:'la horde et les boss', desc:'Cadence énorme après une seconde de lancement. Chargeur de 200, longue recharge.' },
+  rocket:  { id:'rocket',  name:'Lance-roquettes',  price:8000, dmg:1000, rate:1.2, mag:4, reload:2.2, pellets:1, spread:0,    pierce:1, zoomFov:52, recoil:.13, kind:'rocket', speed:55, radius:6.5, magStep:1, ucost:540, upg:['dmg', 'mag', 'reload', 'radius'],
+             role:'les groupes serrés', desc:'Roquette qui explose et déchire tout autour. En plein sur un gros zombie, elle lui fait tous ses dégâts. 4 par chargeur.' }
 };
+// Équilibrage du 12 novembre 2026 (duel à budget égal du simulateur, docs/equilibrage.md) : chaque arme plus chère doit valoir
+// son prix face à « garder l'arme d'avant et l'améliorer ». role : étiquette « Bon contre » de la boutique.
 const WORDER = ['pistol', 'shotgun', 'rifle', 'sniper', 'crossbow', 'flamer', 'minigun', 'rocket'];
 // Améliorations propres à chaque arme (WEAPONS[id].upg donne les 4 lignes de l'arme).
 // Prix : WEAPONS[id].ucost × 1,55 par niveau, puis × 1,25 de plus par niveau au-delà de l'ancien plafond (cap0).
@@ -135,6 +137,8 @@ const magSize = id => { const W = WEAPONS[id], l = wl(id, 'mag'); return Math.ro
 // Statistiques finales d'une arme (améliorations générales, de l'arme et talents)
 // Plombs au-delà de 6 niveaux : plus de plombs (trop de rayons), mais +8 % de dégâts par niveau
 const wDmg = id => WEAPONS[id].dmg * (1 + .15 * wl(id, 'dmg')) * (1 + .08 * Math.max(0, wl(id, 'pellets') - 6)) * dmgMult() * accK(id, 'dmg');
+// Portée utile (W.falloff = [pleine force jusqu'à, plancher à partir de, part des dégâts au plancher]) : 1 sans falloff
+const wFalloff = (id, d) => { const f = WEAPONS[id].falloff; if (!f) return 1; return d <= f[0] ? 1 : d >= f[1] ? f[2] : 1 - (1 - f[2]) * (d - f[0]) / (f[1] - f[0]); };
 const wRate = id => WEAPONS[id].rate * (1 + .1 * wl(id, 'rate')) * (1 + .05 * T('trigger')) * accK(id, 'rate');
 // Au-delà de l'ancien plafond, les gains continuent en diminuant (jamais zéro)
 const wSoft = (l, step, cap, floor, k) => (l <= cap ? Math.max(floor, 1 - step * l) : Math.max(floor, 1 - step * cap) * Math.pow(k, l - cap));

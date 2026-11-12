@@ -243,13 +243,17 @@ function rtsGat(u, dt, tgt, pilot){
   if (pilot){ const S5 = rtsS25(u); if (u.type === 'heli') S5.snd = S5.tsnd = null; /* le grondement continu vient de rtsApacheGun */ rtsPilotShot(u, S5, -1, 'gat'); } else rtsHit(rtsMuzzle(u, new THREE.Vector3()), tgt, tgt.g ? 'z' : 'nest', rtsS25(u));
 }
 // Choix de la cible : tireur d'élite = le plus gros ; explosifs = là où ils sont le plus serrés ; sinon le plus proche
-function rtsPickTarget(u, r, splash){
-  const gp = u.g.position, r2 = r * r; let best = null, bs = -1e9, n = 0;
+// tir : portée de tir réelle. Au repos, une unité regarde 6 m plus loin que sa portée (r) pour aller au-devant des zombies,
+// mais une cible qu'elle peut déjà toucher passe toujours avant : sinon une unité à explosion visait le plus gros groupe
+// juste hors de portée et restait sans tirer, des zombies à ses pieds (un tank tirait aux 7,5 s au lieu d'aux 3 s).
+function rtsPickTarget(u, r, splash, tir){
+  const gp = u.g.position, r2 = r * r, t2 = tir ? tir * tir : r2; let best = null, bs = -1e12, n = 0;
   for (const q of zombies){
     if (q.dead) continue; const dx = q.g.position.x - gp.x, dz = q.g.position.z - gp.z, d2 = dx * dx + dz * dz; if (d2 > r2) continue;
     let sc = -d2;
     if (u.type === 'sniper') sc = q.maxHp * 10 - Math.sqrt(d2);
     else if (splash && n++ < 14){ let c = 0; for (const o of zombies) if (!o.dead && Math.abs(o.g.position.x - q.g.position.x) < splash && Math.abs(o.g.position.z - q.g.position.z) < splash) c++; sc = c * 100 - Math.sqrt(d2); }
+    if (d2 > t2) sc -= 1e9;
     if (sc > bs){ bs = sc; best = q; }
   }
   return best;
@@ -347,7 +351,7 @@ function rtsUnits(dt){
     let nest = u.nest && !u.nest.dead ? u.nest : null;
     if (u.scanT <= 0){
       u.scanT = rand(.2, .35);
-      u.tgt = rtsPickTarget(u, rng + (u.cmd === 'idle' ? 6 : 0), U.splash); u.autoNest = null;
+      u.tgt = rtsPickTarget(u, rng + (u.cmd === 'idle' ? 6 : 0), U.splash, rng); u.autoNest = null;
       if (!nest && !u.tgt && u.cmd === 'idle') for (const n of RTS.nests){ if (!n.dead && Math.hypot(n.x - gp.x, n.z - gp.z) < rng + n.r){ u.autoNest = n; break; } }
       // Danger : le zombie au sol le plus proche (les hélicoptères ne craignent que les volants)
       u.near = null; u.nearD = 1e9;

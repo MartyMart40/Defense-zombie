@@ -49,7 +49,7 @@ Usine de robots 500 $, usine lourde 1 200 $, garage de blindés 1 500 $, hélipo
 Les prix exacts sont dans `RTS_UNITS` et `RTS_BLD` (`js/41-rts.js`) : si un chiffre change dans le code, changer ce tableau aussi.
 
 ## Véhicules et postes de pilotage (2026-11-04, demande de Martin : « chaque arme représentative de la vraie vie »)
-- Tank : canon de 120 mm, un obus toutes les 3 s, 560 dégâts, grosse explosion ; mitrailleuse coaxiale en amélioration. Poste : le gros canon devant soi, qui recule à chaque tir.
+- Tank : canon de 120 mm, un obus toutes les 3 s, 900 dégâts (560 avant le 2026-11-12), explosion de 6,5 m, 8 000 de vie (3 200 avant) ; mitrailleuse coaxiale en amélioration. Poste : le gros canon devant soi, qui recule à chaque tir.
 - Apache (l'hélicoptère) : canon rotatif de 30 mm sous le nez et missiles Hellfire dès l'achat (les améliorations les renforcent), roquettes Hydra. Poste : vue du casque, verrière, écrans, canon qui tourne quand il tire, Hellfire sur les ailettes qui disparaissent quand ils partent.
 - Chasseur : canon de 20 mm (75 dégâts, 10 coups/s), 200 obus ; Warthog : canon de 30 mm, 660 obus. AC-130 : 100 obus de 40 mm et 20 de 105 mm. À sec, l'avion retourne à l'aérodrome le plus proche refaire le plein (3 à 6 s au-dessus). Piloté : on y retourne soi-même, le viseur donne la distance.
 - 2 avions par aérodrome : pour plus d'avions, il faut plus d'aérodromes.
@@ -88,6 +88,14 @@ Démolisseur de nids (3, 15, 50), Tenir le fort (10, 30, 60 minutes dans une par
 - Pas gardé : les zombies en vie, les obus en vol, le pilotage. La partie reprend sur la carte avec un instant de calme.
 - Pause : « Sauver et quitter » ou « Abandonner (efface la partie) ». La sauvegarde est aussi effacée quand le QG tombe.
 - Commencer une nouvelle partie quand une partie est sauvée demande une confirmation (deuxième clic).
+
+## Banc des unités (2026-11-12)
+Mesuré à budget égal (6 000 $ d'un seul type d'unité, même flot de zombies, 150 s) : tout tenait entre 1 000 et 1 550 zombies tués, sauf le tank (280, les trois détruits).
+- Défaut corrigé : au repos, une unité à explosion (tank, lance-roquettes, Apache) visait le plus gros groupe dans sa portée + 6 m, donc souvent hors de portée, et restait sans tirer avec des zombies à ses pieds. Un tank tirait aux 7,5 s au lieu d'aux 3 s. Une cible déjà à portée passe maintenant avant (`rtsPickTarget`). Lance-roquettes : 8 survivants sur 8 au lieu de 2.
+- Tank : 900 dégâts et 8 000 de vie. Il ne recule pas devant les zombies comme les robots : il lui faut le blindage pour tenir. Après : environ 1 050 tués au même banc.
+- Tourelles (3 000 $ d'un seul type) : la mitrailleuse (14 dégâts, portée 20 m) et la Tesla tombaient là où le canon et le lance-flammes tenaient. Mitrailleuse : 26 dégâts, portée 24 m. Tesla : 80 dégâts, 2 tirs/s. Le mortier seul ne tient pas (il ne tire pas à moins de 8 m) : c'est une arme d'appui, laissé tel quel.
+- La durée des parties n'a pas changé au simulateur (23 à 28 min).
+- Pas mesuré : les améliorations des unités, les avions comme appui d'une armée au sol (seuls, ils ne retiennent pas les zombies), le pilotage.
 
 ## À équilibrer en jouant
 - Menace (tâche 67) : 1 + minutes / 4 + 0,5 par nid détruit + tués / 600 (`RTS_THREAT`).

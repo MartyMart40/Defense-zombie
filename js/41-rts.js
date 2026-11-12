@@ -23,7 +23,7 @@ const RTS_UNITS = {
   flamebot:{ name:'Robot lance-flammes', cost:450, hp:600, dmg:18, rate:9,  range:11, speed:5,   r:.9,  snd:'flamer',  col:0x8a3a20, flame:true, fac:'factory', kind:'ground', cat:'rob' },
   rocket:  { name:'Lance-roquettes', cost:700,  hp:420,  dmg:170, rate:.8,  range:26, speed:4.5, r:.9,  snd:'gl',      col:0x8a6a2a, splash:3.5, fac:'heavyfac', kind:'ground', cat:'rob' },
   heavy:   { name:'Mech lourd',      cost:1500, hp:1600, dmg:95,  rate:1.6, range:22, speed:3.6, r:1.4, snd:'laser',   col:0x6a3a6a, beam:0x50f0ff, pierce:true, fac:'heavyfac', kind:'ground', cat:'rob' },
-  tank:    { name:'Tank',            w1:'Canon 120 mm', cost:1800, hp:3200, dmg:560, rate:.33, range:38, speed:5.5, r:2.2, snd:'mg50', col:0x5a6040, splash:5.5, fac:'vehdepot', kind:'ground', cat:'veh' },
+  tank:    { name:'Tank',            w1:'Canon 120 mm', cost:1800, hp:8000, dmg:900, rate:.33, range:38, speed:5.5, r:2.2, snd:'mg50', col:0x5a6040, splash:6.5, fac:'vehdepot', kind:'ground', cat:'veh' },
   heli:    { name:'Apache',          w1:'30 mm + roquettes', w2n:'Hellfire', cost:2200, hp:1200, dmg:90,  rate:2.2, range:28, speed:12,  r:2.6, snd:'gl', col:0x3a4a3a, splash:3, fac:'heliport', kind:'heli', alt:11, cat:'veh' },
   jet:     { name:'Chasseur',        w1:'Canon 20 mm', cost:3000, hp:800,  dmg:75,  rate:10,  range:36, speed:32,  r:3,   snd:'mg50', col:0x6a7080, beam:0xffd890, fac:'airfield', kind:'air', alt:20, orbit:30, turn:1.3, cat:'veh' },
   warthog: { name:'Warthog',         w1:'Canon 30 mm', cost:3800, hp:1500, dmg:55,  rate:22,  range:30, speed:18,  r:3,   snd:'mg50',    col:0x6a7058, beam:0xffd890, fac:'airfield', kind:'air', alt:14, orbit:22, turn:1, cat:'veh' },
@@ -78,11 +78,11 @@ const RTS_BLD = {
   scrap:    { name:'Récupérateur',           hp:1200, size:3,   cost:400,  income:15, desc:'+15 $ toutes les 5 s.' },
   repair:   { name:'Atelier de réparation',  hp:1500, size:3.5, cost:700,  heal:45, healR:15, desc:'Répare robots, véhicules et bâtiments autour.' },
   wall:     { name:'Barricade',              hp:2500, size:2.2, cost:60,   desc:'Bloc de béton qui retient les zombies.' },
-  t_mg:     { name:'Tourelle mitrailleuse',  hp:900,  size:1.8, cost:250,  turret:{ dmg:14,  rate:8,   range:20, snd:'rifle',  beam:0xffd890 }, desc:'Tir rapide.' },
+  t_mg:     { name:'Tourelle mitrailleuse',  hp:900,  size:1.8, cost:250,  turret:{ dmg:26,  rate:8,   range:24, snd:'rifle',  beam:0xffd890 }, desc:'Tir rapide.' },
   t_cannon: { name:'Tourelle canon',         hp:1300, size:2,   cost:450,  turret:{ dmg:130, rate:.9,  range:28, snd:'sniper', beam:0xffc060, pierce:true }, desc:'Obus qui traverse une file.' },
   t_flame:  { name:'Tourelle lance-flammes', hp:1100, size:1.8, cost:400,  turret:{ dmg:16,  rate:10,  range:12, snd:'flamer', flame:true }, desc:'Brûle tout ce qui approche.' },
   t_mortar: { name:'Mortier',                hp:900,  size:2,   cost:600,  turret:{ dmg:150, rate:.5,  range:44, snd:'gl',     splash:5, min:8 }, desc:'Longue portée, explosions.' },
-  t_tesla:  { name:'Tourelle Tesla',         hp:1000, size:1.8, cost:700,  turret:{ dmg:60,  rate:1.3, range:18, snd:'arc',    chain:4 }, desc:'L’éclair saute de zombie en zombie.' }
+  t_tesla:  { name:'Tourelle Tesla',         hp:1000, size:1.8, cost:700,  turret:{ dmg:80,  rate:2,   range:18, snd:'arc',    chain:4 }, desc:'L’éclair saute de zombie en zombie.' }
 };
 const RTS_BUILD_TABS = { bat:['factory', 'heavyfac', 'vehdepot', 'heliport', 'airfield', 'scrap', 'repair', 'wall'], tour:['t_mg', 't_cannon', 't_flame', 't_mortar', 't_tesla'] };
 const RTS_TMAX = 6;

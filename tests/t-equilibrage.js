@@ -115,6 +115,30 @@
     ok(r.titan < r.base * r.mult * .5, 'À menace 20, le Titan frappe moins de la moitié de ce qu’il frappait avant');
   });
 
+  test('Équilibrage : au RTS, une unité à explosion tire d’abord sur ce qu’elle peut toucher', () => {
+    if (lire('typeof __rts === "object"') !== true) ignorer('Mode RTS absent');
+    reset();
+    const r = J(function(){
+      __rts.rtsStart(); var R = __rts.RTS; R.nests.forEach(function(n){ n.spawnT = 1e9; }); R.hordeT = 1e9; clearZombies();
+      var u = __rts.rtsSpawnUnit('tank', 0, -20), rng = 38, o = {};
+      // Un zombie seul à portée (15 m) et un gros groupe juste hors de portée (41 m)
+      __rts.rtsSpawnAt(0, -35, 1, .1, 'walker'); var pres = zombies[zombies.length - 1];
+      __rts.rtsSpawnAt(0, -61, 8, 1, 'walker');
+      zombies.forEach(function(z){ z.speed = 0; });
+      var t = rtsPickTarget(u, rng + 6, 5.5, rng); o.pres = t === pres;
+      var t0 = rtsPickTarget(u, rng + 6, 5.5); o.avant = t0 !== pres; // sans la portée de tir : l'ancien choix (le gros groupe)
+      kill(pres, false); var t2 = rtsPickTarget(u, rng + 6, 5.5, rng); o.loin = !!t2 && Math.abs(t2.g.position.z + 61) < 3; // plus rien à portée : il va vers le groupe
+      o.tank = { dmg: __rts.RTS_UNITS.tank.dmg, hp: __rts.RTS_UNITS.tank.hp }; o.mg = __rts.RTS_BLD.t_mg.turret; o.tesla = __rts.RTS_BLD.t_tesla.turret;
+      __rts.rtsQuit();
+      return o;
+    });
+    ok(r.pres, 'Le tank vise le zombie à portée, pas le groupe hors de portée'); ok(r.avant, 'Sans la portée de tir, il visait le groupe (ancien défaut)');
+    ok(r.loin, 'Plus rien à portée : il vise le groupe et avance');
+    ok(r.tank.dmg >= 900 && r.tank.hp >= 8000, 'Tank : 900 dégâts, 8 000 de vie (' + r.tank.dmg + ', ' + r.tank.hp + ')');
+    ok(r.mg.dmg * r.mg.rate >= 200 && r.mg.range >= 24, 'Tourelle mitrailleuse : au moins 200 dégâts par seconde, portée 24 m');
+    ok(r.tesla.dmg * r.tesla.rate >= 160, 'Tourelle Tesla : au moins 160 dégâts par seconde avant les sauts');
+  });
+
   test('Équilibrage : la menace du RTS monte surtout avec le temps et les nids, peu avec les tués', () => {
     if (lire('typeof __rts === "object"') !== true) ignorer('Mode RTS absent');
     reset();

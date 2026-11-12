@@ -44,7 +44,7 @@ const MECH_W = {
   flamer:  { side:'L', name:'Lance-flammes lourd',   cost:600,  k:.76, desc:'Nappe de feu devant le robot : tout ce qui brûle continue de brûler.' },
   laser:   { side:'L', name:'Laser lourd',           cost:1200, desc:'Rayon instantané qui traverse toute la file.' },
   rocket:  { side:'R', name:'Roquettes',             cost:0,    k:.8, cd:.65, salvo:true, desc:'Grosses explosions.' },
-  gl:      { side:'R', name:'Lance-grenades',        cost:800,  k:.625, cd:.3,  salvo:true, desc:'Trois grenades par seconde.' },
+  gl:      { side:'R', name:'Lance-grenades',        cost:800,  k:.5, cd:.3,  salvo:true, desc:'Trois grenades par seconde.' },
   arc:     { side:'R', name:'Arc électrique',        cost:1000, k:.625, cd:.35, desc:'L’éclair saute de zombie en zombie.' },
   railgun: { side:'R', name:'Canon électromagnétique', cost:1500, k:.625, cd:1.3, desc:'Un trait qui traverse toute la rue.' }
 };
@@ -210,10 +210,20 @@ function mechHideBarricade(){
     if (o.isGroup && o.children.length >= 6 && o.children.every(c => Math.abs(c.position.z - BAR_Z) < 1.4)) o.visible = !MECH.on;
   });
 }
+// Force des zombies du robot : elle suit le numéro de la rue, pas la ville tirée au carrefour (la ville n'est que le décor).
+// Avant le 12 novembre 2026, une rue à Centre-ville ou au Port frappait 3,4 ou 5 fois plus fort qu'une rue à Saint-Clou,
+// au hasard. MECH_RAMPE monte en 9 rues jusqu'à la moyenne d'avant (2,6) ; renfort : +35 % de vie et de dégâts à chaque
+// fois que la horde de la rue se reforme, et plus de ferraille ni d'expérience à partir du 2e renfort, pour qu'on ne puisse
+// pas rester sur place à en ramasser sans risque.
+const MECH_RAMPE = [1, 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6], MECH_RENFORT = 1.35;
+const mechRampe = n => MECH_RAMPE[Math.min(MECH_RAMPE.length, Math.max(1, n)) - 1];
 function mechPlan(){
-  const n = MECH.street, w = Math.min(10, n + 1), L = curLoc;
+  const n = MECH.street, w = Math.min(10, n + 1), k = mechRampe(n), r = Math.pow(MECH_RENFORT, MECH.renf || 0);
+  const L = Object.assign({}, curLoc, { diff:1, off:0, xp:k });
   const p = hordePlan(60 + 35 * n, { wave:w, loc:L, maxAlive:Math.min(DEV_CAP, (isTouch ? 45 : 70) + 12 * n), interval:Math.max(.12, .55 - .04 * n), burst:Math.min(4, 1 + Math.floor(n / 2)) });
-  p.hpMult *= Math.pow(1.22, n - 1); p.dmgMult *= Math.pow(1.12, n - 1);
+  p.hpMult *= Math.pow(1.22, n - 1) * k * r; p.dmgMult *= Math.pow(1.12, n - 1) * k * r; p.spdMult = Math.min(1.7, p.spdMult * (1 + .1 * (k - 1)));
+  p.cashMult = 1 + .5 * (k - 1);
+  if ((MECH.renf || 0) >= 2) p.xp = 0;
   // Grosse baston : un boss au milieu de la rue, toutes les 3 rues
   if (n % 3 === 0 && !MECH.bossDone && typeof bossReady === 'function' && bossReady()){ p.queue.splice(Math.round(p.queue.length * .5), 0, 'boss'); MECH.bossDone = true; }
   return p;
@@ -226,7 +236,7 @@ function mechStreet(first){
   buildWorld(L);
   try { if (typeof __amb === 'object') __amb.set(RT && RT.weather ? RT.weather : first ? 'soleil' : __amb.pick(L, MECH.street + 1)); } catch (e) { errNote(e); }
   mechHideBarricade();
-  world.position.z = 0; MECH.dist = 0; MECH.x = 0; MECH.bossDone = false;
+  world.position.z = 0; MECH.dist = 0; MECH.x = 0; MECH.bossDone = false; MECH.renf = 0;
   clearZombies();
   plan = mechPlan(); spawnT = 1.5;
   MECH.pow = 2.4 * Math.pow(1.16, MECH.street - 1);       // les armes du robot montent avec les rues
@@ -356,7 +366,7 @@ function mechStep(dt){
   } else if (!firing) mechFlashL.visible = false;
   mechBarrels.rotation.z += dt * 28 * (typeof spin === 'number' ? spin : 0);
   // Zombies : apparitions au bout de la rue, ils se tournent vers le robot
-  if (!plan.queue.length) plan = mechPlan();
+  if (!plan.queue.length){ MECH.renf = (MECH.renf || 0) + 1; plan = mechPlan(); banner('Renforts !', MECH.renf >= 2 ? 'Plus forts, et ils ne rapportent plus rien. Avance !' : 'Ils sont plus forts. Avance jusqu’au bout de la rue.', 1800); }
   spawnT -= dt;
   let alive = zAliveCount();
   if (spawnT <= 0 && alive < plan.maxAlive){
@@ -566,4 +576,4 @@ try {
 } catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
-window.__mech = { MECH_W, mW, mechWeapon, mechArms, mechArmsG, MECH_UPG, mUp, mechUpgBuy, mechUpgCost, mechUnlocked, mechUnlock, mechGarage, mechNorm, mechBtn, MECH, MECH_LEN, MECH_HEAT, mechStart, mechQuit, mechStep, mechStreet, mechPause, mechResume, mechOver, mechPlan, mechCk };
+window.__mech = { MECH_W, mW, mechWeapon, mechArms, mechArmsG, MECH_UPG, mUp, mechUpgBuy, mechUpgCost, mechUnlocked, mechUnlock, mechGarage, mechNorm, mechBtn, MECH, MECH_LEN, MECH_HEAT, MECH_RAMPE, MECH_RENFORT, mechRampe, mechStart, mechQuit, mechStep, mechStreet, mechPause, mechResume, mechOver, mechPlan, mechCk };

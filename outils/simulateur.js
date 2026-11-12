@@ -124,12 +124,12 @@ function mdRts(r){
     const p = await page(b);
     md += '## Guerre des robots (RTS)\n\nLe robot-joueur bâtit une usine lourde, un récupérateur, un atelier de réparation, des tourelles devant la base (5, plus 2 par nid détruit, plus une toutes les 3 minutes), '
       + 'achète l’unité la plus forte qu’il peut payer (10, plus 3 par nid détruit, plus une toutes les 90 secondes), des améliorations dès qu’il a de l’argent en trop. Deux façons de jouer : il attaque le nid le plus proche dès qu’il a 8 unités au sol, '
-      + 'ou il garde toute son armée à la base. Une ligne toutes les 5 minutes de jeu. Rappel : menace = 1 + zombies tués / 160 + minutes / 2,5 + 0,4 par nid détruit.\n\n';
+      + 'ou il garde toute son armée à la base. Une ligne toutes les 5 minutes de jeu. Rappel : menace = 1 + minutes / 4 + 0,5 par nid détruit + zombies tués / 1 200.\n\n';
     out.rts = {};
     for (const [cle, attaque, titre] of [['attaque', true, 'Il attaque les nids'], ['defense', false, 'Il reste à la base']]){
       const p2 = await page(b);
-      console.log('RTS, ' + titre.toLowerCase() + ' (30 min de jeu au plus)...');
-      const r = await p2.evaluate(o => SIM.rts(o), { graine, maxMin: 30, attaque });
+      console.log('RTS, ' + titre.toLowerCase() + ' (60 min de jeu au plus)...');
+      const r = await p2.evaluate(o => SIM.rts(o), { graine, maxMin: 60, attaque });
       out.rts[cle] = r;
       md += '### ' + titre + '\n\n' + mdRts(r) + '\n';
       console.log('  fin : ' + r.fin.min + ' min, ' + r.fin.nids + ' nids détruits, ' + r.fin.tues + ' tués, QG ' + r.fin.qg + ' %' + (r.fin.tombe ? ' (tombé)' : ''));

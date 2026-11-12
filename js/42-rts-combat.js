@@ -15,7 +15,9 @@ function rtsSpawnAt(x, z, n, spread, type){
   }
   return k;
 }
-const RTS_THREAT = { t:240, nid:.5, tues:600 }; // menace : +1 toutes les 4 minutes, +0,5 par nid détruit, +1 tous les 600 tués
+// Menace : +1 toutes les 4 minutes, +0,5 par nid détruit, +1 tous les 1 200 tués. Avec 600 (jusqu'au 12 novembre 2026), les tués
+// pesaient encore deux fois plus que le temps après 20 minutes (environ 500 tués par minute) : mieux on se défendait, plus ça montait.
+const RTS_THREAT = { t:240, nid:.5, tues:1200 };
 function rtsThreat(){
   const killed = RTS.nests.filter(n => n.dead).length;
   // Surtout le temps et les nids détruits ; un peu les tués (avant : tués / 160, ce qui emballait tout :

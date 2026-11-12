@@ -44,6 +44,28 @@
     ['laser', 'railgun'].forEach(id => { egal(r[id].touches, 6, id + ' : zombies traversés'); egal(r[id].rayon, 1, id + ' : rayon'); });
   });
 
+  test('Arsenal : l’onde de choc du canon électromagnétique couche un couloir sur toute la rue, pas le laser', () => {
+    exiger(); partie();
+    const r = J(function(tir){
+      tir = eval('(' + tir + ')'); var o = {};
+      ['laser', 'railgun'].forEach(function(id){
+        clearZombies();
+        // 3 zombies à 1,5 m de la ligne de tir (dans le couloir), 2 à 5 m (dehors), 1 derrière le tireur
+        var dans = [-20, -60, -110].map(function(z){ var q = __t.placer('walker', 1.5, z); q.hp = q.maxHp = 1e6; q.speed = 0; return q; });
+        var hors = [-30, -80].map(function(z){ var q = __t.placer('walker', 5, z); q.hp = q.maxHp = 1e6; q.speed = 0; return q; });
+        var dos = __t.placer('walker', 1, 4); dos.hp = dos.maxHp = 1e6; dos.speed = 0;
+        zombies.forEach(function(q){ q.g.updateMatrixWorld(true); });
+        tir(id);
+        o[id] = { dans: dans.filter(function(q){ return q.hp < 1e6; }).length, hors: hors.filter(function(q){ return q.hp < 1e6; }).length, dos: dos.hp < 1e6, perte: 1e6 - dans[0].hp, plein: wDmg(id) };
+      });
+      o.tube = WEAPONS.railgun.tube; clearZombies();
+      return o;
+    }, TIR.toString());
+    egal(r.railgun.dans, 3, 'Canon : zombies du couloir touchés, près comme loin'); egal(r.railgun.hors, 0, 'Canon : zombies hors du couloir'); ok(!r.railgun.dos, 'Canon : rien derrière le tireur');
+    ok(Math.abs(r.railgun.perte - r.railgun.plein * r.tube.k) < 1, 'Canon : l’onde fait ' + r.tube.k + ' fois les dégâts (' + r.railgun.perte + ')');
+    egal(r.laser.dans, 0, 'Laser : pas d’onde de choc');
+  });
+
   test('Arsenal : la .50 traverse 3 zombies, l’arc saute sur les voisins, les grenades explosent', () => {
     exiger(); partie();
     const r = J(function(tir){

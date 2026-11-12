@@ -112,6 +112,7 @@
     if (W.kind === 'rocket') return wDmg(id) * (boss ? .6 : Math.min(1, z.hp / wDmg(id)) * Math.max(1, Math.min(6, voisins(z, wRadius(id) * .7) * .7))) * cyc;
     let coup = wDmg(id) * wPellets(id) * (W.falloff && typeof wFalloff === 'function' ? wFalloff(id, d) : 1);
     if (boss) coup *= headMult() * (W.headX || 1);
+    else if (W.tube) coup = Math.min(coup, z.hp) * Math.max(1, Math.min(6, voisins(z, 5) * .6)); // onde de choc : toute la file y passe
     else coup = Math.min(coup, z.hp * (wPellets(id) > 1 ? 2 : 1.2)); // le surplus de dégâts est perdu
     const sp = wSpread(id) * (d > BOT.mire ? .45 : 1), rayon = boss ? 1.5 : 1.2; // 1,2 m : la cible et ses voisins
     return coup * cyc * (sp > 0 ? Math.min(1, Math.pow(rayon / (sp * d), 2)) : 1);
@@ -366,5 +367,5 @@
     BOT.strategie = 'malin';
     return { joueur:J.nom, parties:res };
   }
-  window.SIM = { BOT, STRAT, duel, comparer, JOUEURS, partieToit, boutique, campagne, infini, rts, preparer, profilNeuf, hasard, remettre(){ Math.random = R0; window.setTimeout = ST0; window.clearTimeout = CT0; } };
+  window.SIM = { BOT, STRAT, horloge, duel, comparer, JOUEURS, partieToit, boutique, campagne, infini, rts, preparer, profilNeuf, hasard, remettre(){ Math.random = R0; window.setTimeout = ST0; window.clearTimeout = CT0; } };
 })();

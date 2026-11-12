@@ -91,4 +91,36 @@
     ok(r.toujours, 'La reprise ne saute pas le carrefour');
     egal(r.rue, 2, 'Rue suivante'); ok(r.ville && r.regle, 'La ville et la règle choisies sont appliquées');
   });
+  test('Robot : la force des zombies suit la rue, pas la ville du décor ; les renforts sont plus forts et ne rapportent plus rien', () => {
+    exiger(); reset(); depart();
+    const r = J(function(){
+      var o = {}, M = __mech.MECH, K = __mech;
+      // Même rue, deux villes : même force
+      M.street = 3; M.renf = 0; curLoc = LOCS[0]; var a = K.mechPlan(); curLoc = LOCS[4]; var b = K.mechPlan();
+      o.memeVie = Math.abs(a.hpMult - b.hpMult) < 1e-9; o.memeDeg = Math.abs(a.dmgMult - b.dmgMult) < 1e-9;
+      // La force monte avec la rue
+      M.street = 1; var r1 = K.mechPlan(); M.street = 5; var r5 = K.mechPlan(); M.street = 12; var r12 = K.mechPlan();
+      o.monte = r5.hpMult > r1.hpMult * 2 && r12.hpMult > r5.hpMult * 2; o.rampe1 = K.mechRampe(1); o.rampe20 = K.mechRampe(20);
+      // Renforts : la horde se reforme plus forte ; au 2e renfort, ni expérience ni ferraille
+      M.street = 2; M.renf = 0; var p0 = K.mechPlan(), f0 = scrapFor('walker', curLoc);
+      M.renf = 1; var p1 = K.mechPlan(), f1 = scrapFor('walker', curLoc);
+      M.renf = 2; var p2 = K.mechPlan(), f2 = scrapFor('walker', curLoc);
+      o.r1 = p1.hpMult / p0.hpMult; o.r1d = p1.dmgMult / p0.dmgMult; o.xp1 = p1.xp > 0 && f1 > 0 && f1 === f0; o.xp2 = p2.xp; o.f2 = f2;
+      // En jeu : la file vide fait venir un renfort et l'annonce
+      M.renf = 0; plan.queue = []; visuals(1 / 30); o.compte = M.renf; o.annonce = document.getElementById('bTitle').textContent;
+      // Une nouvelle rue repart sans renfort
+      K.mechStreet(false); o.neuf = M.renf;
+      // Hors du robot, la ferraille suit toujours la ville
+      return o;
+    });
+    fin();
+    const hors = J(function(){ return scrapFor('walker', LOCS[4]) / scrapFor('walker', LOCS[0]); });
+    ok(r.memeVie && r.memeDeg, 'Rue 3 à Saint-Clou et au Port : même vie et mêmes dégâts');
+    ok(r.monte, 'La vie des zombies monte avec la rue'); egal(r.rampe1, 1, 'Rue 1 : force de base'); egal(r.rampe20, 2.6, 'Plafond de la montée');
+    ok(Math.abs(r.r1 - 1.35) < 1e-6 && Math.abs(r.r1d - 1.35) < 1e-6, 'Premier renfort : +35 % de vie et de dégâts (' + r.r1 + ')');
+    ok(r.xp1, 'Premier renfort : il rapporte encore'); egal(r.xp2, 0, 'Deuxième renfort : plus d’expérience'); egal(r.f2, 0, 'Deuxième renfort : plus de ferraille');
+    egal(r.compte, 1, 'File vide : un renfort arrive'); ok(/Renforts/.test(r.annonce), 'Annonce : ' + r.annonce);
+    egal(r.neuf, 0, 'Nouvelle rue : compteur de renforts remis à zéro');
+    ok(hors > 3, 'Sur le toit, la ferraille suit toujours la ville (Port / Saint-Clou = ' + hors + ')');
+  });
 })();

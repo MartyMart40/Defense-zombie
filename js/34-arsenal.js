@@ -11,14 +11,14 @@
 
 /* ---------- Armes ---------- */
 const ARS_W = {
-  mg50:    { id:'mg50',    name:'Mitrailleuse .50',  price:12000, dmg:136, rate:10,  mag:100, reload:4.5, pellets:1, spread:.018, pierce:3,  zoomFov:44, recoil:.03, kick:.5, ucost:650,  upg:['dmg', 'mag', 'reload', 'pierce'],
+  mg50:    { id:'mg50',    name:'Mitrailleuse .50',  price:12000, dmg:150, rate:10,  mag:100, reload:4.5, pellets:1, spread:.018, pierce:3,  zoomFov:44, recoil:.03, kick:.5, ucost:650,  upg:['dmg', 'mag', 'reload', 'pierce'],
              role:'la horde et les boss', desc:'Grosses balles qui traversent 3 zombies. Chargeur de 100, gros recul.' },
   laser:   { id:'laser',   name:'Fusil laser',       price:16000, dmg:60,  rate:12,  mag:60,  reload:2.5, pellets:1, spread:0,    pierce:99, zoomFov:40, recoil:.004, kick:.2, beam:{ c:0x50f0ff, w:.05, life:.06 }, ucost:780, upg:['dmg', 'rate', 'mag', 'reload'],
              role:'la horde en file', desc:'Rayon instantané qui traverse toute la file, sans dispersion.' },
-  railgun: { id:'railgun', name:'Canon électromagnétique', price:22000, dmg:2080, rate:.6, mag:4, reload:3, pellets:1, spread:0, pierce:99, zoomFov:20, recoil:.14, beam:{ c:0x60c8ff, w:.22, life:.3 }, ucost:950, upg:['dmg', 'rate', 'mag', 'reload'],
-             role:'les boss et les gros zombies', desc:'Projectile à vitesse folle qui frappe tout ce qui est dans la ligne.' },
-  gl:      { id:'gl',      name:'Lance-grenades auto', price:28000, dmg:480, rate:3, mag:12, reload:3.4, pellets:1, spread:0, pierce:1, zoomFov:50, recoil:.06, kind:'rocket', speed:55, radius:4.5, ucost:1100, upg:['dmg', 'mag', 'reload', 'radius'],
-             role:'les groupes serrés', desc:'Trois grenades explosives par seconde, barillet de 12.' },
+  railgun: { id:'railgun', name:'Canon électromagnétique', price:22000, dmg:2080, rate:1, mag:6, reload:3, pellets:1, spread:0, pierce:99, tube:{ r:2.2, k:.7 }, zoomFov:20, recoil:.14, beam:{ c:0x60c8ff, w:.22, life:.3 }, ucost:950, upg:['dmg', 'rate', 'mag', 'reload'],
+             role:'les boss et la horde en file', desc:'Projectile à vitesse folle : son onde de choc frappe tout ce qui est près de la ligne de tir.' },
+  gl:      { id:'gl',      name:'Lance-grenades auto', price:28000, dmg:600, rate:3, mag:16, reload:3.4, pellets:1, spread:0, pierce:1, zoomFov:50, recoil:.06, kind:'rocket', speed:55, radius:5.5, ucost:1100, upg:['dmg', 'mag', 'reload', 'radius'],
+             role:'les groupes serrés', desc:'Trois grenades explosives par seconde, barillet de 16.' },
   arc:     { id:'arc',     name:'Fusil à arc électrique', price:35000, dmg:416, rate:4, mag:30, reload:2.6, pellets:1, spread:0, pierce:1, zoomFov:48, recoil:.02, kick:.3, chain:5, chainR:8, ucost:1300, upg:['dmg', 'rate', 'mag', 'reload'],
              role:'la horde', desc:'L’éclair frappe un zombie puis saute sur 5 autres autour.' }
 };
@@ -576,6 +576,26 @@ try { if (typeof armStep === 'function'){ const _b = armStep; armStep = function
 /* ---------- Secousse de l'écran par arme (les grosses armes secouent plus) ---------- */
 // Valeur de shake (15-boucle.js : décalage de la caméra, amorti en environ 0,2 s). Un peu moins en visée.
 const ARS_SHAKE = { shotgun:.25, sniper:.3, minigun:.28, rocket:.6, mg50:.32, laser:.06, railgun:.7, gl:.42, arc:.2 };
+/* ---------- Onde de choc le long du tir (canon électromagnétique) ---------- */
+// W.tube = { r, k } : tout zombie à moins de r mètres de la ligne de tir, vue de dessus, prend k fois les dégâts de l'arme,
+// en plus de ceux que le projectile touche lui-même. Vu d'un toit, un tir qui traverse touche rarement plus d'un zombie
+// (il finit dans l'asphalte) : l'onde de choc couche un couloir de 2 r de large sur toute la longueur de la rue,
+// pour que le canon « frappe tout ce qui est dans la ligne », comme promis.
+const arsTD = new THREE.Vector3(), arsTP = new THREE.Vector3();
+function arsTube(id){
+  const W = WEAPONS[id], T = W.tube, r2 = T.r * T.r, dmg = wDmg(id) * T.k, o = camera.position; let n = 0;
+  arsTD.set(0, 0, -1).applyQuaternion(camera.quaternion); arsTD.y = 0;
+  if (arsTD.lengthSq() < 1e-6) return 0; // tir à la verticale : pas de couloir
+  arsTD.normalize();
+  for (const z of zombies.slice()){
+    if (z.dead || !z.g) continue;
+    armCenter(z, arsTP);
+    const vx = arsTP.x - o.x, vz = arsTP.z - o.z, t = vx * arsTD.x + vz * arsTD.z;
+    if (t < 1 || t > 260 || vx * vx + vz * vz - t * t > r2) continue;
+    damage(z, dmg, false, arsTP); n++;
+  }
+  return n;
+}
 /* ---------- Crochets ---------- */
 try {
   const _b = fire;
@@ -593,6 +613,7 @@ try {
       arsBeam(arsA, arsT, 0xffd890, .025, .045);
     }
     if (W.chain) arsChain(id, first);
+    if (W.tube) arsTube(id);
     return r;
   };
 } catch (e) { errNote(e); }
@@ -603,4 +624,4 @@ try { const _b = clearZombies; clearZombies = function(){ const r = _b.apply(thi
 
 // Accès pour les tests automatiques
 window.__ars = { get guided(){ return arsGuided; }, ARS_SHAKE, ARS_W, ACC, ACC_ORDER, accName, accMul, accAdd, accBuy, accCost, accOwned, accSync, arsChain, arsFirst,
-  get beams(){ return arsBeamsN; }, get arcs(){ return arsArcN; } };
+  arsTube, get beams(){ return arsBeamsN; }, get arcs(){ return arsArcN; } };

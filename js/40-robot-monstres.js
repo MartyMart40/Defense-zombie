@@ -312,7 +312,8 @@ try {
 } catch (e) { errNote(e); }
 try { const _h = mechHUD; mechHUD = function(){ const r = _h.apply(this, arguments); mbBossHUD(); return r; }; } catch (e) { errNote(e); }
 // Ferraille de la rue choisie (Ruelles sombres ×2, etc.)
-try { const _sf = scrapFor; scrapFor = function(){ const v = _sf.apply(this, arguments); return MECH.on && MECH.route && MECH.route.scrap ? v * MECH.route.scrap : v; }; } catch (e) { errNote(e); }
+// Ferraille du robot : elle suit la rue (comme la force des zombies), pas la ville du décor ; × la règle du carrefour
+try { const _sf = scrapFor; scrapFor = function(type){ if (!MECH.on) return _sf.apply(this, arguments); if ((MECH.renf || 0) >= 2) return 0; const v = _sf.call(this, type, { diff:1 + .66 * (mechRampe(MECH.street) - 1) }); return MECH.route && MECH.route.scrap ? v * MECH.route.scrap : v; }; } catch (e) { errNote(e); }
 // Musique de boss pour les boss du robot : voir musique() du mode 'robot' (js/39-robot.js)
 // Pendant le choix du carrefour, la pause et la reprise ne font rien (le choix reste à l'écran)
 try { const _pz = mechPause; mechPause = function(){ if (MECH.choosing) return; return _pz.apply(this, arguments); }; mechPause.again = _pz.again; } catch (e) { errNote(e); }

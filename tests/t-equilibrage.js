@@ -139,6 +139,18 @@
     ok(r.tesla.dmg * r.tesla.rate >= 160, 'Tourelle Tesla : au moins 160 dégâts par seconde avant les sauts');
   });
 
+  test('Équilibrage : mortier, laser et missiles valent leur ferraille face aux tourelles de base', () => {
+    if (lire('typeof __atelier === "object"') !== true) ignorer('Atelier absent');
+    const r = J(function(){ var d = __atelier.defStats; return { t: d('turret', {}), m: d('mortar', {}), l: d('laser', {}), k: d('missile', {}), P: __atelier.DEF_TYPES }; });
+    egal(r.t.dmg, 12, 'Tourelle : inchangée');
+    // Dégâts par seconde par ferraille (zone comptée pour 3 zombies, la file du laser pour 3)
+    const v = { tourelle: r.t.dmg * r.t.rate / r.P.turret.price, mortier: r.m.dmg * r.m.rate * 3 / r.P.mortar.price, laser: (r.l.dps + r.l.burn) * 3 / r.P.laser.price, missiles: r.k.dmg * r.k.rate * r.k.count * 3 / r.P.missile.price };
+    ok(r.m.dmg >= 120 && r.l.dps >= 80 && r.k.dmg >= 250, 'Mortier 120, laser 80, missiles 250 au moins');
+    ok(v.mortier > v.tourelle * 1.4, 'Mortier : plus de dégâts par ferraille que la tourelle quand il touche 3 zombies (' + v.mortier.toFixed(3) + ' contre ' + v.tourelle.toFixed(3) + ')');
+    ok(v.laser > v.tourelle, 'Laser : au moins autant par ferraille sur une file de 3 (' + v.laser.toFixed(3) + ')');
+    ok(v.missiles > v.tourelle * .9, 'Missiles : proches de la tourelle par ferraille avec 3 zombies par explosion (' + v.missiles.toFixed(3) + ')');
+  });
+
   test('Équilibrage : la menace du RTS monte surtout avec le temps et les nids, peu avec les tués', () => {
     if (lire('typeof __rts === "object"') !== true) ignorer('Mode RTS absent');
     reset();

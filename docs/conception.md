@@ -60,3 +60,10 @@ Martin : « trouve ce qui cloche et change sans me demander ». Trouvé en faisa
 - Autos du boss : destructibles en vol (3 balles, ou une roquette), 1,9 s de vol. Le bandeau du boss le dit.
 - Arsenal : le canon électromagnétique couche un couloir sur toute la rue (`tube` dans `ARS_W`) ; lance-grenades et mitrailleuse .50 renforcés. Le laser reste le plus fort pour son prix.
 - Robot et RTS : voir `docs/robot.md` et `docs/rts.md`.
+
+## Défenses de l'atelier (2026-11-12)
+Banc du simulateur : le joueur ne tire pas, même ferraille dans un seul type de défense, barricade infinie.
+- Avant : 4 tourelles de base avec le reste en améliorations battaient le mortier, le laser et les missiles dans presque toutes les situations (une amélioration coûte 40 % du prix de la défense pour +10 % : les tourelles à 250 montent le moins cher).
+- Mortier 120 dégâts (70 avant), laser 80 par seconde et brûlure 20 (45 et 12), missiles 250 (160). Tourelle et ogive inchangées.
+- Après (essayé avec ×1,6, ×2,2 et ×1,5 ; les chiffres retenus sont un peu différents et n'ont pas été remesurés un par un) : tourelles les meilleures jusqu'à environ 3 000 ferrailles, laser et mortier vers 7 000 à 12 000, missiles à 25 000.
+- Constat laissé tel quel : 4 tourelles de base (1 000 ferrailles) tiennent seules la vague 4 de Saint-Clou. Les défenses pèsent lourd dans la campagne ; le simulateur les ignorait jusqu'au 12 novembre (elles étaient achetées mais ne tiraient pas).

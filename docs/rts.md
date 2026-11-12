@@ -90,7 +90,7 @@ Démolisseur de nids (3, 15, 50), Tenir le fort (10, 30, 60 minutes dans une par
 - Commencer une nouvelle partie quand une partie est sauvée demande une confirmation (deuxième clic).
 
 ## À équilibrer en jouant
-- Menace (tâches 67 et 91) : 1 + minutes / 4 + 0,5 par nid détruit + tués / 1 200 (`RTS_THREAT`). Avec tués / 600 (tâche 67), les tués comptaient encore pour les deux tiers de la menace après 20 minutes ; au simulateur, la base du même robot-joueur tient maintenant 40 à 47 min au lieu de 20 à 26. La partie finit presque toujours par un boss (Titan) qui traverse la base : à surveiller.
-- Historique de la tâche 67 : 1 + minutes / 4 + 0,5 par nid détruit + tués / 600. Avant : 1 + minutes / 2,5 + 0,4 par nid + tués / 160, qui s'emballait (mieux on se défendait, plus il en venait). Simulateur, même robot-joueur : la base tenait 6 à 8 min, elle tient maintenant 16 à 30 min.
+- Menace (tâche 67) : 1 + minutes / 4 + 0,5 par nid détruit + tués / 600 (`RTS_THREAT`).
+- Boss (tâche 91) : leurs dégâts montent moins vite que ceux des autres zombies (dégâts de base × multiplicateur de la menace à la puissance 0,6, `RTS_BOSS_DMG`). Avant, la partie finissait toujours de la même façon : un Titan arrivait (un toutes les 7 minutes environ) et rasait en 20 secondes une base dont le QG était à 100 %. Les tués comptent encore pour les deux tiers de la menace après 20 minutes : essayé à 900 et 1 200, mais la durée des parties dépendait surtout du Titan, donc laissé à 600. Avant : 1 + minutes / 2,5 + 0,4 par nid + tués / 160, qui s'emballait (mieux on se défendait, plus il en venait). Simulateur, même robot-joueur : la base tenait 6 à 8 min, elle tient maintenant 16 à 30 min.
 - Prix des véhicules et des avions, force des boss.
 - Pilotage au doigt sur un vrai cell, plafond de 300 zombies au cell.

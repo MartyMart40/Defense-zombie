@@ -97,6 +97,24 @@
     ok(r.gren > 0, 'Grenade contre le boss : ' + Math.round(r.gren));
   });
 
+  test('Équilibrage : les dégâts d’un boss du RTS montent moins vite que ceux des autres zombies', () => {
+    if (lire('typeof __rts === "object"') !== true) ignorer('Mode RTS absent');
+    reset();
+    const r = J(function(){
+      __rts.rtsStart(); var R = __rts.RTS; R.nests.forEach(function(n){ n.spawnT = 1e9; }); R.hordeT = 1e9; clearZombies();
+      R.t = 0; R.kills = 600 * 19; __rts.rtsStep(0); // menace 20
+      var o = { menace: R.threat, mult: plan.dmgMult };
+      __rts.rtsSpawnAt(0, -60, 1, 2, 'titan'); var t = zombies[zombies.length - 1]; o.titan = t.dmg; o.base = ZTYPES.titan.dmg; o.boss = !!t.rtsBoss;
+      __rts.rtsSpawnAt(0, -60, 1, 2, 'walker'); var w = zombies[zombies.length - 1]; o.marcheur = w.dmg / ZTYPES.walker.dmg;
+      __rts.rtsQuit();
+      return o;
+    });
+    ok(r.boss && r.menace > 19.9, 'Titan apparu à menace ' + r.menace);
+    ok(Math.abs(r.marcheur - r.mult) < 1e-6, 'Un marcheur garde le multiplicateur complet (' + r.mult + ')');
+    ok(Math.abs(r.titan - r.base * Math.pow(r.mult, .6)) < 1e-6, 'Titan : dégâts de base × multiplicateur à la puissance 0,6 (' + Math.round(r.titan) + ')');
+    ok(r.titan < r.base * r.mult * .5, 'À menace 20, le Titan frappe moins de la moitié de ce qu’il frappait avant');
+  });
+
   test('Équilibrage : la menace du RTS monte surtout avec le temps et les nids, peu avec les tués', () => {
     if (lire('typeof __rts === "object"') !== true) ignorer('Mode RTS absent');
     reset();

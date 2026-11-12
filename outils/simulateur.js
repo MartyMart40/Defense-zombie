@@ -124,7 +124,7 @@ function mdRts(r){
     const p = await page(b);
     md += '## Guerre des robots (RTS)\n\nLe robot-joueur bâtit une usine lourde, un récupérateur, un atelier de réparation, des tourelles devant la base (5, plus 2 par nid détruit, plus une toutes les 3 minutes), '
       + 'achète l’unité la plus forte qu’il peut payer (10, plus 3 par nid détruit, plus une toutes les 90 secondes), des améliorations dès qu’il a de l’argent en trop. Deux façons de jouer : il attaque le nid le plus proche dès qu’il a 8 unités au sol, '
-      + 'ou il garde toute son armée à la base. Une ligne toutes les 5 minutes de jeu. Rappel : menace = 1 + minutes / 4 + 0,5 par nid détruit + zombies tués / 1 200.\n\n';
+      + 'ou il garde toute son armée à la base. Une ligne toutes les 5 minutes de jeu. Rappel : menace = 1 + minutes / 4 + 0,5 par nid détruit + zombies tués / 600.\n\n';
     out.rts = {};
     for (const [cle, attaque, titre] of [['attaque', true, 'Il attaque les nids'], ['defense', false, 'Il reste à la base']]){
       const p2 = await page(b);

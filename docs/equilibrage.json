@@ -29,8 +29,8 @@
       "Fusil à pompe"
      ],
      "principale": "Fusil à pompe",
-     "horde": 0,
-     "boss": 14,
+     "horde": 5,
+     "boss": 15,
      "general": 0,
      "niveaux": {
       "mag": 2,
@@ -46,7 +46,7 @@
      ],
      "principale": "Fusil d’assaut",
      "horde": 0,
-     "boss": 17,
+     "boss": 18,
      "general": 0,
      "niveaux": {
       "mag": 1
@@ -65,8 +65,8 @@
       "Pistolet"
      ],
      "principale": "Pistolet",
-     "horde": 97,
-     "boss": 21,
+     "horde": 44,
+     "boss": 22,
      "general": 2,
      "niveaux": {
       "rate": 3,
@@ -82,7 +82,7 @@
      ],
      "principale": "Fusil d’assaut",
      "horde": 0,
-     "boss": 16,
+     "boss": 17,
      "general": 1,
      "niveaux": {
       "mag": 2,
@@ -98,8 +98,8 @@
       "Fusil d’assaut"
      ],
      "principale": "Fusil d’assaut",
-     "horde": 219,
-     "boss": 11,
+     "horde": 141,
+     "boss": 12,
      "general": 0,
      "niveaux": {}
     }
@@ -116,8 +116,8 @@
       "Pistolet"
      ],
      "principale": "Pistolet",
-     "horde": 1475,
-     "boss": 21,
+     "horde": 894,
+     "boss": 22,
      "general": 3,
      "niveaux": {
       "rate": 4,
@@ -149,7 +149,7 @@
       "Fusil d’assaut"
      ],
      "principale": "Fusil d’assaut",
-     "horde": 997,
+     "horde": 1293,
      "boss": 9,
      "general": 1,
      "niveaux": {
@@ -166,8 +166,8 @@
       "Fusil d’assaut"
      ],
      "principale": "Fusil d’assaut",
-     "horde": 50,
-     "boss": 34,
+     "horde": 110,
+     "boss": 36,
      "general": 0,
      "niveaux": {}
     }
@@ -184,8 +184,8 @@
       "Pistolet"
      ],
      "principale": "Pistolet",
-     "horde": 12179,
-     "boss": 25,
+     "horde": 11008,
+     "boss": 26,
      "general": 4,
      "niveaux": {
       "rate": 5,
@@ -200,7 +200,7 @@
       "Fusil d’assaut"
      ],
      "principale": "Fusil d’assaut",
-     "horde": 85,
+     "horde": 91,
      "boss": 19,
      "general": 4,
      "niveaux": {
@@ -217,8 +217,8 @@
       "Fusil d’assaut"
      ],
      "principale": "Fusil d’assaut",
-     "horde": 183,
-     "boss": 28,
+     "horde": 252,
+     "boss": 31,
      "general": 2,
      "niveaux": {
       "mag": 2,
@@ -233,7 +233,7 @@
       "Minigun"
      ],
      "principale": "Minigun",
-     "horde": 212,
+     "horde": 151,
      "boss": 13,
      "general": 2,
      "niveaux": {}
@@ -252,7 +252,7 @@
       "Fusil d’assaut"
      ],
      "principale": "Fusil d’assaut",
-     "horde": 1280,
+     "horde": 234,
      "boss": 18,
      "general": 5,
      "niveaux": {
@@ -268,7 +268,7 @@
       "Minigun"
      ],
      "principale": "Minigun",
-     "horde": 93,
+     "horde": 122,
      "boss": 11,
      "general": 4,
      "niveaux": {
@@ -284,8 +284,8 @@
       "Lance-roquettes"
      ],
      "principale": "Lance-roquettes",
-     "horde": 7884,
-     "boss": 27,
+     "horde": 11121,
+     "boss": 28,
      "general": 3,
      "niveaux": {}
     }
@@ -303,7 +303,7 @@
       "Fusil d’assaut"
      ],
      "principale": "Fusil d’assaut",
-     "horde": 28729,
+     "horde": 19060,
      "boss": 22,
      "general": 5,
      "niveaux": {
@@ -319,7 +319,7 @@
       "Minigun"
      ],
      "principale": "Minigun",
-     "horde": 837,
+     "horde": 1906,
      "boss": 12,
      "general": 5,
      "niveaux": {
@@ -335,7 +335,7 @@
       "Lance-roquettes"
      ],
      "principale": "Lance-roquettes",
-     "horde": 9123,
+     "horde": 8007,
      "boss": 27,
      "general": 4,
      "niveaux": {
@@ -359,7 +359,7 @@
       "Minigun"
      ],
      "principale": "Minigun",
-     "horde": 3182,
+     "horde": 1760,
      "boss": 11,
      "general": 6,
      "niveaux": {
@@ -375,7 +375,7 @@
       "Lance-roquettes"
      ],
      "principale": "Lance-roquettes",
-     "horde": 5634,
+     "horde": 5576,
      "boss": 23,
      "general": 6,
      "niveaux": {
@@ -391,7 +391,7 @@
       "Mitrailleuse .50"
      ],
      "principale": "Mitrailleuse .50",
-     "horde": 2279,
+     "horde": 445,
      "boss": 8,
      "general": 5,
      "niveaux": {
@@ -407,7 +407,7 @@
       "Fusil laser"
      ],
      "principale": "Fusil laser",
-     "horde": 4414,
+     "horde": 1141,
      "boss": 14,
      "general": 4,
      "niveaux": {
@@ -430,7 +430,7 @@
       "Minigun"
      ],
      "principale": "Minigun",
-     "horde": 1905,
+     "horde": 3569,
      "boss": 10,
      "general": 8,
      "niveaux": {
@@ -446,8 +446,8 @@
       "Mitrailleuse .50"
      ],
      "principale": "Mitrailleuse .50",
-     "horde": 3227,
-     "boss": 8,
+     "horde": 3247,
+     "boss": 7,
      "general": 6,
      "niveaux": {
       "mag": 3,
@@ -462,7 +462,7 @@
       "Fusil laser"
      ],
      "principale": "Fusil laser",
-     "horde": 68,
+     "horde": 0,
      "boss": 11,
      "general": 6,
      "niveaux": {
@@ -479,8 +479,8 @@
       "Minigun"
      ],
      "principale": "Minigun",
-     "horde": 74536,
-     "boss": 11,
+     "horde": 21652,
+     "boss": 7,
      "general": 3,
      "niveaux": {
       "mag": 1
@@ -500,41 +500,41 @@
      "vague": 5,
      "tenues": 5,
      "sur": 5,
-     "bar": 84,
-     "barMin": 84,
-     "argent": 2592,
-     "abattus": 492,
+     "bar": 97,
+     "barMin": 97,
+     "argent": 2632,
+     "abattus": 483,
      "minutes": 8,
-     "pouvoirs": 14,
+     "pouvoirs": 17,
      "niveau": 6,
-     "ferraille": 1699,
-     "arme": "Fusil d’assaut",
+     "ferraille": 1362,
+     "arme": "Pistolet",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 131
+       "argent": 127
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 321
+       "argent": 593
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 662
+       "argent": 609
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 1185
+       "argent": 933
       },
       {
        "v": 5,
-       "bar": 84,
-       "argent": 2477
+       "bar": 97,
+       "argent": 2517
       }
      ],
      "strategie": "boutique"
@@ -546,41 +546,41 @@
      "vague": 5,
      "tenues": 5,
      "sur": 5,
-     "bar": 84,
-     "barMin": 84,
-     "argent": 2373,
-     "abattus": 485,
-     "minutes": 7.3,
-     "pouvoirs": 10,
+     "bar": 100,
+     "barMin": 100,
+     "argent": 2421,
+     "abattus": 486,
+     "minutes": 7.6,
+     "pouvoirs": 8,
      "niveau": 6,
-     "ferraille": 1689,
+     "ferraille": 1239,
      "arme": "Pistolet",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 130
+       "argent": 131
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 420
+       "argent": 411
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 903
+       "argent": 912
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 984
+       "argent": 981
       },
       {
        "v": 5,
-       "bar": 84,
-       "argent": 2258
+       "bar": 100,
+       "argent": 2306
       }
      ],
      "strategie": "patient"
@@ -592,41 +592,41 @@
      "vague": 5,
      "tenues": 5,
      "sur": 5,
-     "bar": 84,
-     "barMin": 84,
-     "argent": 2898,
-     "abattus": 489,
-     "minutes": 7.5,
-     "pouvoirs": 11,
+     "bar": 100,
+     "barMin": 100,
+     "argent": 2385,
+     "abattus": 486,
+     "minutes": 7.6,
+     "pouvoirs": 15,
      "niveau": 6,
-     "ferraille": 1832,
+     "ferraille": 1799,
      "arme": "Pistolet",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 218
+       "argent": 130
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 439
+       "argent": 417
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 878
+       "argent": 681
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 902
+       "argent": 911
       },
       {
        "v": 5,
-       "bar": 84,
-       "argent": 2783
+       "bar": 100,
+       "argent": 2270
       }
      ],
      "strategie": "pistolet"
@@ -638,41 +638,41 @@
      "vague": 5,
      "tenues": 5,
      "sur": 5,
-     "bar": 84,
-     "barMin": 84,
-     "argent": 2386,
-     "abattus": 488,
-     "minutes": 7.5,
-     "pouvoirs": 16,
+     "bar": 100,
+     "barMin": 100,
+     "argent": 2401,
+     "abattus": 483,
+     "minutes": 7.9,
+     "pouvoirs": 10,
      "niveau": 6,
-     "ferraille": 1190,
+     "ferraille": 1247,
      "arme": "Pistolet",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 128
+       "argent": 129
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 416
+       "argent": 411
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 832
+       "argent": 818
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 1113
+       "argent": 979
       },
       {
        "v": 5,
-       "bar": 84,
-       "argent": 2271
+       "bar": 100,
+       "argent": 2286
       }
      ],
      "strategie": "pompe"
@@ -684,41 +684,41 @@
      "vague": 5,
      "tenues": 5,
      "sur": 5,
-     "bar": 84,
-     "barMin": 84,
-     "argent": 2130,
-     "abattus": 491,
-     "minutes": 7.5,
-     "pouvoirs": 14,
+     "bar": 100,
+     "barMin": 100,
+     "argent": 2364,
+     "abattus": 483,
+     "minutes": 7.7,
+     "pouvoirs": 12,
      "niveau": 6,
-     "ferraille": 1945,
+     "ferraille": 1747,
      "arme": "Fusil d’assaut",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 129
+       "argent": 220
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 303
+       "argent": 444
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 528
+       "argent": 672
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 1098
+       "argent": 1146
       },
       {
        "v": 5,
-       "bar": 84,
-       "argent": 2015
+       "bar": 100,
+       "argent": 2249
       }
      ],
      "strategie": "malin"
@@ -736,41 +736,41 @@
      "vague": 5,
      "tenues": 5,
      "sur": 5,
-     "bar": 84,
-     "barMin": 84,
-     "argent": 2376,
-     "abattus": 487,
-     "minutes": 7.3,
-     "pouvoirs": 9,
+     "bar": 100,
+     "barMin": 100,
+     "argent": 2398,
+     "abattus": 483,
+     "minutes": 7.8,
+     "pouvoirs": 13,
      "niveau": 6,
-     "ferraille": 1331,
-     "arme": "Fusil d’assaut",
+     "ferraille": 1801,
+     "arme": "Pistolet",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 128
+       "argent": 131
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 414
+       "argent": 536
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 880
+       "argent": 692
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 1207
+       "argent": 850
       },
       {
        "v": 5,
-       "bar": 84,
-       "argent": 2261
+       "bar": 100,
+       "argent": 2283
       }
      ],
      "essai": 1
@@ -784,44 +784,44 @@
      "sur": 6,
      "bar": 100,
      "barMin": 100,
-     "argent": 2867,
+     "argent": 2811,
      "abattus": 790,
-     "minutes": 8.7,
-     "pouvoirs": 12,
+     "minutes": 8.1,
+     "pouvoirs": 11,
      "niveau": 10,
-     "ferraille": 332,
+     "ferraille": 315,
      "arme": "Fusil d’assaut",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 276
+       "argent": 539
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 800
+       "argent": 766
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 951
+       "argent": 904
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 1741
+       "argent": 1601
       },
       {
        "v": 5,
        "bar": 100,
-       "argent": 2732
+       "argent": 3230
       },
       {
        "v": 6,
        "bar": 100,
-       "argent": 2711
+       "argent": 2655
       }
      ],
      "essai": 1
@@ -834,13 +834,13 @@
      "tenues": 7,
      "sur": 7,
      "bar": 100,
-     "barMin": 73,
-     "argent": 4634,
-     "abattus": 1274,
-     "minutes": 10.3,
-     "pouvoirs": 43,
+     "barMin": 100,
+     "argent": 3921,
+     "abattus": 1269,
+     "minutes": 10.8,
+     "pouvoirs": 41,
      "niveau": 14,
-     "ferraille": 947,
+     "ferraille": 618,
      "arme": "Fusil d’assaut",
      "finTemps": false,
      "vagues": [
@@ -852,32 +852,73 @@
       {
        "v": 2,
        "bar": 100,
-       "argent": 886
+       "argent": 900
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 1611
+       "argent": 1618
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 1853
+       "argent": 2141
       },
       {
        "v": 5,
-       "bar": 73,
-       "argent": 4377
+       "bar": 100,
+       "argent": 4174
       },
       {
        "v": 6,
        "bar": 100,
-       "argent": 3843
+       "argent": 3264
       },
       {
        "v": 7,
        "bar": 100,
-       "argent": 4424
+       "argent": 3711
+      }
+     ],
+     "essai": 1
+    },
+    {
+     "ville": "Centre-ville",
+     "inf": false,
+     "gagne": false,
+     "vague": 5,
+     "tenues": 4,
+     "sur": 8,
+     "bar": 0,
+     "barMin": 0,
+     "argent": 5423,
+     "abattus": 712,
+     "minutes": 6.5,
+     "pouvoirs": 34,
+     "niveau": 15,
+     "ferraille": 845,
+     "arme": "Lance-flammes",
+     "finTemps": false,
+     "vagues": [
+      {
+       "v": 1,
+       "bar": 100,
+       "argent": 660
+      },
+      {
+       "v": 2,
+       "bar": 100,
+       "argent": 1628
+      },
+      {
+       "v": 3,
+       "bar": 100,
+       "argent": 2249
+      },
+      {
+       "v": 4,
+       "bar": 100,
+       "argent": 3543
       }
      ],
      "essai": 1
@@ -889,56 +930,97 @@
      "vague": 8,
      "tenues": 8,
      "sur": 8,
-     "bar": 97,
-     "barMin": 78,
-     "argent": 7306,
-     "abattus": 1855,
-     "minutes": 12.7,
-     "pouvoirs": 80,
-     "niveau": 17,
-     "ferraille": 1290,
+     "bar": 100,
+     "barMin": 82,
+     "argent": 7169,
+     "abattus": 1863,
+     "minutes": 12.4,
+     "pouvoirs": 73,
+     "niveau": 18,
+     "ferraille": 1177,
      "arme": "Minigun",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 664
+       "argent": 546
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 1559
+       "argent": 1583
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 2350
+       "argent": 2277
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 3335
+       "argent": 3337
       },
       {
        "v": 5,
-       "bar": 78,
-       "argent": 7061
+       "bar": 82,
+       "argent": 7577
       },
       {
        "v": 6,
        "bar": 100,
-       "argent": 5056
+       "argent": 6203
       },
       {
        "v": 7,
-       "bar": 100,
-       "argent": 6357
+       "bar": 97,
+       "argent": 7138
       },
       {
        "v": 8,
-       "bar": 97,
-       "argent": 7018
+       "bar": 100,
+       "argent": 6881
+      }
+     ],
+     "essai": 2
+    },
+    {
+     "ville": "Port industriel",
+     "inf": false,
+     "gagne": false,
+     "vague": 5,
+     "tenues": 4,
+     "sur": 10,
+     "bar": 0,
+     "barMin": 0,
+     "argent": 2946,
+     "abattus": 748,
+     "minutes": 6.2,
+     "pouvoirs": 41,
+     "niveau": 19,
+     "ferraille": 452,
+     "arme": "Lance-flammes",
+     "finTemps": false,
+     "vagues": [
+      {
+       "v": 1,
+       "bar": 100,
+       "argent": 1298
+      },
+      {
+       "v": 2,
+       "bar": 100,
+       "argent": 2486
+      },
+      {
+       "v": 3,
+       "bar": 56,
+       "argent": 4283
+      },
+      {
+       "v": 4,
+       "bar": 94,
+       "argent": 5292
       }
      ],
      "essai": 1
@@ -952,112 +1034,82 @@
      "sur": 10,
      "bar": 0,
      "barMin": 0,
-     "argent": 6727,
-     "abattus": 779,
-     "minutes": 6.2,
-     "pouvoirs": 40,
-     "niveau": 18,
-     "ferraille": 1306,
+     "argent": 3904,
+     "abattus": 783,
+     "minutes": 6.3,
+     "pouvoirs": 42,
+     "niveau": 19,
+     "ferraille": 552,
      "arme": "Fusil d’assaut",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 1967
+       "argent": 1307
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 2085
+       "argent": 2300
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 3533
+       "argent": 4196
       },
       {
        "v": 4,
-       "bar": 100,
-       "argent": 4741
+       "bar": 89,
+       "argent": 5021
       }
      ],
-     "essai": 1
+     "essai": 2
     },
     {
      "ville": "Port industriel",
      "inf": false,
-     "gagne": true,
-     "vague": 10,
-     "tenues": 10,
+     "gagne": false,
+     "vague": 5,
+     "tenues": 4,
      "sur": 10,
-     "bar": 100,
-     "barMin": 64,
-     "argent": 17242,
-     "abattus": 3190,
-     "minutes": 16.7,
-     "pouvoirs": 124,
-     "niveau": 21,
-     "ferraille": 4551,
-     "arme": "Minigun",
+     "bar": 0,
+     "barMin": 0,
+     "argent": 5567,
+     "abattus": 784,
+     "minutes": 6.6,
+     "pouvoirs": 41,
+     "niveau": 20,
+     "ferraille": 1001,
+     "arme": "Fusil d’assaut",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 1501
+       "argent": 1463
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 2366
+       "argent": 2598
       },
       {
        "v": 3,
-       "bar": 100,
-       "argent": 4015
+       "bar": 94,
+       "argent": 3896
       },
       {
        "v": 4,
-       "bar": 83,
-       "argent": 5088
-      },
-      {
-       "v": 5,
-       "bar": 73,
-       "argent": 10954
-      },
-      {
-       "v": 6,
-       "bar": 95,
-       "argent": 7049
-      },
-      {
-       "v": 7,
-       "bar": 96,
-       "argent": 8765
-      },
-      {
-       "v": 8,
-       "bar": 64,
-       "argent": 9675
-      },
-      {
-       "v": 9,
-       "bar": 79,
-       "argent": 10998
-      },
-      {
-       "v": 10,
-       "bar": 100,
-       "argent": 16824
+       "bar": 94,
+       "argent": 4904
       }
      ],
-     "essai": 2
+     "essai": 3
     }
    ],
-   "niveau": 21,
-   "ferraille": 4551
+   "niveau": 20,
+   "ferraille": 1001
   },
   "bon_strategies": {
    "joueur": "Bon",
@@ -1069,41 +1121,41 @@
      "vague": 5,
      "tenues": 5,
      "sur": 5,
-     "bar": 84,
-     "barMin": 84,
-     "argent": 2535,
-     "abattus": 487,
-     "minutes": 6.8,
+     "bar": 100,
+     "barMin": 100,
+     "argent": 2493,
+     "abattus": 483,
+     "minutes": 6.5,
      "pouvoirs": 4,
      "niveau": 6,
-     "ferraille": 1740,
+     "ferraille": 1172,
      "arme": "Pistolet",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 139
+       "argent": 230
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 447
+       "argent": 471
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 911
+       "argent": 675
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 910
+       "argent": 923
       },
       {
        "v": 5,
-       "bar": 84,
-       "argent": 2420
+       "bar": 100,
+       "argent": 2378
       }
      ],
      "strategie": "boutique"
@@ -1115,41 +1167,41 @@
      "vague": 5,
      "tenues": 5,
      "sur": 5,
-     "bar": 84,
-     "barMin": 84,
-     "argent": 2887,
-     "abattus": 486,
-     "minutes": 6.4,
-     "pouvoirs": 1,
+     "bar": 100,
+     "barMin": 100,
+     "argent": 2498,
+     "abattus": 487,
+     "minutes": 6.6,
+     "pouvoirs": 3,
      "niveau": 6,
-     "ferraille": 1804,
+     "ferraille": 1660,
      "arme": "Pistolet",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 139
+       "argent": 137
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 453
+       "argent": 456
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 639
+       "argent": 515
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 1035
+       "argent": 1299
       },
       {
        "v": 5,
-       "bar": 84,
-       "argent": 2772
+       "bar": 100,
+       "argent": 2383
       }
      ],
      "strategie": "patient"
@@ -1161,41 +1213,41 @@
      "vague": 5,
      "tenues": 5,
      "sur": 5,
-     "bar": 84,
-     "barMin": 84,
-     "argent": 2487,
-     "abattus": 483,
-     "minutes": 6.3,
-     "pouvoirs": 2,
+     "bar": 100,
+     "barMin": 100,
+     "argent": 2787,
+     "abattus": 488,
+     "minutes": 6.6,
+     "pouvoirs": 3,
      "niveau": 6,
-     "ferraille": 1747,
+     "ferraille": 1174,
      "arme": "Pistolet",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 137
+       "argent": 136
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 442
+       "argent": 616
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 617
+       "argent": 722
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 958
+       "argent": 1515
       },
       {
        "v": 5,
-       "bar": 84,
-       "argent": 2372
+       "bar": 100,
+       "argent": 2672
       }
      ],
      "strategie": "pistolet"
@@ -1207,41 +1259,41 @@
      "vague": 5,
      "tenues": 5,
      "sur": 5,
-     "bar": 84,
-     "barMin": 84,
-     "argent": 2639,
-     "abattus": 488,
-     "minutes": 6.6,
-     "pouvoirs": 1,
+     "bar": 100,
+     "barMin": 100,
+     "argent": 2477,
+     "abattus": 485,
+     "minutes": 6.4,
+     "pouvoirs": 4,
      "niveau": 6,
-     "ferraille": 1306,
+     "ferraille": 1853,
      "arme": "Pistolet",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 138
+       "argent": 139
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 562
+       "argent": 338
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 713
+       "argent": 729
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 967
+       "argent": 937
       },
       {
        "v": 5,
-       "bar": 84,
-       "argent": 2524
+       "bar": 100,
+       "argent": 2362
       }
      ],
      "strategie": "pompe"
@@ -1253,41 +1305,41 @@
      "vague": 5,
      "tenues": 5,
      "sur": 5,
-     "bar": 84,
-     "barMin": 84,
-     "argent": 2597,
+     "bar": 100,
+     "barMin": 100,
+     "argent": 2420,
      "abattus": 489,
-     "minutes": 6.3,
-     "pouvoirs": 2,
+     "minutes": 6.7,
+     "pouvoirs": 6,
      "niveau": 6,
-     "ferraille": 1741,
+     "ferraille": 1675,
      "arme": "Fusil d’assaut",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 137
+       "argent": 141
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 439
+       "argent": 344
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 1118
+       "argent": 627
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 803
+       "argent": 1051
       },
       {
        "v": 5,
-       "bar": 84,
-       "argent": 2482
+       "bar": 100,
+       "argent": 2305
       }
      ],
      "strategie": "malin"
@@ -1305,41 +1357,41 @@
      "vague": 5,
      "tenues": 5,
      "sur": 5,
-     "bar": 84,
-     "barMin": 84,
-     "argent": 2203,
-     "abattus": 485,
+     "bar": 100,
+     "barMin": 100,
+     "argent": 2538,
+     "abattus": 486,
      "minutes": 6.3,
-     "pouvoirs": 4,
+     "pouvoirs": 2,
      "niveau": 6,
-     "ferraille": 1248,
-     "arme": "Fusil d’assaut",
+     "ferraille": 1263,
+     "arme": "Pistolet",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 138
+       "argent": 137
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 442
+       "argent": 572
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 639
+       "argent": 682
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 1009
+       "argent": 814
       },
       {
        "v": 5,
-       "bar": 84,
-       "argent": 2088
+       "bar": 100,
+       "argent": 2423
       }
      ],
      "essai": 1
@@ -1352,45 +1404,45 @@
      "tenues": 6,
      "sur": 6,
      "bar": 100,
-     "barMin": 82,
-     "argent": 2541,
+     "barMin": 100,
+     "argent": 2767,
      "abattus": 790,
-     "minutes": 7.5,
-     "pouvoirs": 4,
+     "minutes": 7.4,
+     "pouvoirs": 6,
      "niveau": 10,
-     "ferraille": 540,
+     "ferraille": 378,
      "arme": "Fusil d’assaut",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 386
+       "argent": 288
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 795
+       "argent": 597
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 1325
+       "argent": 1103
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 1337
+       "argent": 1420
       },
       {
        "v": 5,
-       "bar": 82,
-       "argent": 3002
+       "bar": 100,
+       "argent": 2737
       },
       {
        "v": 6,
        "bar": 100,
-       "argent": 2385
+       "argent": 2611
       }
      ],
      "essai": 1
@@ -1403,50 +1455,50 @@
      "tenues": 7,
      "sur": 7,
      "bar": 100,
-     "barMin": 81,
-     "argent": 5395,
-     "abattus": 1274,
-     "minutes": 9.5,
-     "pouvoirs": 23,
+     "barMin": 100,
+     "argent": 4394,
+     "abattus": 1272,
+     "minutes": 9.4,
+     "pouvoirs": 16,
      "niveau": 14,
-     "ferraille": 571,
+     "ferraille": 616,
      "arme": "Fusil d’assaut",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 471
+       "argent": 460
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 786
+       "argent": 965
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 1819
+       "argent": 1605
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 2235
+       "argent": 2721
       },
       {
        "v": 5,
-       "bar": 81,
-       "argent": 4455
+       "bar": 100,
+       "argent": 4967
       },
       {
        "v": 6,
        "bar": 100,
-       "argent": 3802
+       "argent": 3499
       },
       {
        "v": 7,
        "bar": 100,
-       "argent": 5185
+       "argent": 4184
       }
      ],
      "essai": 1
@@ -1458,56 +1510,56 @@
      "vague": 8,
      "tenues": 8,
      "sur": 8,
-     "bar": 100,
-     "barMin": 77,
-     "argent": 8558,
-     "abattus": 1861,
-     "minutes": 11.5,
-     "pouvoirs": 49,
+     "bar": 97,
+     "barMin": 97,
+     "argent": 7024,
+     "abattus": 1862,
+     "minutes": 11.4,
+     "pouvoirs": 53,
      "niveau": 17,
-     "ferraille": 1256,
+     "ferraille": 1234,
      "arme": "Minigun",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 705
+       "argent": 679
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 1962
+       "argent": 1832
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 2848
+       "argent": 2790
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 3657
+       "argent": 3178
       },
       {
        "v": 5,
-       "bar": 77,
-       "argent": 7173
+       "bar": 100,
+       "argent": 7385
       },
       {
        "v": 6,
        "bar": 100,
-       "argent": 5964
+       "argent": 5527
       },
       {
        "v": 7,
        "bar": 100,
-       "argent": 7144
+       "argent": 7269
       },
       {
        "v": 8,
-       "bar": 100,
-       "argent": 8270
+       "bar": 97,
+       "argent": 6736
       }
      ],
      "essai": 1
@@ -1519,73 +1571,73 @@
      "vague": 10,
      "tenues": 10,
      "sur": 10,
-     "bar": 82,
-     "barMin": 38,
-     "argent": 16822,
-     "abattus": 3193,
-     "minutes": 15.3,
-     "pouvoirs": 117,
+     "bar": 100,
+     "barMin": 73,
+     "argent": 15306,
+     "abattus": 3202,
+     "minutes": 15.2,
+     "pouvoirs": 103,
      "niveau": 21,
-     "ferraille": 3396,
+     "ferraille": 3468,
      "arme": "Minigun",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 1322
+       "argent": 1143
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 2392
+       "argent": 3039
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 3801
+       "argent": 4503
       },
       {
        "v": 4,
-       "bar": 94,
-       "argent": 4966
+       "bar": 100,
+       "argent": 5417
       },
       {
        "v": 5,
-       "bar": 38,
-       "argent": 11255
+       "bar": 73,
+       "argent": 11512
       },
       {
        "v": 6,
-       "bar": 91,
-       "argent": 7196
+       "bar": 95,
+       "argent": 7016
       },
       {
        "v": 7,
        "bar": 100,
-       "argent": 9063
+       "argent": 7897
       },
       {
        "v": 8,
-       "bar": 92,
-       "argent": 9471
+       "bar": 79,
+       "argent": 8634
       },
       {
        "v": 9,
-       "bar": 92,
-       "argent": 11474
+       "bar": 100,
+       "argent": 11427
       },
       {
        "v": 10,
-       "bar": 82,
-       "argent": 16404
+       "bar": 100,
+       "argent": 14888
       }
      ],
      "essai": 1
     }
    ],
    "niveau": 21,
-   "ferraille": 3396
+   "ferraille": 3468
   }
  },
  "infini": {
@@ -1596,134 +1648,189 @@
      "ville": "Saint-Clou",
      "inf": true,
      "gagne": false,
-     "vague": 24,
-     "tenues": 23,
+     "vague": 35,
+     "tenues": 34,
      "sur": 1000000000,
      "bar": 0,
      "barMin": 0,
-     "argent": 48759,
-     "abattus": 4721,
-     "minutes": 33.3,
-     "pouvoirs": 163,
-     "niveau": 23,
-     "ferraille": 1471,
-     "arme": "Minigun",
+     "argent": 454653,
+     "abattus": 14093,
+     "minutes": 51.8,
+     "pouvoirs": 162,
+     "niveau": 25,
+     "ferraille": 1969,
+     "arme": "Canon électromagnétique",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 407
+       "argent": 409
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 627
+       "argent": 312
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 626
+       "argent": 596
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 673
+       "argent": 756
       },
       {
        "v": 5,
        "bar": 100,
-       "argent": 1916
+       "argent": 2966
       },
       {
        "v": 6,
        "bar": 100,
-       "argent": 1295
+       "argent": 2374
       },
       {
        "v": 7,
        "bar": 100,
-       "argent": 1615
+       "argent": 2563
       },
       {
        "v": 8,
        "bar": 100,
-       "argent": 2266
+       "argent": 3323
       },
       {
        "v": 9,
        "bar": 100,
-       "argent": 2797
+       "argent": 3945
       },
       {
        "v": 10,
        "bar": 100,
-       "argent": 6081
+       "argent": 6618
       },
       {
        "v": 11,
        "bar": 100,
-       "argent": 5705
+       "argent": 6594
       },
       {
        "v": 12,
        "bar": 100,
-       "argent": 7648
+       "argent": 6316
       },
       {
        "v": 13,
        "bar": 100,
-       "argent": 9093
+       "argent": 8105
       },
       {
        "v": 14,
        "bar": 100,
-       "argent": 8540
+       "argent": 9547
       },
       {
        "v": 15,
        "bar": 100,
-       "argent": 14282
+       "argent": 16442
       },
       {
        "v": 16,
        "bar": 100,
-       "argent": 13291
+       "argent": 15559
       },
       {
        "v": 17,
        "bar": 100,
-       "argent": 19566
+       "argent": 16453
       },
       {
        "v": 18,
        "bar": 100,
-       "argent": 20829
+       "argent": 21566
       },
       {
        "v": 19,
        "bar": 100,
-       "argent": 25552
+       "argent": 25230
       },
       {
        "v": 20,
        "bar": 100,
-       "argent": 36705
+       "argent": 38126
       },
       {
        "v": 21,
-       "bar": 92,
-       "argent": 45746
+       "bar": 100,
+       "argent": 39773
       },
       {
        "v": 22,
        "bar": 100,
-       "argent": 59971
+       "argent": 45970
       },
       {
        "v": 23,
-       "bar": 73,
-       "argent": 51382
+       "bar": 11,
+       "argent": 63386
+      },
+      {
+       "v": 24,
+       "bar": 100,
+       "argent": 68106
+      },
+      {
+       "v": 25,
+       "bar": 100,
+       "argent": 95707
+      },
+      {
+       "v": 26,
+       "bar": 100,
+       "argent": 121142
+      },
+      {
+       "v": 27,
+       "bar": 100,
+       "argent": 173496
+      },
+      {
+       "v": 28,
+       "bar": 100,
+       "argent": 181508
+      },
+      {
+       "v": 29,
+       "bar": 100,
+       "argent": 286876
+      },
+      {
+       "v": 30,
+       "bar": 11,
+       "argent": 375771
+      },
+      {
+       "v": 31,
+       "bar": 100,
+       "argent": 403502
+      },
+      {
+       "v": 32,
+       "bar": 100,
+       "argent": 523374
+      },
+      {
+       "v": 33,
+       "bar": 100,
+       "argent": 690774
+      },
+      {
+       "v": 34,
+       "bar": 100,
+       "argent": 1018221
       }
      ]
     },
@@ -1736,139 +1843,139 @@
      "sur": 1000000000,
      "bar": 0,
      "barMin": 0,
-     "argent": 63575,
-     "abattus": 5882,
-     "minutes": 36.7,
-     "pouvoirs": 215,
-     "niveau": 24,
-     "ferraille": 1770,
-     "arme": "Mitrailleuse .50",
+     "argent": 65393,
+     "abattus": 5793,
+     "minutes": 34.5,
+     "pouvoirs": 174,
+     "niveau": 26,
+     "ferraille": 1250,
+     "arme": "Lance-grenades auto",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 541
+       "argent": 325
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 431
+       "argent": 714
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 592
+       "argent": 555
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 868
+       "argent": 863
       },
       {
        "v": 5,
        "bar": 100,
-       "argent": 2630
+       "argent": 2599
       },
       {
        "v": 6,
        "bar": 100,
-       "argent": 1098
+       "argent": 1817
       },
       {
        "v": 7,
        "bar": 100,
-       "argent": 1348
+       "argent": 1600
       },
       {
        "v": 8,
        "bar": 100,
-       "argent": 1888
+       "argent": 2354
       },
       {
        "v": 9,
        "bar": 100,
-       "argent": 2317
+       "argent": 2847
       },
       {
        "v": 10,
        "bar": 100,
-       "argent": 6861
+       "argent": 7144
       },
       {
        "v": 11,
        "bar": 100,
-       "argent": 4208
+       "argent": 5887
       },
       {
        "v": 12,
        "bar": 100,
-       "argent": 6432
+       "argent": 6963
       },
       {
        "v": 13,
        "bar": 100,
-       "argent": 7841
+       "argent": 10291
       },
       {
        "v": 14,
        "bar": 100,
-       "argent": 10647
+       "argent": 10688
       },
       {
        "v": 15,
        "bar": 100,
-       "argent": 16864
+       "argent": 16460
       },
       {
        "v": 16,
        "bar": 100,
-       "argent": 11257
+       "argent": 20444
       },
       {
        "v": 17,
        "bar": 100,
-       "argent": 16479
+       "argent": 16230
       },
       {
        "v": 18,
        "bar": 100,
-       "argent": 20062
+       "argent": 19523
       },
       {
        "v": 19,
        "bar": 100,
-       "argent": 29636
+       "argent": 33988
       },
       {
        "v": 20,
        "bar": 100,
-       "argent": 48058
+       "argent": 40726
       },
       {
        "v": 21,
        "bar": 100,
-       "argent": 49827
+       "argent": 43295
       },
       {
        "v": 22,
        "bar": 100,
-       "argent": 52595
+       "argent": 50598
       },
       {
        "v": 23,
-       "bar": 29,
-       "argent": 66239
+       "bar": 64,
+       "argent": 63327
       },
       {
        "v": 24,
-       "bar": 71,
-       "argent": 76165
+       "bar": 81,
+       "argent": 89436
       },
       {
        "v": 25,
-       "bar": 58,
-       "argent": 107119
+       "bar": 69,
+       "argent": 118633
       }
      ]
     }
@@ -1886,134 +1993,134 @@
      "sur": 1000000000,
      "bar": 0,
      "barMin": 0,
-     "argent": 81520,
-     "abattus": 5351,
-     "minutes": 33.5,
-     "pouvoirs": 108,
+     "argent": 64763,
+     "abattus": 5217,
+     "minutes": 31.4,
+     "pouvoirs": 112,
      "niveau": 23,
-     "ferraille": 1838,
-     "arme": "Minigun",
+     "ferraille": 1524,
+     "arme": "Lance-grenades auto",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 413
+       "argent": 412
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 645
+       "argent": 344
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 928
+       "argent": 482
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 1029
+       "argent": 624
       },
       {
        "v": 5,
        "bar": 100,
-       "argent": 2332
+       "argent": 2549
       },
       {
        "v": 6,
        "bar": 100,
-       "argent": 1346
+       "argent": 2107
       },
       {
        "v": 7,
        "bar": 100,
-       "argent": 1640
+       "argent": 1735
       },
       {
        "v": 8,
        "bar": 100,
-       "argent": 2387
+       "argent": 2608
       },
       {
        "v": 9,
        "bar": 100,
-       "argent": 3429
+       "argent": 3382
       },
       {
        "v": 10,
        "bar": 100,
-       "argent": 7071
+       "argent": 5755
       },
       {
        "v": 11,
        "bar": 100,
-       "argent": 6125
+       "argent": 4673
       },
       {
        "v": 12,
        "bar": 100,
-       "argent": 4623
+       "argent": 6332
       },
       {
        "v": 13,
        "bar": 100,
-       "argent": 9232
+       "argent": 7723
       },
       {
        "v": 14,
        "bar": 100,
-       "argent": 10708
+       "argent": 11278
       },
       {
        "v": 15,
        "bar": 100,
-       "argent": 15400
+       "argent": 14094
       },
       {
        "v": 16,
        "bar": 100,
-       "argent": 12966
+       "argent": 13347
       },
       {
        "v": 17,
        "bar": 100,
-       "argent": 18942
+       "argent": 24054
       },
       {
        "v": 18,
        "bar": 100,
-       "argent": 21545
+       "argent": 21217
       },
       {
        "v": 19,
        "bar": 100,
-       "argent": 34698
+       "argent": 26910
       },
       {
        "v": 20,
        "bar": 100,
-       "argent": 35562
+       "argent": 37719
       },
       {
        "v": 21,
        "bar": 100,
-       "argent": 42403
+       "argent": 43521
       },
       {
        "v": 22,
        "bar": 100,
-       "argent": 49374
+       "argent": 49640
       },
       {
        "v": 23,
-       "bar": 91,
-       "argent": 64911
+       "bar": 55,
+       "argent": 65999
       },
       {
        "v": 24,
-       "bar": 90,
-       "argent": 82042
+       "bar": 100,
+       "argent": 87557
       }
      ]
     },
@@ -2021,134 +2128,154 @@
      "ville": "Port industriel",
      "inf": true,
      "gagne": false,
-     "vague": 24,
-     "tenues": 23,
+     "vague": 28,
+     "tenues": 27,
      "sur": 1000000000,
      "bar": 0,
      "barMin": 0,
-     "argent": 54469,
-     "abattus": 4761,
-     "minutes": 30.8,
-     "pouvoirs": 121,
-     "niveau": 24,
-     "ferraille": 1843,
-     "arme": "Lance-roquettes",
+     "argent": 103267,
+     "abattus": 7117,
+     "minutes": 35.8,
+     "pouvoirs": 159,
+     "niveau": 25,
+     "ferraille": 1984,
+     "arme": "Lance-grenades auto",
      "finTemps": false,
      "vagues": [
       {
        "v": 1,
        "bar": 100,
-       "argent": 549
+       "argent": 352
       },
       {
        "v": 2,
        "bar": 100,
-       "argent": 449
+       "argent": 431
       },
       {
        "v": 3,
        "bar": 100,
-       "argent": 609
+       "argent": 872
       },
       {
        "v": 4,
        "bar": 100,
-       "argent": 890
+       "argent": 869
       },
       {
        "v": 5,
        "bar": 100,
-       "argent": 2681
+       "argent": 3144
       },
       {
        "v": 6,
        "bar": 100,
-       "argent": 1169
+       "argent": 1364
       },
       {
        "v": 7,
        "bar": 100,
-       "argent": 1789
+       "argent": 2500
       },
       {
        "v": 8,
        "bar": 100,
-       "argent": 1979
+       "argent": 2350
       },
       {
        "v": 9,
        "bar": 100,
-       "argent": 3004
+       "argent": 3356
       },
       {
        "v": 10,
        "bar": 100,
-       "argent": 7646
+       "argent": 6273
       },
       {
        "v": 11,
        "bar": 100,
-       "argent": 6524
+       "argent": 4120
       },
       {
        "v": 12,
        "bar": 100,
-       "argent": 8217
+       "argent": 6384
       },
       {
        "v": 13,
        "bar": 100,
-       "argent": 7461
+       "argent": 7128
       },
       {
        "v": 14,
        "bar": 100,
-       "argent": 8540
+       "argent": 10554
       },
       {
        "v": 15,
        "bar": 100,
-       "argent": 18410
+       "argent": 14738
       },
       {
        "v": 16,
        "bar": 100,
-       "argent": 12427
+       "argent": 14086
       },
       {
        "v": 17,
        "bar": 100,
-       "argent": 19612
+       "argent": 17427
       },
       {
        "v": 18,
        "bar": 100,
-       "argent": 23311
+       "argent": 22014
       },
       {
        "v": 19,
        "bar": 100,
-       "argent": 31479
+       "argent": 23063
       },
       {
        "v": 20,
        "bar": 100,
-       "argent": 42134
+       "argent": 42510
       },
       {
        "v": 21,
        "bar": 100,
-       "argent": 45611
+       "argent": 36671
       },
       {
        "v": 22,
        "bar": 100,
-       "argent": 58232
+       "argent": 45282
       },
       {
        "v": 23,
-       "bar": 58,
-       "argent": 68914
+       "bar": 72,
+       "argent": 64074
+      },
+      {
+       "v": 24,
+       "bar": 71,
+       "argent": 78913
+      },
+      {
+       "v": 25,
+       "bar": 100,
+       "argent": 120950
+      },
+      {
+       "v": 26,
+       "bar": 100,
+       "argent": 101308
+      },
+      {
+       "v": 27,
+       "bar": 14,
+       "argent": 143838
       }
      ]
     }
@@ -2176,12 +2303,12 @@
      "nids": 1,
      "unites": 16,
      "tourelles": 8,
-     "argent": 689,
-     "menace": 4.6,
+     "argent": 1049,
+     "menace": 4.5,
      "qg": 100,
      "zombies": 498,
-     "tues": 1110,
-     "perdues": 0,
+     "tues": 1053,
+     "perdues": 1,
      "boss": 0
     },
     {
@@ -2189,53 +2316,66 @@
      "nids": 1,
      "unites": 19,
      "tourelles": 10,
-     "argent": 1076,
-     "menace": 8.5,
+     "argent": 1150,
+     "menace": 8.6,
      "qg": 100,
-     "zombies": 500,
-     "tues": 2704,
-     "perdues": 23,
-     "boss": 2
+     "zombies": 498,
+     "tues": 2732,
+     "perdues": 5,
+     "boss": 3
     },
     {
      "min": 15,
      "nids": 1,
      "unites": 22,
      "tourelles": 11,
-     "argent": 1755,
-     "menace": 13,
+     "argent": 818,
+     "menace": 13.3,
      "qg": 100,
      "zombies": 500,
-     "tues": 4622,
-     "perdues": 30,
+     "tues": 4850,
+     "perdues": 14,
      "boss": 4
     },
     {
      "min": 20,
      "nids": 1,
      "unites": 26,
-     "tourelles": 10,
-     "argent": 536,
-     "menace": 17.6,
+     "tourelles": 13,
+     "argent": 458,
+     "menace": 18.6,
      "qg": 100,
-     "zombies": 499,
-     "tues": 6647,
-     "perdues": 45,
-     "boss": 6
+     "zombies": 496,
+     "tues": 7268,
+     "perdues": 25,
+     "boss": 7
+    },
+    {
+     "min": 25,
+     "nids": 1,
+     "unites": 29,
+     "tourelles": 15,
+     "argent": 3237,
+     "menace": 25.4,
+     "qg": 100,
+     "zombies": 501,
+     "tues": 10561,
+     "perdues": 38,
+     "boss": 9
     }
    ],
    "fin": {
-    "min": 23.2,
+    "min": 29.4,
     "nids": 1,
-    "unites": 27,
-    "tourelles": 6,
-    "argent": 579,
-    "menace": 20.5,
+    "unites": 28,
+    "tourelles": 0,
+    "argent": 364,
+    "menace": 30.2,
     "qg": 0,
-    "zombies": 499,
-    "tues": 7895,
-    "perdues": 60,
-    "boss": 7,
+    "zombies": 500,
+    "tues": 12836,
+    "perdues": 77,
+    "boss": 10,
     "tombe": true
    }
   },
@@ -2259,11 +2399,11 @@
      "nids": 0,
      "unites": 13,
      "tourelles": 6,
-     "argent": 601,
+     "argent": 851,
      "menace": 4.1,
      "qg": 100,
-     "zombies": 502,
-     "tues": 1110,
+     "zombies": 504,
+     "tues": 1089,
      "perdues": 0,
      "boss": 0
     },
@@ -2271,41 +2411,54 @@
      "min": 10,
      "nids": 0,
      "unites": 16,
-     "tourelles": 8,
-     "argent": 1464,
+     "tourelles": 7,
+     "argent": 1106,
      "menace": 8.5,
      "qg": 100,
-     "zombies": 500,
-     "tues": 2999,
+     "zombies": 502,
+     "tues": 2983,
      "perdues": 0,
-     "boss": 3
+     "boss": 2
     },
     {
      "min": 15,
      "nids": 0,
      "unites": 19,
-     "tourelles": 8,
-     "argent": 422,
+     "tourelles": 9,
+     "argent": 974,
      "menace": 13.5,
      "qg": 100,
-     "zombies": 499,
-     "tues": 5261,
-     "perdues": 1,
+     "zombies": 500,
+     "tues": 5234,
+     "perdues": 0,
      "boss": 4
+    },
+    {
+     "min": 20,
+     "nids": 0,
+     "unites": 23,
+     "tourelles": 11,
+     "argent": 659,
+     "menace": 18.7,
+     "qg": 100,
+     "zombies": 500,
+     "tues": 7647,
+     "perdues": 4,
+     "boss": 7
     }
    ],
    "fin": {
-    "min": 19.5,
+    "min": 24.3,
     "nids": 0,
-    "unites": 12,
-    "tourelles": 1,
-    "argent": 371,
-    "menace": 18.2,
+    "unites": 25,
+    "tourelles": 4,
+    "argent": 194,
+    "menace": 22.9,
     "qg": 0,
-    "zombies": 499,
-    "tues": 7369,
-    "perdues": 20,
-    "boss": 6,
+    "zombies": 500,
+    "tues": 9475,
+    "perdues": 14,
+    "boss": 9,
     "tombe": true
    }
   }

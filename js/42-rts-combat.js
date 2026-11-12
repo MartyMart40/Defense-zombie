@@ -11,13 +11,16 @@ function rtsSpawnAt(x, z, n, spread, type){
   for (let i = 0; i < n && (alive < plan.maxAlive || type); i++){
     const t = type || rtsPickType(), zz = spawnZombie(t); if (!zz) continue;
     zz.g.position.set(x + rand(-spread, spread), zz.g.position.y, z + rand(-spread, spread)); zz.rtsT = 0; zz.wp = null; zz.useRoad = Math.random() < .3; alive++; k++; // 3 sur 10 suivent la vieille route, les autres coupent tout droit
-    if (RTS_BOSS.indexOf(t) >= 0){ zz.maxHp = zz.hp = zz.maxHp * RTS_CFG.bossHp; zz.rtsBoss = true; zz.abT = 3; }
+    if (RTS_BOSS.indexOf(t) >= 0){
+      zz.maxHp = zz.hp = zz.maxHp * RTS_CFG.bossHp; zz.rtsBoss = true; zz.abT = 3;
+      // Les dégâts d'un boss montent moins vite que ceux des autres zombies (puissance 0,6) : à menace 20, un Titan
+      // rasait une base intacte en 20 secondes. Il reste le plus dangereux, mais on a le temps de réagir.
+      zz.dmg = (ZTYPES[t].dmg || 0) * Math.pow(plan.dmgMult || 1, RTS_BOSS_DMG);
+    }
   }
   return k;
 }
-// Menace : +1 toutes les 4 minutes, +0,5 par nid détruit, +1 tous les 1 200 tués. Avec 600 (jusqu'au 12 novembre 2026), les tués
-// pesaient encore deux fois plus que le temps après 20 minutes (environ 500 tués par minute) : mieux on se défendait, plus ça montait.
-const RTS_THREAT = { t:240, nid:.5, tues:1200 };
+const RTS_THREAT = { t:240, nid:.5, tues:600 }, RTS_BOSS_DMG = .6; // menace : +1 toutes les 4 minutes, +0,5 par nid détruit, +1 tous les 600 tués ; RTS_BOSS_DMG : voir rtsSpawnAt
 function rtsThreat(){
   const killed = RTS.nests.filter(n => n.dead).length;
   // Surtout le temps et les nids détruits ; un peu les tués (avant : tués / 160, ce qui emballait tout :

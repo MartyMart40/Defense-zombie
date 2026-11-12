@@ -51,6 +51,7 @@
     Object.keys(P).forEach(k => delete P[k]);
     Object.assign(P, JSON.parse(JSON.stringify(P0)), { xp:0, level:1, pts:0, talents:{}, unlocked:1, best:{}, wins:{}, last:0, intensity:1, scrap:0 });
     P.slots = DEF_SLOTS.map(() => null);
+    try { defRebuild(); } catch (e) {} // les défenses en jeu suivent P.slots seulement après defRebuild
     // Seulement les clés du jeu (dt_) : la page de tests garde sa copie de secours sous un autre nom
     try { const ks = []; for (let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if (k && k.indexOf('dt_') === 0) ks.push(k); } ks.forEach(k => localStorage.removeItem(k)); } catch (e) {}
     saveP();
@@ -169,6 +170,8 @@
       P.slots.forEach((s, i) => { if (!s) return; ['dmg', 'rate'].forEach(l => { const c = defUpgCost(s.type, s.lv[l]); if (c < bc){ bc = c; bi = i; bl = l; } }); });
       if (bi < 0 || P.scrap < bc || !defUpgrade(bi, bl)) break;
     }
+    // Sans ça, les défenses achetées ici ne tiraient jamais (l'atelier du jeu le fait après chaque achat)
+    try { defRebuild(); } catch (e) {}
   }
   const prixArme = id => WEAPONS[id].price || 0;
   // Stratégies d'achat des armes (SIM.BOT.strategie) :
@@ -220,7 +223,7 @@
     while (t < maxT){
       if (state === 'shop'){ (BOT.boutique || boutique)(); startWave(); continue; }
       if (state !== 'playing') break;
-      viser(J, dt); if (BOT.pouvoirs !== false) pouvoirs(dt); visuals(dt); update(dt); t += dt; horloge(dt); if (BOT.chaque) BOT.chaque(t, dt);
+      viser(J, dt); if (BOT.sansTir) firing = false; if (BOT.pouvoirs !== false) pouvoirs(dt); visuals(dt); update(dt); t += dt; horloge(dt); if (BOT.chaque) BOT.chaque(t, dt);
       if (S.barMax > 0) barMin = Math.min(barMin, S.bar / S.barMax);
       if (endT > 0 && endT < dt * 1.5) vagues.push({ v:S.wave, bar:Math.round(100 * S.bar / S.barMax), argent:Math.round(S.money) });
       if (++n % 1500 === 0) await pause();

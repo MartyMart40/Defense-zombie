@@ -33,13 +33,15 @@ const defGrow = l => Math.pow(1.1, l);
 function defSoft(l, C){ return 1 + C * (1 - Math.pow(1 - .1 / C, l)); }
 const DEF_CAP = { rate:1.5, range:1, zone:1, pierce:4, count:2, reload:2 };
 const LASER_ON = 2.5, BURN_T = 3, FALLOUT_T = 6;
+// Mortier, laser et missiles renforcés le 12 novembre 2026 (70, 45 et 160 avant) : à ferraille égale, 4 tourelles de base
+// améliorées les battaient presque partout (banc du simulateur, docs/conception.md).
 function defStats(type, lv){
   lv = lv || {}; const d = lv.dmg || 0, r = lv.rate || 0, g = lv.range || 0, s = lv.spec || 0;
   switch (type){
     case 'turret':  return { dmg:12 * defGrow(d), rate:2 * defSoft(r, DEF_CAP.rate), range:45 * defSoft(g, DEF_CAP.range), pierce:defSoft(s, DEF_CAP.pierce) };
-    case 'mortar':  return { dmg:70 * defGrow(d), rate:.4 * defSoft(r, DEF_CAP.rate), range:60 * defSoft(g, DEF_CAP.range), radius:3.5 * defSoft(s, DEF_CAP.zone) };
-    case 'laser':   return { dps:45 * defGrow(d), off:3 / defSoft(r, DEF_CAP.rate), range:45 * defSoft(g, DEF_CAP.range), burn:12 * defGrow(s) };
-    case 'missile': return { dmg:160 * defGrow(d), rate:.25 * defSoft(r, DEF_CAP.rate), radius:4 * defSoft(g, DEF_CAP.zone), count:3 * defSoft(s, DEF_CAP.count), range:100 };
+    case 'mortar':  return { dmg:120 * defGrow(d), rate:.4 * defSoft(r, DEF_CAP.rate), range:60 * defSoft(g, DEF_CAP.range), radius:3.5 * defSoft(s, DEF_CAP.zone) };
+    case 'laser':   return { dps:80 * defGrow(d), off:3 / defSoft(r, DEF_CAP.rate), range:45 * defSoft(g, DEF_CAP.range), burn:20 * defGrow(s) };
+    case 'missile': return { dmg:250 * defGrow(d), rate:.25 * defSoft(r, DEF_CAP.rate), radius:4 * defSoft(g, DEF_CAP.zone), count:3 * defSoft(s, DEF_CAP.count), range:100 };
     case 'nuke':    return { dmg:4000 * defGrow(d), fallout:25 * defGrow(r), radius:60 * defSoft(g, DEF_CAP.zone), reload:30 / defSoft(s, DEF_CAP.reload) };
   }
   return null;

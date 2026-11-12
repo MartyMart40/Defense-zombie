@@ -123,4 +123,18 @@
     egal(r.neuf, 0, 'Nouvelle rue : compteur de renforts remis à zéro');
     ok(hors > 3, 'Sur le toit, la ferraille suit toujours la ville (Port / Saint-Clou = ' + hors + ')');
   });
+  test('Robot : un pas de côté esquive le crachat d’un cracheur', () => {
+    exiger(); reset(); depart();
+    const r = J(function(){
+      var o = {}, M = __mech.MECH, T = __types, vol = function(){ for (var i = 0; i < 120 && T.spitsActifs > 0; i++) T.zkFrame(1 / 30); };
+      S.barMax = S.bar = 10000; M.x = 0;
+      T.spitLaunch(0, 2, -40, M.x, 3, -5.5, 50); vol(); o.touche = 10000 - S.bar;
+      S.bar = 10000; T.spitLaunch(0, 2, -40, M.x, 3, -5.5, 50); M.x = T.SPIT_ESQUIVE + 1; vol(); o.esquive = 10000 - S.bar;
+      M.x = 0; return o;
+    });
+    fin();
+    reset(); const toit = J(function(){ startLocation(0); S.barMax = S.bar = 10000; __types.spitLaunch(0, 2, -40, 8, 1, BAR_Z, 50); for (var i = 0; i < 120 && __types.spitsActifs > 0; i++) __types.zkFrame(1 / 30); return 10000 - S.bar; });
+    egal(r.touche, 50, 'Robot immobile : le crachat fait ses dégâts'); egal(r.esquive, 0, 'Robot qui a fait un pas de côté : aucun dégât');
+    egal(toit, 50, 'Sur le toit, un crachat abîme toujours la barricade');
+  });
 })();

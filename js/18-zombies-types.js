@@ -268,12 +268,15 @@ ZKINDS.spitter = {
     if (z.spitT <= 0){
       z.spitT = rand(2.6, 3.4); z.snapT = .25;
       const sc = (ZTYPES[z.type] || {}).scale || 1, gp = z.g.position;
-      spitLaunch(gp.x, 1.78 * sc, gp.z + .35 * sc, clamp(gp.x * .6 + rand(-2, 2), -11, 11), rand(.5, 1.5), BAR_Z - .1, z.dmg);
+      // Robot (39-robot.js) : le crachat vise le robot là où il est ; un pas de côté l'esquive (zkFrame)
+      if (typeof MECH === 'object' && MECH.on) spitLaunch(gp.x, 1.78 * sc, gp.z + .35 * sc, MECH.x + rand(-.8, .8), rand(2.5, 4), MECH_CAM.z, z.dmg);
+      else spitLaunch(gp.x, 1.78 * sc, gp.z + .35 * sc, clamp(gp.x * .6 + rand(-2, 2), -11, 11), rand(.5, 1.5), BAR_Z - .1, z.dmg);
     }
     return true;
   }
 };
 // Éclatement d'une poche : rayon (m), dégâts aux voisins et au cracheur (en part de sa vie maximale)
+const SPIT_ESQUIVE = 2.6; // robot : un crachat qui tombe à plus de 2,6 m de lui le rate
 const SPIT_POP = { radius:4, splash:.6, self:.5 };
 // Crachats : pool fixe de maillages, géométrie et matériau partagés
 const zkRoot = new THREE.Group(); scene.add(zkRoot);
@@ -309,8 +312,11 @@ function zkFrame(dt){
     o.trail -= dt; if (o.trail <= 0){ o.trail = .07; burst(o.m.position, 'acid', 1, .4); }
     if (u >= 1){
       o.m.visible = false;
-      if (S){ S.bar = Math.max(0, S.bar - o.dmg); }
+      // Robot : touché seulement s'il est encore à moins de SPIT_ESQUIVE mètres de l'endroit visé
+      const rate = typeof MECH === 'object' && MECH.on && Math.abs(MECH.x - o.b.x) > SPIT_ESQUIVE;
       burst(o.b, 'acid', 9, 2.4); burst(o.b, 'wood', 2, 2);
+      if (rate){ Snd.burst(900, .15, .1); continue; }
+      if (S){ S.bar = Math.max(0, S.bar - o.dmg); }
       shake = Math.max(shake, .12); Snd.burst(900, .2, .25);
       spitSplash();
     }
@@ -497,4 +503,4 @@ window.__clown = {
 };
 
 // Accès pour les tests automatiques
-window.__types ={ ZKINDS, ZKG, ZKM, WEAK, SPIT_POP, spits, spitLaunch, zkFrame, zkClear, get spitsActifs(){ return spits.filter(o => o.m.visible).length; } };
+window.__types ={ ZKINDS, ZKG, ZKM, WEAK, SPIT_POP, SPIT_ESQUIVE, spits, spitLaunch, zkFrame, zkClear, get spitsActifs(){ return spits.filter(o => o.m.visible).length; } };

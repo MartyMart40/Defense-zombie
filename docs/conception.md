@@ -54,3 +54,9 @@ Martin : « vas-y, essai-erreur, pas besoin d'autorisation ». Mesuré avec le d
 - Roquette en plein sur un zombie : tous ses dégâts, peu importe sa taille (avant, un boss n'en prenait qu'environ 40 %).
 - Robot de combat : ses armes gardent leurs anciens dégâts (facteur `k` dans `MECH_W`). Seul changement pour lui : la roquette de plein fouet et un rayon d'explosion un peu plus grand.
 - À surveiller : le lance-roquettes reste derrière le minigun dans les mains du robot-joueur (il vise un seul zombie, pas le milieu du groupe) ; le canon électromagnétique ne sert que contre les boss.
+
+## Tour des trois modes (2026-11-12)
+Martin : « trouve ce qui cloche et change sans me demander ». Trouvé en faisant jouer des robots-joueurs en accéléré.
+- Autos du boss : destructibles en vol (3 balles, ou une roquette), 1,9 s de vol. Le bandeau du boss le dit.
+- Arsenal : le canon électromagnétique couche un couloir sur toute la rue (`tube` dans `ARS_W`) ; lance-grenades et mitrailleuse .50 renforcés. Le laser reste le plus fort pour son prix.
+- Robot et RTS : voir `docs/robot.md` et `docs/rts.md`.

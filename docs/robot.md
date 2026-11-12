@@ -14,7 +14,11 @@ On pilote un mech à deux pattes, vue du cockpit : minigun au bras gauche, lance
 ## Chiffres actuels
 - Rue de 140 m (`MECH_LEN`). Boss toutes les 3 rues.
 - Blindage 1 500, +250 et réparation à chaque rue.
-- Armes ×2,4, puis +16 % par rue ; zombies +22 % de vie par rue.
+- Armes ×2,4, puis +16 % par rue ; zombies +22 % de vie et +12 % de dégâts par rue, fois la montée `MECH_RAMPE` (1 à la rue 1, +0,2 par rue, 2,6 à partir de la rue 9).
+- La ville tirée au carrefour n'est que le décor : elle ne change plus la force des zombies ni la ferraille (2026-11-12 ; avant, une rue au Port frappait 5 fois plus fort qu'une rue à Saint-Clou, au hasard).
+- Renforts (2026-11-12) : quand la horde d'une rue est épuisée, elle se reforme 35 % plus forte (vie et dégâts) à chaque fois ; à partir du 2e renfort, elle ne rapporte plus ni ferraille ni expérience. Mesuré avant : rester au début de la rue 1 tuait 1 400 zombies en 6 minutes sans perdre de blindage.
+- Crachats (2026-11-12) : un cracheur vise le robot là où il est ; un pas de côté de plus de 2,6 m l'esquive (`SPIT_ESQUIVE`, `js/18-zombies-types.js`). Avant, chaque crachat touchait à coup sûr, peu importe où était le robot : c'était sa plus grosse source de dégâts.
+- Les armes du robot gardent leurs dégâts d'avant le renforcement des armes du toit (facteur `k` dans `MECH_W`). Le canon électromagnétique a gagné son onde de choc en couloir (comme sur le toit).
 - Vagues de tous les côtés toutes les 28 s.
 - Garage : 9 améliorations permanentes (blindage, dégâts et refroidissement de la minigun, dégâts, cadence et salve des roquettes, jambes, réparation, nanorobots) et 5 armes de plus (lance-flammes lourd, laser lourd, lance-grenades, arc électrique, canon électromagnétique).
 

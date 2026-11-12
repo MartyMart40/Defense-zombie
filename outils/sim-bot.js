@@ -59,13 +59,15 @@
   /* ---------- Toit ---------- */
   const v3 = new THREE.Vector3();
   const vise = { z:null, t:0, ex:0, ey:0, tete:false };
-  // Qui viser, comme un joueur qui connaît le jeu :
+  // Qui viser, comme un joueur qui connaît le jeu (une auto lancée par le boss passe avant tout) :
   //   1. le zombie le plus proche de la barricade s'il est à moins de BOT.zone mètres d'elle ;
   //   2. sinon un cracheur arrêté (il crache de loin sur la barricade) ;
   //   3. sinon le boss, à la tête (le jeu le dit au joueur) ;
   //   4. sinon le zombie le plus proche de la barricade.
   function cible(){
     let best = null, bz = -1e9, boss = null, crach = null, cz = -1e9;
+    // Une auto lancée par le boss : il tire dessus tout de suite (3 balles la font exploser en vol)
+    if (typeof __boss === 'object' && __boss.bossCars) for (const c of __boss.bossCars) if (c.m.visible) return c.pourBot || (c.pourBot = { type:'auto', g:c.m, hp:1, get dead(){ return !c.m.visible; } });
     for (const z of zombies){
       if (z.dead || !z.g) continue;
       const p = z.g.position; if (p.z > BAR_Z + 2 || p.z < -140) continue;
@@ -296,7 +298,7 @@
       argent:Math.round(S.money), menace:Math.round(RTS.threat * 10) / 10, qg:RTS.base ? Math.max(0, Math.round(100 * RTS.base.hp / RTS.base.maxHp)) : 0, zombies:zAliveCount(), tues:RTS.kills, perdues:RTS.lost, boss:RTS.bossKills });
     while (t < maxT && state === 'rts'){
       dec -= dt; if (dec <= 0){ dec = 2; rtsDecide(); }
-      visuals(dt); t += dt; horloge(dt);
+      visuals(dt); t += dt; horloge(dt); if (BOT.chaque) BOT.chaque(t, dt);
       if (t >= mark){ pas.push(photo()); mark += 300; }
       if (++n % 400 === 0) await pause();
     }

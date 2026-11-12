@@ -6,6 +6,7 @@
   if (typeof test !== 'function') return;
   const pret = () => lire('typeof __boss === "object" && __boss.bossReady()') === true;
   const exiger = () => { if (!pret()) ignorer('Boss absent ou crochet ZKINDS de spawnZombie manquant (19-boss.js / 07-zombies.js)'); };
+  const __boss_hits = () => lire('__boss.BOSS_CAR.hits');
   // Lance la vague 5 de Saint-Clou et fait apparaître le boss tout de suite
   function avecBoss(){
     reset(); J('startLocation(0)');
@@ -100,6 +101,35 @@
     ok(r.lancer > 0, 'Aucune auto lancée n’a touché la barricade');
     egal(r.st, 'attack', 'État à la barricade');
     ok(r.coups > 0, 'Les coups du boss n’abîment pas la barricade');
+  });
+
+  test('Boss : trois balles sur une auto en vol la font exploser, la barricade ne prend rien', () => {
+    exiger();
+    ok(avecBoss().ok, 'Le boss n’est pas apparu');
+    const r = J(function(){
+      var b = zombies.find(function(z){ return z.type === 'boss'; }), B = __boss, o = {};
+      S.barMax = S.bar = 1e6; b.throwT = 1e9;
+      // 1. Une auto qu'on laisse passer abîme la barricade et sort de hitMeshes
+      B.bossThrow(b); var c = B.bossCars.filter(function(x){ return x.m.visible; })[0];
+      o.cible = !!c && hitMeshes.indexOf(c.cible) >= 0;
+      for (var i = 0; i < 90 && c.m.visible; i++) B.bossUpdateFx(b, 1 / 30);
+      o.passe = 1e6 - S.bar; o.rangee = hitMeshes.indexOf(c.cible) < 0;
+      // 2. Trois vraies balles : on vise l'auto en vol et on tire
+      S.bar = 1e6; B.bossThrow(b); c = B.bossCars.filter(function(x){ return x.m.visible; })[0];
+      for (i = 0; i < 12; i++) B.bossUpdateFx(b, 1 / 30);
+      equip('pistol'); zoomed = false; recoilAcc = 0; reloadT = 0; S.ammo.pistol = magSize('pistol'); o.tirs = 0;
+      for (i = 0; i < 6 && c.m.visible; i++){ camera.lookAt(c.m.position); camera.updateMatrixWorld(true); cool = 0; fire(); o.tirs++; }
+      o.detruite = !c.m.visible; for (i = 0; i < 90; i++) B.bossUpdateFx(b, 1 / 30);
+      o.recu = 1e6 - S.bar; o.compte = S.carsShot || 0; o.propre = hitMeshes.indexOf(c.cible) < 0;
+      // 3. Une roquette (dégâts énormes) suffit
+      B.bossThrow(b); c = B.bossCars.filter(function(x){ return x.m.visible; })[0]; B.bossCarHit(c, c.m.position, 1e9); o.roquette = !c.m.visible;
+      B.bossClearFx(); clearZombies();
+      return o;
+    });
+    ok(r.cible, 'L’auto en vol doit être une cible des tirs'); ok(r.passe > 0 && r.rangee, 'Auto non touchée : dégâts ' + r.passe + ', retirée des cibles : ' + r.rangee);
+    egal(r.tirs, __boss_hits(), 'Balles pour détruire l’auto'); ok(r.detruite && r.propre, 'Auto détruite en vol et retirée des cibles');
+    egal(r.recu, 0, 'Dégâts à la barricade après destruction'); egal(r.compte, 1, 'Autos détruites comptées (S.carsShot)');
+    ok(r.roquette, 'Une roquette détruit l’auto d’un coup');
   });
 
   test('Boss : la récompense est versée (argent, XP, ferraille)', () => {

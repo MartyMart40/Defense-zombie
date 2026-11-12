@@ -192,7 +192,7 @@ function armStep(dt){
     armRay.set(p, armDir); armRay.far = step;
     const hits = armRay.intersectObjects(hitMeshes, false);
     let at = null, touche = null;
-    for (const h of hits){ const z = h.object.userData.z; if ((z && !z.dead) || h.object.userData.onHit){ at = h.point; touche = z && !z.dead ? z : null; break; } }
+    for (const h of hits){ const z = h.object.userData.z; if ((z && !z.dead) || h.object.userData.onHit){ at = h.point; touche = z && !z.dead ? z : null; if (h.object.userData.bossCar) h.object.userData.onHit(h.point, 1e9); break; } } // auto du boss : détruite d'un coup
     if (!at){
       p.addScaledVector(o.v, dt);
       // Fusée de proximité : explose en frôlant un zombie (volants qui louvoient, sauteurs en l'air)

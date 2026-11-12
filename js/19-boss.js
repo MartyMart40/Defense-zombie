@@ -14,6 +14,7 @@ const BOSS_ARMOR = .6;       // les tirs au corps ne font que 60 % (plaques de m
 const BOSS_START_Z = -70;    // apparaît assez près pour être vu malgré le brouillard
 const BOSS_THROW = 1.2;      // dégâts d'une auto lancée, en multiple de z.dmg
 const BOSS_SLAM = 1.6;       // dégâts d'un coup de poing sur la barricade, en multiple de z.dmg
+const BOSS_CAR = { hits:3, T:1.9 }; // auto lancée : 3 balles dessus la font exploser en vol (une roquette suffit) ; 1,9 s de vol
 
 // Variantes par ville : nom, vie, taille, couleurs, récompense
 const BOSS_VAR = {
@@ -112,21 +113,39 @@ function bossBuild(T){
 /* ---------- Projectiles : autos lancées (pool réutilisé) ---------- */
 const bossFx = new THREE.Group(); scene.add(bossFx);
 const BCAR_MATS = [lam(0x6a1f1a), lam(0x2a3a4a), lam(0x5a5a52), lam(0x3a4a2a)];
-const BCAR_DARK = lam(0x151515), BCAR_GLASS = lam(0x2a3640);
+const BCAR_DARK = lam(0x151515), BCAR_GLASS = lam(0x2a3640), BCAR_HIT = new THREE.MeshBasicMaterial({ visible:false });
 const bossCars = [];
 for (let i = 0; i < 3; i++){
   const m = new THREE.Group(), mat = BCAR_MATS[i % BCAR_MATS.length];
   bbox(m, mat, 4.2, 1.1, 2, 0, 0, 0); bbox(m, BCAR_GLASS, 2.3, .85, 1.8, -.2, .95, 0);
   [[-1.4, -1], [1.4, -1], [-1.4, 1], [1.4, 1]].forEach(p => bbox(m, BCAR_DARK, .8, .8, .3, p[0], -.55, p[1]));
+  // Cible des tirs : une boîte invisible autour de l'auto, dans hitMeshes seulement pendant le vol (comme les barils de 23-rue.js)
+  const cible = new THREE.Mesh(BGEO, BCAR_HIT); cible.scale.set(5, 2.6, 2.8); cible.position.y = .3; m.add(cible);
   m.visible = false; bossFx.add(m);
-  bossCars.push({ m, owner:null, t:0, T:1.5, a:new THREE.Vector3(), b:new THREE.Vector3(), hgt:12, dmg:0, spin:new THREE.Vector3() });
+  const c = { m, cible, owner:null, t:0, T:1.5, a:new THREE.Vector3(), b:new THREE.Vector3(), hgt:12, dmg:0, hp:0, spin:new THREE.Vector3() };
+  cible.userData.bossCar = true; cible.userData.onHit = (pt, dmg) => bossCarHit(c, pt, dmg);
+  bossCars.push(c);
 }
-function bossClearFx(){ bossCars.forEach(c => { c.m.visible = false; c.owner = null; }); }
+function bossCarOff(c){ c.m.visible = false; c.owner = null; const i = hitMeshes.indexOf(c.cible); if (i >= 0) hitMeshes.splice(i, 1); }
+// Une balle sur l'auto en vol ; dmg >= 1e6 (roquette, explosion) la détruit d'un coup
+function bossCarHit(c, pt, dmg){
+  if (!c.m.visible) return;
+  c.hp -= dmg >= 1e6 ? BOSS_CAR.hits : 1;
+  burst(pt || c.m.position, 'dust', 4, 2);
+  if (c.hp > 0){ Snd.burst(1800, .08, .25); return; }
+  // Elle explose en l'air : la barricade ne prend rien
+  tmpV.copy(c.m.position); bossCarOff(c); S.carsShot = (S.carsShot || 0) + 1;
+  burst(tmpV, 'dust', 22, 6); burst(tmpV, 'wood', 10, 5);
+  if (typeof floatText === 'function') floatText('Auto détruite !', tmpV, true);
+  shake = Math.max(shake, .5); Snd.burst(420, .7, .7); Snd.tone(80, .5, 'sine', .35, 30);
+}
+function bossClearFx(){ bossCars.forEach(bossCarOff); }
 function bossThrow(z){
   const c = bossCars.find(o => !o.m.visible); if (!c) return false;
   z.B.fist.getWorldPosition(c.a);
   c.b.set(clamp(z.g.position.x + rand(-7, 7), -10, 10), .9, BAR_Z - .4);
-  c.t = 0; c.T = 1.45; c.hgt = 9 + rand(0, 5); c.dmg = z.dmg * BOSS_THROW; c.owner = z;
+  c.t = 0; c.T = BOSS_CAR.T; c.hgt = 9 + rand(0, 5); c.dmg = z.dmg * BOSS_THROW; c.owner = z; c.hp = BOSS_CAR.hits;
+  if (hitMeshes.indexOf(c.cible) < 0) hitMeshes.push(c.cible);
   c.spin.set(rand(-3, 3), rand(-2, 2), rand(-4, 4));
   c.m.position.copy(c.a); c.m.rotation.set(0, rand(0, 6.3), 0); c.m.visible = true;
   Snd.burst(500, .5, .4); Snd.tone(90, .6, 'sawtooth', .18, 40);
@@ -138,8 +157,9 @@ function bossUpdateFx(z, dt){
     c.t += dt; const u = Math.min(1, c.t / c.T);
     c.m.position.lerpVectors(c.a, c.b, u); c.m.position.y += c.hgt * 4 * u * (1 - u);
     c.m.rotation.x += c.spin.x * dt; c.m.rotation.y += c.spin.y * dt; c.m.rotation.z += c.spin.z * dt;
+    c.m.updateMatrixWorld(true); // la cible des tirs suit l'auto tout de suite
     if (u >= 1){
-      c.m.visible = false; c.owner = null;
+      bossCarOff(c);
       S.bar = Math.max(0, S.bar - c.dmg);
       shake = Math.max(shake, .9);
       burst(c.b, 'wood', 14, 4); burst(c.b, 'dust', 10, 3);
@@ -167,7 +187,7 @@ function bossInit(z){
 }
 let bossBannerTO = 0;
 function bossAnnounce(z){
-  banner(z.bossName, 'Un boss approche ! Vise la tête, son corps est blindé.', 3600);
+  banner(z.bossName, 'Un boss approche ! Vise la tête, et tire sur les autos qu’il lance.', 3600);
   const b = $('banner'); if (b){ b.classList.add('boss'); clearTimeout(bossBannerTO); bossBannerTO = setTimeout(() => b.classList.remove('boss'), 4100); }
   shake = Math.max(shake, 1.2); bossFlash(.6);
   Snd.tone(70, 2.4, 'sawtooth', .32, 28); Snd.tone(46, 2.8, 'sine', .55, 24); Snd.burst(260, 1.8, .5);
@@ -313,4 +333,4 @@ try {
 } catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
-window.__boss = { BOSS_VAR, BOSS_KIND, BOSS_ARMOR, bossVariant, bossReady, isBossWave, bossBarSync, bossFrame, bossCars, liveBoss, bossClearFx };
+window.__boss = { BOSS_VAR, BOSS_KIND, BOSS_ARMOR, BOSS_CAR, bossThrow, bossCarHit, bossUpdateFx, bossVariant, bossReady, isBossWave, bossBarSync, bossFrame, bossCars, liveBoss, bossClearFx };

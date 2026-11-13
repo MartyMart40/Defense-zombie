@@ -114,6 +114,9 @@ function accBuy(id, k){
 
 /* ---------- Modèles en main des 5 armes (mêmes outils que 04-arme-en-main.js) ---------- */
 const ARS_C = { cyan:[.6, 2.6, 3.2], blueG:[.5, 1.6, 3.4], violet:[2.2, .9, 3.4], copper:0x9a5a2a, white:0xb8bcc2, whiteD:0x7a7e86, redG:[3.4, .35, .3] };
+// Pièces d'énergie qui s'illuminent au tir (vmEnergie, 04-arme-en-main.js) ; coque blanche laquée, cuivre poli
+vmEnergie(ARS_C.cyan); vmEnergie(ARS_C.blueG); vmEnergie(ARS_C.violet);
+vmMatiere([ARS_C.white, ARS_C.whiteD], [.75, 1.4, 0]); vmMatiere([ARS_C.copper], [1.5, 1.3, 0]);
 function arsHands(b, gripZ, cupZ, cupY, fw){
   vmPush(b, 0, -.095, gripZ, -.38);
   vmBox(b, .034, .085, .044, VC.poly, 0, 0, 0, 0, 0, 0, .008);
@@ -157,6 +160,14 @@ function arsBuild(){
     vmBox(b, .08, .1, .1, VC.oliveD, -.085, -.03, -.08, 0, 0, 0, .008);                          // caisse de munitions
     vmBox(b, .082, .012, .102, VC.olive, -.085, .025, -.08, 0, 0, 0, 0);
     for (i = 0; i < 5; i++) vmBox(b, .012, .02, .012, VC.brass, -.044, .02 - i * .006, -.06 - i * .012, 0, 0, .6, 0); // bande
+    // Détails (tâche 104) : levier d'armement, charnière et loquet du couvercle, fenêtre d'éjection, maillons de la bande
+    vmBox(b, .03, .012, .016, VC.steel, .05, .02, .02, 0, 0, 0, .003);                           // levier d'armement à droite
+    vmBox(b, .008, .03, .012, VC.park, .066, .02, .02, 0, 0, 0, 0);
+    vmCyl(b, .007, .078, VC.steel, 0, .058, .1, 0, Math.PI / 2, 0, 8);                          // charnière du couvercle
+    vmBox(b, .02, .01, .02, VC.light, 0, .066, -.19, 0, 0, 0, .003);                             // loquet
+    vmBox(b, .002, .022, .06, VC.port, .0362, .0, -.08, 0, 0, 0, 0);                             // fenêtre d'éjection
+    for (i = 0; i < 4; i++) vmBox(b, .004, .05, .012, VC.oliveD, .0362, -.005, -.16 - i * .03, 0, 0, 0, 0); // nervures
+    for (i = 0; i < 5; i++) vmBox(b, .006, .028, .016, VC.steel, -.047, .006 - i * .006, -.054 - i * .012, 0, 0, .6, 0); // maillons
     vmCyl(b, .018, .2, VC.park, 0, .0, .19, 0, 0, 0, 8);                                         // tube de crosse
     vmBox(b, .05, .08, .14, VC.oliveD, 0, -.01, .25, 0, 0, 0, .012);
     vmBox(b, .054, .1, .02, VC.rubber, 0, -.01, .33, 0, 0, 0, .008);
@@ -170,18 +181,41 @@ function arsBuild(){
   g = new THREE.Group(); b = vmNew();
   {
     const SY = .1;
+    // Refait (tâche 104) : coque laquée à panneaux, évents et bobines qui s'illuminent au tir, cristal sous verre,
+    // émetteur à ailettes avec lentille, câble d'alimentation, crosse ajourée
     vmBox(b, .066, .07, .42, ARS_C.white, 0, .012, -.16, 0, 0, 0, .02);                         // coque
     vmBox(b, .068, .016, .34, ARS_C.whiteD, 0, -.03, -.16, 0, 0, 0, .006);
-    for (i = 0; i < 2; i++) vmBox(b, .07, .008, .3, ARS_C.cyan, 0, .02 - i * .03, -.18, 0, 0, 0, 0); // bandes lumineuses
-    vmBox(b, .04, .03, .2, VC.poly, 0, .055, -.1, 0, 0, 0, .008);                                // capot du cristal
-    vmBox(b, .012, .012, .14, ARS_C.cyan, 0, .074, -.1, 0, 0, 0, 0);
-    vmCyl(b, .028, .16, ARS_C.whiteD, 0, .015, -.44, 0, 0, 0, 10, .7);                           // émetteur
-    for (i = 0; i < 3; i++) vmRing(b, .03, .024, .012, VC.park, 0, .015, -.39 - i * .045, 0, 0, 0, 10);
-    vmRing(b, .022, .012, .01, ARS_C.cyan, 0, .015, -.525, 0, 0, 0, 10);
-    vmBox(b, .05, .07, .05, VC.poly, 0, -.05, -.1, 0, 0, 0, .008);                               // batterie
-    vmBox(b, .052, .01, .03, ARS_C.cyan, 0, -.02, -.1, 0, 0, 0, 0);
-    vmBox(b, .046, .075, .16, ARS_C.white, 0, -.005, .2, 0, 0, 0, .014);                         // crosse
-    vmBox(b, .05, .09, .02, VC.rubber, 0, -.005, .29, 0, 0, 0, .008);
+    for (const sd of [-1, 1]){
+      vmBox(b, .004, .038, .2, VC.polyE, sd * .0335, .014, -.2, 0, 0, 0, 0);                      // panneau sombre sur le flanc
+      for (i = 0; i < 5; i++) vmBox(b, .005, .026, .008, ARS_C.cyan, sd * .035, .014, -.13 - i * .035, 0, 0, 0, 0); // évents lumineux
+      vmCyl(b, .0045, .006, VC.steel, sd * .034, -.012, -.06, 0, Math.PI / 2, 0, 6);             // vis de coque
+      vmCyl(b, .0045, .006, VC.steel, sd * .034, -.012, -.31, 0, Math.PI / 2, 0, 6);
+    }
+    vmBox(b, .07, .006, .3, ARS_C.cyan, 0, -.012, -.18, 0, 0, 0, 0);                            // bande lumineuse
+    vmBox(b, .044, .03, .2, VC.poly, 0, .055, -.1, 0, 0, 0, .008);                               // capot du cristal
+    vmBox(b, .03, .01, .16, VC.lens, 0, .071, -.1, 0, 0, 0, .003);                               // verre du capot
+    vmBox(b, .012, .008, .13, ARS_C.cyan, 0, .069, -.1, 0, 0, 0, 0);                             // cristal
+    vmBox(b, .03, .008, .1, VC.park, 0, .072, .02, 0, 0, 0, 0);                                  // rail court (optiques)
+    for (i = 0; i < 4; i++) vmBox(b, .034, .004, .006, VC.park, 0, .077, .055 - i * .022, 0, 0, 0, 0);
+    vmPrism(b, vmCirc(.03, 6), null, .2, ARS_C.whiteD, 0, .015, -.43, 0, 0, 0, .85);             // émetteur à six pans
+    for (i = 0; i < 3; i++){                                                                      // bobines de focalisation
+      vmRing(b, .033, .026, .014, VC.park, 0, .015, -.37 - i * .05, 0, 0, 0, 10);
+      vmRing(b, .0275, .025, .008, ARS_C.cyan, 0, .015, -.37 - i * .05, 0, 0, 0, 10);
+    }
+    for (i = 0; i < 3; i++){ const a = i / 3 * Math.PI * 2 + Math.PI / 2;                        // ailettes autour de la bouche
+      vmBox(b, .006, .022, .06, VC.park, Math.cos(a) * .027, .015 + Math.sin(a) * .027, -.51, 0, 0, a + Math.PI / 2, 0); }
+    vmRing(b, .024, .014, .016, VC.steel, 0, .015, -.525, 0, 0, 0, 10);                          // bague de la lentille
+    vmCyl(b, .015, .006, ARS_C.cyan, 0, .015, -.522, 0, 0, 0, 10);                               // lentille
+    vmBox(b, .05, .072, .06, VC.poly, 0, -.05, -.1, 0, 0, 0, .008);                              // batterie
+    for (i = 0; i < 4; i++) vmBox(b, .053, .004, .05, VC.polyE, 0, -.072 + i * .012, -.1, 0, 0, 0, 0);
+    vmBox(b, .052, .012, .022, ARS_C.cyan, 0, -.02, -.1, 0, 0, 0, 0);                            // jauge
+    vmCylAB(b, [.022, -.06, -.13], [.03, -.03, -.22], .006, VC.rubber, 6);                       // câble vers l'émetteur
+    vmCylAB(b, [.03, -.03, -.22], [.026, .0, -.34], .006, VC.rubber, 6);
+    vmBox(b, .046, .022, .2, ARS_C.white, 0, .028, .2, 0, 0, 0, .008);                           // crosse ajourée : barre haute
+    vmBox(b, .046, .02, .18, ARS_C.white, 0, -.05, .19, -.12, 0, 0, .008);                       // barre basse
+    vmBox(b, .04, .06, .02, ARS_C.whiteD, 0, -.01, .12, 0, 0, 0, .006);
+    vmBox(b, .03, .014, .1, VC.polyE, 0, .042, .2, 0, 0, 0, .004);                               // appui-joue
+    vmBox(b, .05, .1, .022, VC.rubber, 0, -.01, .3, 0, 0, 0, .008);
     const ir = vmNew(); arsSights(ir, SY, -.34, .02);
     arsHands(b, .05, -.28, .0, .034);
     vmMesh(g, b); const irons = vmMesh(g, ir);                                                    // mires métalliques (rabattues sous une optique)
@@ -223,6 +257,12 @@ function arsBuild(){
     vmBox(b, .04, .06, .18, VC.poly, 0, .0, .18, 0, 0, 0, .012);                                 // crosse
     vmBox(b, .044, .09, .02, VC.rubber, 0, -.01, .27, 0, 0, 0, .008);
     vmBox(b, .03, .1, .03, VC.poly, 0, -.07, -.26, 0, 0, 0, .006);                               // poignée avant
+    // Détails (tâche 104) : nervures du tube, vis du barillet, ressort du barillet, bretelle
+    for (i = 0; i < 4; i++) vmRing(b, .037, .033, .012, VC.oliveD, 0, .02, -.2 - i * .05, 0, 0, 0, 10);
+    for (i = 0; i < 6; i++){ const a = i / 6 * Math.PI * 2 + .5; vmCyl(b, .006, .004, VC.steel, Math.cos(a) * .062, -.02 + Math.sin(a) * .062, .021, 0, 0, 0, 6); }
+    vmCyl(b, .012, .02, VC.light, 0, -.02, .025, 0, 0, 0, 8);                                    // axe du barillet
+    vmBox(b, .052, .012, .03, VC.park, 0, -.005, .07, 0, 0, 0, .003);                            // verrou du barillet
+    vmBox(b, .012, .02, .006, VC.steel, -.03, -.03, -.35, 0, 0, 0, 0);                           // anneau de bretelle
     const ir = vmNew(); arsSights(ir, SY, -.42, .04);
     arsHands(b, .06, -.3, .02, .036);
     vmMesh(g, b); const irons = vmMesh(g, ir);                                                    // mires métalliques (rabattues sous une optique)
@@ -250,7 +290,7 @@ function arsBuild(){
   }
   out.arc = g;
   Object.keys(out).forEach(k => {
-    const v = out[k]; v.visible = false; vmRoot.add(v); v.userData.tris = vmTris(v); v.userData.muzzleBase = v.userData.muzzle; VMS[k] = v;
+    const v = out[k]; v.visible = false; vmRoot.add(v); vmArme(v); v.userData.tris = vmTris(v); v.userData.muzzleBase = v.userData.muzzle; VMS[k] = v;
   });
 }
 try { arsBuild(); } catch (e) { console.error('Arsenal : modèles', e); }
@@ -324,16 +364,29 @@ function accSync(id){
     const zr = ud.sight && ud.sight[1] ? ud.sight[1].z : .02, zf = ud.sight && ud.sight[0] ? ud.sight[0].z : mz * .8;
     const zo = Math.min(zr - .1, (zr + zf) / 2); // optique entre le cran de mire et le guidon
     keys.forEach(k => {
-      if (k === 'reddot'){
-        vmBox(b, .026, .022, .05, VC.park, 0, SY - .034, zo, 0, 0, 0, .004);
-        vmRing(b, .024, .019, .045, VC.park, 0, SY, zo, 0, 0, 0, 12);
-        vmBox(b, .0035, .0035, .001, ARS_C.redG, 0, SY, zo - .02, 0, 0, 0, 0);               // le point rouge, sur la ligne de mire
-      } else if (k === 'scope'){
-        vmRing(b, .026, .021, .2, VC.blue, 0, SY, zo, 0, 0, 0, 12);
-        vmRing(b, .032, .021, .03, VC.park, 0, SY, zo - .1, 0, 0, 0, 12);
-        vmRing(b, .03, .021, .03, VC.park, 0, SY, zo + .1, 0, 0, 0, 12);
-        for (const dz of [-.05, .05]) vmBox(b, .02, .03, .02, VC.park, 0, SY - .038, zo + dz, 0, 0, 0, .003);
-        vmCyl(b, .007, .012, VC.park, 0, SY + .03, zo, Math.PI / 2, 0, 0, 7);
+      if (k === 'reddot'){                                                                       // viseur point rouge (refait, tâche 104)
+        vmBox(b, .03, .012, .056, VC.park, 0, SY - .036, zo, 0, 0, 0, .003);                     // embase sur le rail
+        vmBox(b, .026, .014, .04, VC.blue, 0, SY - .025, zo + .004, 0, 0, 0, .004);
+        vmRing(b, .025, .02, .036, VC.blue, 0, SY, zo, 0, 0, 0, 12);                             // fenêtre
+        vmRing(b, .027, .02, .006, VC.park, 0, SY, zo - .02, 0, 0, 0, 12);                       // pare-soleil avant
+        vmRing(b, .0205, .0185, .002, VC.lens, 0, SY, zo - .016, 0, 0, 0, 12);                   // bord du verre (le verre lui-même ne cache rien)
+        vmCyl(b, .007, .014, VC.light, .03, SY - .006, zo + .006, 0, Math.PI / 2, 0, 8);          // molette de réglage
+        vmBox(b, .0065, .0065, .001, ARS_C.redG, 0, SY, zo - .0145, 0, 0, Math.PI / 4, 0);        // le point rouge, sur la ligne de mire, devant le verre
+      } else if (k === 'scope'){                                                                 // lunette ×4 (refaite) : à l'œil, cadre de lunette (66-visee.js)
+        vmCyl(b, .017, .22, VC.blue, 0, SY, zo, 0, 0, 0, 12);                                     // tube
+        vmCyl(b, .026, .06, VC.blue, 0, SY, zo - .13, 0, 0, 0, 12, 1); vmCyl(b, .017, .04, VC.blue, 0, SY, zo - .08, 0, 0, 0, 12, 1.5); // objectif évasé
+        vmRing(b, .027, .022, .02, VC.park, 0, SY, zo - .165, 0, 0, 0, 12);                       // pare-soleil
+        vmCyl(b, .022, .002, VC.lens, 0, SY, zo - .158, 0, 0, 0, 12);                              // verre avant
+        vmBox(b, .01, .006, .001, VC.lensHi, -.008, SY + .01, zo - .1595, 0, 0, .4, 0);
+        vmCyl(b, .021, .05, VC.blue, 0, SY, zo + .13, 0, 0, 0, 12, 1); vmCyl(b, .023, .03, VC.rubber, 0, SY, zo + .165, 0, 0, 0, 12, .9); // oculaire
+        vmCyl(b, .018, .002, VC.lens, 0, SY, zo + .181, 0, 0, 0, 12);
+        vmCyl(b, .011, .02, VC.park, 0, SY + .024, zo, Math.PI / 2, 0, 0, 10);                    // tourelles
+        vmCyl(b, .011, .02, VC.park, .024, SY, zo, 0, Math.PI / 2, 0, 10);
+        for (const dz of [-.06, .06]){                                                            // colliers et embases
+          vmRing(b, .021, .017, .016, VC.park, 0, SY, zo + dz, 0, 0, 0, 12);
+          vmBox(b, .022, .03, .016, VC.park, 0, SY - .032, zo + dz, 0, 0, 0, .003);
+          vmCyl(b, .003, .046, VC.light, 0, SY - .02, zo + dz, 0, Math.PI / 2, 0, 6);
+        }
       } else if (k === 'bipod'){
         vmBox(b, .03, .02, .03, VC.park, 0, my - .03, mz * .72, 0, 0, 0, .004);
         for (const s of [-1, 1]){
@@ -404,7 +457,7 @@ function accSync(id){
         vmCyl(b, .012, .001, VC.face, -.075, .03, -.29, 0, Math.PI / 2, 0, 10);
       }
     });
-    ud.accMesh = vmMesh(g, b);
+    ud.accMesh = vmMesh(g, b, vmMatArme);
   }
   if (S && S.cur === id && flash.parent === g) flash.position.z = ud.muzzle;
 }

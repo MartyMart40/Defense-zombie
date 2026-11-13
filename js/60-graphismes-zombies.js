@@ -136,7 +136,7 @@ function zhdDof(){
     const i = HD.comp.passes.indexOf(HD.grade); HD.comp.insertPass(ZHD.dof, i < 0 ? HD.comp.passes.length : i); // avant les couleurs
   }
   const u = ZHD.dof.uniforms, v = ZHD.forceVise != null ? ZHD.forceVise : typeof ads === 'number' ? ads : 0;
-  const sniper = typeof S !== 'undefined' && S && S.cur === 'sniper' && v > .85; // la lunette a son propre cadre
+  const sniper = typeof viseeLunette === 'function' ? viseeLunette() : (typeof S !== 'undefined' && S && S.cur === 'sniper' && v > .85); // une lunette a son propre cadre, nette (66-visee.js)
   u.vise.value = sniper ? 0 : v * ZHD.dofForce; u.flou.value = ZHD.flou;
   u.tDepth.value = HD.ssao.normalRenderTarget.depthTexture;
   u.near.value = camera.near; u.far.value = camera.far;

@@ -72,12 +72,13 @@ function buildVM(){
     vmBox(b, .008, .005, .52, VC.park, 0, .0415, -.43, 0, 0, 0, 0);                           // bande ventilée
     for (i = 0; i < 6; i++) vmBox(b, .006, .004, .006, VC.park, 0, .0375, -.22 - i * .085, 0, 0, 0, 0);
     vmRing(b, .0195, .011, .012, VC.park, 0, .022, -.696, 0, 0, 0, 10);                       // bouche
-    vmCyl(b, .0045, .005, VC.glow, 0, SY - .0045, -.682, Math.PI / 2, 0, 0, 6);              // bille du guidon
+    const ir = vmNew();                                                                         // mires (cachées sous le point rouge)
+    vmCyl(ir, .0045, .005, VC.glow, 0, SY - .0045, -.682, Math.PI / 2, 0, 0, 6);             // bille du guidon
     vmCyl(b, .014, .47, VC.park, 0, -.018, -.405, 0, 0, 0, 8);                                // magasin tubulaire
     vmCyl(b, .016, .03, VC.steel, 0, -.018, -.655, 0, 0, 0, 8);                               // bouchon
     vmBox(b, .022, .058, .016, VC.park, 0, .002, -.6, 0, 0, 0, .004);                         // collier
-    vmBox(b, .008, .011, .012, VC.park, -.009, SY - .0055, -.008, 0, 0, 0, 0);               // cran de mire
-    vmBox(b, .008, .011, .012, VC.park, .009, SY - .0055, -.008, 0, 0, 0, 0);
+    vmBox(ir, .008, .011, .012, VC.park, -.009, SY - .0055, -.008, 0, 0, 0, 0);              // cran de mire
+    vmBox(ir, .008, .011, .012, VC.park, .009, SY - .0055, -.008, 0, 0, 0, 0);
     vmBox(b, .014, .007, .06, VC.blue, 0, -.067, .0, 0, 0, 0, 0);                             // pontet
     vmBox(b, .014, .03, .008, VC.blue, 0, -.054, -.03, .2, 0, 0, 0);
     vmBox(b, .005, .022, .006, VC.light, 0, -.052, -.005, .3, 0, 0, 0);                       // détente
@@ -96,7 +97,7 @@ function buildVM(){
     vmBox(b, .056, .11, .02, VC.rubber, 0, -.06, .34, -.08, 0, 0, .008);                      // plaque de couche
     vmCyl(b, .004, .056, VC.light, 0, -.03, .2, 0, Math.PI / 2, 0, 6);
     vmArm(b, [.02, -.03, .14], [.08, -.2, .36], .028);
-    vmMesh(g, b);
+    vmMesh(g, b); const irons = vmMesh(g, ir);
     // Pompe (garde-main + main gauche)
     const p = vmNew();
     vmBox(p, .066, .05, .2, VC.wood, 0, -.022, -.34, 0, 0, 0, .012);
@@ -111,7 +112,7 @@ function buildVM(){
     vmCyl(sh, .0085, .05, VC.red, 0, 0, 0, 0, 0, 0, 7); vmCyl(sh, .009, .01, VC.brass, 0, 0, .028, 0, 0, 0, 7);
     vmBox(sh, .045, .02, .05, VC.glove, 0, -.02, .02, 0, 0, 0, .006);                        // pouce qui pousse
     const load = vmMesh(g, sh, null, 0, -.06, -.06); load.visible = false;
-    g.userData = { muzzle: -.7, muzzleY: .022, sightY: SY, adsZ: -.24, sight: [V3(0, SY, -.682), V3(0, SY, -.008)],
+    g.userData = { irons, muzzle: -.7, muzzleY: .022, sightY: SY, adsZ: -.24, sight: [V3(0, SY, -.682), V3(0, SY, -.008)],
       pump, pumpAmp: .075, load, eject: V3(.034, .012, -.07), shell: 1 };
   }
   VMS.shotgun = g;
@@ -144,20 +145,21 @@ function buildVM(){
     vmCyl(b, .011, .2, VC.blue, 0, .02, -.565, 0, 0, 0, 8);                                    // canon
     vmBox(b, .03, .03, .03, VC.park, 0, .022, -.5, 0, 0, 0, .006);                            // bloc des gaz
     vmBox(b, .03, .022, .03, VC.park, 0, .032, -.6, 0, 0, 0, .005);                           // base du guidon
-    vmBox(b, .008, .045, .022, VC.park, 0, .065, -.6, .15, 0, 0, 0);                          // tour du guidon
-    vmBox(b, .005, .03, .012, VC.park, -.013, .085, -.6, 0, 0, 0, 0);                        // oreilles
-    vmBox(b, .005, .03, .012, VC.park, .013, .085, -.6, 0, 0, 0, 0);
-    vmBox(b, .031, .005, .012, VC.park, 0, .072, -.6, 0, 0, 0, 0);
-    vmBox(b, .0045, .02, .006, VC.park, 0, SY - .01, -.6, 0, 0, 0, 0);                        // guidon
-    vmBox(b, .004, .004, .001, VC.glow, 0, SY - .0025, -.5965, 0, 0, 0, 0);
+    const ir = vmNew();                                                                         // mires (rabattues sous une optique)
+    vmBox(ir, .008, .045, .022, VC.park, 0, .065, -.6, .15, 0, 0, 0);                         // tour du guidon
+    vmBox(ir, .005, .03, .012, VC.park, -.013, .085, -.6, 0, 0, 0, 0);                       // oreilles
+    vmBox(ir, .005, .03, .012, VC.park, .013, .085, -.6, 0, 0, 0, 0);
+    vmBox(ir, .031, .005, .012, VC.park, 0, .072, -.6, 0, 0, 0, 0);
+    vmBox(ir, .0045, .02, .006, VC.park, 0, SY - .01, -.6, 0, 0, 0, 0);                       // guidon
+    vmBox(ir, .004, .004, .001, VC.glow, 0, SY - .0025, -.5965, 0, 0, 0, 0);
     vmCyl(b, .0135, .045, VC.park, 0, .02, -.685, 0, 0, 0, 8);                                // cache-flamme
     for (i = 0; i < 2; i++) vmBox(b, .03, .003, .03, VC.port, 0, .02, -.69, 0, 0, Math.PI / 4 + i * Math.PI / 2, 0);
     vmCyl(b, .007, .003, VC.port, 0, .02, -.708, 0, 0, 0, 8);
-    vmBox(b, .03, .012, .03, VC.park, 0, .064, .05, 0, 0, 0, .004);                           // hausse à œilleton
-    vmBox(b, .005, .045, .02, VC.park, -.013, .089, .05, 0, 0, 0, 0);
-    vmBox(b, .005, .045, .02, VC.park, .013, .089, .05, 0, 0, 0, 0);
-    vmBox(b, .006, .014, .006, VC.park, 0, .077, .05, 0, 0, 0, 0);
-    vmRing(b, .0085, .0035, .005, VC.park, 0, SY, .05, 0, 0, 0, 8);
+    vmBox(ir, .03, .012, .03, VC.park, 0, .064, .05, 0, 0, 0, .004);                          // hausse à œilleton
+    vmBox(ir, .005, .045, .02, VC.park, -.013, .089, .05, 0, 0, 0, 0);
+    vmBox(ir, .005, .045, .02, VC.park, .013, .089, .05, 0, 0, 0, 0);
+    vmBox(ir, .006, .014, .006, VC.park, 0, .077, .05, 0, 0, 0, 0);
+    vmRing(ir, .0085, .0035, .005, VC.park, 0, SY, .05, 0, 0, 0, 8);
     vmCyl(b, .015, .22, VC.park, 0, .006, .2, 0, 0, 0, 8);                                    // tube de crosse
     vmBox(b, .044, .07, .17, VC.poly, 0, -.008, .25, 0, 0, 0, .012);                          // crosse
     vmBox(b, .046, .02, .1, VC.polyE, 0, -.045, .27, 0, 0, 0, .006);
@@ -165,7 +167,7 @@ function buildVM(){
     vmCup(b, 0, .018, -.36, .031, .031, .07);                                                   // main gauche
     vmArm(b, [-.035, -.03, -.32], [-.17, -.22, -.02], .028);
     vmArm(b, [.02, -.06, .1], [.08, -.2, .34], .028);
-    vmMesh(g, b);
+    vmMesh(g, b); const irons = vmMesh(g, ir);
     // Culasse visible dans la fenêtre (recule à chaque tir)
     const c = vmNew(); vmBox(c, .002, .012, .034, VC.light, .0298, .022, -.04, 0, 0, 0, 0); vmBox(c, .003, .004, .01, VC.steel, .031, .022, -.03, 0, 0, 0, 0);
     const slide = vmMesh(g, c);
@@ -176,7 +178,7 @@ function buildVM(){
     for (i = 0; i < 2; i++) vmBox(mg, .032, .05, .004, VC.blue, 0, -.05, -.015 + i * .03, 0, 0, 0, 0);
     vmBox(mg, .034, .01, .064, VC.blue, 0, -.138, .02, .25, 0, 0, .003);
     const mag = vmMesh(g, mg, null, 0, -.06, -.11);
-    g.userData = { muzzle: -.71, muzzleY: .02, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.6), V3(0, SY, .05)],
+    g.userData = { irons, muzzle: -.71, muzzleY: .02, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.6), V3(0, SY, .05)],
       slide, slideAmp: .028, mag, magDir: V3(0, -1, .05), magDrop: .25, eject: V3(.032, .022, -.04), shell: 2 };
   }
   VMS.rifle = g;
@@ -257,11 +259,12 @@ function buildVM(){
     vmBox(b, .01, .05, .03, VC.park, -.025, -.02, -.622, .35, 0, 0, 0);                         // étrier
     vmBox(b, .01, .05, .03, VC.park, .025, -.02, -.622, .35, 0, 0, 0);
     vmBox(b, .06, .01, .012, VC.park, 0, -.044, -.64, 0, 0, 0, 0);
-    vmBox(b, .006, .03, .01, VC.park, 0, .065, -.6, 0, 0, 0, 0);                               // guidon
-    vmBox(b, .005, .005, .001, VC.glow, 0, SY - .004, -.5945, 0, 0, 0, 0);
-    vmBox(b, .028, .006, .01, VC.park, 0, .051, -.6, 0, 0, 0, 0);
-    vmBox(b, .006, .03, .01, VC.park, 0, .068, -.1, 0, 0, 0, 0);                               // œilleton
-    vmRing(b, .0075, .0032, .005, VC.park, 0, SY, -.1, 0, 0, 0, 8);
+    const ir = vmNew();                                                                         // mires (rabattues sous une optique)
+    vmBox(ir, .006, .03, .01, VC.park, 0, .065, -.6, 0, 0, 0, 0);                              // guidon
+    vmBox(ir, .005, .005, .001, VC.glow, 0, SY - .004, -.5945, 0, 0, 0, 0);
+    vmBox(ir, .028, .006, .01, VC.park, 0, .051, -.6, 0, 0, 0, 0);
+    vmBox(ir, .006, .03, .01, VC.park, 0, .068, -.1, 0, 0, 0, 0);                              // œilleton
+    vmRing(ir, .0075, .0032, .005, VC.park, 0, SY, -.1, 0, 0, 0, 8);
     vmBox(b, .014, .006, .06, VC.park, 0, -.045, -.12, 0, 0, 0, 0);                            // pontet
     vmBox(b, .005, .022, .006, VC.light, 0, -.035, -.12, .3, 0, 0, 0);
     vmPush(b, 0, -.065, -.075, -.3);
@@ -275,7 +278,7 @@ function buildVM(){
     vmCup(b, 0, -.006, -.36, .028, .026, .07);
     vmArm(b, [-.035, -.05, -.32], [-.17, -.24, -.02], .028);
     vmArm(b, [.02, -.05, -.03], [.08, -.2, .26], .028);
-    vmMesh(g, b);
+    vmMesh(g, b); const irons = vmMesh(g, ir);
     // Corde tendue (carreau en place) ou relâchée (après le tir)
     const sd = vmNew(); vmCylAB(sd, [-.262, .036, -.536], [0, .036, -.2], .0022, VC.string, 4); vmCylAB(sd, [.262, .036, -.536], [0, .036, -.2], .0022, VC.string, 4);
     const strDrawn = vmMesh(g, sd);
@@ -287,7 +290,7 @@ function buildVM(){
     vmCyl(cb, .007, .04, VC.light, 0, 0, -.22, 0, 0, Math.PI / 4, 4, .05);                   // pointe
     for (i = 0; i < 3; i++) vmBox(cb, .002, .016, .05, VC.red, 0, 0, .16, 0, 0, i * Math.PI * 2 / 3, 0); // plumes
     const bolt = vmMesh(g, cb, null, 0, .043, -.4);
-    g.userData = { muzzle: -.64, muzzleY: .04, sightY: SY, adsZ: -.22, sight: [V3(0, SY, -.6), V3(0, SY, -.1)], bolt, strDrawn, strRel };
+    g.userData = { irons, muzzle: -.64, muzzleY: .04, sightY: SY, adsZ: -.22, sight: [V3(0, SY, -.6), V3(0, SY, -.1)], bolt, strDrawn, strRel };
   }
   VMS.crossbow = g;
 
@@ -412,15 +415,16 @@ function buildVM(){
     vmCyl(b, .046, .004, VC.port, 0, .02, .225, 0, 0, 0, 12);
     for (const z of [-.5, -.12, .12]) vmCyl(b, .0545, .02, VC.park, 0, .02, z, 0, 0, 0, 12); // bagues
     vmBox(b, .05, .03, .1, VC.rubber, 0, -.04, .1, 0, 0, 0, .01);                              // appui d'épaule
-    vmBox(b, .03, .008, .04, VC.park, 0, .073, -.58, 0, 0, 0, 0);                              // guidon à cadre
-    vmBox(b, .004, .04, .006, VC.park, -.016, .093, -.58, 0, 0, 0, 0);
-    vmBox(b, .004, .04, .006, VC.park, .016, .093, -.58, 0, 0, 0, 0);
-    vmBox(b, .036, .004, .006, VC.park, 0, .113, -.58, 0, 0, 0, 0);
-    vmBox(b, .004, .022, .005, VC.park, 0, SY - .011, -.58, 0, 0, 0, 0);
-    vmBox(b, .004, .004, .001, VC.glow, 0, SY - .0025, -.577, 0, 0, 0, 0);
-    vmBox(b, .03, .008, .03, VC.park, 0, .073, -.04, 0, 0, 0, 0);                              // hausse à œilleton
-    vmBox(b, .006, .016, .006, VC.park, 0, .084, -.04, 0, 0, 0, 0);
-    vmRing(b, .0095, .0038, .005, VC.park, 0, SY, -.04, 0, 0, 0, 8);
+    const ir = vmNew();                                                                         // mires (rabattues sous une optique)
+    vmBox(ir, .03, .008, .04, VC.park, 0, .073, -.58, 0, 0, 0, 0);                             // guidon à cadre
+    vmBox(ir, .004, .04, .006, VC.park, -.016, .093, -.58, 0, 0, 0, 0);
+    vmBox(ir, .004, .04, .006, VC.park, .016, .093, -.58, 0, 0, 0, 0);
+    vmBox(ir, .036, .004, .006, VC.park, 0, .113, -.58, 0, 0, 0, 0);
+    vmBox(ir, .004, .022, .005, VC.park, 0, SY - .011, -.58, 0, 0, 0, 0);
+    vmBox(ir, .004, .004, .001, VC.glow, 0, SY - .0025, -.577, 0, 0, 0, 0);
+    vmBox(ir, .03, .008, .03, VC.park, 0, .073, -.04, 0, 0, 0, 0);                             // hausse à œilleton
+    vmBox(ir, .006, .016, .006, VC.park, 0, .084, -.04, 0, 0, 0, 0);
+    vmRing(ir, .0095, .0038, .005, VC.park, 0, SY, -.04, 0, 0, 0, 8);
     // Viseur optique sur le côté
     vmBox(b, .012, .03, .05, VC.park, -.055, .045, -.1, 0, 0, 0, .003);
     vmBox(b, .03, .04, .11, VC.blue, -.075, .06, -.1, 0, 0, 0, .007);
@@ -445,7 +449,7 @@ function buildVM(){
     vmBox(b, .012, .02, .006, VC.steel, .05, -.02, -.4, 0, 0, 0, 0);                            // anneaux de bretelle
     vmArm(b, [-.03, -.04, -.27], [-.17, -.24, .02], .029);
     vmArm(b, [.02, -.04, .03], [.08, -.2, .3], .029);
-    vmMesh(g, b);
+    vmMesh(g, b); const irons = vmMesh(g, ir);
     // Roquette (visible quand chargée : 20-armes.js)
     const w = vmNew();
     vmCyl(w, .02, .06, VC.oliveD, 0, 0, .03, 0, 0, 0, 8);
@@ -454,12 +458,12 @@ function buildVM(){
     vmRing(w, .046, .04, .012, VC.red, 0, 0, -.05, 0, 0, 0, 10);
     vmCyl(w, .009, .03, VC.light, 0, 0, -.175, 0, 0, 0, 6, .6);
     const warhead = vmMesh(g, w, null, 0, .02, -.72);
-    g.userData = { muzzle: -.71, muzzleY: .02, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.58), V3(0, SY, -.04)], warhead };
+    g.userData = { irons, muzzle: -.71, muzzleY: .02, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.58), V3(0, SY, -.04)], warhead };
   }
   VMS.rocket = g;
 
   Object.keys(VMS).forEach(k => {
-    const v = VMS[k]; v.visible = false; vmRoot.add(v);
+    const v = VMS[k]; v.visible = false; vmRoot.add(v); vmArme(v);
     v.userData.tris = vmTris(v);
     if (v.userData.mag){ v.userData.magBase = v.userData.mag.position.clone(); }
     if (v.userData.pump) v.userData.pumpBase = v.userData.pump.position.z;

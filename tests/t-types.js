@@ -133,7 +133,7 @@
 
   test('Types : le total par vague est inchangé, rien de nouveau en vague 1 de Saint-Clou', () => {
     const r = J(function(nv){
-      var res = { faux: [], v1: null, port: {}, arrivee: {} }, base = ['walker', 'runner', 'brute'].concat(nv).concat(typeof __mn === 'object' ? __mn.MN_TYPES : []); // 35-monstres.js remplace des marcheurs
+      var res = { faux: [], v1: null, port: {}, arrivee: {} }, base = ['walker', 'runner', 'brute'].concat(nv).concat(typeof __mn === 'object' ? __mn.MN_TYPES : []).concat(typeof __mt === 'object' ? __mt.MT_TYPES : []); // 35 et 62 remplacent des marcheurs
       LOCS.forEach(function(L, li){
         for (var w = 1; w <= L.waves; w++){
           // Seuls les types ordinaires comptent : un boss ajouté par-dessus (19-boss.js) n'est pas un remplaçant

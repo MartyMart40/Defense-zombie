@@ -25,7 +25,12 @@ Le choix : bouton « Style » dans Pause (clé `dt_style` : `actuel`, `ameliore`
 - Style Actuel, couche légère (`js/57-graphismes.js`, `styleLegerAppliquer`) : asphalte, trottoir et gazon d'Amélioré (sans filtrage anisotrope), façades redessinées à la taille d'origine (cadres, croisillons, allèges, briques ou planches, saleté), conteneurs du port salis. Pas d'ombres ni d'effets d'image. Amélioré repart toujours des matériaux d'origine.
 - Amélioré : ombres relevées dans l'étalonnage (`gam` 0,88, contraste 1,06, coins 0,3), la nuit et les rues étroites ne tombent plus au noir ; vitres éteintes qui reflètent un peu plus le ciel.
 - Coût mesuré (swiftshader, 915 x 412, 150 zombies, 300 images, mesures alternées) : Actuel +1,5 % à Val-des-Cendres, +4 % à Saint-Clou (gazon) ; Amélioré à peu près pareil.
-- Pas fait : yeux des zombies visibles de loin, variété de teintes (fichiers des zombies interdits à ce dossier) ; fenêtres qui s'allument et s'éteignent ; la barricade et le bord du toit ne se voient presque pas en visant normalement.
+- Allure des zombies du toit, tous les styles (`js/07-zombies.js`, rien qui touche au jeu : vie, vitesse, places et cibles des tirs pareilles) :
+  - Yeux : les deux yeux d'un humanoïde sont un seul morceau (`ZG.yeux`), un peu plus grands, enfants de la tête (ils suivent sa pente et partent avec elle sur un tir à la tête ; avant, ils restaient en l'air). Couleur « plus que pleine » (`zEyeMat`, rouge 3,2) : la brume et la nuit les mangent beaucoup moins. Au-delà de 55 m (modèle lointain), ils restent dessinés et grossissent avec la distance (`ZYEUX` : 1/42 par mètre, au plus 1,45 en largeur et 3 en hauteur) : on voit des paires de points rouges dans le brouillard. `eyeMat` des autres formes (18, 35, 40, 63) n'a pas changé.
+  - Nuances : chaque zombie a sa peau (7 nuances mêlées de 25 à 60 % à la peau de son type : pâle, bleutée, jaunâtre, pourrie, violacée, rosée, verte) et ses vêtements plus ou moins clairs et sales (`ZTEINT`, `zTeinte`). Tiré du numéro du zombie avec des pas irrationnels : deux zombies apparus l'un après l'autre n'ont jamais la même peau. Passe par la couleur d'instance : aucun matériau ni appel de dessin de plus.
+  - Bras : environ un zombie sur trois a un bras qui pend et balance plus (`zBras`), les autres l'ont un peu de travers, balancement plus ou moins ample. La tête ne bouge pas.
+  - Les ombres sous les zombies existaient déjà en Actuel (`js/36-rendu.js`, qualité moyenne et haute).
+- Pas fait : fenêtres qui s'allument et s'éteignent ; la barricade et le bord du toit ne se voient presque pas en visant normalement.
 
 ## Haute définition, séance 1 : la lumière (`js/58-graphismes-hd.js`)
 - Part de la rue d'Amélioré : chaque matériau détaillé devient un matériau physique (MeshStandardMaterial). Cartes de relief et de rugosité tirées des textures dessinées : fissures et gravier en creux, taches d'huile lisses qui reflètent comme des flaques, briques et planches en relief, cadres de fenêtres en saillie, vitres lisses qui reflètent le ciel. Rugosités : `HD_SORTES`.
@@ -67,6 +72,7 @@ Règles : Actuel et Amélioré ne changent pas ; Haute définition se choisit da
 
 ## À équilibrer en jouant
 - Ultra : force des reflets (0,5, +0,4 sous la pluie), rayons (0,5), flou des ombres (5), taille du miroir (moitié de l'écran) : `ULT.regl` dans `js/61-graphismes-ultra.js`.
+- Zombies, tous les styles : force des nuances (`ZTEINT`), taille des yeux au loin (`ZYEUX`), part de bras qui pendent (`zBras`) dans `js/07-zombies.js`.
 - Haute définition, zombies : force du flou en visant (5), couleur et taille des flaques de sang : `ZHD` dans `js/60-graphismes-zombies.js`.
 - Haute définition, nuit : force des lampadaires (4,5), portée (30 m), cône de brume (0,16) : `HD_NUIT`.
 - Haute définition : exposition (1,15), force de la lumière HDR (`env` 0,55), teinte de la ville (0,6), SSAO (rayon 0,7 m), éclat (0,5, seuil 0,92), lueurs et ciel (`sansOmbre`) : `HD_REGL` dans `js/58-graphismes-hd.js`. Images par seconde à mesurer sur l'ordi de Martin.

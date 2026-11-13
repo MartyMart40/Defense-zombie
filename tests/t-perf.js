@@ -179,6 +179,27 @@
     egal(b.mats, a.mats, 'Matériaux');
   });
 
+  test('Foule : les nuances et les yeux ne coûtent aucun appel de dessin de plus selon le nombre de zombies', () => {
+    exiger(); partie(); J(OUTILS);
+    if (lire('!!ZG.yeux && typeof zTeinte === "function"') !== true) ignorer('Allure de la foule absente (07-zombies.js)');
+    const r = J(function(){
+      plan.maxAlive = 1e6;
+      var mesure = function(n){
+        clearZombies(); __tp.remplir(n, -110, -15); zInstSync();
+        var yeux = 0, nYeux = 0, hum = 0;
+        zbList.forEach(function(b){ if (b.geo === ZG.yeux){ yeux++; nYeux += b.n; } });
+        zombies.forEach(function(z){ if (z.g.userData.zPeau && z.inst) hum++; });
+        return { dessins: __zperf.draws(), lots: __zperf.batches(), mats: __zperf.mats(), yeux: yeux, nYeux: nYeux, hum: hum };
+      };
+      var a = __t.graine(77, function(){ return mesure(120); }), b = __t.graine(77, function(){ return mesure(300); }); // même début de foule : 300 contient les 120
+      clearZombies(); return { a: a, b: b };
+    });
+    egal(r.b.yeux, 1, 'Un seul lot d’instances pour les yeux');
+    egal(r.b.nYeux, r.b.hum, 'Un morceau d’yeux par humanoïde, proches et lointains');
+    egal(r.b.dessins, r.a.dessins, 'Appels de dessin de la foule : 120 zombies contre 300');
+    egal(r.b.mats, r.a.mats, 'Matériaux : 120 zombies contre 300');
+  });
+
   test('Foule : compteur d’images/s dans l’écran Pause, désactivé par défaut et sauvegardé', () => {
     exiger(); reset();
     const r = J(function(){

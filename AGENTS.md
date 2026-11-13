@@ -79,6 +79,8 @@ Les const, let et function de haut niveau sont partagés entre tous les fichiers
 
 ## Travail à plusieurs dossiers (décidé avec Martin le 2026-11-13)
 Martin parle à une seule conversation, le chef de chantier. Lui seul fusionne et met en ligne.
+- Un seul chef de chantier à la fois. La nuit du 12 au 13 novembre 2026, deux conversations ont dirigé le chantier en même temps sans le savoir : un dossier (le feeling du tir) a été fait en double et jeté. Avant d'ouvrir un dossier : `git fetch`, puis lire « En cours » dans `TACHES.md` sur `origin/main`. Si un commit de main ne vient pas de toi, quelqu'un d'autre pousse : arrête-toi et dis-le à Martin avant de continuer.
+- Si deux conversations doivent quand même pousser sur main : fusionner `origin/main` dans sa branche, relancer toute la suite, puis pousser en avance rapide seulement, jamais de push forcé ; chacun ajoute ses lignes dans `TACHES.md` sans réécrire celles de l'autre.
 - Un dossier = un sous-agent sur Opus (`model: opus`), dans sa propre copie du dépôt (`isolation: worktree`). Trois dossiers à la fois au plus (4 processeurs, chaque agent lance les tests).
 - Des dossiers qui touchent des fichiers différents : un par mode (toit, robot, RTS) va bien ; jamais deux dossiers sur le même mode en même temps.
 - Les sous-agents ne touchent pas à `TACHES.md`, `docs/historique.md`, `index.html`, ni au numéro de version, et ne poussent rien. Ils rendent : ce qui est fait, les fichiers touchés, le résultat des tests, ce qui n'est pas vérifié.

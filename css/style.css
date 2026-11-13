@@ -639,3 +639,4 @@ canvas.rt-ac105{ filter:grayscale(1) invert(1) contrast(1.5) brightness(.95); } 
 #barFill.clign2{ animation:crClign .5s steps(2,jump-none) infinite; }
 @keyframes crClign{ 0%{ opacity:1; } 100%{ opacity:.35; } }
 @media (orientation: portrait){ body.touch #crBande{ top:calc(21% + env(safe-area-inset-top,0px)); } }
+@media (max-height: 500px){ #crBande{ top:calc(14% + env(safe-area-inset-top,0px)); } #crBande .cr-t{ font-size:40px; } #crBande .cr-s{ font-size:16px; } }

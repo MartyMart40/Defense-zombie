@@ -32,6 +32,7 @@ const CRISE = {
   assautDebut: 10,                   // pas d'assaut dans les premières secondes de la vague
   assautDureeMax: 25,                // un assaut freiné par le plafond de zombies s'arrête quand même après ce temps
   assautMoments: [[.25, .5], [.55, .75]], // quand, en part de la file déjà sortie (un assaut : le premier intervalle élargi)
+  assautUnSeul: ['burrower'],       // au plus un de ces types par assaut (plusieurs fouisseurs qui ressortent ensemble : injuste)
   creuxDuree: 6,                     // secondes de creux après un assaut
   creuxLent: 2.5,                    // intervalle multiplié par ce chiffre pendant le creux
   // Brèche
@@ -93,6 +94,21 @@ function crTaillePossible(){
   if (ib >= 0 && reste - 1 - ib < n) return 0; // le boss serait dans le paquet : on attend qu'il soit sorti et abattu
   return n;
 }
+// Au plus un zombie de chaque type de CRISE.assautUnSeul dans le paquet : les autres sont échangés avec des zombies
+// plus loin dans la file (rien n'est ajouté ni retiré, le total ne change pas ; tous les autres types passent tels quels)
+function crTrierPaquet(n){
+  const q = plan.queue, deb = q.length - n; // le paquet : les n derniers (pop sort la fin en premier)
+  CRISE.assautUnSeul.forEach(t => {
+    let vu = false, j = deb - 1;
+    for (let i = q.length - 1; i >= deb; i--){
+      if (q[i] !== t) continue;
+      if (!vu){ vu = true; continue; }
+      while (j >= 0 && (q[j] === t || q[j] === 'boss')) j--;
+      if (j < 0) return;
+      const x = q[j]; q[j] = q[i]; q[i] = x; j--;
+    }
+  });
+}
 function crAvis(){
   CR.phase = 'avis'; CR.phaseT = CRISE.assautAvis;
   crSon('sirene');
@@ -103,6 +119,7 @@ function crAssaut(){
   const n = crTaillePossible();
   if (n < 0){ CR.prochain++; CR.phase = ''; return; }
   if (n === 0){ CR.phase = 'attente'; return; } // le boss arrive : on garde l'assaut pour après
+  crTrierPaquet(n);
   CR.phase = 'assaut'; CR.n = n; CR.qDebut = plan.queue.length; CR.assautT = 0;
   CR.prochain++; CR.assautsVague++; CR.assauts++;
   spawnT = Math.min(spawnT, .15);

@@ -101,6 +101,22 @@
     ok(r === 'attente' || r === '', 'L’assaut attend que le boss soit passé : ' + r);
   });
 
+  test('Crise : au plus un fouisseur par assaut, file inchangée', () => {
+    exiger(); partie(4);
+    const r = J(function(){
+      var q = plan.queue; for (var i = 0; i < q.length; i++) if (i % 3 === 0) q[i] = 'burrower';
+      var avant = q.slice().sort().join(',');
+      clearZombies(); __t.geler(); plan.queue = q; spawnT = 1e9;
+      update(1 / 60); spawnT = 1e9;
+      __crise.forcerAssaut(true);
+      var n = __crise.CR.n, paquet = plan.queue.slice(plan.queue.length - n);
+      return { n: n, fouis: paquet.filter(function(t){ return t === 'burrower'; }).length, pareil: plan.queue.slice().sort().join(',') === avant };
+    });
+    ok(r.n > 3, 'Assaut lancé : ' + r.n);
+    ok(r.fouis <= 1, 'Fouisseurs dans le paquet : ' + r.fouis);
+    ok(r.pareil, 'Même file (rien ajouté ni retiré)');
+  });
+
   test('Crise : la brèche empêche la fin de partie une seule fois, la réparation est plafonnée', () => {
     exiger(); partie(3);
     const r = J(function(){

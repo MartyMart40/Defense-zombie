@@ -42,7 +42,7 @@ const RS_ARME = {
 };
 const RS_DEF = RS_ARME.pistol;            // arme inconnue (ajoutée plus tard) : comme le pistolet
 const RS_CAM_MAX = .07;                   // montée de caméra la plus forte (radians), même en rafale
-const RS_CAM_VISEE = .7;                  // en visée : coup de caméra × 0,7 (× 0,5 dans la lunette du sniper)
+const RS_CAM_VISEE = .7;                  // en visée : coup de caméra × 0,7 (× 0,5 dans une lunette : sniper ou ×4)
 const RS_SURSAUT_VIE = .45;               // durée d'un sursaut (s)
 const RS_MORT_VIE = 1.3;                  // durée de la poussée d'un corps (s)
 const RS_GEL_CD = .5;                     // délai minimal entre deux gels (s)
@@ -88,7 +88,7 @@ function rsCamKick(P){
   if (!RS.on) return;
   let k = 1;
   if (zoomed) k *= RS_CAM_VISEE;
-  if (typeof ads === 'number' && ads > .85 && S && S.cur === 'sniper') k *= .7;
+  if (typeof viseeLunette === 'function' ? viseeLunette() : (typeof ads === 'number' && ads > .85 && S && S.cur === 'sniper')) k *= .7; // toute lunette à l'œil (66-visee.js)
   RS.w = P.ret;
   const sgn = rsR() < .5 ? -1 : 1, e = 2.718 * RS.w;
   // Moitié tout de suite (coup sec), moitié en vitesse (le pic arrive en quelques millisecondes), puis retour amorti

@@ -51,7 +51,7 @@ function visuals(dt){
   ads += (wantAds - ads) * Math.min(1, dt * 11);
   if (Math.abs(ads - wantAds) < .002) ads = wantAds;
   const ud = S ? VMS[S.cur].userData : VMS.pistol.userData;
-  const hx = VM_POS.x, hy = VM_POS.y, hz = VM_POS.z;
+  const hx = VM_POS.x * Math.min(1, vmCam.aspect / 1.25), hy = VM_POS.y, hz = VM_POS.z; // cell vertical : l'arme se rapproche du centre pour rester à l'écran
   const ax = 0, ay = -ud.sightY * VM_SCALE, az = ud.adsZ;
   const bob = Math.sin(time * 1.6) * .004 * (1 - ads);
   vmRoot.position.set(hx + (ax - hx) * ads, hy + (ay - hy) * ads + bob, hz + (az - hz) * ads + kick * (.07 - .04 * ads));

@@ -21,7 +21,7 @@ const vmEye = new THREE.DirectionalLight(0xfff4e8, .28); vmEye.position.set(.2, 
 const vmRim = new THREE.DirectionalLight(0x9ab8ff, .45); vmRim.position.set(-.6, .4, -2.2); vmScene.add(vmRim);
 const vmFill = new THREE.DirectionalLight(0xffa060, .2); vmFill.position.set(-1, -.8, .5); vmScene.add(vmFill);
 const vmRoot = new THREE.Group(); vmCam.add(vmRoot);
-const VM_POS = new THREE.Vector3(0.22, -0.22, -0.48);
+const VM_POS = new THREE.Vector3(0.19, -0.19, -0.42); // tâche 108 : avant (0.22, -0.22, -0.48), l'arme était petite dans le coin
 const VM_SCALE = .8;
 vmRoot.position.copy(VM_POS); vmRoot.scale.setScalar(VM_SCALE);
 // Éclair de bouche : étoile à branches irrégulières avec un cœur blanc (plus vrai qu'une simple lueur ronde)

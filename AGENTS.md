@@ -31,7 +31,7 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 01 son | Sons et musique (`Snd`) |
 | 02 villes | Les 5 villes (`LOCS`) |
 | 03 scène | Scène, caméra, rendu, décor de la rue (`buildWorld`) |
-| 04 arme en main, modèles, anim | Arme tenue : base et mains (`04-arme-en-main`), les 8 modèles (`04-arme-modeles`), douilles et animations (`04-arme-anim`) |
+| 04 arme en main, modèles, anim | Arme tenue : base et mains (`04-arme-en-main`), les modèles (`04-arme-modeles` : pistolet, pompe, assaut, sniper ; `04-arme-modeles2` : arbalète, lance-flammes, minigun, lance-roquettes, canon électromagnétique, arc), douilles et animations (`04-arme-anim`) |
 | 05 particules | Particules |
 | 06 données | Armes, améliorations, difficulté (`WEAPONS`, `WUPG`, `CITY_SCALE`) |
 | 07 zombies | Zombies de base, apparition, `damage`, `kill` |

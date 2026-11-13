@@ -97,4 +97,33 @@
     ok(r.vmk && r.lumineux > 0, 'Le laser a des pièces d’énergie');
     ok(r.tir > r.repos * 2, 'Éclat au tir : ' + r.repos.toFixed(2) + ' puis ' + r.tir.toFixed(2));
   });
+  test('Armes (tâche 108) : le rayon du laser et du canon électromagnétique part fin du canon (cône), pas en vitre', () => {
+    if (lire('typeof ARS_BEAM_CONE === "object" && typeof arsBeams === "object"') !== true) ignorer('Rayon en cône absent');
+    partie();
+    const r = J(function(){
+      var o = {}; state = 'playing';
+      ['railgun', 'laser'].forEach(function(id){
+        arsBeams.forEach(function(x){ x.m.visible = false; });
+        equip(id); reloadT = 0; cool = 0; S.ammo[id] = magSize(id); fire();
+        var v = arsBeams.filter(function(x){ return x.m.visible; });
+        o[id] = v.length > 0 && v.every(function(x){ return x.m.geometry === ARS_BEAM_CONE; });
+      });
+      equip('pistol'); return o;
+    });
+    ok(r.railgun, 'Canon électromagnétique : rayon en cône');
+    ok(r.laser, 'Laser : rayon en cône');
+  });
+
+  test('Armes (tâche 108) : modèles sous le budget, mires et points d’accroche gardés', () => {
+    partie();
+    const r = J(function(){
+      var o = {};
+      WORDER.forEach(function(id){ var u = VMS[id].userData; o[id] = { tris: u.tris, muzzle: typeof u.muzzle === 'number', sight: (u.sight || []).length, sightY: typeof u.sightY === 'number' }; });
+      return o;
+    });
+    Object.keys(r).forEach(id => {
+      ok(r[id].tris <= 2500, id + ' : ' + r[id].tris + ' triangles');
+      ok(r[id].muzzle && r[id].sightY && r[id].sight >= 2, id + ' : points d’accroche');
+    });
+  });
 })();

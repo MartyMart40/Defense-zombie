@@ -222,27 +222,8 @@ function arsBuild(){
     g.userData = { irons, muzzle: -.53, muzzleY: .015, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.34), V3(0, SY, .02)] };
   }
   out.laser = g;
-  /* ===== Canon électromagnétique ===== */
-  g = new THREE.Group(); b = vmNew();
-  {
-    const SY = .11;
-    for (const x of [-.026, .026]) vmBox(b, .016, .05, .62, VC.steel, x, .02, -.36, 0, 0, 0, .004); // rails
-    for (i = 0; i < 4; i++) vmRing(b, .05, .04, .03, ARS_C.copper, 0, .02, -.16 - i * .12, 0, 0, 0, 10); // bobines
-    for (i = 0; i < 4; i++) vmRing(b, .041, .038, .032, ARS_C.blueG, 0, .02, -.16 - i * .12, 0, 0, 0, 8);
-    vmBox(b, .03, .012, .62, ARS_C.blueG, 0, .02, -.36, 0, 0, 0, 0);                            // arc entre les rails
-    vmBox(b, .08, .08, .22, VC.blue, 0, .01, .0, 0, 0, 0, .012);                                 // corps
-    vmBox(b, .07, .07, .1, VC.park, -.08, -.0, .02, 0, 0, 0, .01);                               // condensateurs
-    for (i = 0; i < 3; i++) vmCyl(b, .012, .1, VC.light, -.08, .045, -.02 + i * .03, Math.PI / 2, 0, 0, 6);
-    vmBox(b, .02, .02, .12, ARS_C.blueG, -.08, .0, .02, 0, 0, 0, 0);
-    vmBox(b, .05, .02, .3, VC.park, 0, .06, -.2, 0, 0, 0, .004);                                 // rail supérieur
-    vmBox(b, .046, .08, .16, VC.poly, 0, -.01, .2, 0, 0, 0, .014);
-    vmBox(b, .05, .1, .02, VC.rubber, 0, -.01, .29, 0, 0, 0, .008);
-    const ir = vmNew(); arsSights(ir, SY, -.48, .05);
-    arsHands(b, .06, -.22, -.02, .04);
-    vmMesh(g, b); const irons = vmMesh(g, ir);                                                    // mires métalliques (rabattues sous une optique)
-    g.userData = { irons, muzzle: -.68, muzzleY: .02, sightY: SY, adsZ: -.22, sight: [V3(0, SY, -.48), V3(0, SY, .05)], eject: V3(.045, .01, .02), shell: 7 };
-  }
-  out.railgun = g;
+  /* ===== Canon électromagnétique : modèle dans 04-arme-modeles2.js (refait, tâche 108) ===== */
+  out.railgun = vmMRailgun(V3);
   /* ===== Lance-grenades automatique ===== */
   g = new THREE.Group(); b = vmNew();
   {
@@ -269,26 +250,8 @@ function arsBuild(){
     g.userData = { irons, muzzle: -.47, muzzleY: .02, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.42), V3(0, SY, .04)], eject: V3(.06, -.02, -.06), shell: 6 };
   }
   out.gl = g;
-  /* ===== Fusil à arc électrique ===== */
-  g = new THREE.Group(); b = vmNew();
-  {
-    const SY = .1;
-    vmBox(b, .06, .065, .26, VC.park, 0, .01, -.05, 0, 0, 0, .012);                             // corps
-    vmCyl(b, .018, .3, VC.steel, 0, .02, -.32, 0, 0, 0, 8);                                      // tige
-    for (i = 0; i < 7; i++) vmRing(b, .034, .02, .016, ARS_C.copper, 0, .02, -.22 - i * .036, 0, 0, 0, 10); // bobine de cuivre
-    vmCyl(b, .045, .06, ARS_C.violet, 0, .02, -.52, 0, 0, 0, 10, .4);                            // globe
-    vmCyl(b, .03, .03, ARS_C.violet, 0, .02, -.49, 0, 0, 0, 10);
-    for (const s of [-1, 1]) vmBox(b, .008, .008, .2, ARS_C.copper, s * .042, .02, -.36, 0, 0, 0, 0); // tiges latérales
-    vmBox(b, .05, .06, .08, VC.blue, 0, -.05, -.05, 0, 0, 0, .008);                              // pile
-    vmBox(b, .052, .012, .05, ARS_C.violet, 0, -.03, -.05, 0, 0, 0, 0);
-    vmBox(b, .04, .07, .16, VC.woodD, 0, -.01, .17, 0, 0, 0, .014);                              // crosse en bois
-    vmBox(b, .044, .085, .02, VC.rubber, 0, -.01, .255, 0, 0, 0, .008);
-    const ir = vmNew(); arsSights(ir, SY, -.2, .04);
-    arsHands(b, .05, -.15, .0, .032);
-    vmMesh(g, b); const irons = vmMesh(g, ir);                                                    // mires métalliques (rabattues sous une optique)
-    g.userData = { irons, muzzle: -.56, muzzleY: .02, sightY: SY, adsZ: -.2, sight: [V3(0, SY, -.2), V3(0, SY, .04)] };
-  }
-  out.arc = g;
+  /* ===== Fusil à arc électrique : modèle dans 04-arme-modeles2.js (refait, tâche 108) ===== */
+  out.arc = vmMArc(V3);
   Object.keys(out).forEach(k => {
     const v = out[k]; v.visible = false; vmRoot.add(v); vmArme(v); v.userData.tris = vmTris(v); v.userData.muzzleBase = v.userData.muzzle; VMS[k] = v;
   });
@@ -466,6 +429,9 @@ function accClearAll(){ Object.keys(VMS).forEach(id => { const ud = VMS[id].user
 /* ---------- Rayons (laser, canon électromagnétique) et éclairs (arc) ---------- */
 const arsFx = new THREE.Group(); scene.add(arsFx);
 const ARS_BEAM_G = new THREE.BoxGeometry(1, 1, 1);
+// Rayon des armes du toit (tâche 108) : cône à huit pans, fin au bout du canon et plein plus loin.
+// Avant, la boîte gardait toute sa largeur à 1 m de l'œil : une grande vitre bleu pâle devant l'arme au tir.
+const ARS_BEAM_CONE = new THREE.CylinderGeometry(.5, .06, 1, 8, 1, true).rotateX(Math.PI / 2);
 const arsBeams = [];
 for (let i = 0; i < 8; i++){
   const m = new THREE.Mesh(ARS_BEAM_G, new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, fog:false }));
@@ -480,8 +446,9 @@ for (let i = 0; i < 6; i++){
 const arsA = new THREE.Vector3(), arsB = new THREE.Vector3(), arsT = new THREE.Vector3();
 const arsRay = new THREE.Raycaster();
 let arsBeamsN = 0, arsArcN = 0;
-function arsBeam(a, b, color, w, life){
+function arsBeam(a, b, color, w, life, cone){
   let o = arsBeams.find(x => !x.m.visible) || arsBeams.reduce((p, x) => (x.life < p.life ? x : p));
+  o.m.geometry = cone ? ARS_BEAM_CONE : ARS_BEAM_G; o.m.material.side = cone ? THREE.DoubleSide : THREE.FrontSide;
   o.m.material.color.setHex(color); o.m.material.opacity = 1;
   o.m.position.copy(a).add(b).multiplyScalar(.5); o.m.scale.set(w, w, Math.max(.01, a.distanceTo(b))); o.m.lookAt(b);
   o.m.visible = true; o.life = o.max = life; o.w = w; arsBeamsN++;
@@ -659,7 +626,7 @@ try {
     if (r === false) return r;
     if (ARS_SHAKE[id]) shake = Math.max(shake, ARS_SHAKE[id] * (zoomed ? .7 : 1) * (accMul(id, 'recoil') < 1 ? .75 : 1)); // un trépied ou une poignée calme aussi l'écran
     const rm = accMul(id, 'recoil'); if (rm < 1) recoilAcc = Math.max(0, recoilAcc - W.recoil * (zoomed ? .6 : 1) * (1 - rm));
-    if (W.beam){ armMuzzle(arsA); arsBeam(arsA, arsEnd(arsB), W.beam.c, W.beam.w, W.beam.life); }
+    if (W.beam){ armMuzzle(arsA); arsBeam(arsA, arsEnd(arsB), W.beam.c, W.beam.w, W.beam.life, true); }
     else if (!W.kind && !W.chain && W.pellets === 1 && Math.random() < (W.rate >= 8 ? .45 : .8)){
       // Traçante : trait lumineux très bref du canon vers la cible (balles)
       armMuzzle(arsA); arsEnd(arsB); arsT.copy(arsB).sub(arsA).multiplyScalar(rand(.35, .7)).add(arsA);

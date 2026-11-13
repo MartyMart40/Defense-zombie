@@ -64,6 +64,7 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 53 tutoriel | Tutoriel du toit facultatif : proposé une fois à un nouveau joueur, 6 bulles, « Passer », « Revoir » dans Comment jouer (P.tuto) |
 | 54 postes RTS | Postes de pilotage des véhicules (tank, Apache, chasseur, AC-130 à 3 postes), munitions des avions, 2 avions par aérodrome |
 | 55 niveaux RTS | Les armes des véhicules embellissent avec leurs améliorations : traînée, son, explosion, recul, éclair, détails du modèle (3 paliers) |
+| 55 effets RTS | Effets de tir de toutes les armes du RTS dès le niveau 0 (`js/55-rts-effets.js`) : traçantes, obus, roquettes avec corps, traînée et explosion, rayons, éclairs, flammes, crachats ; réserves de taille fixe, plafonds plus bas au cell ; les paliers de 55-rts-niveaux ajoutent par-dessus |
 | 56 postes des robots | Poste de pilotage des petits robots : visière et bras avec l'arme de chaque robot, détails selon les améliorations |
 | 57 graphismes | Style graphique (Pause, dt_style) : Actuel, Amélioré (textures, vraies ombres, éclat, couleurs), Haute définition ou Ultra sur le toit (`docs/graphismes.md`) |
 | 58 graphismes HD | Style Haute définition : matériaux physiques, lumière HDR (`hdri/`), couleurs linéaires, ACES, SSAO, lampadaires de nuit qui éclairent (`lib/three-hd.js` chargé au besoin) |

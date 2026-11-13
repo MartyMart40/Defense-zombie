@@ -18,7 +18,7 @@
 | 41 à 44 | Mode RTS « Guerre des robots » |
 | 45 à 49 | Petits ajouts : 45 sauvegarde de la partie RTS, 46 application installable, 47 astuces du RTS, 48 liste des unités du RTS, 49 commandement du RTS (plage pleine) |
 | 50 à 59 | Ajouts généraux : 50 sauvegarde du robot, 51 succès du robot et du RTS, 52 statistiques à vie, 53 tutoriel du toit, 54 postes de pilotage du RTS, 55 niveaux visuels des armes du RTS, 56 postes des petits robots, 57 style graphique ; 58 et 59 libres |
-| 60 à 89 | Prochains gros modes (une dizaine chacun). Déjà pris : 60 et 61 (graphismes), 62 ressenti du tir sur le toit, 63 nouveaux monstres du toit, 64 moments de crise sur le toit (assauts, brèche, danger) |
+| 60 à 89 | Prochains gros modes (une dizaine chacun). Déjà pris : 60 et 61 (graphismes), 62 ressenti du tir sur le toit, 63 nouveaux monstres du toit, 64 moments de crise sur le toit (assauts, brèche, danger), 65 Ruche, vallées et sièges du RTS |
 | 90 | `90-branchements.js` : branche le registre des modes sur le jeu commun. Toujours le dernier. |
 
 Un fichier coupé garde son numéro : `04-arme-en-main`, `04-arme-modeles`, `04-arme-anim` se chargent dans l'ordre de `index.html` (c'est cet ordre qui compte, pas l'ordre alphabétique).
@@ -75,7 +75,8 @@ Règle : **pas de nouveau crochet par réaffectation pour un mode**. Utiliser `J
 - Profil permanent `P` (`dt_prof`), réglages `dt_...` : `store.get` / `store.set`. Toutes les clés `dt_` partent dans le fichier de sauvegarde OneDrive (`js/32-sauvegarde.js`).
 - Statistiques à vie : `P.vie = { temps:{ toit, robot, rts }, armes:{ id:n } }` (`js/52-statistiques.js`).
 - Course du robot : `dt_mech_partie` (`js/50-robot-sauvegarde.js`).
-- Partie RTS en cours : `dt_rts_partie` (`js/45-rts-sauvegarde.js`), avec un numéro de version `v`. Changer le format : monter `RTS_SAVE_V` et accepter l'ancien, ou l'ignorer (une sauvegarde illisible est ignorée sans erreur).
+- Vallées du RTS : `P.rtsVallee` (la plus haute débloquée, 1 par défaut) et `P.rtsLib` (la plus haute libérée, 0 par défaut) (`js/65-rts-ruche.js`).
+- Partie RTS en cours : `dt_rts_partie` (`js/45-rts-sauvegarde.js`), avec un numéro de version `v` (champs `vallee`, `libre`, `ruche` ajoutés sans changer `v` : une vieille sauvegarde se charge en vallée 1). Changer le format : monter `RTS_SAVE_V` et accepter l'ancien, ou l'ignorer (une sauvegarde illisible est ignorée sans erreur).
 
 ## Simulateur d'équilibrage
 - `outils/sim-bot.js` : un robot-joueur injecté dans la vraie page du jeu (jamais chargé par `index.html`). Il arrête la boucle du jeu et fait avancer le temps lui-même, sans rendu, donc très vite.

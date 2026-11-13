@@ -11,9 +11,10 @@
 //     strategie : achat des armes pour la campagne : malin (défaut), boutique, patient, pistolet ou pompe (voir outils/sim-bot.js)
 // Durée : quelques minutes par joueur. Le jeu n'est pas modifié.
 // RTS (robot-joueur : outils/sim-bot-rts.js) :
-//   node outils/simulateur.js rts [stratégies] [graines] [minutes]
+//   node outils/simulateur.js rts [stratégies] [graines] [minutes] [vallées]
 //     stratégies : tourelles, blindes, air, mixte, séparées par des virgules (défaut : les quatre)
-//     graines : ex. 1,2 (défaut 1,2) ; minutes : durée de jeu au plus (défaut 60)
+//     graines : ex. 1,2 (défaut 1,2) ; minutes : durée de jeu au plus (défaut 60) ; vallées : ex. 1,2,3 (défaut 1)
+//     Une partie s'arrête à la victoire (Ruche détruite) ou quand le QG tombe.
 //   node outils/simulateur.js rts-banc [menaces] [graines] [secondes] [unités]
 //     banc des appuis : une armée au sol fixe plus 9 000 $ d'un seul type, menaces ex. 5,8,14 (défaut), graines 1,2, 150 s
 //     [unités] : seulement les lots qui contiennent ces unités, ex. jet,warthog (sans le banc des améliorations)
@@ -74,13 +75,14 @@ function mdInf(c){
   return h;
 }
 /* ---------- RTS : rapport ---------- */
-const RTS_SIM = { strategies:['tourelles', 'blindes', 'air', 'mixte'], graines:[1, 2], maxMin:60, menaces:[5, 8, 14], duree:150, lots:null };
+const RTS_SIM = { strategies:['tourelles', 'blindes', 'air', 'mixte'], graines:[1, 2], maxMin:60, vallees:[1], menaces:[5, 8, 14], duree:150, lots:null };
 if (quoi === 'rts' || quoi === 'rts-banc'){
   const liste = (i, f) => (process.argv[i] || '').split(',').filter(Boolean).map(f);
   if (quoi === 'rts'){
     if (process.argv[3]) RTS_SIM.strategies = liste(3, String);
     if (process.argv[4]) RTS_SIM.graines = liste(4, Number);
     if (process.argv[5]) RTS_SIM.maxMin = +process.argv[5];
+    if (process.argv[6]) RTS_SIM.vallees = liste(6, Number);
   } else {
     if (process.argv[3]) RTS_SIM.menaces = liste(3, Number);
     if (process.argv[4]) RTS_SIM.graines = liste(4, Number);
@@ -97,14 +99,20 @@ const v1 = x => String(x).replace('.', ',');
 const mn = s => s == null ? 'jamais' : v1(Math.round(s / 6) / 10) + ' min';
 const nf = x => Math.round(x).toLocaleString('fr-CA');
 function mdRtsResume(parties){
-  let h = '| Stratégie | Graine | Fin | Nids détruits | Tués | Unités perdues | 1re unité perdue | 1re tourelle perdue | 1er coup au QG | QG de 90 % à 0 | Part des boss dans les dégâts au QG | Dépenses : unités, bâtiments, tourelles, améliorations |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n';
+  let h = '| Stratégie | Vallée | Graine | Fin | Nids détruits | Ruche sortie | Assaut de la Ruche | Tués | Unités perdues | 1re unité perdue | 1re tourelle perdue | 1er coup au QG | QG au plus bas | De la 1re tourelle perdue à la chute | QG de 90 % à 0 | Part des boss dans les dégâts au QG | Dépenses : unités, bâtiments, tourelles, améliorations |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n';
   parties.forEach(r => {
-    const A = r.achats;
-    h += '| ' + r.nom + ' | ' + r.graine + ' | ' + (r.fin.tombe ? '**QG tombé à ' + v1(r.fin.min) + ' min**' : 'tient à ' + v1(r.fin.min) + ' min') + ' | ' + r.fin.nids + ' | ' + nf(r.fin.tues) + ' | ' + r.fin.perdues + ' | '
-      + mn(r.cles.premUnite) + ' | ' + mn(r.cles.premTourelle) + ' | ' + mn(r.cles.premQG) + ' | ' + (r.cles.chute == null ? '' : r.cles.chute + ' s') + ' | ' + (r.cles.premQG == null ? '' : r.chute.partBoss + ' %') + ' | '
+    const A = r.achats, C = r.cles;
+    const fin = r.fin.gagne ? '**victoire à ' + mn(C.victoire) + '**' : r.fin.tombe ? '**QG tombé à ' + v1(r.fin.min) + ' min**' : 'tient à ' + v1(r.fin.min) + ' min';
+    h += '| ' + r.nom + ' | ' + (r.fin.vallee || 1) + ' | ' + r.graine + ' | ' + fin + ' | ' + r.fin.nids + ' | ' + (C.ruche == null ? 'non' : mn(C.ruche)) + ' | ' + (C.victoire != null && C.rucheTouche != null ? v1(Math.round((C.victoire - C.rucheTouche) / 6) / 10) + ' min' : '') + ' | ' + nf(r.fin.tues) + ' | ' + r.fin.perdues + ' | '
+      + mn(C.premUnite) + ' | ' + mn(C.premTourelle) + ' | ' + mn(C.premQG) + ' | ' + (C.qgMin == null ? '' : C.qgMin + ' %') + ' | ' + (C.tourAChute == null ? '' : v1(Math.round(C.tourAChute / 6) / 10) + ' min') + ' | ' + (C.chute == null ? '' : C.chute + ' s') + ' | ' + (C.premQG == null ? '' : r.chute.partBoss + ' %') + ' | '
       + [A.depUnites, A.depBats, A.depTour, A.depAmel].map(x => nf(x / 1000) + ' k$').join(', ') + ' |\n';
   });
   return h;
+}
+// Sièges d'une partie : pertes et vie du QG pendant chacun
+function mdRtsSieges(r){
+  if (!r.sieges || !r.sieges.length) return '';
+  return '| Minute | Unités perdues | Bâtiments perdus | QG au début | QG au plus bas |\n|---|---|---|---|---|\n' + r.sieges.map(s => '| ' + v1(s.min) + ' | ' + s.unites + ' | ' + s.bats + ' | ' + pct(s.qg0) + ' | ' + pct(s.qgMin) + ' |').join('\n') + '\n';
 }
 function mdRtsCourbe(r){
   let h = '| Minute | Nids détruits | Unités | Tourelles | Argent | Menace | Vie du QG | Zombies en vie | À moins de 45 m du QG | Boss en vie | Tués | Unités perdues |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n';
@@ -371,14 +379,16 @@ async function simRobot(b){
       + 'Il ne pilote jamais : le pilotage n’est pas mesuré. Il décide toutes les 2 secondes de jeu, sans hésiter : un vrai joueur est plus lent à réagir, mais il voit mieux le danger.\n\n'
       + 'Pour blindés, air et mixte : point de ralliement devant la base ; une garde qui reste à la base (les tireurs d’élite, lance-roquettes et mechs lourds de la garde « tiennent » la ligne) ; '
       + 'un groupe d’attaque qui part sur le nid le plus proche quand il est assez fort, revient s’il fond ou si un boss arrive à 25 m du QG ou que le QG passe sous 85 % ; les unités sous 40 % de vie envoyées à l’atelier, puis renvoyées à la ligne ; les pertes remplacées.\n\n'
-      + 'Rappel : menace = 1 + minutes / 4 + 0,5 par nid détruit + zombies tués / 600.\n\n';
+      + 'But : détruire 8 nids fait sortir la Ruche ; le groupe d’attaque y va quand il est assez fort (« tourelles » n’y va jamais). La partie s’arrête à la victoire. Réglages : `RTS_REGL` (`js/41-rts.js`).\n\n';
     const parties = [];
-    for (const g of RTS_SIM.graines) for (const st of RTS_SIM.strategies){
+    for (const va of RTS_SIM.vallees) for (const g of RTS_SIM.graines) for (const st of RTS_SIM.strategies){
       const p2 = await pageRts(b);
-      console.log('RTS, stratégie ' + st + ', graine ' + g + ' (' + RTS_SIM.maxMin + ' min de jeu au plus)...');
-      const r = await p2.evaluate(o => SIM.rts(o), { strategie: st, graine: g, maxMin: RTS_SIM.maxMin });
+      console.log('RTS, stratégie ' + st + ', vallée ' + va + ', graine ' + g + ' (' + RTS_SIM.maxMin + ' min de jeu au plus)...');
+      const r = await p2.evaluate(o => SIM.rts(o), { strategie: st, graine: g, maxMin: RTS_SIM.maxMin, vallee: va });
       parties.push(r);
-      console.log('  fin : ' + r.fin.min + ' min, ' + r.fin.nids + ' nids, ' + r.fin.tues + ' tués, ' + r.fin.perdues + ' perdues, QG ' + r.fin.qg + ' %' + (r.fin.tombe ? ' (tombé, de 90 % à 0 en ' + r.cles.chute + ' s)' : ''));
+      const C = r.cles, m1 = x => x == null ? '-' : (Math.round(x / 6) / 10);
+      console.log('  fin : ' + r.fin.min + ' min, ' + (r.fin.gagne ? 'VICTOIRE, ' : '') + r.fin.nids + ' nids, ' + r.fin.tues + ' tués, ' + r.fin.perdues + ' perdues, QG ' + r.fin.qg + ' %' + (r.fin.tombe ? ' (tombé, de 90 % à 0 en ' + C.chute + ' s, 1re tourelle perdue ' + m1(C.tourAChute) + ' min avant)' : '')
+        + ' | ruche ' + m1(C.ruche) + ', 1re unité ' + m1(C.premUnite) + ', 1re tourelle ' + m1(C.premTourelle) + ', 1er coup QG ' + m1(C.premQG) + ', QG min ' + C.qgMin + ' % | nids ' + (C.nids || []).map(m1).join(' ') + ' | sièges ' + (r.sieges || []).map(s => s.min + ':' + s.unites + 'u/' + s.bats + 'b/' + s.qgMin + '%').join(' '));
       await p2.close();
     }
     out.rts = { parties };
@@ -386,6 +396,7 @@ async function simRobot(b){
     md += '### Une ligne par partie\n\n' + mdRtsResume(parties) + '\n';
     md += 'Ce que fait chaque stratégie :\n\n' + Object.keys(noms).map(k => '- ' + noms[k].nom + ' : ' + (noms[k].desc || '')).join('\n') + '\n\n';
     const ex = parties.find(r => r.strategie === 'mixte' && r.fin.tombe) || parties.find(r => r.fin.tombe) || parties[parties.length - 1];
+    parties.filter(r => r.sieges && r.sieges.length).slice(0, 2).forEach(r => { md += '### Sièges : ' + r.nom.toLowerCase() + ', vallée ' + (r.fin.vallee || 1) + ', graine ' + r.graine + '\n\n' + mdRtsSieges(r) + '\n'; });
     md += '### Courbe d’une partie : ' + ex.nom.toLowerCase() + ', graine ' + ex.graine + '\n\nUne ligne toutes les 5 minutes, puis toutes les 30 s pendant les 2 dernières minutes et demie.\n\n' + mdRtsCourbe(ex) + '\n';
   }
   if (quoi === 'rts-banc'){

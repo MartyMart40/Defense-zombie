@@ -640,3 +640,19 @@ canvas.rt-ac105{ filter:grayscale(1) invert(1) contrast(1.5) brightness(.95); } 
 @keyframes crClign{ 0%{ opacity:1; } 100%{ opacity:.35; } }
 @media (orientation: portrait){ body.touch #crBande{ top:calc(21% + env(safe-area-inset-top,0px)); } }
 @media (max-height: 500px){ #crBande{ top:calc(14% + env(safe-area-inset-top,0px)); } #crBande .cr-t{ font-size:40px; } #crBande .cr-s{ font-size:16px; } }
+/* RTS : la Ruche, les vallées, les sièges, les paliers d'alerte (js/65-rts-ruche.js, js/49-rts-commandement.js) */
+#rtAlert[data-p="1"], #rtAlert[data-p="2"]{ border-color:#ffa040; background:rgba(100,50,8,.92); }
+#rtAlert[data-p="3"]{ border-color:#ff4a3a; background:rgba(120,14,8,.94); }
+#rtAlert[data-p="4"], #rtAlert[data-p="5"]{ border:2px solid #ff2a1a; background:rgba(150,8,4,.96); color:#fff; font-size:16px; }
+#rtSiege{ position:fixed; z-index:8; left:50%; top:calc(108px + env(safe-area-inset-top,0px)); transform:translateX(-50%); max-width:calc(100vw - 32px); padding:6px 14px; border-radius:16px; border:1px solid #ff6a4a; background:rgba(70,14,8,.88); color:#ffe8e0; font-weight:800; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none; }
+#rtSiege.hide{ display:none; }
+#rtSiege[data-phase="annonce"]{ animation:rtAl .5s ease-in-out infinite alternate; }
+#rtSiege[data-phase="siege"]{ border-color:#ff2a1a; background:rgba(130,10,6,.9); }
+#rtSiege[data-phase="creux"]{ border-color:#7ee05a; background:rgba(14,50,20,.85); color:#e8ffe0; }
+@media (max-width:600px){ #rtSiege{ left:calc(140px + env(safe-area-inset-left,0px)); right:10px; transform:none; white-space:normal; text-align:center; font-size:13px; } }
+@media (max-height:520px){ #rtSiege{ top:calc(104px + env(safe-area-inset-top,0px)); font-size:12px; padding:4px 10px; } }
+body.rtphoto #rtSiege{ display:none !important; }
+#rtValRow{ display:flex; align-items:center; justify-content:center; gap:10px; margin:-2px auto 6px; color:#ffd060; font-weight:800; }
+#rtValRow.hide{ display:none; }
+#rtValRow button{ min-width:44px; min-height:40px; padding:4px 10px; border-radius:8px; border:1px solid #ffd060; background:rgba(40,30,10,.7); color:#ffd060; font-size:16px; }
+#rtValRow button:disabled{ opacity:.35; }

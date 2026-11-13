@@ -26,7 +26,7 @@
     egal(r.id, 'choisir', 'Première astuce'); ok(r.vu, 'La bulle doit être visible');
     ok(r.txt.length > 30, 'Texte : ' + r.txt); ok(r.garde, 'L’astuce doit être notée comme vue');
     ok(r.ferme, 'OK doit fermer la bulle'); ok(r.attend, 'La suivante doit attendre quelques secondes');
-    egal(r.deux, 'carte', 'Deuxième astuce');
+    egal(r.deux, 'but', 'Deuxième astuce : le but (la Ruche, tâche 101)');
   });
 
   test('Astuces RTS : chacune une seule fois, même dans une autre partie, et rien en pause', () => {

@@ -365,21 +365,21 @@
       clearZombies();
       // Une barricade entre le zombie et le QG : il l'attaque d'abord
       var w = __rts.rtsBuild('wall', 0, -16); var z = __t.placer('walker', 0, -26); var h0 = w.hp, q0 = R.base.hp;
-      for (var i = 0; i < 30 * 8; i++) visuals(1 / 30); o.mur = w.hp < h0; o.qgIntact = R.base.hp === q0;
+      for (var i = 0; i < 30 * 8; i++) visuals(1 / 30); o.mur = w.hp < h0; o.qgIntact = R.base.hp >= q0; /* la vie du QG peut monter avec la menace (tâche 101) */
       clearZombies();
       // La base s'agrandit
       var r0 = R.baseR; o.avant = __rts.rtsBldOk('t_mg', 0, -34) !== '';
       __rts.rtsNestDie(R.nests[0]); o.plus = R.baseR > r0; o.apres = __rts.rtsBldOk('t_mg', 0, -34) === '';
       // Sans fin : il reste toujours 6 nids actifs, chaque nouveau plus loin au nord et plus solide
       var f0 = __rts.rtsFront(), hp0 = Math.max.apply(null, R.nests.map(function(n){ return n.maxHp; }));
-      for (var k = 0; k < 12; k++) __rts.rtsNestDie(R.nests.filter(function(n){ return !n.dead; })[0]);
-      o.fin = state; o.actifs = R.nests.filter(function(n){ return !n.dead; }).length; o.loin = __rts.rtsFront() < f0 - 300;
+      for (var k = 0; k < 12; k++) __rts.rtsNestDie(R.nests.filter(function(n){ return !n.dead && !n.ruche; })[0]);
+      o.fin = state; o.actifs = R.nests.filter(function(n){ return !n.dead && !n.ruche; }).length; /* la Ruche ne compte pas (tâche 101) */ o.loin = __rts.rtsFront() < f0 - 300;
       o.fort = R.nests[R.nests.length - 1].maxHp > hp0; o.carte = R.zMin < __rts.rtsFront();
       o.max = plan.maxAlive;
       return o;
     }, calme);
     fin();
-    ok(r.horde >= 10 && r.bord, 'Horde du nord : ' + r.horde); ok(r.large, 'La horde arrive sur toute la largeur du secteur de 90°'); ok(r.droit >= 2 && r.route < r.horde * .75, 'Une bonne part coupent tout droit (' + r.droit + ') au lieu de suivre la route (' + r.route + ')');
+    ok(r.horde >= 6 && r.bord, 'Horde du nord : ' + r.horde); /* hordes plus légères entre les sièges (tâche 101) */ ok(r.large, 'La horde arrive sur toute la largeur du secteur de 90°'); ok(r.droit >= 2 && r.route < r.horde * .75, 'Une bonne part coupent tout droit (' + r.droit + ') au lieu de suivre la route (' + r.route + ')');
     ok(r.mur && r.qgIntact, 'Le zombie attaque la barricade d’abord');
     ok(r.avant && r.plus && r.apres, 'La base s’agrandit : on peut construire plus loin');
     egal(r.fin, 'rts', 'La partie continue'); egal(r.actifs, 6, 'Toujours 6 nids actifs');

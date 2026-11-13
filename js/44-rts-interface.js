@@ -112,10 +112,10 @@ function rtsInfoShow(){
 function rtsHUD(){
   if (!RTS.on || !S) return;
   const set = (id, t) => { const el = $(id); if (el && el.textContent !== t) el.textContent = t; };
-  const left = RTS.nests.filter(n => !n.dead).length, alive = RTS.units.filter(u => !u.dead).length;
+  const left = rtsNestsAlive().length, alive = RTS.units.filter(u => !u.dead).length;
   set('rtMoney', '💰 ' + fmt(Math.floor(S.money)));
   set('rtThreat', '☣ Menace ' + RTS.threat.toFixed(1).replace('.', ','));
-  set('rtNests', '🏚 Nids : ' + left + ' actifs · ' + (RTS.nests.length - left) + ' détruits');
+  set('rtNests', typeof rtsRucheHUD === 'function' ? rtsRucheHUD() : '🏚 Nids : ' + left + ' actifs · ' + rtsNestsDead() + ' détruits'); // compteur vers la Ruche (js/65-rts-ruche.js)
   set('rtSel', '🤖 ' + alive + (RTS.sel.length ? ' (' + RTS.sel.length + ' choisi' + (RTS.sel.length > 1 ? 's' : '') + ')' : ''));
   const f = $('rtBaseFill'); if (f && RTS.base) f.style.width = (clamp(RTS.base.hp / RTS.base.maxHp, 0, 1) * 100).toFixed(1) + '%';
   let boss = null; for (const z of zombies) if (!z.dead && z.rtsBoss){ boss = z; break; }

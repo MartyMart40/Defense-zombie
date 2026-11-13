@@ -47,7 +47,7 @@ function statsHTML(){
   h += '<h3>Records</h3>' + ligne('Villes libérées', villes + ' / ' + LOCS.length) + ligne('Mode infini', inf ? inf + ' vagues (' + infV + ')' : 'pas encore')
     + ligne('Meilleur combo', n(P.comboBest)) + ligne('Niveau', n(P.level || 1))
     + ligne('Robot : rues traversées', n(Math.max(+st.mechStreet || 0, (MECH.best || 1) - 1))) + ligne('Guerre des robots : nids détruits', n(RTS.best))
-    + ligne('Guerre des robots : minutes tenues', n(st.rtsMin));
+    + ligne('Guerre des robots : minutes tenues', n(st.rtsMin)) + ligne('Guerre des robots : vallées libérées', n(+P.rtsLib || 0));
   if (P.defi && +P.defi.record) h += ligne('Défi du jour : meilleure série', n(P.defi.record) + ' jours');
   // Armes : les 5 qui ont abattu le plus de zombies
   const arm = Object.keys(v.armes).filter(k => WEAPONS[k]).sort((a, b) => v.armes[b] - v.armes[a]).slice(0, 5), max = arm.length ? v.armes[arm[0]] : 0;

@@ -14,7 +14,7 @@
       var bm = S.barMax; mechQuit();
       var b = document.getElementById('btnMechGo'); o.bouton = !!b && !b.classList.contains('hide') && /rue 3/.test(b.textContent);
       b.click();
-      o.etat = state; o.rue = MECH.street; o.bar = Math.round(S.bar); o.barMax = S.barMax === bm; o.kills = MECH.kills; o.pow = Math.abs(MECH.pow - 2.4 * Math.pow(1.16, 2)) < 1e-6;
+      o.etat = state; o.rue = MECH.street; o.bar = Math.round(S.bar); o.barMax = S.barMax === bm; o.kills = MECH.kills; o.pow = Math.abs(MECH.pow - 2.4 * Math.pow(1.16, (typeof mechE === 'function' ? mechE(3) : 3) - 1)) < 1e-6;
       mechOver(); o.efface = !__mechSave.mechSaveGet();
       mechQuit(); o.cache = document.getElementById('btnMechGo').classList.contains('hide');
       return o;

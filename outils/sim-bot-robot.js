@@ -10,7 +10,9 @@
 //   - tire le bras droit dans les groupes (le débutant tire dès que c'est prêt), avec le chargeur de roquettes ;
 //   - fait un pas de côté pour esquiver les crachats (plus ou moins souvent selon son niveau) ;
 //   - choisit une rue au carrefour (le débutant au hasard ; sinon la rue calme quand il est amoché, la ferraille sinon) ;
-//   - entre deux courses, dépense sa ferraille au garage selon une stratégie.
+//   - à la rue 9, se bat contre le boss final (le bout de la rue reste fermé tant qu'il vit) ;
+//   - entre deux courses, dépense sa ferraille au garage selon une stratégie ; après une victoire, il part au tour suivant,
+//     après une défaite il refait le même tour (le jeu garde le tour choisi : P.mechFin.choix).
 // Il ne touche jamais aux dégâts ni au blindage : il les mesure seulement (d'où viennent les dégâts encaissés).
 // Limites face à un vrai joueur : il ne recule pas pour se dégager, ne vise pas les points faibles exprès,
 // ne se sert pas du décor et voit les crachats sans les chercher des yeux.
@@ -200,7 +202,8 @@
   }
 
   /* ---------- Une course ---------- */
-  // o : { joueur, graine, maxMin, style ('normal', 'fonce', 'reste') } ; le profil (garage) est celui de P
+  // o : { joueur, graine, maxMin, style ('normal', 'fonce', 'reste'), tour } ; le profil (garage) est celui de P
+  // o.tour : force ce tour (débloqué au besoin) ; sans lui, le tour choisi dans le profil
   const BOT_R = { style:'normal', routes:{} };
   async function course(o){
     o = o || {};
@@ -220,6 +223,7 @@
     const scr0 = P.scrap || 0, xp0 = P.xp || 0;
     Object.assign(SR, { actif:true, deg:{}, esq:0, crach:0, bossTues:0, roq:0 });
     Object.assign(E, { z:null, t:0, chaud:false, rueVue:0, vus:new WeakSet(), prec:new WeakMap() });
+    if (o.tour){ const F = mechFinNorm(); F.tour = Math.max(F.tour, o.tour - 1); F.choix = o.tour; }
     mechStart();
     let t = 0, n = 0, rue = MECH.street, t0 = 0, d0 = 0; const rues = [];
     const deg = () => Object.keys(SR.deg).reduce((a, k) => a + SR.deg[k], 0);
@@ -227,16 +231,12 @@
       if (MECH.choosing){ if (!carrefour(J)) break; continue; }
       if (!MECH.paused) piloter(J, dt);
       visuals(dt); SIM.horloge(dt); t += dt;
-      // o.carrefour : montre le carrefour au bout de la rue. Dans le jeu (2026-11-13), la fin de rue de js/39-robot.js
-      // lance le fondu dans la même image où le robot passe le bout de la rue, avant que js/40-robot-monstres.js
-      // ait pu montrer le carrefour : il n'apparaît jamais. Cette option fait comme si c'était corrigé.
-      if (o.carrefour && MECH.fade > 0 && MECH.fadeTo === 'street' && !MECH.choosing && E.rueVue !== MECH.street && MECH.dist >= MECH_LEN){ MECH.fade = 0; E.rueVue = MECH.street; mbCrossroads(); }
       if (MECH.street !== rue){ rues.push({ rue, s:Math.round(t - t0), deg:Math.round(deg() - d0) }); rue = MECH.street; t0 = t; d0 = deg(); }
       if (o.pauseN && ++n % o.pauseN === 0) await pause(); // sans pause : un chargement qui finit pendant la course tirerait au hasard
     }
     MECH.mini = MECH.rocket = false; MECH.joy.dx = MECH.joy.dy = 0; firing = false;
-    const mort = state === 'mechover';
-    const res = { joueur:J.nom, rue:MECH.street, rues:Math.round(100 * ((MECH.street - 1) + Math.min(1, MECH.dist / MECH_LEN))) / 100, mort,
+    const gagne = !!MECH.won, mort = state === 'mechover' && !gagne;
+    const res = { joueur:J.nom, rue:MECH.street, tour:MECH.tour || 1, gagne, meilleurTour:mechFinNorm().tour, rues:gagne ? MECH_FIN.rues : Math.round(100 * ((MECH.street - 1) + Math.min(1, MECH.dist / MECH_LEN))) / 100, mort,
       minutes:Math.round(t / 6) / 10, tues:MECH.kills, ferraille:Math.round((P.scrap || 0) - scr0), xp:Math.round((P.xp || 0) - xp0),
       deg:Object.fromEntries(Object.keys(SR.deg).map(k => [k, Math.round(SR.deg[k])])), degTotal:Math.round(deg()), blindage:Math.round(S.barMax),
       crachats:SR.crach, esquives:SR.esq, bossTues:SR.bossTues, routes:Object.assign({}, BOT_R.routes), parRue:rues.concat([{ rue, s:Math.round(t - t0), deg:Math.round(deg() - d0), fin:true }]) };
@@ -317,7 +317,7 @@
     const res = [];
     for (const L of o.lots){
       const rs = [];
-      for (const g of (o.graines || [1, 2, 3])) rs.push(await essai({ budget:o.budget, strat:L.strat, joueur:o.joueur, graine:g, maxMin:o.maxMin || 25, style:o.style, carrefour:o.carrefour }));
+      for (const g of (o.graines || [1, 2, 3])) rs.push(await essai({ budget:o.budget, strat:L.strat, joueur:o.joueur, graine:g, maxMin:o.maxMin || 25, style:o.style }));
       res.push({ nom:L.nom, strat:L.strat, courses:rs });
     }
     return { budget:o.budget, joueur:(SIM.JOUEURS[o.joueur] || SIM.JOUEURS.moyen).nom, lots:res };
@@ -330,11 +330,11 @@
     if (o.P){ Object.keys(P).forEach(k => delete P[k]); Object.assign(P, JSON.parse(o.P)); mechNorm(); saveP(); } else profil();
     BOT_R.priorites = o.priorites || null; BOT_R.armesMalin = o.armes || null;
     const i = o.i || 0;
-    const r = await course({ joueur:o.joueur, graine:(o.graine || 1) * 1000 + i, maxMin:o.maxMin || 25, style:o.style, carrefour:o.carrefour });
+    const r = await course({ joueur:o.joueur, graine:(o.graine || 1) * 1000 + i, maxMin:o.maxMin || 25, style:o.style });
     const avant = Math.round(P.scrap);
     const achats = garage(o.strat || 'moinsCher');
     const prochain = offres().sort((a, b) => a.c - b.c)[0];
-    return { ligne:{ n:i + 1, rue:r.rue, rues:r.rues, minutes:r.minutes, tues:r.tues, ferraille:r.ferraille, degTotal:r.degTotal, avant, achats, reste:Math.round(P.scrap),
+    return { ligne:{ n:i + 1, rue:r.rue, rues:r.rues, tour:r.tour, gagne:r.gagne, meilleurTour:mechFinNorm().tour, minutes:r.minutes, tues:r.tues, ferraille:r.ferraille, degTotal:r.degTotal, avant, achats, reste:Math.round(P.scrap),
       prochain:prochain ? { k:prochain.k, c:prochain.c } : null, lv:lvCopie(), armes:{ L:mW('L'), R:mW('R') }, deg:r.deg }, P:JSON.stringify(P) };
   }
   // Toute la progression dans la même page (pour un essai court)
@@ -346,8 +346,21 @@
   // Profil neuf : plusieurs courses sans rien au garage
   async function neuf(o){
     SIM.preparer(); await prechauffer(); const rs = [];
-    for (const g of (o.graines || [1, 2, 3])){ profil(); rs.push(await course({ joueur:o.joueur, graine:g, maxMin:o.maxMin || 25, style:o.style, carrefour:o.carrefour })); }
+    for (const g of (o.graines || [1, 2, 3])){ profil(); rs.push(await course({ joueur:o.joueur, graine:g, maxMin:o.maxMin || 25, style:o.style })); }
     return { joueur:(SIM.JOUEURS[o.joueur] || SIM.JOUEURS.moyen).nom, style:o.style || 'normal', courses:rs };
+  }
+  // Tout le garage acheté (o.armes = { L, R } : armes équipées), puis les tours l'un après l'autre jusqu'à la première défaite
+  async function plafond(o){
+    SIM.preparer(); await prechauffer(); profil();
+    MECH_UPG_ORDER.forEach(k => { P.mech.lv[k] = MECH_UPG[k].max; }); MECH_W_ORDER.forEach(id => { P.mech.own[id] = true; });
+    const A = o.armes || {}; if (A.L) P.mech.L = A.L; if (A.R) P.mech.R = A.R; saveP(); mechArms();
+    const courses = []; let best = 0;
+    for (let t = 1; t <= (o.tourMax || 15); t++){
+      const r = await course({ joueur:o.joueur, graine:(o.graine || 1) * 100 + t, maxMin:o.maxMin || 25, style:o.style, tour:t });
+      courses.push({ tour:t, gagne:r.gagne, rues:r.rues, minutes:r.minutes, degTotal:r.degTotal });
+      if (!r.gagne) break; best = t;
+    }
+    return { joueur:(SIM.JOUEURS[o.joueur] || SIM.JOUEURS.moyen).nom, armes:{ L:mW('L'), R:mW('R') }, best, courses };
   }
   // Prix total de chaque chose du garage (pour « combien de courses pour se la payer »)
   function prix(){
@@ -357,5 +370,5 @@
     return o;
   }
 
-  SIM.robot = { pas, profil, prechauffer, NIV, BOT_R, SR, course, garage, essai, banc, progression, neuf, prix, offres, installer };
+  SIM.robot = { pas, plafond, profil, prechauffer, NIV, BOT_R, SR, course, garage, essai, banc, progression, neuf, prix, offres, installer };
 })();

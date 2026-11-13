@@ -151,8 +151,12 @@ function mdBanc(lignes, menaces){
 
 /* ---------- Mode robot (outils/sim-bot-robot.js) ---------- */
 // node outils/simulateur.js robot [joueurs] [graine]   (joueurs par défaut : debutant,moyen,bon)
-// Variables d'environnement : SIM_ROBOT = parties à faire, parmi neuf,carrefour,banc,progression (défaut : toutes) ;
-//   SIM_COURSES = courses par ligne (défaut 4) ; SIM_PAGES = pages en même temps (défaut 2).
+// Variables d'environnement : SIM_ROBOT = parties à faire, parmi neuf,banc,progression,plafond (défaut : neuf,banc,progression) ;
+//   SIM_COURSES = courses par ligne, donc graines (défaut 4) ; SIM_PAGES = pages en même temps (défaut 2) ;
+//   SIM_PROG_N = courses de la progression (défaut 12) ; SIM_PROG_STRATS = moinsCher,canon (défaut : les deux).
+// Une course : 9 rues et un boss final (js/40-robot-fin.js). La progression part au tour suivant après une victoire.
+// « plafond » : tout le garage acheté, les tours l'un après l'autre jusqu'à la première défaite (minigun et roquettes, puis
+//   minigun et canon électromagnétique).
 const ROBOT_BUDGETS = [2500, 7500, 20000]; // ferraille d'environ 1, 3 et 7 courses
 const ROBOT_LOTS = [{ nom:'rien (ferraille gardée)', strat:'rien' }, { nom:'toujours le moins cher', strat:'moinsCher' }]
   .concat(['armor', 'mdmg', 'cool', 'rdmg', 'rrate', 'salvo', 'legs', 'repair', 'regen'].map(k => ({ ligne:k, strat:'ligne:' + k })))
@@ -161,6 +165,9 @@ const NOM_LIGNE = { armor:'Blindage', mdmg:'Bras gauche : dégâts', cool:'Bras 
 const NOM_ARME_R = { minigun:'Minigun', rocket:'Roquettes', flamer:'Lance-flammes lourd', laser:'Laser lourd', gl:'Lance-grenades', arc:'Arc électrique', railgun:'Canon électromagnétique' };
 const nomLot = L => L.nom || (L.ligne ? 'tout en « ' + NOM_LIGNE[L.ligne] + ' »' : NOM_ARME_R[L.arme] + ', le reste au moins cher');
 const vir = v => String(v).replace('.', ',');
+// Niveau maximum de chaque amélioration du garage (MECH_UPG, js/39-robot.js) : « garage au complet » (les armes à part)
+const MAX_LV = { armor:10, mdmg:10, cool:8, rdmg:10, rrate:8, salvo:2, legs:6, repair:5, regen:5 };
+const lvMax = c => !!c.lv && Object.keys(MAX_LV).every(k => (c.lv[k] || 0) >= MAX_LV[k]);
 const moy = (a, f) => a.reduce((s, x) => s + f(x), 0) / a.length;
 function stat(a, f, dec){ const v = a.map(f), k = Math.pow(10, dec || 0), r = x => vir(Math.round(x * k) / k); return r(moy(a, f)) + ' (' + r(Math.min.apply(null, v)) + ' à ' + r(Math.max.apply(null, v)) + ')'; }
 function sources(cs){
@@ -181,9 +188,18 @@ function mdRobot(r){
     r.neuf.forEach(l => { h += ligneRobot(l.joueur + ', ' + l.profil, l.courses); });
     h += '\n';
   }
-  if (r.carrefour){
-    h += '### Avec le carrefour\n\nDans le jeu, le carrefour n’apparaît jamais (la fin de rue lance le fondu avant lui). Même joueur moyen, profil neuf, si le carrefour était montré '
-      + '(rue calme quand il est amoché, sinon la rue qui rapporte le plus) :\n\n' + ENTETE_R + ligneRobot('Moyen, profil neuf, sans carrefour (le jeu)', r.carrefour.sans) + ligneRobot('Moyen, profil neuf, avec carrefour', r.carrefour.avec) + '\n';
+  if (r.neuf && r.neuf.some(l => l.courses.some(c => c.parRue))){
+    h += '### Dégâts par rue, profil neuf\n\nMoyenne des courses de chaque joueur (rue : dégâts encaissés).\n\n| Joueur | Rue 1 | Rue 2 | Rue 3 | Rue 4 | Rue 5 | Rue 6 | Rue 7 | Rue 8 | Rue 9 |\n|---|---|---|---|---|---|---|---|---|---|\n';
+    r.neuf.filter(l => l.profil === 'profil neuf').forEach(l => {
+      const cs = []; for (let k = 1; k <= 9; k++){ const v = l.courses.map(c => (c.parRue || []).find(x => x.rue === k)).filter(Boolean); cs.push(v.length ? Math.round(moy(v, x => x.deg)) + (v.length < l.courses.length ? ' (' + v.length + ')' : '') : '-'); }
+      h += '| ' + l.joueur + ' | ' + cs.join(' | ') + ' |\n';
+    });
+    h += '\n';
+  }
+  if (r.plafond){
+    h += '### Plafond avec tout le garage\n\nTout le garage acheté, les tours l’un après l’autre jusqu’à la première défaite. « Meilleur tour » : le dernier tour gagné.\n\n| Joueur | Armes | Meilleur tour (par graine) | Moyenne |\n|---|---|---|---|\n';
+    r.plafond.forEach(l => { h += '| ' + l.joueur + ' | ' + (NOM_ARME_R[l.armes.L] || l.armes.L) + ', ' + (NOM_ARME_R[l.armes.R] || l.armes.R) + ' | ' + l.res.map(x => x.best).join(', ') + ' | ' + vir(Math.round(10 * moy(l.res, x => x.best)) / 10) + ' |\n'; });
+    h += '\n';
   }
   if (r.banc){
     h += '### Garage à ferraille égale\n\nProfil neuf, joueur moyen, même graine pour chaque ligne. Chaque ligne met toute la ferraille dans une seule amélioration (jusqu’à son maximum ; le reste est gardé), '
@@ -199,7 +215,22 @@ function mdRobot(r){
       h += '\n';
     });
   }
-  if (r.progression){
+  if (r.progression && r.progression[0] && r.progression[0].graines){
+    h += '### Course après course\n\nUn profil neuf par graine ; après chaque course, la ferraille est dépensée au garage. Après une victoire, il part au tour suivant ; après une défaite, il refait le même tour. '
+      + 'Chaque case : tour joué, ✔ gagné ou rues traversées, pour chaque graine.\n\n';
+    r.progression.forEach(p => {
+      const N = Math.max.apply(null, p.graines.map(g => g.courses.length));
+      h += '#### Joueur ' + p.joueur.toLowerCase() + ', garage « ' + p.nom + ' »\n\n| Course | ' + p.graines.map(g => 'Graine ' + g.graine).join(' | ') + ' | Ferraille gagnée (moyenne) |\n|---' + p.graines.map(() => '|---').join('') + '|---|\n';
+      for (let i = 0; i < N; i++){
+        const cs = p.graines.map(g => g.courses[i]).filter(Boolean);
+        h += '| ' + (i + 1) + ' | ' + p.graines.map(g => { const c = g.courses[i]; return c ? 'T' + c.tour + ' ' + (c.gagne ? '✔' : vir(c.rues)) : '-'; }).join(' | ') + ' | ' + Math.round(moy(cs, c => c.ferraille)).toLocaleString('fr-CA') + ' |\n';
+      }
+      const prem = p.graines.map(g => { const k = g.courses.findIndex(c => c.gagne); return k < 0 ? '-' : k + 1; });
+      h += '\nPremière victoire à la course : ' + prem.join(', ') + '. Meilleur tour réussi après ' + N + ' courses : ' + p.graines.map(g => g.courses.length ? g.courses[g.courses.length - 1].meilleurTour : 0).join(', ')
+        + '. Améliorations toutes au maximum à la course : ' + p.graines.map(g => { const k = g.courses.findIndex(lvMax); return k < 0 ? '-' : k + 1; }).join(', ') + '.\n\n';
+    });
+  }
+  if (r.progression && r.progression[0] && !r.progression[0].graines){
     r.progression.forEach(p => {
       h += '### Course après course : joueur ' + p.joueur.toLowerCase() + ', garage « ' + p.nom + ' »\n\nUn seul profil ; après chaque course, la ferraille est dépensée au garage.\n\n'
         + '| Course | Rues traversées | Minutes | Ferraille gagnée | Achats | Ferraille gardée | Prochain achat |\n|---|---|---|---|---|---|---|\n';
@@ -215,7 +246,7 @@ function mdRobot(r){
 }
 // Toutes les mesures du robot : rend { md, data }
 async function simRobot(b){
-  const parts = (process.env.SIM_ROBOT || 'neuf,carrefour,banc,progression').split(','), n = +process.env.SIM_COURSES || 4, np = +process.env.SIM_PAGES || 2;
+  const parts = (process.env.SIM_ROBOT || 'neuf,banc,progression').split(','), n = +process.env.SIM_COURSES || 4, np = +process.env.SIM_PAGES || 2;
   const gs = Array.from({ length:n }, (_, i) => graine + i), js = process.argv[3] ? joueurs : ['debutant', 'moyen', 'bon'];
   const data = { courses:n };
   // Fait les tâches au plus np à la fois, une page chacune
@@ -226,7 +257,7 @@ async function simRobot(b){
     }));
     return res;
   }
-  const court = r => r.courses.map(c => vir(c.rues)).join(' ');
+  const court = r => r.courses.map(c => c.gagne ? '✔' + (c.tour > 1 ? c.tour : '') : vir(c.rues)).join(' ');
   if (parts.includes('neuf')){
     console.log('Robot : par niveau de joueur...');
     const t = [];
@@ -237,10 +268,13 @@ async function simRobot(b){
     const rs = await lot(t);
     data.neuf = rs.map((r, k) => r && ({ joueur:r.joueur, profil:t[k].profil, courses:r.courses })).filter(Boolean);
   }
-  if (parts.includes('carrefour')){
-    console.log('Robot : avec et sans carrefour...');
-    const rs = await lot([false, true].map(c => ({ o:{ joueur:'moyen', graines:gs, carrefour:c }, f:o => SIM.robot.neuf(o), log:r => (c ? 'avec' : 'sans') + ' carrefour : ' + court(r) })));
-    if (rs[0] && rs[1]) data.carrefour = { sans:rs[0].courses, avec:rs[1].courses };
+  if (parts.includes('plafond')){
+    console.log('Robot : plafond avec tout le garage...');
+    const AR = [{ L:'minigun', R:'rocket' }, { L:'minigun', R:'railgun' }], t = [];
+    js.forEach(j => AR.forEach(a => gs.forEach(g => t.push({ j, a, g, o:{ joueur:j, graine:g, armes:a }, f:o => SIM.robot.plafond(o), log:r => r.joueur + ', ' + r.armes.L + ' + ' + r.armes.R + ', graine ' + g + ' : tour ' + r.best + ' (' + r.courses.map(c => c.gagne ? '✔' : vir(c.rues)).join(' ') + ')' }))));
+    const rs = await lot(t);
+    data.plafond = [];
+    js.forEach(j => AR.forEach(a => { const res = rs.filter((r, k) => r && t[k].j === j && t[k].a === a); if (res.length) data.plafond.push({ joueur:res[0].joueur, armes:a, res }); }));
   }
   if (parts.includes('banc')){
     console.log('Robot : garage à ferraille égale...');
@@ -255,19 +289,30 @@ async function simRobot(b){
   }
   if (parts.includes('progression')){
     console.log('Robot : course après course...');
-    const P2 = [{ nom:'toujours le moins cher', strat:'moinsCher' }, { nom:'le canon électromagnétique dès qu’il peut, puis le moins cher', strat:'malin', armes:['railgun'] }];
-    // Une page neuve par course (le profil passe d'une page à l'autre), les stratégies en même temps
-    const rs = await Promise.all(P2.map(async s => {
-      const courses = []; let pr = null;
-      for (let i = 0; i < 12; i++){
-        const p = await page(b);
-        const x = await p.evaluate(o => SIM.robot.pas(o), { joueur:'moyen', graine, i, P:pr, strat:s.strat, armes:s.armes });
-        await p.close(); courses.push(x.ligne); pr = x.P;
-        console.log('  ' + s.nom + ', course ' + (i + 1) + ' : ' + vir(x.ligne.rues) + ' rues, ' + x.ligne.ferraille + ' ⚙');
+    const P2 = [{ id:'moinsCher', nom:'toujours le moins cher', strat:'moinsCher' }, { id:'canon', nom:'le canon électromagnétique dès qu’il peut, puis le moins cher', strat:'malin', armes:['railgun'] }]
+      .filter(s => !process.env.SIM_PROG_STRATS || process.env.SIM_PROG_STRATS.split(',').includes(s.id));
+    const NP = +process.env.SIM_PROG_N || 12, jp = process.argv[3] ? joueurs : ['moyen'];
+    // Une page neuve par course (le profil passe d'une page à l'autre) ; chaque suite (joueur, stratégie, graine) à part,
+    // au plus SIM_PAGES suites en même temps
+    const suites = []; jp.forEach(j => P2.forEach(s => gs.forEach(g => suites.push({ j, s, g }))));
+    const res = new Array(suites.length); let ix = 0;
+    await Promise.all(Array.from({ length:Math.min(np, suites.length) }, async () => {
+      while (ix < suites.length){
+        const k = ix++, { j, s, g } = suites[k], courses = []; let pr = null;
+        for (let i = 0; i < NP; i++){
+          const p = await page(b);
+          try {
+            const x = await p.evaluate(o => SIM.robot.pas(o), { joueur:j, graine:g, i, P:pr, strat:s.strat, armes:s.armes });
+            courses.push(x.ligne); pr = x.P;
+            console.log('  ' + j + ', ' + s.id + ', graine ' + g + ', course ' + (i + 1) + ' : tour ' + x.ligne.tour + (x.ligne.gagne ? ' gagné' : ', ' + vir(x.ligne.rues) + ' rues') + ', ' + x.ligne.ferraille + ' ⚙, meilleur tour ' + x.ligne.meilleurTour + (lvMax(x.ligne) ? ', améliorations au maximum' : ''));
+          } catch (e) { console.log('  (course perdue : ' + e.message.split('\n')[0] + ')'); }
+          await p.close().catch(() => {});
+        }
+        res[k] = { graine:g, courses };
       }
-      return { joueur:'Moyen', strat:s.strat, courses };
     }));
-    data.progression = rs.map((r, k) => Object.assign(r, { nom:P2[k].nom }));
+    data.progression = [];
+    jp.forEach(j => P2.forEach(s => { const gr = suites.map((x, k) => x.j === j && x.s === s ? res[k] : null).filter(Boolean); data.progression.push({ joueur:j.charAt(0).toUpperCase() + j.slice(1), strat:s.strat, nom:s.nom, graines:gr }); }));
   }
   return { md:mdRobot(data), data };
 }

@@ -78,7 +78,8 @@
   test('Équilibrage : le robot garde les dégâts qu’il avait avant le renforcement des armes du toit', () => {
     if (lire('typeof MECH_W === "object"') !== true) ignorer('Mode robot absent');
     const r = J(function(){ var o = {}; Object.keys(MECH_W).forEach(function(id){ o[id] = WEAPONS[id].dmg * (MECH_W[id].k || 1); }); return o; });
-    const avant = { minigun:24, flamer:10, laser:60, rocket:800, gl:300, arc:260, railgun:1300 };
+    // Lance-flammes lourd : 15,6 (10 avant le dossier 102, k 0,76 → 1,2 : il devient un vrai choix au garage)
+    const avant = { minigun:24, flamer:15.6, laser:60, rocket:800, gl:300, arc:260, railgun:1300 };
     Object.keys(avant).forEach(id => proche(r[id], avant[id], avant[id] * .02, 'Robot, ' + id));
   });
 

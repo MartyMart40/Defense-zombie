@@ -242,12 +242,14 @@ function mbWave(){
 }
 
 /* ---------- Carrefours : on choisit la prochaine rue ---------- */
+// Ferraille des rues (dossier 102) : ×1,5 dans les ruelles (×2 avant), ×1,25 au nid et sous l'orage (×1,5 avant). Le carrefour
+// n'apparaissait jamais avant ce dossier ; une fois réparé, la ferraille d'une course montait de 80 % (simulateur).
 const MB_RULES = [
   { id:'calme',   title:'Rue calme',            desc:'Moins de zombies ; blindage réparé à fond en arrivant.', zMult:.7, repairFull:true, scrap:1 },
-  { id:'ruelle',  title:'Ruelles sombres',      desc:'Nuit noire, +40 % de zombies, ferraille ×2.', weather:'nuit', zMult:1.4, scrap:2 },
+  { id:'ruelle',  title:'Ruelles sombres',      desc:'Nuit noire, +40 % de zombies, ferraille ×1,5.', weather:'nuit', zMult:1.4, scrap:1.5 },
   { id:'avenue',  title:'Grande avenue',        desc:'Un boss t’y attend. Prime de 500 ⚙ si tu en sors.', boss:true, scrap:1, prime:500 },
-  { id:'nid',     title:'Nid de bibites',       desc:'Plein d’araignées et de rôdeurs ; ferraille ×1,5.', nest:true, scrap:1.5 },
-  { id:'tempete', title:'Quartier sous l’orage', desc:'Orage ; zombies 20 % plus rapides ; ferraille ×1,5.', weather:'orage', spd:1.2, scrap:1.5 },
+  { id:'nid',     title:'Nid de bibites',       desc:'Plein d’araignées et de rôdeurs ; ferraille ×1,25.', nest:true, scrap:1.25 },
+  { id:'tempete', title:'Quartier sous l’orage', desc:'Orage ; zombies 20 % plus rapides ; ferraille ×1,25.', weather:'orage', spd:1.2, scrap:1.25 },
   { id:'soleil',  title:'Boulevard ensoleillé', desc:'Grand soleil, rue dégagée : vue de loin.', weather:'soleil', scrap:1 }
 ];
 const MB_DIRS = ['⬅ À gauche', '⬆ Tout droit', '➡ À droite'];
@@ -316,7 +318,7 @@ try {
 try { const _h = mechHUD; mechHUD = function(){ const r = _h.apply(this, arguments); mbBossHUD(); return r; }; } catch (e) { errNote(e); }
 // Ferraille de la rue choisie (Ruelles sombres ×2, etc.)
 // Ferraille du robot : elle suit la rue (comme la force des zombies), pas la ville du décor ; × la règle du carrefour
-try { const _sf = scrapFor; scrapFor = function(type){ if (!MECH.on) return _sf.apply(this, arguments); if ((MECH.renf || 0) >= 2) return 0; const v = _sf.call(this, type, { diff:1 + .66 * (mechRampe(MECH.street) - 1) }); return MECH.route && MECH.route.scrap ? v * MECH.route.scrap : v; }; } catch (e) { errNote(e); }
+try { const _sf = scrapFor; scrapFor = function(type){ if (!MECH.on) return _sf.apply(this, arguments); if ((MECH.renf || 0) >= 2) return 0; const v = _sf.call(this, type, { diff:1 + .66 * (mechRampe(mechE()) - 1) }); return MECH.route && MECH.route.scrap ? v * MECH.route.scrap : v; }; } catch (e) { errNote(e); }
 // Musique de boss pour les boss du robot : voir musique() du mode 'robot' (js/39-robot.js)
 // Pendant le choix du carrefour, la pause et la reprise ne font rien (le choix reste à l'écran)
 try { const _pz = mechPause; mechPause = function(){ if (MECH.choosing) return; return _pz.apply(this, arguments); }; mechPause.again = _pz.again; } catch (e) { errNote(e); }

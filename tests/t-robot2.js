@@ -158,8 +158,8 @@
         clearZombies(); var z = __t.placer('crawler', 0, -35); z.hp = z.maxHp = 1e6; z.speed = 0; z.g.updateMatrixWorld(true);
         var c = new THREE.Vector3(z.g.position.x, z.g.position.y + (z.aimY != null ? z.aimY : 1.1), z.g.position.z);
         camera.lookAt(c); camera.rotateY(.06); camera.updateMatrixWorld(true);
-        M.assist = aide; S.cur = 'minigun'; spin = 1; cool = 0; reloadT = 0; S.ammo.minigun = 99;
-        var q0 = camera.quaternion.clone(); for (var k = 0; k < 15; k++){ cool = 0; var on = K.mechAssist(); fire(); K.mechAssistFin(on); } // 15 balles : le minigun disperse
+        M.assist = aide; S.cur = 'laser'; cool = 0; reloadT = 0; S.ammo.laser = 99; // le laser ne disperse pas : le test ne dépend pas du hasard
+        var q0 = camera.quaternion.clone(); var on = K.mechAssist(); fire(); K.mechAssistFin(on); S.cur = 'minigun';
         return { touche: z.hp < 1e6, vue: camera.quaternion.angleTo(q0) < 1e-6 };
       };
       o.sans = essai(false); o.avec = essai(true); M.assist = false;

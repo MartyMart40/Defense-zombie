@@ -74,6 +74,16 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 
 Les const, let et function de haut niveau sont partagés entre tous les fichiers (portée globale). Un fichier peut appeler une fonction d'un fichier plus loin **seulement à l'intérieur d'une fonction**, jamais au chargement. Chaque fichier commence par `'use strict';`.
 
+## Travail à plusieurs dossiers (décidé avec Martin le 2026-11-13)
+Martin parle à une seule conversation, le chef de chantier. Lui seul fusionne et met en ligne.
+- Un dossier = un sous-agent sur Opus (`model: opus`), dans sa propre copie du dépôt (`isolation: worktree`). Trois dossiers à la fois au plus (4 processeurs, chaque agent lance les tests).
+- Des dossiers qui touchent des fichiers différents : un par mode (toit, robot, RTS) va bien ; jamais deux dossiers sur le même mode en même temps.
+- Les sous-agents ne touchent pas à `TACHES.md`, `docs/historique.md`, `index.html`, ni au numéro de version, et ne poussent rien. Ils rendent : ce qui est fait, les fichiers touchés, le résultat des tests, ce qui n'est pas vérifié.
+- Chaque sous-agent sert le jeu sur son propre port (8766, 8767, 8768) : `python3 -m http.server 8766` dans sa copie, puis `node outils/lancer-tests.js http://localhost:8766/`.
+- Le chef de chantier écrit la consigne (but, fichiers, ce qui est déjà écarté, comment vérifier), relit le résultat, fusionne un dossier à la fois, relance toute la suite, met `TACHES.md` et la fiche du mode à jour, puis met en ligne.
+- Dossier flou (« trouve ce qui cloche ») : le chef de chantier fait d'abord le diagnostic lui-même avec le simulateur, puis délègue l'exécution.
+- Pour juger un chiffre : `node outils/simulateur.js duel` (armes du toit) et les bancs décrits dans `docs/rts.md`, `docs/robot.md` et `docs/conception.md`. Les campagnes complètes varient trop d'une partie à l'autre.
+
 ## Règles
 1. Touche d'abord les fichiers de ta tâche. Si tu dois en toucher un autre, garde le changement minimal et dis-le dans ton rapport.
 2. Nouveau système = nouveau fichier `js/NN-nom.js`, ajouté au bon endroit dans `index.html`. Nouveau gros mode = une dizaine libre (50 à 59, puis 60 à 69...). Couper un fichier qui dépasse environ 700 lignes.

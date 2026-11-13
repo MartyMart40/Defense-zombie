@@ -6,7 +6,7 @@
 //   Boss (un toutes les 3 rues, à tour de rôle, plus forts à chaque tour) : Titan (géant, piétine le sol),
 //             Mère pondeuse (araignée géante qui pond des petits), Béhémoth ailé (gargouille géante qui crache de l'acide).
 //             Barre de vie en haut de l'écran.
-//   Vagues : toutes les MW_EVERY s, une vague arrive de tous les côtés (devant, derrière, ruelles sur les côtés).
+//   Vagues : toutes les MW_EVERY s, une vague arrive du bout de la rue et des ruelles de côté, toujours devant le robot.
 //   Carrefours : au bout de chaque rue, choix entre 3 rues (ville, météo et règle différentes) : on explore la ville.
 // Matériaux : couleurs déjà présentes dans la palette des zombies (rendu par instances, aucun matériau de plus).
 
@@ -24,7 +24,10 @@ try { Object.assign(SCRAP_Z, { stalker:2.5, spider:1, abomination:12, titan:150,
 const MB_BOSS = ['titan', 'broodmother', 'behemoth'];
 const MB_WEAK = { coeur:{ mult:3, effet:'coeur' }, oeufs:{ mult:2.5, effet:'oeufs' } };
 const MB = { waveN:0, waveT:0, routeN:0, spawned:{}, stomps:0, broods:0, spits:0 };
-const MW_EVERY = 28;       // secondes entre deux vagues
+// Secondes entre deux vagues. Dossier 105 : 18 (28 avant). Sans zombies derrière, le robot tenait plus longtemps (simulateur,
+// joueur moyen, profil neuf, 6 graines : 3,3 rues avant, 4,9 avec tout devant et 28 s) ; avec 18 s et un bout de rue plus
+// proche : 3,7 rues, et le garage de 7 500 ⚙ gagne 3 courses sur 6 comme avant.
+const MW_EVERY = 18;
 // Le robot doit pouvoir poursuivre ceux qui marchent (39-robot.js : poursuite par derrière)
 try { Object.assign(MECH_GROUND, { stalker:1, spider:1, abomination:1 }); } catch (e) { errNote(e); }
 const mbV = new THREE.Vector3();
@@ -121,7 +124,8 @@ ZKINDS.abomination = {
     else { z.atkT -= dt; if (z.atkT <= 0){ z.atkT = rand(1.2, 1.6); const ZT = ZTYPES[z.type]; hitBarricade(z, z.dmg, ZT.hitShake, ZT.chips); } }
     return true;
   },
-  onKill(z){ if (typeof mnSpawnGroup === 'function'){ MB.broods++; mnSpawnGroup(z, 'crawler', 5, 1.5); } }
+  // Robot : rien ne sort d'une abomination tuée derrière lui (aucun zombie n'apparaît derrière le robot, dossier 105)
+  onKill(z){ if (typeof mnSpawnGroup === 'function' && !(MECH.on && mbDerriere(z, 1))){ MB.broods++; mnSpawnGroup(z, 'crawler', 5, 1.5); } }
 };
 
 /* ---------- Boss ---------- */
@@ -161,7 +165,8 @@ ZKINDS.broodmother = {
   update(z, dt){
     mbSpiderMove(z, dt, .5);
     z.layT -= dt;
-    if (z.layT <= 0){ z.layT = rand(4.5, 6); MB.broods++; if (typeof mnSpawnGroup === 'function') mnSpawnGroup(z, Math.random() < .5 ? 'spider' : 'crawler', 3, 2.5); mbRoar(false); }
+    // Robot : elle ne pond pas quand elle est passée derrière lui (aucun zombie n'apparaît derrière le robot, dossier 105)
+    if (z.layT <= 0){ z.layT = rand(4.5, 6); if (!(MECH.on && mbDerriere(z, 1))){ MB.broods++; if (typeof mnSpawnGroup === 'function') mnSpawnGroup(z, Math.random() < .5 ? 'spider' : 'crawler', 3, 2.5); mbRoar(false); } }
     return true;
   }
 };
@@ -217,25 +222,29 @@ try {
   };
 } catch (e) { errNote(e); }
 
-/* ---------- Vagues : de tous les côtés, régulièrement ---------- */
-const MB_LOIN = { derriere:[34, 50], ruelles:[30, 55] }; // distance (m) où sortent les zombies d'une vague, derrière et dans les ruelles
+/* ---------- Vagues : du bout de la rue et des ruelles, régulièrement ---------- */
+// Distance (m) devant le robot où sortent les zombies d'une vague : au bout de la rue, et dans les ruelles de côté.
+// Dossier 105 (2026-11-13), Martin : « il faut que ça vienne de la zone opposée ». Plus aucun zombie n'apparaît derrière le
+// robot : avant, 30 % d'une vague sortaient derrière (34 à 50 m ; 16 à 30 m avant la tâche 93). « Derrière » se compte dans le
+// sens de la marche dans la rue (z plus grand que le robot), pas selon le regard. Un zombie déjà dépassé reste derrière.
+// Part : 50 % au bout de la rue (55 à 90 m), 50 % dans les ruelles (avant : 50 % au bout à 65 à 105 m, 30 % derrière, 20 % ruelles).
+const MB_LOIN = { bout:[55, 90], ruelles:[30, 55], partBout:.5 };
 const MB_SIDE = ['walker', 'runner', 'crawler', 'spider', 'stalker', 'bloater', 'shield'];
+// Un zombie est derrière le robot quand il est plus loin que lui vers le début de la rue (z plus grand)
+const mbDerriere = (z, marge) => !!(z && z.g) && z.g.position.z > MECH_CAM.z - (marge || 0);
 function mbWave(){
   MB.waveN++;
   const n = Math.min(10 + 3 * MB.waveN + 2 * MECH.street, 60), MZ = MECH_CAM.z;
   let alive = zAliveCount(); const room = Math.max(0, Math.min(DEV_CAP, plan.maxAlive + 20) - alive);
   const tot = Math.min(n, room); let k = 0;
-  banner('Vague ' + MB.waveN + ' !', 'Ils arrivent de partout', 1600);
+  banner('Vague ' + MB.waveN + ' !', 'Ils arrivent du bout de la rue et des ruelles', 1600);
   if (typeof Snd === 'object' && Snd.tone){ Snd.tone(330, .25, 'square', .06, 220); Snd.tone(330, .25, 'square', .06, 220, .35); }
   for (let i = 0; i < tot; i++){
     const t = pick(MB_SIDE.filter(x => MECH.street >= 2 || (x !== 'stalker' && x !== 'shield')));
     const z = spawnZombie(t); if (!z) continue; k++;
     const r = i / tot, gp = z.g.position;
-    if (r < .5) gp.z = rand(-110, -70);                                         // devant, au bout de la rue
-    // 2026-11-13, Martin : « les zombies nous apparaissent dessus et beaucoup trop proche ». Derrière : 16 à 30 m avant ;
-    // ruelles : 10 à 32 m devant avant, donc parfois à 4 m du robot.
-    else if (r < .8){ gp.z = MZ + rand(MB_LOIN.derriere[0], MB_LOIN.derriere[1]); gp.x = rand(-10, 10); }        // derrière
-    else { gp.x = (Math.random() < .5 ? -1 : 1) * 13; gp.z = MZ - rand(MB_LOIN.ruelles[0], MB_LOIN.ruelles[1]); } // ruelles sur les côtés, plus loin devant
+    if (r < MB_LOIN.partBout) gp.z = MZ - rand(MB_LOIN.bout[0], MB_LOIN.bout[1]);                              // devant, au bout de la rue
+    else { gp.x = (Math.random() < .5 ? -1 : 1) * 13; gp.z = MZ - rand(MB_LOIN.ruelles[0], MB_LOIN.ruelles[1]); } // ruelles sur les côtés, en avant du robot
     z.g.updateMatrixWorld(true);
   }
   return k;
@@ -326,4 +335,4 @@ try { const _rs = mechResume; mechResume = function(){ if (MECH.choosing) return
 try { const _q = mechQuit; mechQuit = function(){ MECH.choosing = false; MECH.route = null; mbBar.classList.add('hide'); return _q.apply(this, arguments); }; } catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
-window.__mb = { MB, MB_LOIN, MB_BOSS, MB_RULES, MW_EVERY, mbWave, mbCrossroads, mbGo, mbRoutes, mbBossAlive };
+window.__mb = { MB, MB_LOIN, mbDerriere, MB_BOSS, MB_RULES, MW_EVERY, mbWave, mbCrossroads, mbGo, mbRoutes, mbBossAlive };

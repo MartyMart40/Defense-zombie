@@ -383,7 +383,7 @@ function mechStep(dt){
   const moving = Math.abs(fw) > .1 || Math.abs(sideIn) > .1;
   if (moving){
     const was = Math.sin(MECH.step); MECH.step += dt * 2.6 * Math.max(Math.abs(fwdIn), Math.abs(sideIn));
-    if (was > 0 !== Math.sin(MECH.step) > 0) mechStomp(); // un pied touche le sol
+    if (was > 0 !== Math.sin(MECH.step) > 0 && !MECH.pasJambes) mechStomp(); // un pied touche le sol (js/40-robot-habitacle.js : quand un pied se pose)
   }
   // Armes : bras gauche en continu (chauffe), bras droit au coup par coup
   const wl = mW('L'), wr = mW('R'), WL = WEAPONS[wl];

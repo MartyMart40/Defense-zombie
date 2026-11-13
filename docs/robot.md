@@ -1,7 +1,7 @@
 # Mode robot : « Robot de combat »
 
 ## Concept
-On pilote un mech à deux pattes, vue du cockpit : minigun au bras gauche, lance-roquettes au bras droit. Le robot marche de rue en rue (les villes à la suite) et des bibites arrivent de tous les côtés. Ouvert dès le départ (avant : débloqué en tombant au mode infini ; changé à la demande de Martin le 2026-11-04).
+On pilote un mech à deux pattes, vue du cockpit : minigun au bras gauche, lance-roquettes au bras droit. Le robot marche de rue en rue (les villes à la suite) et des bibites arrivent du bout de la rue et des ruelles, jamais de derrière (dossier 105). Ouvert dès le départ (avant : débloqué en tombant au mode infini ; changé à la demande de Martin le 2026-11-04).
 
 **Une fin qu'on peut gagner (dossier 102, décidé avec Martin).** Une course = 9 rues. Au bout de chaque rue, un carrefour fait choisir la rue suivante. Au milieu de la rue 9 arrive le boss final, le « Titan roi » ; le bout de la rue reste fermé tant qu'il vit. Le battre : écran « Course réussie » (rues, zombies abattus, temps, prime de victoire, ferraille) avec « Tour suivant » et « Retour au garage ». Chaque victoire débloque le tour suivant : mêmes 9 rues, zombies plus forts, plus de ferraille. On choisit son tour au garage (◀ Tour N ▶, parmi ceux débloqués). Pendant la course : « Rue 4 sur 9 · Tour 1 » en haut à gauche. Le but après la dixième course : monter de tour.
 
@@ -9,10 +9,11 @@ On pilote un mech à deux pattes, vue du cockpit : minigun au bras gauche, lance
 | Fichier | Contenu |
 |---------|---------|
 | `js/39-robot.js` | Robot, cockpit, armes, surchauffe, garage (améliorations permanentes en ferraille), rues, commandes ordi et cell, inscription du mode (`Jeu.mode('robot')`) |
-| `js/40-robot-monstres.js` | Bibites monstrueuses (rôdeur, araignée, abomination), 3 boss avec barre de vie, vagues de tous les côtés, carrefours pour choisir la rue suivante |
+| `js/40-robot-monstres.js` | Bibites monstrueuses (rôdeur, araignée, abomination), 3 boss avec barre de vie, vagues du bout de la rue et des ruelles, carrefours pour choisir la rue suivante |
 | `js/40-robot-fin.js` | Course de 9 rues : boss final, victoire, tours (force, ferraille, prime), choix du tour au garage, progression affichée (`MECH_FIN`, profil `P.mechFin`) |
+| `js/40-robot-habitacle.js` | Habitacle complet (vitre, tableau de bord, écrans, manettes et mains du pilote), jambes qui marchent, balancement des pas, réglage « Habitacle » de la Pause (dossier 105). Seulement visuel |
 | `js/50-robot-sauvegarde.js` | Course gardée au début de chaque rue ; « ▶ Continuer le robot » sur l'écran titre reprend au début de la rue |
-| `tests/t-robot.js`, `tests/t-robot2.js`, `tests/t-robot-sauvegarde.js`, `tests/t-robot-fin.js` | Tests |
+| `tests/t-robot.js`, `tests/t-robot2.js`, `tests/t-robot-sauvegarde.js`, `tests/t-robot-fin.js`, `tests/t-robot-habitacle.js` | Tests |
 
 ## Chiffres actuels
 - Rue de 140 m (`MECH_LEN`). Course de 9 rues. Boss aux rues 3 et 6, boss final à la rue 9.
@@ -27,12 +28,12 @@ On pilote un mech à deux pattes, vue du cockpit : minigun au bras gauche, lance
 - Renforts (2026-11-12) : quand la horde d'une rue est épuisée, elle se reforme 35 % plus forte (vie et dégâts) à chaque fois ; à partir du 2e renfort, elle ne rapporte plus ni ferraille ni expérience. Mesuré avant : rester au début de la rue 1 tuait 1 400 zombies en 6 minutes sans perdre de blindage.
 - Crachats (2026-11-12) : un cracheur vise le robot là où il est ; un pas de côté de plus de 2,6 m l'esquive (`SPIT_ESQUIVE`, `js/18-zombies-types.js`). Avant, chaque crachat touchait à coup sûr, peu importe où était le robot : c'était sa plus grosse source de dégâts.
 - Les armes du robot gardent leurs dégâts d'avant le renforcement des armes du toit (facteur `k` dans `MECH_W`). Le canon électromagnétique a gagné son onde de choc en couloir (comme sur le toit).
-- Vagues de tous les côtés toutes les 28 s.
+- Vagues toutes les 18 s (28 avant le dossier 105), du bout de la rue et des ruelles.
 - Garage : 9 améliorations permanentes (blindage, dégâts et refroidissement de la minigun, dégâts, cadence et salve des roquettes, jambes, réparation, nanorobots) et 5 armes de plus (lance-flammes lourd, laser lourd, lance-grenades, arc électrique, canon électromagnétique).
 
 ## Essai de Martin (2026-11-13)
 « Les zombies nous apparaissent dessus et beaucoup trop proche. Juste à tirer sur le plancher avec les roquettes en avançant et on clenche les premières maps. Les petits zombies sont chiants à tirer avec le cellulaire, sur ordinateur c'est mieux. »
-- Vagues de tous les côtés : derrière à 34 à 50 m, ruelles à 30 à 55 m devant (`MB_LOIN`, `js/40-robot-monstres.js`). Avant : 16 à 30 m derrière, 10 à 32 m devant.
+- (Remplacé au dossier 105 : plus rien derrière.) Vagues de tous les côtés : derrière à 34 à 50 m, ruelles à 30 à 55 m devant (`MB_LOIN`, `js/40-robot-monstres.js`). Avant : 16 à 30 m derrière, 10 à 32 m devant.
 - Bras droit : chargeur qui se refait (`ch`, `rg` dans `MECH_W`). Roquettes : 4, une aux 1,6 s. Lance-grenades : 8, une aux 0,6 s. La jauge du bas montre le chargeur (rouge quand il est vide). L'amélioration de cadence raccourcit aussi la recharge.
 - Aide à la visée au cell seulement (`MECH_ASSIST` = 0,075 radian, environ 4 degrés) : le tir part vers le zombie le plus près du réticule, la vue ne bouge pas. Rien à la souris.
 - Premières rues : `MECH_RAMPE` commence à 1,2 (1 avant) et les zombies sortent plus serrés (0,42 s moins 0,04 par rue ; 0,55 avant).
@@ -57,6 +58,26 @@ Simulateur, 3 graines par ligne, mêmes graines avant et après.
 - Plafond avec tout le garage : moyen tour 2,7 (minigun et roquettes) ou 4,3 (minigun et canon) ; bon 3,7 ou 4 ; débutant 2 ou 3,7.
 - Avant (course sans fin, même joueur) : 9 rues atteintes pour la première fois aux courses 4 à 6, puis 13 à 27 rues ; rien à viser une fois le garage payé.
 - Ce qui ne marche pas encore : l'adresse compte peu (le bon dépasse le moyen d'environ un tour au mieux, le débutant suit à un tour) ; le boss final est le principal mur (beaucoup de défaites à 8,99 rues) ; le canon électromagnétique reste l'arme la plus forte une fois le garage payé.
+
+## Dossier 105 (2026-11-13) : tout vient de devant, habitacle, jambes
+Martin : « Le robot dans la ville a encore des zombies qui spawn en arrière, il faut que ça vienne de la zone opposée. Aussi ce même robot j'aimerais des jambes visibles et un habitat complet avec joystick qui bouge à mesure que tu bouges. »
+
+**Apparitions.** Plus aucun zombie n'apparaît derrière le robot. « Derrière » se compte dans le sens de la marche dans la rue (z plus grand que le robot, `mbDerriere`), pas selon le regard. Un zombie déjà dépassé reste derrière et revient vers le robot comme avant. Source par source :
+- File de la rue, renforts, règles du carrefour (nid, ruelles) : `spawnZombie` les pose au bout de la rue, 95 à 113 m devant (inchangé).
+- Vagues (`mbWave`, `MB_LOIN`) : 50 % au bout de la rue (55 à 90 m devant), 50 % dans les ruelles de côté (30 à 55 m devant, x = ±13). Avant : 50 % au bout (65 à 105 m), 30 % derrière (34 à 50 m), 20 % dans les ruelles.
+- Appel de la horde du Titan roi à mi-vie : une vague, donc devant.
+- Boss final : 70 m devant (inchangé). Boss des rues et chefs de meute : au bout de la rue (inchangé).
+- Mère pondeuse et abomination : passées derrière le robot, elles ne pondent plus et rien ne sort de l'abomination tuée ; devant, comme avant.
+- Test : `tests/t-robot-habitacle.js` fait sortir des centaines de zombies par chaque source et vérifie qu'aucun n'est derrière.
+
+**Rééquilibrage (simulateur, joueur moyen, mêmes graines).** Tout devant rendait le robot plus facile à tenir : profil neuf, rue où l'on tombe (6 graines) 3,3 avant, 4,9 après. Donc vagues toutes les 18 s (28 avant) et bout de la rue plus proche (55 à 90 m) : 3,7. Garage de 7 500 ⚙ : 3 courses gagnées sur 6 avant, 3 sur 6 après ; 20 000 ⚙ : 5 sur 6 avant, 6 sur 6 après. Course après course (3 graines, « toujours le moins cher ») : première victoire aux courses 3, 3, 5 avant, 3, 3, 4 après ; tour 3 gagné aux courses 6 à 7 dans les deux cas.
+
+**Habitacle (vue par défaut).** Dans la scène de l'arme en main, fixé au torse : il tourne avec la visée de côté mais pas quand on lève ou baisse les yeux (on voit le plancher vitré et les jambes en regardant en bas). Montants et toit vitré, vitre à reflets légers (additifs), tableau de bord avec deux écrans redessinés au plus 10 fois par seconde (blindage, rue et mètres restants, chaleur du bras gauche, chargeur du bras droit), voyants, bords, jambes du pilote. Deux manettes avec les mains du pilote : la gauche penche selon le déplacement (touches ou manette tactile), la droite selon la vitesse de la visée ; gâchette (bras gauche) et bouton du pouce (bras droit) qui s'enfoncent au tir. Au cell vertical, les manettes se rapprochent du centre et restent au-dessus des boutons tactiles ; les bras du robot se rapprochent aussi.
+- Réglage dans la Pause : « Habitacle : complet » ou « dégagé » (l'ancienne vue, les bras seulement), gardé dans `dt_mech_vue`. Il n'y avait pas de vue de l'extérieur ; il n'y en a toujours pas.
+
+**Jambes.** Dans la scène de la rue (pas dans `world`, qui défile) : bassin, cuisses, tibias, pieds, placés par cinématique inverse (genou vers l'avant). Le pied posé reste collé à la rue ; l'autre fait son pas vers l'endroit où il doit se poser selon la vitesse et la direction (avant, arrière, de côté) ; en tournant sur place, petits pas ; à l'arrêt, le pas en cours se finit et les pieds se remettent sous le robot. Foulée : 4,2 m par pas à pleine vitesse (`HB_J`). Le bruit et la secousse de pas (`mechStomp`) partent quand un pied se pose (`MECH.pasJambes`), plus avec `MECH.step`. Balancement de l'habitacle à chaque pas (`HB_BAL`) ; avec « Secousses » coupé (`dt_secousses`) : balancement réduit au tiers, sans roulis ni secousse.
+
+**Coût.** Appels de dessin à l'ordi (rue 1, à l'arrêt) : 175 avant, 180 après (186 au tir) ; en regardant en bas : 98 avant, 53 à 125 après. 9 objets dans l'habitacle, 7 pour les jambes, matériau de l'arme en main partagé (une copie pour la rue), une texture d'écrans, aucune lumière de plus.
 
 ## Succès
 Briseur de rues (5, 15, 30 rues en une course) et Broyeur (500, 5 000, 25 000 zombies), cachés tant que le robot est verrouillé (`js/51-succes-modes.js`). Dossier 102 : Course réussie (1, 5, 20 courses) et Grimpeur de tours (tours 3, 6, 10), repris de `P.mechFin` au chargement.

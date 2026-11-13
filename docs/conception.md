@@ -82,3 +82,11 @@ Martin : « ça brasse pas assez ». Fichier `js/62-ressenti.js`, réglages en h
 - Son : « toc » pour la tête, coup sec pour le tué, coup grave sous les grosses armes, impacts dans la chair espacés d'au moins 0,05 s.
 - Décision : seulement visuel et sonore. La caméra est décalée pour l'image seulement, la pose des zombies seulement pendant leur dessin : les balles, les zombies et le simulateur ne changent pas. Réglage « Secousses » dans Pause (coup de caméra et gel).
 
+## Monstres du toit ajoutés le 2026-11-13 (tâche 98)
+Martin : « continue d'améliorer : graphisme, sons, monstres ». Règle suivie : un monstre change ce que le joueur doit faire, il n'est pas juste plus solide.
+- Hurleur (85 de vie) : s'arrête à 40 à 50 m, hurle toutes les 3,2 s, zombies à moins de 16 m 1,4 fois plus vite pendant 6 s. Parade : le tuer en premier.
+- Fouisseur (120 de vie) : sous terre environ 5 s, intouchable (tirs, explosions, défenses), ressort à 9 à 15 m. Parade : avant qu'il creuse, ou à la sortie (dégâts ×2 pendant 1,5 s).
+- Revenant (130 de vie) : à genoux 2,8 s sur un coup mortel au corps, se relève une fois avec la moitié de sa vie. Parade : la tête, ou l'achever à terre.
+- Le « porteur d'explosifs » envisagé existait déjà (le Gonflé de `js/35-monstres.js`).
+- Ils remplacent des marcheurs (au plus la moitié de ceux qui restent). Port, vague 10 : environ 10 revenants, 5 hurleurs et 7 fouisseurs sur 480 zombies.
+- Fichier `js/63-monstres-toit.js` : il enveloppe `wavePlan`, `damage` et `defHit` (comme `19-boss.js` et `35-monstres.js`).

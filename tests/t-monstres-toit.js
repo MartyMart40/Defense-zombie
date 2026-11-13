@@ -1,8 +1,8 @@
 'use strict';
-/* Tests des monstres du toit (js/62-monstres-toit.js) : hurleur, fouisseur, revenant */
+/* Tests des monstres du toit (js/63-monstres-toit.js) : hurleur, fouisseur, revenant */
 (function(){
   if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
-  const exiger = () => { if (lire('typeof __mt === "object" && typeof ZKINDS === "object" && !!ZKINDS.screamer') !== true) ignorer('Monstres du toit absents (js/62-monstres-toit.js)'); };
+  const exiger = () => { if (lire('typeof __mt === "object" && typeof ZKINDS === "object" && !!ZKINDS.screamer') !== true) ignorer('Monstres du toit absents (js/63-monstres-toit.js)'); };
   const NOUV = ['screamer', 'burrower', 'revenant'];
   function partie(i){ reset(); J('startLocation(' + (i || 0) + ')'); J(function(){ __t.geler(); clearZombies(); }); }
 

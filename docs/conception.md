@@ -89,6 +89,7 @@ Martin : « continue d'améliorer : graphisme, sons, monstres ». Règle suivie 
 - Revenant (130 de vie) : à genoux 2,8 s sur un coup mortel au corps, se relève une fois avec la moitié de sa vie. Parade : la tête, ou l'achever à terre.
 - Le « porteur d'explosifs » envisagé existait déjà (le Gonflé de `js/35-monstres.js`).
 - Ils remplacent des marcheurs (au plus la moitié de ceux qui restent). Port, vague 10 : environ 10 revenants, 5 hurleurs et 7 fouisseurs sur 480 zombies.
+- Finitions (tâche 110) : voix propres dans `js/37-bruitages.js`, repères sans son dans `js/29-reperes.js`, hurleur à gorge orange et longs bras pâles. Les monstres annoncent leurs moments (`cri`, `creuse`, `sort`, `chute`, `releve`) par `Jeu.emit('monstre', quoi, z)`.
 - Fichier `js/63-monstres-toit.js` : il enveloppe `wavePlan`, `damage` et `defHit` (comme `19-boss.js` et `35-monstres.js`).
 
 ## Moments de crise (tâche 100, 2026-11-13)

@@ -7,15 +7,15 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
+| 94 | Dossier toit : le feeling du tir (recul, impact, réaction des zombies touchés, son) | En cours | Sous-agent, ouvert le 2026-11-13 |
+| 95 | Dossier robot : robot-joueur du robot dans le simulateur, puis mesure du garage | En cours | Sous-agent, ouvert le 2026-11-13 |
+| 96 | Dossier RTS : meilleur robot-joueur (garage, héliport, aérodrome), puis mesure des véhicules et des avions en appui | En cours | Sous-agent, ouvert le 2026-11-13 |
 
 ## À faire
 
 | # | Tâche | Priorité |
 |---|-------|----------|
 | - | Équilibrage après essais de Martin | Après essais |
-| - | Dossier toit : le feeling du tir (recul, impact, réaction des zombies touchés, son). Jamais commencé ; `js/31-punch.js` existe déjà, à lire d'abord | À choisir par Martin |
-| - | Dossier robot : mettre un robot-joueur du robot dans `outils/sim-bot.js` et le rapport (les essais du 12 et 13 novembre venaient d'un script jetable), puis mesurer les améliorations et les armes du garage | À choisir par Martin |
-| - | Dossier RTS : meilleur robot-joueur (il ne bâtit ni garage, ni héliport, ni aérodrome), puis mesurer les véhicules et les avions en appui | À choisir par Martin |
 | - | Dossier performance au cell : mesurer la boucle du jeu (`tests/perf.html`) et alléger ce qui coûte | À choisir par Martin |
 
 Écarté par Martin : choisir 1 bonus parmi 3.

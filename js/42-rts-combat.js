@@ -6,11 +6,13 @@ function rtsPickType(){
   const ok = RTS_SPAWN.filter(e => RTS.threat >= e[1] && ZTYPES[e[0]]);
   return Math.random() < .45 ? 'walker' : ok[Math.floor(Math.random() * ok.length)][0];
 }
-function rtsSpawnAt(x, z, n, spread, type){
-  let alive = zAliveCount(), k = 0; spread = spread || 3;
-  for (let i = 0; i < n && (alive < plan.maxAlive || type); i++){
+// cap : plafond de zombies en vie pour cet appel (sièges, js/65-rts-ruche.js) ; sans cap, plan.maxAlive (un type imposé passe toujours)
+function rtsSpawnAt(x, z, n, spread, type, cap){
+  let alive = zAliveCount(), k = 0; spread = spread || 3; const mx = cap || plan.maxAlive;
+  for (let i = 0; i < n && (alive < mx || (type && !cap)); i++){
     const t = type || rtsPickType(), zz = spawnZombie(t); if (!zz) continue;
     zz.g.position.set(x + rand(-spread, spread), zz.g.position.y, z + rand(-spread, spread)); zz.rtsT = 0; zz.wp = null; zz.useRoad = Math.random() < .3; alive++; k++; // 3 sur 10 suivent la vieille route, les autres coupent tout droit
+    zz.rtsDm = plan.dmgMult || 1; // multiplicateur de dégâts à la naissance (dégâts contre les bâtiments, voir rtsZombies)
     if (RTS_BOSS.indexOf(t) >= 0){
       zz.maxHp = zz.hp = zz.maxHp * RTS_CFG.bossHp; zz.rtsBoss = true; zz.abT = 3;
       // Les dégâts d'un boss montent moins vite que ceux des autres zombies (puissance 0,6) : à menace 20, un Titan
@@ -20,18 +22,23 @@ function rtsSpawnAt(x, z, n, spread, type){
   }
   return k;
 }
-const RTS_THREAT = { t:240, nid:.5, tues:600 }, RTS_BOSS_DMG = .6; // menace : +1 toutes les 4 minutes, +0,5 par nid détruit, +1 tous les 600 tués ; RTS_BOSS_DMG : voir rtsSpawnAt
+// Menace (réglages dans RTS_REGL.menace, js/41-rts.js) ; RTS_BOSS_DMG : voir rtsSpawnAt
+const RTS_THREAT = RTS_REGL.menace, RTS_BOSS_DMG = .6;
 function rtsThreat(){
-  const killed = RTS.nests.filter(n => n.dead).length;
-  // Surtout le temps et les nids détruits ; un peu les tués (avant : tués / 160, ce qui emballait tout :
-  // mieux on se défendait, plus il en venait). Voir docs/equilibrage.md.
-  RTS.threat = 1 + RTS.t / RTS_THREAT.t + killed * RTS_THREAT.nid + RTS.kills / RTS_THREAT.tues;
+  const killed = rtsNestsDead(), V = RTS_REGL.vallee, v = Math.max(0, (RTS.vallee || 1) - 1);
+  // Surtout le temps et l'avance vers la Ruche (nids détruits) ; peu les tués (tâche 101 : avant, tués / 600 en faisait
+  // les deux tiers, et mieux on se défendait, plus ça montait). Chaque vallée part plus haut et monte plus vite.
+  RTS.threat = 1 + V.menace0 * v + RTS.t / RTS_THREAT.t * (1 + V.vitesse * v) + killed * RTS_THREAT.nid + RTS.kills / RTS_THREAT.tues;
+  const Q = RTS.base; // la vie du QG suit la menace (RTS_REGL.bat.qgMenace), en gardant sa part de vie
+  if (Q && !Q.dead){ const mx = Q.B.hp * (1 + RTS_REGL.bat.qgMenace * (RTS.threat - 1)); if (mx > Q.maxHp){ Q.hp *= mx / Q.maxHp; Q.maxHp = mx; } }
   plan.hpMult = 1 + .55 * (RTS.threat - 1); plan.dmgMult = 1 + .4 * (RTS.threat - 1); plan.spdMult = Math.min(1.5, 1 + .05 * (RTS.threat - 1));
 }
 const RTS_FLY = { flyer:1, gargoyle:1, crow:1, behemoth:1 };
 // Cible d'un zombie : unité ou bâtiment le plus proche (à 16 m) ; seuls les volants s'en prennent aux hélicoptères et aux avions
+// (la garde de la Ruche voit plus loin : 30 m ; les zombies d'un siège foncent vers le QG et ne s'arrêtent que pour ce qui
+// est sur leur chemin : RTS_REGL.siege.vue, voir js/65-rts-ruche.js)
 function rtsTargetOfZombie(z){
-  const gp = z.g.position, fly = RTS_FLY[z.type]; let best = null, bd = 16 * 16;
+  const gp = z.g.position, fly = RTS_FLY[z.type], vue = z.rtsGarde ? 30 : z.rtsSiege ? RTS_REGL.siege.vue : 16; let best = null, bd = vue * vue;
   for (const u of RTS.units){ if (u.dead || (rtsIsAir(u) && !fly)) continue; const dx = u.g.position.x - gp.x, dz = u.g.position.z - gp.z, d = dx * dx + dz * dz; if (d < bd){ bd = d; best = u; } }
   for (const o of RTS.blds){ if (o.dead) continue; const dx = o.x - gp.x, dz = o.z - gp.z, d = Math.max(0, Math.hypot(dx, dz) - o.r); if (d * d < bd){ bd = d * d; best = o; } }
   return best;
@@ -96,6 +103,9 @@ function rtsZombies(dt){
     // Sans cible proche, il suit la vieille route jusqu'à la base, puis va vers le QG
     let T = z.rtsTgt, tp;
     if (T) tp = rtsPos(T);
+    else if (z.rtsGarde && !z.rtsGarde.dead){ // garde de la Ruche (js/65-rts-ruche.js) : elle reste à son poste
+      tp = rtsV3.set(z.gx, 0, z.gz); if (Math.hypot(tp.x - gp.x, tp.z - gp.z) < 1.5) continue;
+    }
     else { const P2 = fly || !z.useRoad ? null : rtsRoadNext(z); if (P2) tp = rtsV3.set(P2[0], 0, P2[1]); else { T = RTS.base; if (!T) continue; tp = rtsPos(T); } }
     const dx = tp.x - gp.x, dz = tp.z - gp.z, d = Math.hypot(dx, dz);
     const reach = T ? (T.r || 1) + .9 * ((ZTYPES[z.type] || {}).scale || 1) : 0;
@@ -109,18 +119,27 @@ function rtsZombies(dt){
     if (R && R.wing){ const a = Math.sin(z.phase * 2.5); R.wing[0].rotation.z = -a * .7; R.wing[1].rotation.z = a * .7; }
     if (fly){ const want = T && !T.B && rtsIsAir(T) ? T.g.position.y : (z.alt || 5) * .6; gp.y += (want - gp.y) * Math.min(1, dt * 2); }
     if (!T || d > reach){ const v = z.speed * dt / Math.max(d, .01); gp.x += dx * v; gp.z += dz * v; }
+    else if (T.B && rtsPlace(T)) {} // plus de place autour de ce bâtiment : il attend son tour
     else {
       z.atkT -= dt;
       if (z.atkT <= 0){
         z.atkT = rand(.9, 1.3);
         rtsV.set(tp.x, 1.2, tp.z); burst(rtsV, 'wood', 2, 1.5);
-        rtsDmgTarget(T, z.dmg);
+        // Contre un bâtiment, les dégâts d'un zombie ordinaire montent moins vite avec la menace (comme les boss) :
+        // à menace 43, un marcheur frappait 18 fois plus fort qu'au départ et rasait le QG en 3 secondes
+        rtsDmgTarget(T, T.B && !z.rtsBoss ? z.dmg * Math.pow(z.rtsDm || 1, RTS_REGL.bat.batPow - 1) : z.dmg);
         if (state !== 'rts') return;
       }
     }
     if (!fly) rtsClampValley(gp, false);
   }
   zFrame++;
+}
+// Place autour d'un bâtiment : au plus (tour du bâtiment) / RTS_REGL.bat.place zombies le frappent à la fois (avant, des
+// centaines s'entassaient au même endroit et le QG passait de 90 % à 0 en 3 secondes). Rend vrai si c'est plein.
+function rtsPlace(T){
+  if (T._pf !== zFrame){ T._pf = zFrame; T._pn = 0; T._pmax = Math.max(4, Math.round(6.283 * (T.r + 1) / RTS_REGL.bat.place)); }
+  return ++T._pn > T._pmax;
 }
 function rtsUnitDie(u){
   if (u.dead) return; u.dead = true; RTS.lost++;
@@ -136,6 +155,7 @@ function rtsBldDie(o, sold){
   if (!sold){ if (typeof rueBoom === 'function') rueBoom(o.x, 2.5, o.z, o.r * 4); if (typeof Snd === 'object' && Snd.boom) Snd.boom(1); burst(rtsV, 'dust', 20, 6); }
   if (RTS.pilot === o) rtsUnpilot();
   rtsRoot.remove(o.g); if (RTS.bsel === o){ RTS.bsel = null; rtsInfoShow(); }
+  if (!sold && typeof rtsAlertLost === 'function') rtsAlertLost(o); // palier d'alerte (js/49-rts-commandement.js)
   if (o.type === 'hq' && state === 'rts') rtsEnd(false);
 }
 function rtsShotSnd(id){ if (RTS.sndT > 0 || typeof Snd !== 'object') return; RTS.sndT = .07; try { Snd.shot(id); } catch (e) { errNote(e); } }
@@ -143,7 +163,7 @@ function rtsShotSnd(id){ if (RTS.sndT > 0 || typeof Snd !== 'object') return; RT
 function rtsBlast(x, z, S2){
   for (const zz of zombies){ if (zz.dead) continue; const d = Math.hypot(zz.g.position.x - x, zz.g.position.z - z); if (d < S2.splash){ damage(zz, S2.dmg * (1 - .5 * d / S2.splash), false, zz.g.position.clone()); if (S2.burn && !zz.dead){ zz.burnT = 5; zz.burnDps = 45; } } }
   if (S2.burn) burst(rtsV.set(x, .6, z), PMATS.ember ? 'ember' : 'dust', 10, 3);
-  for (const n of RTS.nests){ if (n.dead) continue; if (Math.hypot(n.x - x, n.z - z) < S2.splash + n.r){ n.hp -= S2.dmg * .8; rtsHpSet(n.hpb, n.hp / n.maxHp); if (n.hp <= 0) rtsNestDie(n); } }
+  for (const n of RTS.nests){ if (n.dead) continue; if (Math.hypot(n.x - x, n.z - z) < S2.splash + n.r){ n.hp -= S2.dmg * .8 * (n.ruche ? RTS_REGL.ruche.blindage : 1); rtsHpSet(n.hpb, n.hp / n.maxHp); if (n.hp <= 0) rtsNestDie(n); } }
   if (typeof rtsTierBlast === 'function') rtsTierBlast(x, z, S2); // explosion selon le niveau de l'arme (js/55-rts-niveaux.js)
   else {
   if (typeof rueBoom === 'function') rueBoom(x, 1.2, z, S2.splash * 2.4);
@@ -171,7 +191,7 @@ function rtsHit(from, tgt, kind, S2){
   if (typeof rtsTierBeam !== 'function' && !S2.beam && !S2.chain && !S2.flame && clear && typeof arsBeam === 'function') arsBeam(from, to, 0xffa040, .12, .08); // traînée de roquette, d'obus ou de bombe
   if (S2.snd !== null || S2.tsnd) rtsShotSnd(S2.tsnd || S2.snd); // son plus lourd en montant de niveau
   if (kind === 'nest'){
-    tgt.hp -= S2.dmg * (S2.splash ? 1.6 : 1); rtsHpSet(tgt.hpb, tgt.hp / tgt.maxHp); burst(to, 'dust', 2, 2);
+    tgt.hp -= S2.dmg * (S2.splash ? (tgt.ruche ? 1.6 * RTS_REGL.ruche.blindage : 1.6) : 1); rtsHpSet(tgt.hpb, tgt.hp / tgt.maxHp); // la Ruche résiste aux explosions burst(to, 'dust', 2, 2);
     if (S2.splash && typeof rueBoom === 'function') rueBoom(to.x, to.y, to.z, 6);
     if (tgt.hp <= 0) rtsNestDie(tgt);
     return;
@@ -207,7 +227,9 @@ function rtsHit(from, tgt, kind, S2){
   } else damage(tgt, S2.dmg, false, to.clone());
 }
 function rtsNestDie(n){
-  if (n.dead) return; n.dead = true;
+  if (n.dead) return;
+  if (n.ruche){ if (typeof rtsRucheDie === 'function') rtsRucheDie(n); return; } // la Ruche : victoire (js/65-rts-ruche.js)
+  n.dead = true;
   const bounty = RTS_CFG.bounty + 250 * n.idx; S.money += bounty;
   rtsV.set(n.x, 4, n.z);
   if (typeof rueBoom === 'function'){ rueBoom(n.x, 4, n.z, 26); rueBoom(n.x, 8, n.z, 16); }
@@ -219,8 +241,9 @@ function rtsNestDie(n){
   // Toujours RTS_CFG.nests nids actifs : un nouveau apparaît plus loin au nord, plus fort
   P.scrap = (P.scrap || 0) + 40 + 10 * n.idx; addXP(30 + 5 * n.idx);
   let nn = null; while (rtsNestsAlive().length < RTS_CFG.nests) nn = rtsAddNest(null, rtsFront() - rand(35, 55));
-  const nd = RTS.nests.filter(x => x.dead).length;
-  banner('Nid détruit ! (' + nd + ')', '+' + fmt(bounty) + (nn ? ' · nouveau nid repéré au nord, niveau ' + (nn.idx + 1) : ''), 2600);
+  const nd = rtsNestsDead(), but = typeof rtsRucheBut === 'function' ? rtsRucheBut(nd) : '';
+  banner('Nid détruit ! (' + nd + ')', '+' + fmt(bounty) + (but ? ' · ' + but : nn ? ' · nouveau nid repéré au nord, niveau ' + (nn.idx + 1) : ''), 2600);
+  if (typeof rtsRucheCheck === 'function') rtsRucheCheck();
 }
 const rtsS2 = u => ({ tier:(typeof rtsTier === 'function' ? rtsTier(u, 'w1') : .5), tsnd:(typeof rtsTierSndFor === 'function' ? rtsTierSndFor(u, 'w1') : null), dmg:rtsStat(u, 'dmg'), snd:u.U.snd, beam:u.U.beam, pierce:u.U.pierce, splash:u.U.splash && u.U.splash * (1 + .1 * rtsLv(u.type, 'sensor') + .25 * rtsLv(u.type, 'he')), pierce2:rtsLv(u.type, 'apfsds') > 0, flame:u.U.flame, bomb:u.U.bomb, range:rtsStat(u, 'range') });
 const rtsMuzzle = (u, out) => { const p = u.g.position; return out.set(p.x, u.U.big ? 5.2 : u.U.kind === 'ground' ? (u.U.cat === 'rob' ? (u.type === 'heavy' ? 3.4 : 2.2) * RTS_SC : 2) : p.y - .5, p.z); };
@@ -443,10 +466,13 @@ function rtsStep(dt){
   if (!RTS.on || RTS.paused || state !== 'rts') return;
   RTS.t += dt; RTS.sndT -= dt;
   rtsThreat();
+  if (typeof rtsSiegeStep === 'function') rtsSiegeStep(dt); // sièges et ponte plus légère entre eux (js/65-rts-ruche.js)
+  if (typeof rtsRucheStep === 'function') rtsRucheStep(dt);
+  if (state !== 'rts') return;
   for (const n of RTS.nests){
-    if (n.dead) continue;
+    if (n.dead || n.ruche) continue;
     n.spawnT -= dt;
-    if (n.spawnT <= 0){ n.spawnT = Math.max(1.6, rand(6, 9) / Math.sqrt(RTS.threat) / n.pow); const a = Math.atan2(-n.z, -n.x); rtsSpawnAt(n.x + Math.cos(a) * 6, n.z + Math.sin(a) * 6, 1 + Math.floor(RTS.threat * .8 + n.idx / 3)); }
+    if (n.spawnT <= 0){ n.spawnT = Math.max(1.6, rand(6, 9) / Math.sqrt(RTS.threat) / n.pow) / (RTS.ponteK || 1); const a = Math.atan2(-n.z, -n.x); rtsSpawnAt(n.x + Math.cos(a) * 6, n.z + Math.sin(a) * 6, 1 + Math.floor(RTS.threat * .8 + n.idx / 3)); }
     n.m.scale.setScalar(1 + Math.sin(RTS.t * 2.2 + n.idx) * .015);
   }
   // Hordes : du nord, réparties sur tout le secteur de 90° ; un boss toutes les RTS_CFG.bossEvery hordes
@@ -454,14 +480,17 @@ function rtsStep(dt){
   if (RTS.hordeT <= 0){
     RTS.hordeT = RTS_CFG.hordeEvery; RTS.hordeN++;
     // Plusieurs groupes répartis sur tout le secteur de 90° devant la base (pas seulement par la route)
-    const R0 = -rtsFront() + 30, tot = 10 + Math.round(RTS.threat * 5), ng = 3 + Math.floor(Math.random() * 3); let n = 0, E = null;
+    // Entre les sièges, les hordes sont un peu plus légères (RTS_REGL.siege.horde) ; le siège arrive avec le boss
+    const R0 = -rtsFront() + 30, tot = Math.round((10 + RTS.threat * 5) * RTS_REGL.siege.horde), ng = 3 + Math.floor(Math.random() * 3); let n = 0, E = null;
     for (let gi = 0; gi < ng; gi++){
       const a = (-1 + 2 * (gi + rand(.15, .85)) / ng) * Math.PI / 4, zz = -R0 * Math.cos(a), m = rtsValleyX(zz) - 6, xx = clamp(R0 * Math.sin(a), -m, m);
       n += rtsSpawnAt(xx, zz, Math.ceil(tot / ng), 7); if (!E || Math.random() < .4) E = [xx, zz];
     }
-    let sub = n + ' zombies arrivent de partout au nord';
-    if (RTS.hordeN % RTS_CFG.bossEvery === 0){ const bt = RTS_BOSS[RTS.bossN++ % RTS_BOSS.length]; if (ZTYPES[bt] && rtsSpawnAt(E[0], E[1] + 6, 1, 2, bt)) sub = 'Un boss arrive : ' + ZTYPES[bt].name + ' !'; }
-    banner('Horde n° ' + RTS.hordeN + ' !', sub, 2400);
+    let sub = n + ' zombies arrivent de partout au nord', titre = 'Horde n° ' + RTS.hordeN + ' !';
+    const siege = RTS.hordeN % RTS_REGL.siege.tous === 0 && typeof rtsSiegeGo === 'function' ? rtsSiegeGo() : null; // point d'arrivée du siège
+    if (siege){ E = siege; titre = 'Siège ! (horde n° ' + RTS.hordeN + ')'; sub = 'Une grosse horde attaque ' + rtsSiegeCote() + ' : tiens bon 40 secondes'; }
+    if (RTS.hordeN % RTS_CFG.bossEvery === 0){ const bt = RTS_BOSS[RTS.bossN++ % RTS_BOSS.length]; if (ZTYPES[bt] && rtsSpawnAt(E[0], E[1] + 6, 1, 2, bt)) sub = (siege ? sub + ' · ' : '') + 'Un boss arrive : ' + ZTYPES[bt].name + ' !'; }
+    banner(titre, sub, 2400);
     if (typeof Snd === 'object' && Snd.groan) Snd.groan();
   }
   for (let i = RTS.shells.length - 1; i >= 0; i--){ const sh = RTS.shells[i]; sh.t -= dt; if (sh.t <= 0){ RTS.shells.splice(i, 1); rtsBlast(sh.x, sh.z, sh.S2); } }

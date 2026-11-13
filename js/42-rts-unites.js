@@ -127,7 +127,7 @@ function rtsAddNest(x, z){
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = Math.atan2(-x, -z); rtsRoot.add(g);
   const mm = new THREE.Mesh(rtsNestGeo(), rtsMat); g.add(mm);
   // Chaque nouveau nid est plus solide et pond plus vite que le précédent
-  const hp = rtsHpBar(g, 10.5, 6), mx = Math.round(RTS_CFG.nestHp * (1 + .3 * i) * Math.pow(1.08, Math.max(0, i - 5)));
+  const hp = rtsHpBar(g, 10.5, 6), mx = Math.round(RTS_CFG.nestHp * (1 + .3 * i) * Math.pow(1.08, Math.max(0, i - 5)) * (1 + RTS_REGL.vallee.nidHp * Math.max(0, (RTS.vallee || 1) - 1)));
   const o = { g, m:mm, hpb:hp, hp:mx, maxHp:mx, x, z, r:4.5, spawnT:rand(3, 7), dead:false, idx:i, pow:1 + .12 * i };
   mm.userData.rtsNest = o; RTS.nests.push(o);
   return o;
@@ -137,8 +137,10 @@ function rtsMakeNests(){
   const zs = [-84, -124, -164, -204, -244, -292];
   for (let i = 0; i < RTS_CFG.nests; i++) rtsAddNest(null, zs[i] + rand(-5, 5));
 }
-const rtsNestsAlive = () => RTS.nests.filter(n => !n.dead);
-const rtsFront = () => { let z = 0; RTS.nests.forEach(n => { if (n.z < z) z = n.z; }); return z; };
+// La Ruche (js/65-rts-ruche.js) est rangée avec les nids (n.ruche) pour les tirs et les ordres, mais elle ne compte pas comme un nid
+const rtsNestsAlive = () => RTS.nests.filter(n => !n.dead && !n.ruche);
+const rtsNestsDead = () => { let k = 0; for (const n of RTS.nests) if (n.dead && !n.ruche) k++; return k; };
+const rtsFront = () => { let z = 0; RTS.nests.forEach(n => { if (n.z < z && !n.ruche) z = n.z; }); return z; };
 
 /* ---------- Démarrer, quitter ---------- */
 function rtsClearAll(){
@@ -153,12 +155,13 @@ function rtsStart(save){
   if (typeof infLeave === 'function') try { infLeave(); } catch (e) { errNote(e); }
   newGame(); clearZombies(); rtsClearAll();
   curLoc = LOCS[0];
-  Object.assign(RTS, { on:true, paused:false, t:0, kills:0, threat:1, hordeT:RTS_CFG.hordeEvery, hordeN:0, bossN:0, bossKills:0, nestN:0, lost:0, upg:{}, baseR:RTS_CFG.baseR0, incT:5, tab:'rob', xp0:P.xp || 0, scr0:P.scrap || 0, zMin:-300, spin:0, shells:[] });
+  Object.assign(RTS, { on:true, paused:false, t:0, kills:0, threat:1, hordeT:RTS_CFG.hordeEvery, hordeN:0, bossN:0, bossKills:0, nestN:0, lost:0, upg:{}, baseR:RTS_CFG.baseR0, incT:5, tab:'rob', xp0:P.xp || 0, scr0:P.scrap || 0, zMin:-300, spin:0, shells:[],
+    vallee:typeof rtsValleeDepart === 'function' ? rtsValleeDepart(save) : 1, ruche:null, libre:!!(save && save.libre), gagne:false, siege:null, ponteK:1 }); // vallée et Ruche : js/65-rts-ruche.js
   if (typeof rtsGroupsReset === 'function') rtsGroupsReset(); // groupes vides (la sauvegarde les remet ensuite)
   rtsRoadReset(); if (save) rtsLoadRoad(save);
   rtsDesert();
   if (save) rtsLoadNests(save); else rtsMakeNests();
-  S.money = RTS_CFG.money; S.wave = 1;
+  S.money = RTS_CFG.money + RTS_REGL.vallee.argent * Math.max(0, RTS.vallee - 1); S.wave = 1; // plus d'argent au départ des vallées plus dures
   rtsCamHome();
   plan = { queue:[], total:0, hpMult:1, spdMult:1, dmgMult:1, cashMult:1.6, xp:1.5, maxAlive:isTouch ? RTS_CFG.maxZTouch : RTS_CFG.maxZ, interval:1 };
   if (save) rtsLoadRest(save);
@@ -177,8 +180,8 @@ function rtsStart(save){
   document.body.classList.add('rts');
   rtsUI.classList.remove('hide'); rtsUI.classList.toggle('touch', isTouch); rtsTab('rob'); rtsFold(!!store.get('dt_rtsFold', false));
   if (typeof unlockPointer === 'function') unlockPointer();
-  if (save) banner('Partie reprise', 'Nids détruits : ' + RTS.nests.filter(n => n.dead).length + ' · la guerre continue', 2600);
-  else banner('Base assiégée', 'Ils arrivent de partout au nord : défends tout l’avant de la base. Chaque nid détruit en fait apparaître un plus fort, plus loin.', 3200);
+  if (save) banner('Partie reprise', 'Vallée ' + RTS.vallee + ' · nids détruits : ' + rtsNestsDead() + ' · la guerre continue', 2600);
+  else banner('Vallée ' + RTS.vallee + ' : base assiégée', 'Détruis ' + RTS_REGL.ruche.nids + ' nids pour débusquer la Ruche, puis détruis-la pour libérer la vallée. Ils arrivent de partout au nord : défends l’avant de la base.', 3600);
 }
 // Caméra de départ : la base au centre de la partie visible (au-dessus du menu du bas).
 // Cell couché : écran bas et large, donc caméra plus proche et un peu plus au sud.
@@ -203,12 +206,13 @@ function rtsEnd(won){
   rtsUnpilot();
   state = 'rtsover'; RTS.paused = false; rtsCancelPlace();
   if (typeof rtsSaveClear === 'function') rtsSaveClear(); // partie finie : plus rien à reprendre
-  const min = Math.floor(RTS.t / 60), sec = Math.floor(RTS.t % 60), nd = RTS.nests.filter(n => n.dead).length;
+  const min = Math.floor(RTS.t / 60), sec = Math.floor(RTS.t % 60), nd = rtsNestsDead();
   const rec = nd > RTS.best; if (rec){ RTS.best = nd; store.set('dt_rts_bestN', nd); }
   if (typeof Snd === 'object' && Snd.boom) Snd.boom(2.2);
   if (typeof saveP === 'function') saveP();
   const xp = Math.max(0, Math.round((P.xp || 0) - RTS.xp0)), scr = Math.max(0, Math.round((P.scrap || 0) - RTS.scr0));
   setTimeout(() => rtsShowPanel('<h2 class="title sm">' + (won ? 'Fin de la partie' : 'Le QG est tombé') + '</h2><div class="stats">'
+    + '<span>Vallée <strong>' + RTS.vallee + '</strong>' + (RTS.libre ? ' (déjà libérée)' : RTS.ruche && !RTS.ruche.dead ? ' · la Ruche était à ' + Math.ceil(100 * RTS.ruche.hp / RTS.ruche.maxHp) + ' %' : '') + '</span>'
     + '<span>Nids détruits : <strong>' + nd + '</strong>' + (rec ? ' · nouveau record !' : ' · record : ' + RTS.best) + ' · Boss abattus : <strong>' + RTS.bossKills + '</strong></span>'
     + '<span>Temps tenu : <strong>' + min + ' min ' + String(sec).padStart(2, '0') + ' s</strong></span>'
     + '<span>Zombies abattus : <strong>' + fmtN(RTS.kills) + '</strong> · Unités perdues : <strong>' + RTS.lost + '</strong></span>'

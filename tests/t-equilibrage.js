@@ -102,7 +102,7 @@
     reset();
     const r = J(function(){
       __rts.rtsStart(); var R = __rts.RTS; R.nests.forEach(function(n){ n.spawnT = 1e9; }); R.hordeT = 1e9; clearZombies();
-      R.t = 0; R.kills = 600 * 19; __rts.rtsStep(0); // menace 20
+      R.t = 0; R.kills = (typeof RTS_THREAT === 'object' ? RTS_THREAT.tues : 600) * 19; __rts.rtsStep(0); // menace 20
       var o = { menace: R.threat, mult: plan.dmgMult };
       __rts.rtsSpawnAt(0, -60, 1, 2, 'titan'); var t = zombies[zombies.length - 1]; o.titan = t.dmg; o.base = ZTYPES.titan.dmg; o.boss = !!t.rtsBoss;
       __rts.rtsSpawnAt(0, -60, 1, 2, 'walker'); var w = zombies[zombies.length - 1]; o.marcheur = w.dmg / ZTYPES.walker.dmg;
@@ -163,7 +163,7 @@
       return o;
     });
     ok(r.tues < 3, '1 000 zombies tués ne doivent pas faire exploser la menace : ' + r.tues.toFixed(2));
-    ok(r.temps > 3 && r.temps < 4, '10 minutes de jeu : menace entre 3 et 4 (' + r.temps.toFixed(2) + ')');
+    ok(r.temps > 3 && r.temps < 5, '10 minutes de jeu : menace entre 3 et 5 (' + r.temps.toFixed(2) + ')'); // tâche 101 : le temps pèse un peu plus
   });
 
   // Banc des appuis du RTS (13 novembre 2026, node outils/simulateur.js rts-banc) : à somme égale, ces unités tenaient

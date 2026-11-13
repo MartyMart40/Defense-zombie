@@ -87,6 +87,30 @@ const RTS_BLD = {
 const RTS_BUILD_TABS = { bat:['factory', 'heavyfac', 'vehdepot', 'heliport', 'airfield', 'scrap', 'repair', 'wall'], tour:['t_mg', 't_cannon', 't_flame', 't_mortar', 't_tesla'] };
 const RTS_TMAX = 6;
 const RTS_CFG = { money:900, nests:6, nestHp:4500, hordeEvery:45, bounty:500, maxUnits:40, baseR0:30, baseRStep:8, bossEvery:3, bossHp:.25, maxZ:500, maxZTouch:300, chunk:100 };
+// Réglages du but et du danger (tâche 101) : un seul endroit pour doser. Le code est dans js/65-rts-ruche.js.
+const RTS_REGL = {
+  // Menace = 1 + départ de la vallée + temps / t (secondes) × vitesse de la vallée + nid × nids détruits + tués / tues
+  menace: { t:200, nid:.8, tues:2400 },
+  // Vallée n (1, 2, 3...) : chaque vallée de plus ajoute menace0 à la menace de départ, vitesse à la vitesse du temps,
+  // nidHp à la vie des nids et rucheHp à celle de la Ruche (en part de la vallée 1), argent à l'argent de départ
+  vallee: { menace0:1, vitesse:.3, nidHp:.25, rucheHp:.5, argent:600 },
+  // La Ruche : nids à détruire pour la débusquer, vie, rayon, distance au QG, ponte (secondes, zombies en plus de la menace),
+  // garde (zombies autour d'elle à l'apparition, renfort toutes les gardeT secondes quand on l'attaque), récompense ;
+  // blindage : part des dégâts des explosions qu'elle reçoit (sinon 20 tanks la rasaient en 30 secondes)
+  ruche: { nids:8, hp:160000, r:9, dist:400, ponte:10, ponteN:2, ponteK:.35, garde:20, gardeT:8, gardeN:4, ferraille:300, ferrailleV:150, argent:3000, blindage:.6 },
+  // Sièges : toutes les « tous » hordes (avec le boss), pas avant « debut » secondes de jeu, annoncés « annonce » s d'avance, « duree » s de flot fort depuis un côté,
+  // puis un creux de « creux » s (ponte des nids × creuxK, le QG se répare de « repare » de sa vie par seconde) ; entre les sièges, ponte × leger et hordes × horde.
+  // coup : la grosse horde du début (× une horde normale) ; flot : flotN × menace zombies toutes les flotT s ;
+  // force et forceDmg : vie et dégâts des zombies du siège ; monte : chaque siège est plus gros et plus solide que le précédent
+  // (nombre et vie × 1 + monte × numéro du siège) ; vue : ils foncent vers le QG et n'attaquent que ce qui est à moins de vue m ;
+  // extra : zombies permis au-delà du plafond pendant le siège
+  siege: { tous:3, debut:300, annonce:10, duree:40, coup:4, flotT:2.5, flotN:1.2, force:1.7, forceDmg:1.3, monte:.04, vue:9, dist:55, creux:30, creuxK:.3, repare:.005, leger:.6, horde:.6, extra:300, extraCell:120 },
+  // Bâtiments : les dégâts d'un zombie ordinaire contre un bâtiment montent comme ceux des boss
+  // (dégâts de base × multiplicateur de la menace à la puissance batPow, au lieu de 1) ; place : mètres de mur par zombie
+  // qui frappe (un bâtiment ne peut pas être frappé par plus de zombies qu'il n'a de place autour) ; qgMenace : la vie du QG
+  // monte de cette part par point de menace (6 000 au départ, 51 600 à menace 20)
+  bat: { batPow:.6, place:2.5, qgMenace:.4 }
+};
 // Vieille route : de la base (index 0) jusqu'au bout de la vallée, au nord
 const RTS_ROAD = [[0, -8], [6, -48], [-10, -84], [-2, -124], [20, -164], [32, -204], [16, -244], [-4, -292]];
 const RTS_ROAD0 = RTS_ROAD.map(p => p.slice());
@@ -100,7 +124,7 @@ function rtsRoadX(z){
 }
 const RTS_BOSS = ['titan', 'broodmother', 'behemoth'];
 const RTS = { on:false, paused:false, units:[], nests:[], blds:[], base:null, sel:[], bsel:null, place:null, tab:'rob', upg:{}, t:0, kills:0, threat:1,
-  hordeT:0, hordeN:0, bossN:0, bossKills:0, nestN:0, placeRot:0, ruins:[], shells:[], chunks:0, zMin:-300, spin:0, lost:0, baseR:30, incT:5, cam:{ x:0, z:-10, h:56 }, keys:{}, drag:null, pinch:null, sndT:0, pilot:null,
+  hordeT:0, hordeN:0, bossN:0, bossKills:0, nestN:0, placeRot:0, vallee:1, ruche:null, libre:false, gagne:false, siege:null, ponteK:1, ruins:[], shells:[], chunks:0, zMin:-300, spin:0, lost:0, baseR:30, incT:5, cam:{ x:0, z:-10, h:56 }, keys:{}, drag:null, pinch:null, sndT:0, pilot:null,
   pv:{ yaw:0, pitch:-.1, joy:{ id:null, dx:0, dy:0 }, aim:{ id:null, lx:0, ly:0 }, fire:false, fire2:false, mv:{ f:0, b:0, l:0, r:0 } }, best:+store.get('dt_rts_bestN', 0) || 0 };
 const rtsRoot = new THREE.Group(); scene.add(rtsRoot);
 const rtsMat = new THREE.MeshLambertMaterial({ vertexColors:true }); rtsMat.userData.keep = true;

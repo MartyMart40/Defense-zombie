@@ -5,6 +5,8 @@
 // Gardé : argent, temps, menace, hordes, boss, améliorations, taille de la base, la route, tous les nids
 // (détruits compris), les bâtiments (niveau, vie) et les unités (vie, poste). Pas gardé : les zombies en vie,
 // les obus en vol, le pilotage (la partie reprend sur la carte, avec un instant de calme).
+// Tâche 101 : aussi la vallée, la Ruche (position, vie) et « sans fin » (libre). Une vieille sauvegarde sans ces champs
+// se charge en vallée 1, sans Ruche (elle apparaîtra si 8 nids sont déjà détruits).
 // Effacée quand le QG tombe, avec « Abandonner », ou quand on commence une nouvelle partie.
 // Reprise : bouton « Continuer la guerre » sur l'écran titre (rtsStart(save) dans js/42-rts-unites.js).
 
@@ -23,8 +25,10 @@ function rtsSaveData(){
     rally: R.rally ? { x: rtsR1(R.rally.x), z: rtsR1(R.rally.z) } : null,
     groups: (R.groups || []).map(g => { const vivants = R.units.filter(u => !u.dead); return g.filter(u => !u.dead).map(u => vivants.indexOf(u)).filter(i => i >= 0); }),
     road: RTS_ROAD.map(p => [rtsR1(p[0]), rtsR1(p[1])]),
-    nests: R.nests.map(n => ({ x: rtsR1(n.x), z: rtsR1(n.z), hp: Math.round(n.hp), d: n.dead ? 1 : 0, st: rtsR1(n.spawnT) })),
-    blds: R.blds.filter(o => !o.dead).map(o => ({ t: o.type, x: o.x, z: o.z, r: o.rot || 0, hp: Math.round(o.hp), lv: o.lv || 1, s: o.spent || 0 })),
+    vallee: R.vallee || 1, libre: R.libre ? 1 : 0,
+    ruche: R.ruche && !R.ruche.dead ? { x: rtsR1(R.ruche.x), z: rtsR1(R.ruche.z), hp: Math.round(R.ruche.hp), st: rtsR1(R.ruche.spawnT) } : null,
+    nests: R.nests.filter(n => !n.ruche).map(n => ({ x: rtsR1(n.x), z: rtsR1(n.z), hp: Math.round(n.hp), d: n.dead ? 1 : 0, st: rtsR1(n.spawnT) })),
+    blds: R.blds.filter(o => !o.dead).map(o => Object.assign({ t: o.type, x: o.x, z: o.z, r: o.rot || 0, hp: Math.round(o.hp), lv: o.lv || 1, s: o.spent || 0 }, o.type === 'hq' ? { mx: Math.round(o.maxHp) } : {})),
     units: R.units.filter(u => !u.dead).map(u => ({ t: u.type, x: rtsR1(u.g.position.x), z: rtsR1(u.g.position.z), hp: Math.round(u.hp), hx: rtsR1(u.hx), hz: rtsR1(u.hz), hd: rtsR1(u.head || 0), ho: u.hold ? 1 : 0 }))
   };
 }
@@ -60,6 +64,7 @@ function rtsLoadNests(d){
   }
   // Toujours RTS_CFG.nests nids actifs (au cas où la sauvegarde en aurait moins)
   while (rtsNestsAlive().length < RTS_CFG.nests) rtsAddNest(null, rtsFront() - rand(35, 55));
+  if (typeof rtsRucheLoad === 'function') rtsRucheLoad(d); // la Ruche, si elle était sortie (js/65-rts-ruche.js)
 }
 function rtsLoadRest(d){
   const R = RTS;
@@ -78,6 +83,7 @@ function rtsLoadRest(d){
     const o = rtsPlaceBld(b.t, +b.x, +b.z, true, +b.r || 0);
     o.spent = +b.s || 0;
     const lv = clamp(Math.round(+b.lv || 1), 1, typeof RTS_TMAX === 'number' ? RTS_TMAX : 6);
+    if (o.type === 'hq' && +b.mx > o.maxHp) o.maxHp = +b.mx; // vie du QG montée avec la menace (tâche 101)
     if (o.B.turret && lv > 1){ o.lv = lv; o.maxHp *= Math.pow(1.15, lv - 1); if (o.head) o.head.scale.setScalar(1 + .07 * (lv - 1)); }
     o.hp = clamp(+b.hp || o.maxHp, 1, o.maxHp); rtsHpSet(o.hpb, o.hp / o.maxHp);
   }
@@ -104,12 +110,13 @@ function rtsSaveBtn(){
     ref.parentNode.insertBefore(b, ref);
     b.addEventListener('click', () => { const d = rtsSaveGet(); if (d) rtsStart(d); else rtsSaveBtn(); });
   }
+  if (typeof rtsValleeRow === 'function') rtsValleeRow(); // choix de la vallée (js/65-rts-ruche.js)
   if (!b) return;
   const d = rtsSaveGet();
   b.classList.toggle('hide', !d);
   if (d){
-    const nd = d.nests.filter(n => n && n.d).length, min = Math.floor((+d.t || 0) / 60);
-    b.textContent = '▶ Continuer la guerre (' + nd + ' nid' + (nd > 1 ? 's' : '') + ' détruit' + (nd > 1 ? 's' : '') + ', ' + min + ' min)';
+    const nd = d.nests.filter(n => n && n.d).length, min = Math.floor((+d.t || 0) / 60), va = +d.vallee || 1;
+    b.textContent = '▶ Continuer la guerre (' + (va > 1 ? 'vallée ' + va + ', ' : '') + nd + ' nid' + (nd > 1 ? 's' : '') + ' détruit' + (nd > 1 ? 's' : '') + ', ' + min + ' min)';
   }
 }
 rtsSaveBtn();

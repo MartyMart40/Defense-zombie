@@ -72,6 +72,7 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 61 ultra | Style Ultra (ordi seulement) : rue mouillée qui reflète (Reflector), rayons de soleil, ombres douces (VSM), ombres de contact pleines |
 | 62 ressenti | Ressenti du tir sur le toit : coup de caméra et recul dosés par arme, sang et poussière aux impacts, marqueur tête et tué, sursaut et mort poussée des zombies, sons tête et tué, gel sur un gros coup ; réglage « Secousses » (dt_secousses). Seulement visuel et sonore |
 | 63 monstres du toit | Hurleur, fouisseur, revenant : 3 monstres du toit avec chacun sa parade (`docs/conception.md`) |
+| 65 Ruche RTS | But du RTS et danger qui monte : la Ruche (8 nids détruits la font sortir, la détruire libère la vallée), vallées (P.rtsVallee, P.rtsLib), sièges annoncés ; réglages dans `RTS_REGL` (`js/41-rts.js`) |
 | 90 branchements | Branche le registre `Jeu` sur le jeu commun ; toujours le dernier |
 
 Les const, let et function de haut niveau sont partagés entre tous les fichiers (portée globale). Un fichier peut appeler une fonction d'un fichier plus loin **seulement à l'intérieur d'une fonction**, jamais au chargement. Chaque fichier commence par `'use strict';`.

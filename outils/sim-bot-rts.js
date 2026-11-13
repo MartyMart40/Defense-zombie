@@ -10,6 +10,9 @@
 //   blindes   : garage de blindés et tanks, quelques mitrailleurs devant
 //   air       : héliport et aérodromes (Apache, Warthog, AC-130, chasseur), une armée au sol qui retient les zombies
 //   mixte     : ce qu'un bon joueur ferait : récupérateurs, atelier, armée variée, améliorations, nids au bon rythme
+// But (tâche 101) : quand la Ruche est sortie, le groupe d'attaque (blindes, air, mixte) attend d'être assez fort
+// (RUCHE_K fois le seuil d'un nid) et part sur elle ; la partie s'arrête à la victoire. « tourelles » ne va jamais à la Ruche.
+// SIM.rts({ vallee }) : joue cette vallée (même chose que « Vallée suivante » : une nouvelle partie plus dure).
 // Pour toutes sauf « tourelles » : point de ralliement devant la base, une garde qui reste à la base (les unités
 // à longue portée « tiennent » la ligne), un groupe d'attaque qui part sur le nid le plus proche quand il est assez
 // fort et revient s'il fond ou si un boss approche de la base, les unités abîmées envoyées à l'atelier, les pertes remplacées.
@@ -26,7 +29,7 @@
   /* ---------- Suivi du danger : qui frappe quoi, quand ---------- */
   const SUIVI = { on:false, now:() => RTS.t };
   function suiviDebut(){
-    Object.assign(SUIVI, { on:true, now:() => RTS.t, premUnite:null, premTourelle:null, premBat:null, premQG:null, coupsQG:[], degatsBat:0, pertes:[], batsPerdus:[] });
+    Object.assign(SUIVI, { on:true, now:() => RTS.t, premUnite:null, premTourelle:null, premBat:null, premQG:null, coupsQG:[], degatsBat:0, pertes:[], batsPerdus:[], nids:[], rucheT:null, rucheTouche:null, sieges:[] });
   }
   // Cause d'un coup sur le QG : un boss tout près dont les dégâts correspondent (coup, piétinement à 50 %, acide à 60 %), sinon les zombies
   function causeQG(T, dmg){
@@ -40,7 +43,11 @@
     }
     return 'zombies';
   }
-  const _dmg = window.rtsDmgTarget, _udie = window.rtsUnitDie, _bdie = window.rtsBldDie;
+  const _dmg = window.rtsDmgTarget, _udie = window.rtsUnitDie, _bdie = window.rtsBldDie, _ndie = window.rtsNestDie;
+  window.rtsNestDie = function(n){
+    if (SUIVI.on && n && !n.dead && !n.ruche) try { SUIVI.nids.push(Math.round(SUIVI.now())); } catch (e) { errNote(e); }
+    return _ndie.apply(this, arguments);
+  };
   window.rtsDmgTarget = function(T, dmg){
     if (SUIVI.on && T && !T.dead) try {
       const t = SUIVI.now();
@@ -71,7 +78,7 @@
   const nb = t => RTS.blds.filter(o => !o.dead && o.type === t).length;
   const nbU = t => RTS.units.filter(u => !u.dead && u.type === t).length;
   const tourelles = () => RTS.blds.filter(o => !o.dead && o.B.turret);
-  const nidsDetruits = () => RTS.nests.filter(n => n.dead).length;
+  const nidsDetruits = () => RTS.nests.filter(n => n.dead && !n.ruche).length;
   const ACH = { unites:{}, bats:{}, depUnites:0, depBats:0, depAmel:0, depTour:0 };
   function achatsDebut(){ Object.assign(ACH, { unites:{}, bats:{}, depUnites:0, depBats:0, depAmel:0, depTour:0 }); }
   // Pose sur le quadrillage de 2 m : tourelles devant (au nord), le reste derrière ; comme le joueur, essaie des places libres
@@ -142,6 +149,11 @@
       const veut = cfg.garde[u.type] != null ? cfg.garde[u.type] : cfg.partGarde;
       u.simRole = vg < veut * vt || veut >= 1 ? 'g' : 'a'; if (u.simRole === 'g') vg += u.U.cost;
     });
+    // La Ruche est sortie : comme un joueur, il garde peu de monde à la base et envoie le gros de l'armée (une fois)
+    if (RTS.ruche && !RTS.ruche.dead && !CMD.rucheVue){
+      CMD.rucheVue = true; let g = 0; const gardeMax = .2 * vt;
+      sol.filter(u => u.simRole === 'g').sort((a, b) => (LONGUE[b.type] ? 1 : 0) - (LONGUE[a.type] ? 1 : 0)).forEach(u => { if (g < gardeMax) g += u.U.cost; else { u.simRole = 'a'; if (u.hold) tenir([u], false); } });
+    }
     // Unités abîmées : à l'atelier (ordre de marche), puis retour à leur place une fois réparées
     const A = atelier();
     sol.forEach(u => {
@@ -159,7 +171,10 @@
     // il arrive au nid, mais fond (115 unités perdues en 19 min au lieu de 13 en 20 min) ; laissé sans « Tenir ».
     const att = sol.filter(u => u.simRole === 'a' && !u.simSoin);
     const force = att.reduce((s, u) => s + fortU(u), 0), nd = nidsDetruits();
-    const danger = bossPres(25) || (RTS.base && RTS.base.hp < RTS.base.maxHp * .85);
+    // Danger : un boss près du QG, ou le QG touché dans les 20 dernières secondes (avant : QG sous 85 % ; depuis la tâche 101
+    // le QG ne remonte pas tout seul hors des accalmies, et le robot-joueur restait chez lui pour toujours)
+    if (RTS.base){ if (CMD.qgHp != null && RTS.base.hp < CMD.qgHp - 1) CMD.qgT = RTS.t; CMD.qgHp = RTS.base.hp; }
+    const danger = bossPres(25) || RTS.t - (CMD.qgT == null ? -99 : CMD.qgT) < 20;
     if (CMD.att){
       const vis = CMD.att.units.filter(u => !u.dead && !u.simSoin);
       const f = vis.reduce((s, u) => s + fortU(u), 0);
@@ -168,17 +183,20 @@
         CMD.journal.push({ min:min1(RTS.t), fin:danger ? 'rappel (danger à la base)' : 'retraite (groupe fondu)', f:Math.round(f), f0:Math.round(CMD.att.f0), nid:Math.round(100 * n.hp / n.maxHp), d:Math.round(Math.hypot(n.x, n.z)) });
         tenir(vis, false); ordre(vis, { x:CMD.ral.x, z:CMD.ral.z - 4 }); CMD.att = null; CMD.repos = RTS.t + 20;
       } else if (n.dead){
-        const suiv = nidProche(); if (suiv && f > cfg.seuil(nd) * .7){ CMD.journal.push({ min:min1(RTS.t), fin:'nid détruit, au suivant', f:Math.round(f) }); ordre(vis, { nest:suiv }); CMD.att.nid = suiv; CMD.att.f0 = Math.max(f, CMD.att.f0 * .8); }
+        const suiv = cibleAtt(f, cfg.seuil(nd) * .7); if (suiv && f > cfg.seuil(nd) * .7){ CMD.journal.push({ min:min1(RTS.t), fin:'nid détruit, au suivant', f:Math.round(f) }); ordre(vis, { nest:suiv }); CMD.att.nid = suiv; CMD.att.f0 = Math.max(f, CMD.att.f0 * .8); }
         else { CMD.journal.push({ min:min1(RTS.t), fin:'nid détruit, retour', f:Math.round(f), f0:Math.round(CMD.att.f0) }); tenir(vis, false); ordre(vis, { x:CMD.ral.x, z:CMD.ral.z - 4 }); CMD.att = null; CMD.repos = RTS.t + 10; }
       } else {
         // Les renforts du groupe d'attaque rejoignent l'attaque
         const neufs = att.filter(u => CMD.att.units.indexOf(u) < 0 && u.cmd !== 'attack'); if (neufs.length){ ordre(neufs, { nest:n }); CMD.att.units.push(...neufs); }
       }
     } else if (!danger && att.length >= cfg.minAtt && force >= cfg.seuil(nd) && RTS.t > (CMD.repos || 0)){
-      const n = nidProche(); if (n){ ordre(att, { nest:n }); CMD.att = { nid:n, units:att.slice(), f0:force, t:RTS.t }; CMD.nAtt = (CMD.nAtt || 0) + 1; CMD.journal.push({ min:min1(RTS.t), debut:att.length + ' unités', f0:Math.round(force), d:Math.round(Math.hypot(n.x, n.z)) }); }
+      const n = cibleAtt(force, cfg.seuil(nd)); if (n){ ordre(att, { nest:n }); CMD.att = { nid:n, units:att.slice(), f0:force, t:RTS.t }; CMD.nAtt = (CMD.nAtt || 0) + 1; CMD.journal.push({ min:min1(RTS.t), debut:att.length + ' unités', f0:Math.round(force), d:Math.round(Math.hypot(n.x, n.z)) }); }
     }
   }
-  function nidProche(){ let best = null, bd = 1e9; RTS.nests.forEach(n => { if (!n.dead){ const d = Math.hypot(n.x, n.z); if (d < bd){ bd = d; best = n; } } }); return best; }
+  const RUCHE_K = 1.15;
+  // Cible du groupe d'attaque : la Ruche si elle est sortie (seulement quand le groupe est assez fort), sinon le nid le plus proche
+  function cibleAtt(force, seuil){ const R = RTS.ruche; if (R && !R.dead) return force >= seuil * RUCHE_K ? R : null; return nidProche(); }
+  function nidProche(){ let best = null, bd = 1e9; RTS.nests.forEach(n => { if (!n.dead && !n.ruche){ const d = Math.hypot(n.x, n.z); if (d < bd){ bd = d; best = n; } } }); return best; }
 
   /* ---------- Stratégies ---------- */
   const TOUR_CYCLE = ['t_mg', 't_mg', 't_cannon', 't_tesla', 't_mg', 't_flame', 't_cannon', 't_tesla'];
@@ -281,22 +299,33 @@
     SIM.preparer(); SIM.hasard(opts.graine || 7);
     const st = STRATS[opts.strategie] || STRATS.tourelles;
     const dt = 1 / 20, maxT = (opts.maxMin || 60) * 60, pas = [], courbe = [];
-    rtsStart(); suiviDebut(); achatsDebut(); CMD.att = null; CMD.repos = 0; CMD.nAtt = 0; CMD.journal = [];
+    const va = Math.max(1, opts.vallee || 1);
+    if (typeof RTS_VAL === 'object'){ P.rtsVallee = Math.max(+P.rtsVallee || 1, va); RTS_VAL.choix = va; }
+    rtsStart(); suiviDebut(); achatsDebut(); CMD.att = null; CMD.repos = 0; CMD.nAtt = 0; CMD.journal = []; CMD.rucheVue = false; CMD.qgHp = null; CMD.qgT = null;
     if (st.cmd) rtsRallySet(CMD.ral.x, CMD.ral.z);
-    let t = 0, n = 0, dec = 0, mark = 0, markC = 0, qgHaut = 0;
+    let t = 0, n = 0, dec = 0, mark = 0, markC = 0, qgHaut = 0, qgMin = 100, qgMinT = 0;
     const pres = () => { let k = 0; for (const z of zombies) if (!z.dead && Math.hypot(z.g.position.x, z.g.position.z) < 45) k++; return k; };
     const photo = () => ({ min:min1(RTS.t), nids:nidsDetruits(), unites:vivants().length, tourelles:tourelles().length, batiments:RTS.blds.filter(o => !o.dead && !o.B.turret).length,
       argent:Math.round(S.money), menace:Math.round(RTS.threat * 10) / 10, qg:RTS.base ? Math.max(0, Math.round(100 * RTS.base.hp / RTS.base.maxHp)) : 0,
       zombies:zAliveCount(), pres:pres(), boss:zombies.filter(z => !z.dead && z.rtsBoss).map(z => z.type).join(' '), tues:RTS.kills, perdues:RTS.lost, bossTues:RTS.bossKills });
-    while (t < maxT && state === 'rts'){
+    let siegeAv = null;
+    while (t < maxT && state === 'rts' && !RTS.gagne){
       dec -= dt; if (dec <= 0){ dec = 2; try { st.decider(); if (st.cmd) commander(st.cmd); } catch (e) { errNote(e); } }
       visuals(dt); t += dt; SIM.horloge(dt);
       if (RTS.base && RTS.base.hp >= RTS.base.maxHp * .9) qgHaut = RTS.t;
+      if (RTS.base && !RTS.base.dead){ const q = 100 * RTS.base.hp / RTS.base.maxHp; if (q < qgMin){ qgMin = q; qgMinT = RTS.t; } }
+      if (RTS.ruche && SUIVI.rucheT == null) SUIVI.rucheT = RTS.t;
+      if (RTS.ruche && SUIVI.rucheTouche == null && RTS.ruche.hp < RTS.ruche.maxHp) SUIVI.rucheTouche = RTS.t;
+      // Sièges : pertes (unités, tourelles) et vie du QG pendant chacun
+      const sg = RTS.siege && RTS.siege.phase === 'siege';
+      if (sg && !siegeAv){ siegeAv = { min:min1(RTS.t), u0:SUIVI.pertes.length, b0:SUIVI.batsPerdus.length, qg0:RTS.base ? Math.round(100 * RTS.base.hp / RTS.base.maxHp) : 0, qgMin:100 }; }
+      if (siegeAv && RTS.base) siegeAv.qgMin = Math.min(siegeAv.qgMin, Math.round(100 * RTS.base.hp / RTS.base.maxHp));
+      if (siegeAv && !(RTS.siege && RTS.siege.phase !== 'annonce')){ SUIVI.sieges.push({ min:siegeAv.min, unites:SUIVI.pertes.length - siegeAv.u0, bats:SUIVI.batsPerdus.length - siegeAv.b0, qg0:siegeAv.qg0, qgMin:siegeAv.qgMin }); siegeAv = null; }
       if (t >= markC){ courbe.push(photo()); markC += 30; }
       if (t >= mark){ pas.push(photo()); mark += 300; }
       if (++n % 400 === 0) await pause();
     }
-    const fin = photo(); fin.tombe = state === 'rtsover';
+    const fin = photo(); fin.tombe = state === 'rtsover'; fin.gagne = !!RTS.gagne; fin.vallee = RTS.vallee || 1;
     SUIVI.on = false;
     // L'écroulement : les 2 dernières minutes avant la fin
     const t1 = RTS.t, der = SUIVI.coupsQG.filter(c => c.t > t1 - 120), tot = der.reduce((s, c) => s + c.d, 0) || 1;
@@ -304,7 +333,12 @@
     const totAll = SUIVI.coupsQG.reduce((s, c) => s + c.d, 0) || 1, bossAll = SUIVI.coupsQG.filter(c => c.c === 'boss').reduce((s, c) => s + c.d, 0);
     const res = {
       strategie:opts.strategie, nom:st.nom, desc:st.desc, graine:opts.graine, pas, courbe, fin,
-      cles:{ premUnite:SUIVI.premUnite, premTourelle:SUIVI.premTourelle, premBat:SUIVI.premBat, premQG:SUIVI.premQG, qg90:qgHaut, chute:fin.tombe ? Math.round(t1 - qgHaut) : null },
+      cles:{ premUnite:SUIVI.premUnite, premTourelle:SUIVI.premTourelle, premBat:SUIVI.premBat, premQG:SUIVI.premQG, qg90:qgHaut, chute:fin.tombe ? Math.round(t1 - qgHaut) : null,
+        qgMin:fin.tombe ? 0 : Math.round(qgMin), qgMinT:Math.round(qgMinT), tourAChute:fin.tombe && SUIVI.premTourelle != null ? Math.round(t1 - SUIVI.premTourelle) : null,
+        tourellesPerdues:SUIVI.batsPerdus.filter(b => RTS_BLD[b.type] && RTS_BLD[b.type].turret).length,
+        victoire:fin.gagne ? Math.round(RTS.gagneT || RTS.t) : null, ruche:SUIVI.rucheT == null ? null : Math.round(SUIVI.rucheT), rucheTouche:SUIVI.rucheTouche == null ? null : Math.round(SUIVI.rucheTouche),
+        nids:SUIVI.nids.slice() },
+      sieges:SUIVI.sieges.slice(),
       chute:{ partBoss2min:Math.round(100 * bossD / tot), partBoss:Math.round(100 * bossAll / totAll), avant:courbe.slice(-5) },
       pertesParType:SUIVI.pertes.reduce((o, p) => { o[p.type] = (o[p.type] || 0) + 1; return o; }, {}), batsPerdus:SUIVI.batsPerdus.length,
       achats:JSON.parse(JSON.stringify(ACH)), attaques:CMD.nAtt || 0, journal:CMD.journal

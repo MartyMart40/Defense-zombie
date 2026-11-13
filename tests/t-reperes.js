@@ -104,6 +104,94 @@
     ok(r.max <= r.lim, 'Lignes affichées : ' + r.max);
     egal(r.dom, r.lim, 'Nombre de lignes dans le DOM fixe');
   });
+  test('Repères : monstres du toit, un sous-titre pour chaque moment (cri, grondement avec la sortie, fracas, râle, relève)', () => {
+    if (!pret()) ignorer('Repères visuels absents');
+    if (lire('typeof __reperes.rpMonstre === "function" && typeof ZKINDS === "object" && !!ZKINDS.burrower') !== true) ignorer('Repères des monstres du toit absents');
+    partie();
+    const r = J(function(){
+      var o = {}; yaw = -.8; pitch = -.16; visuals(.016); visuals(.016); // regard à droite : la sortie est nettement à gauche
+      var h = __t.placer('screamer', 0, -50), b = __t.placer('burrower', 0, -45), rv = __t.placer('revenant', -3, -25);
+      b.mtTx = -11; b.mtEmerZ = -21; // il ressortira à gauche, à 12 m de la barricade
+      __reperes.RP.last = {};
+      Jeu.emit('monstre', 'cri', h); Jeu.emit('monstre', 'creuse', b); Jeu.emit('monstre', 'sort', b);
+      o.l1 = __reperes.linesOn();
+      Jeu.emit('monstre', 'chute', rv); o.l2 = __reperes.linesOn();
+      Jeu.emit('monstre', 'releve', rv); o.l3 = __reperes.linesOn();
+      o.count = __reperes.RP.count;
+      // Même cri aussitôt : pas de doublon
+      var n = __reperes.RP.count.hurle; Jeu.emit('monstre', 'cri', h); o.double = __reperes.RP.count.hurle - n;
+      clearZombies();
+      return o;
+    });
+    const t1 = r.l1.join(' | '), t2 = r.l2.join(' | '), t3 = r.l3.join(' | ');
+    ok(/hurleur/i.test(t1) && /accélèrent/.test(t1), 'Cri du hurleur : ' + t1);
+    ok(/fouisseur ressort/.test(t1) && /12 m/.test(t1), 'Grondement : le fouisseur, où il ressort et à quelle distance : ' + t1);
+    ok(/à gauche, à 12 m/.test(t1), 'Côté de la sortie : ' + t1);
+    ok(/Fracas/.test(t1), 'Fracas de la sortie : ' + t1);
+    ok(/Râle/.test(t2) && /achève/.test(t2), 'Revenant à genoux : ' + t2);
+    ok(/relève/.test(t3), 'Revenant qui se relève : ' + t3);
+    egal(r.double, 0, 'Même cri aussitôt : pas de doublon');
+  });
+  test('Repères : étiquettes des monstres du toit (revenant à genoux avec le temps qui reste, sortie du fouisseur, hurleur)', () => {
+    if (!pret()) ignorer('Repères visuels absents');
+    if (lire('typeof __reperes.tagsOn === "function" && typeof ZKINDS === "object" && !!ZKINDS.revenant') !== true) ignorer('Étiquettes des monstres du toit absentes');
+    partie();
+    const r = J(function(){
+      var o = {}, R = __reperes, W = innerWidth, H = innerHeight;
+      yaw = 0; pitch = -.16; visuals(.016);
+      o.dom0 = R.domCount();
+      // Revenant à genoux devant : étiquette « Achève » au-dessus de lui, le temps baisse
+      var rv = __t.placer('revenant', -2, -22); rv.speed = 0;
+      damage(rv, 1e9, false, rv.g.position.clone());
+      R.RP.selT = 0; visuals(.016);
+      var t1 = R.tagsOn().filter(function(t){ return /Achève/.test(t.txt); })[0];
+      for (var i = 0; i < 30; i++) update(1 / 30);
+      R.RP.selT = 0; visuals(.016);
+      var t2 = R.tagsOn().filter(function(t){ return /Achève/.test(t.txt); })[0];
+      o.rev1 = t1 ? t1.txt : ''; o.rev2 = t2 ? t2.txt : ''; o.k1 = t1 ? t1.k : -1; o.k2 = t2 ? t2.k : -1;
+      o.revX = t1 ? t1.x : -1;
+      damage(rv, 1e9, false, rv.g.position.clone()); R.RP.selT = 0; visuals(.016);
+      o.revMort = R.tagsOn().filter(function(t){ return /Achève/.test(t.txt); }).length;
+      // Fouisseur sous terre : étiquette « Sortie » là où il va ressortir (à droite ici), qui suit le temps
+      var b = __t.placer('burrower', 0, -48); b.hp = b.maxHp = 1e6; b.mtDigZ = -48.5; b.mtTx = 7;
+      for (var k = 0; k < 40 && b.mtSt !== 'under'; k++) update(1 / 30);
+      R.RP.selT = 0; visuals(.016);
+      var tb = R.tagsOn().filter(function(t){ return /Sortie/.test(t.txt); })[0];
+      o.sortie = tb ? tb.txt : ''; o.sortieX = tb ? tb.x : -1; o.W = W;
+      var t = 0; while (b.mtSt === 'under' && t < 15){ update(1 / 30); t += 1 / 30; }
+      R.RP.selT = 0; visuals(.016);
+      o.tire = R.tagsOn().filter(function(t){ return /Tire/.test(t.txt); }).length;
+      b.hp = 0; damage(b, 1e9, true, b.g.position.clone());
+      // Hurleur arrivé
+      var h = __t.placer('screamer', 0, -40); h.g.position.z = h.stopZ - .01; for (var u = 0; u < 3; u++) update(1 / 30);
+      o.hSt = h.st;
+      R.RP.selT = 0; visuals(.016);
+      o.hurleur = R.tagsOn().filter(function(t){ return /Hurleur/.test(t.txt); }).length;
+      // Repères coupés : plus d'étiquettes
+      R.setCues(false); visuals(.016); o.coupe = R.tagsOn().length; R.setCues(true);
+      o.dom1 = R.domCount(); o.max = R.RP_TAGS; o.box = R.rpTagBox.childElementCount;
+      // Revenant à genoux hors champ (regard à droite) : flèche 💀
+      clearZombies(); yaw = -1.2; visuals(.016);
+      var rv2 = __t.placer('revenant', -11, -25); rv2.speed = 0; damage(rv2, 1e9, false, rv2.g.position.clone());
+      R.RP.selT = 0; visuals(.016);
+      o.fleche = R.arrowsOn().filter(function(a){ return a.kind === 'revenant'; }).length;
+      clearZombies(); yaw = 0;
+      return o;
+    });
+    ok(/Achève : \d,\d s/.test(r.rev1), 'Étiquette du revenant à genoux : « ' + r.rev1 + ' »');
+    ok(r.revX > 0 && r.revX < r.W / 2 + 40, 'Au-dessus du revenant (x = ' + r.revX + ')');
+    ok(r.rev2 && r.rev2 !== r.rev1 && r.k2 < r.k1, 'Le temps qui reste baisse : ' + r.rev1 + ' puis ' + r.rev2);
+    egal(r.revMort, 0, 'Achevé : l’étiquette disparaît');
+    ok(/Sortie : \d,\d s/.test(r.sortie), 'Étiquette de sortie du fouisseur : « ' + r.sortie + ' »');
+    ok(r.sortieX > r.W / 2, 'Posée là où il ressortira (à droite) : x = ' + r.sortieX);
+    egal(r.tire, 1, 'Pendant qu’il sort : « Tire ! »');
+    egal(r.hurleur, 1, 'Hurleur arrivé (' + r.hSt + ') : étiquette');
+    egal(r.coupe, 0, 'Repères coupés : aucune étiquette');
+    egal(r.box, r.max, 'Pool d’étiquettes : nombre fixe');
+    egal(r.dom1, r.dom0, 'Aucun élément créé pendant le jeu');
+    egal(r.fleche, 1, 'Revenant à genoux hors champ : flèche');
+  });
+
   test('Repères : réglages sauvegardés, ils coupent bien l’affichage', () => {
     if (!pret()) ignorer('Repères visuels absents');
     partie();

@@ -169,6 +169,86 @@
     egal(r.err, 0, 'Erreurs JavaScript');
   });
 
+  // Allure de la foule (07-zombies.js : ZG.yeux, zEyeMat, ZYEUX, zTeinte, zBras)
+  const exigerA = () => { exiger(); if (lire('typeof zTeinte === "function" && typeof zBras === "function" && !!ZG.yeux && typeof ZYEUX === "object"') !== true) ignorer('Allure de la foule absente (07-zombies.js)'); };
+
+  test('Allure : nuances de peau et de vêtements par instance, voisins différents, sans matériau ni lot de plus', () => {
+    exigerA(); partie(1);
+    const r = J(function(){
+      plan.maxAlive = 1e6;
+      var m0 = __zperf.mats(), peaux = [], memes = 0, habits = {};
+      for (var i = 0; i < 40; i++){
+        var z = spawnZombie('walker'); z.g.position.set(-8 + (i % 8) * 2, 0, -20 - i);
+        var e = z.inst.filter(function(x){ return x.mat === z.g.userData.zPeau; })[0];
+        var c = e ? [e.r, e.g, e.bl].map(function(v){ return Math.round(v * 200); }).join(',') : 'x';
+        if (peaux.length && peaux[peaux.length - 1] === c) memes++;
+        peaux.push(c);
+        z.inst.forEach(function(x){ if (x.mat && x.mat !== z.g.userData.zPeau) habits[[x.r, x.g, x.bl].map(function(v){ return Math.round(v * 200); }).join(',')] = 1; });
+      }
+      zInstSync();
+      // La couleur envoyée à la carte graphique est bien celle de la nuance
+      var z0 = zombies[0], e0 = z0.inst.filter(function(x){ return x.mat === z0.g.userData.zPeau; })[0], b = e0.b, trouve = false;
+      for (var j = 0; j < b.n; j++){ var a = b.im.instanceColor.array; if (Math.abs(a[j * 3] - e0.r) < 1e-6 && Math.abs(a[j * 3 + 1] - e0.g) < 1e-6 && Math.abs(a[j * 3 + 2] - e0.bl) < 1e-6) trouve = true; }
+      var uniques = {}; peaux.forEach(function(p){ uniques[p] = 1; });
+      var res = { peaux: Object.keys(uniques).length, memes: memes, habits: Object.keys(habits).length, trouve: trouve, m0: m0, m1: __zperf.mats(), dessins: __zperf.draws(), pur: JSON.stringify(zTeinte(7)) === JSON.stringify(zTeinte(7)) };
+      clearZombies(); return res;
+    });
+    ok(r.peaux >= 25, 'Nuances de peau trop peu variées : ' + r.peaux + ' sur 40');
+    egal(r.memes, 0, 'Deux zombies apparus l’un après l’autre ont la même peau');
+    ok(r.habits >= 30, 'Vêtements trop pareils : ' + r.habits + ' couleurs');
+    ok(r.trouve, 'La nuance n’arrive pas dans la couleur d’instance');
+    egal(r.m1, r.m0, 'Les nuances ne doivent pas créer de matériaux');
+    ok(r.dessins <= 24, 'Appels de dessin de la foule : ' + r.dessins);
+    ok(r.pur, 'zTeinte doit donner toujours la même nuance pour un même zombie');
+  });
+
+  test('Allure : yeux d’un seul morceau, enfants de la tête, visibles de loin, sans toucher les cibles', () => {
+    exigerA(); partie(0);
+    const r = J(function(){
+      plan.maxAlive = 1e6;
+      var pres = spawnZombie('walker'); pres.g.position.set(0, 0, -20);
+      var loin = spawnZombie('walker'); loin.g.position.set(2, 0, -100); loin.speed = 0;
+      var yeux = function(z){ var n = []; z.g.traverse(function(o){ if (o.isMesh && o.geometry === ZG.yeux) n.push(o); }); return n; };
+      var y = yeux(pres)[0];
+      // Les yeux dépassent à peine de la tête (comme avant) : la boîte de tir ne change pas de façon sensible
+      pres.g.updateMatrixWorld(true);
+      var avec = new THREE.Box3().setFromObject(pres.g); y.visible = false;
+      var sans = new THREE.Box3(); pres.g.traverse(function(o){ if (o.isMesh && o.visible){ o.geometry.computeBoundingBox(); sans.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld)); } });
+      y.visible = true;
+      zInstSync(); zInstSync();
+      var lot = null; zbList.forEach(function(x){ if (x.geo === ZG.yeux) lot = x; });
+      var e = loin.inst.filter(function(x){ return x.eye; })[0], k = -1;
+      if (lot) for (var j = 0; j < lot.n; j++){ var a = lot.im.instanceMatrix.array, o = j * 16; if (Math.abs(a[o + 14] - (loin.g.position.z + loin.g.scale.z * e.rel.elements[14])) < 1e-4) k = j; }
+      var gros = k >= 0 ? Math.hypot(lot.im.instanceMatrix.array[k * 16 + 4], lot.im.instanceMatrix.array[k * 16 + 5], lot.im.instanceMatrix.array[k * 16 + 6]) : 0;
+      var res = { n: yeux(pres).length, parent: y.parent === pres.head, cible: pres.meshes.indexOf(y) >= 0 || hitMeshes.indexOf(y) >= 0,
+        boite: avec.min.distanceTo(sans.min) + avec.max.distanceTo(sans.max), loinRel: !!loin._rel, lot: lot ? lot.n : -1, gros: gros, sy: loin.g.scale.y,
+        eclat: zEyeMat.color.r > 1 };
+      kill(pres, true, pres.g.position.clone()); res.cache = !y.visible || !y.parent.visible;
+      clearZombies(); return res;
+    });
+    egal(r.n, 1, 'Les deux yeux d’un humanoïde : un seul morceau');
+    ok(r.parent, 'Les yeux doivent être des enfants de la tête (ils tombent avec elle)');
+    ok(!r.cible, 'Les yeux ne doivent pas être une cible des tirs');
+    ok(r.boite < .03, 'Les yeux agrandissent la boîte du zombie : ' + r.boite);
+    ok(r.loinRel, 'Le zombie à 100 m devrait être en modèle lointain');
+    egal(r.lot, 2, 'Yeux dessinés : le proche et le lointain');
+    ok(r.gros > r.sy * 1.5, 'Les yeux du zombie lointain devraient grossir : ' + r.gros);
+    ok(r.eclat, 'Couleur des yeux plus que pleine (perce la brume)');
+    ok(r.cache, 'Les yeux restent visibles après un tir à la tête');
+  });
+
+  test('Allure : bras de chaque zombie (un sur trois environ pend), sans hasard', () => {
+    exigerA();
+    const r = J(function(){
+      var pend = 0, poses = {};
+      for (var u = 0; u < 300; u++){ var B = zBras(u); if (B.l > .3 || B.r > .3) pend++; poses[Math.round(B.l * 100) + ',' + Math.round(B.r * 100)] = 1; }
+      return { pend: pend, poses: Object.keys(poses).length, pur: JSON.stringify(zBras(12)) === JSON.stringify(zBras(12)), voisins: zBras(5).l !== zBras(6).l || zBras(5).r !== zBras(6).r };
+    });
+    ok(r.pend > 60 && r.pend < 140, 'Bras qui pendent : ' + r.pend + ' sur 300');
+    ok(r.poses > 50, 'Poses de bras trop pareilles : ' + r.poses);
+    ok(r.pur && r.voisins, 'Pose tirée du numéro du zombie, différente entre voisins');
+  });
+
   // Les tests ajoutés passent avant le test final « Erreurs »
   const ajoutes = TESTS.splice(avant);
   const iErr = TESTS.findIndex(t => t.nom.indexOf('Erreurs') === 0);

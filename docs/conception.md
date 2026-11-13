@@ -73,3 +73,12 @@ Martin : « oui, je veux que tu rendes ça plus difficile pour les villes ».
 - Un chiffre par ville, `dur` dans `js/02-villes.js` : il multiplie la vie et les dégâts des zombies. Saint-Clou 1, Val-des-Cendres 1,35, Banlieue Nord 1,6, Centre-ville 1,4, Port 1,25. Pas le mode infini, ni le robot.
 - Essayé avant : monter seulement `diff` (aucun effet visible) et monter `CITY_SCALE` à 1,45 (rien aux villes 2 et 3, mur au Port).
 - Au simulateur (défenses actives) : débutant, 2 essais à Banlieue Nord, Centre-ville et Port ; moyen, 1 ou 2 à Centre-ville et au Port ; bon, tout du premier coup mais de justesse (23 % de barricade à Centre-ville).
+
+## Ressenti du tir (tâche 94, 2026-11-13)
+Martin : « ça brasse pas assez ». Fichier `js/62-ressenti.js`, réglages en haut du fichier (`RS_ARME` par arme, puis `RS_CAM_MAX`, `RS_MK`, tailles des pools).
+- Recul : coup de caméra par arme (le sniper, le fusil à pompe et le lance-roquettes brassent, le pistolet et le fusil d'assaut à peine), retour par ressort ; recul et roulis de l'arme en main, éclair de bouche dosés par arme.
+- Impact : gerbe de sang dans le sens du tir, poussière au sol ou étincelles sur les façades quand on rate, marqueur au réticule (losange rouge, or pour la tête, croix rouge pour un tué), gel d'environ 0,05 s des zombies sur un tir à la tête qui tue, un gros zombie abattu ou 3 zombies d'une explosion.
+- Zombies : sursaut (torse et tête vers l'arrière), corps poussé à la mort (fort au pompe, au sniper, aux explosions).
+- Son : « toc » pour la tête, coup sec pour le tué, coup grave sous les grosses armes, impacts dans la chair espacés d'au moins 0,05 s.
+- Décision : seulement visuel et sonore. La caméra est décalée pour l'image seulement, la pose des zombies seulement pendant leur dessin : les balles, les zombies et le simulateur ne changent pas. Réglage « Secousses » dans Pause (coup de caméra et gel).
+

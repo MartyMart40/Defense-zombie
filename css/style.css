@@ -27,6 +27,13 @@ button{ font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color
 #cross.hit{ background:#ff4a3a; box-shadow:0 0 0 1px rgba(0,0,0,.55), 0 0 4px rgba(255,74,58,.8); }
 #hitm{ position:fixed; left:50%; top:50%; width:22px; height:22px; transform:translate(-50%,-50%) rotate(45deg); pointer-events:none; opacity:0; border:2px solid #ff4a3a; border-radius:2px; }
 #hitm.show{ opacity:1; }
+/* Ressenti du tir (js/62-ressenti.js) : tir à la tête en or, zombie tué en croix rouge (la taille « pop » est posée par le code) */
+#hitm.rs-tete{ border-color:#ffd04a; box-shadow:0 0 8px rgba(255,208,74,.75); width:26px; height:26px; }
+#hitm.rs-tue{ border-color:#ff2a1a; border-width:3px; width:30px; height:30px; box-shadow:0 0 10px rgba(255,42,26,.8); }
+#hitm.rs-tue::before, #hitm.rs-tue::after{ content:''; position:absolute; left:50%; top:50%; width:3px; height:160%; background:#ff2a1a; transform:translate(-50%,-50%); box-shadow:0 0 0 1px rgba(0,0,0,.4); }
+#hitm.rs-tue::after{ transform:translate(-50%,-50%) rotate(90deg); }
+#hitm.rs-tue.rs-tete{ border-color:#ffd04a; }
+#hitm.rs-tue.rs-tete::before, #hitm.rs-tue.rs-tete::after{ background:#ffd04a; }
 #scope{ position:fixed; inset:0; pointer-events:none; opacity:0; transition:opacity .12s;
   background:radial-gradient(circle at 50% 50%, transparent 0 min(34vw,40vh), rgba(0,0,0,.94) calc(min(34vw,40vh) + 2px)); }
 #scope::before,#scope::after{ content:""; position:absolute; background:rgba(0,0,0,.85); }

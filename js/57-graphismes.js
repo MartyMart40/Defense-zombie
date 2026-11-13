@@ -15,7 +15,7 @@
 
 const STYLES = ['actuel', 'ameliore', 'hd', 'ultra'];
 const STYLE_NOM = { actuel:'Actuel', ameliore:'Amélioré', hd:'Haute définition', ultra:'Ultra' };
-const STY = { pref: store.get('dt_style', 'actuel'), L:null, orig:[], neufs:[], comp:null, bloom:null, grade:null, fxaa:null, w:0, h:0, t:0, ombreT:0, ombres:false, casse:false, v2:new THREE.Vector2() };
+const STY = { pref: store.get('dt_style', 'actuel'), L:null, orig:[], neufs:[], leger:new Map(), legerListe:[], legerOn:false, comp:null, bloom:null, grade:null, fxaa:null, w:0, h:0, t:0, ombreT:0, ombres:false, casse:false, v2:new THREE.Vector2() };
 if (STYLES.indexOf(STY.pref) < 0) STY.pref = 'actuel';
 const styleOn = () => STY.pref === 'ameliore' || STY.pref === 'hd' || STY.pref === 'ultra'; // Haute définition part de la rue d'Amélioré
 const styleHD = () => STY.pref === 'hd' || STY.pref === 'ultra'; // Ultra part de la Haute définition (js/61)
@@ -97,58 +97,75 @@ function styleTex(nom){
 /* ---------- Façades redessinées en double définition ---------- */
 // La façade d'origine (js/03-scene.js facadeMat) : 128 x 256, fenêtres de 18 x 20 tous les 30 x 32 pixels.
 // On la redessine en 256 x 512 : briques ou planches, saleté, cadres, allèges et croisillons, reflet des vitres.
-function styleFacade(m, briques){
+function styleFacade(m, briques, petit){
   const src = m.map && m.map.image, em = m.emissiveMap && m.emissiveMap.image;
   if (!src || !src.getContext || !em || !em.getContext) return null;
-  const sg = src.getContext('2d'), eg = em.getContext('2d');
+  const sg = src.getContext('2d'), eg = em.getContext('2d'), k = petit ? .5 : 1, S = petit ? 1 : 2; // petit : même taille que l'originale (style Actuel)
   const fond = sg.getImageData(2, 2, 1, 1).data, mur = 'rgb(' + fond[0] + ',' + fond[1] + ',' + fond[2] + ')';
   const fen = [];
   for (let y = 10; y < 256; y += 32) for (let x = 8; x < 120; x += 30){
     const p = eg.getImageData(x + 9, y + 10, 1, 1).data;
-    fen.push([x * 2, y * 2, p[0] + p[1] + p[2] > 30]);
+    fen.push([x * S, y * S, p[0] + p[1] + p[2] > 30]);
   }
   styleGr = 1 + (fond[0] * 7 + fond[1] * 13 + fen.length) % 9973;
-  const col = canvasTex(256, 512, (g, w, h) => {
+  const R = (g, x, y, w, h) => g.fillRect(x, y, Math.max(1, w * k), Math.max(1, h * k));
+  const col = canvasTex(128 * S, 256 * S, (g, w, h) => {
     g.fillStyle = mur; g.fillRect(0, 0, w, h);
     if (briques){
-      for (let y = 0, r = 0; y < h; y += 8, r++) for (let x = (r % 2) * -10; x < w; x += 20){
-        const v = .82 + styleRnd() * .3; g.fillStyle = 'rgba(' + (v > 1 ? '255,235,215,' + (v - 1) * 1.5 : '20,10,5,' + (1 - v) * 1.2) + ')'; g.fillRect(x + 1, y + 1, 18, 6);
+      for (let y = 0, r = 0; y < h; y += 8 * k, r++) for (let x = (r % 2) * -10 * k; x < w; x += 20 * k){
+        const v = .82 + styleRnd() * .3; g.fillStyle = 'rgba(' + (v > 1 ? '255,235,215,' + (v - 1) * 1.5 : '20,10,5,' + (1 - v) * 1.2) + ')'; R(g, x + k, y + k, 18, 6);
       }
-      g.fillStyle = 'rgba(210,200,185,.22)'; for (let y = 0; y < h; y += 8) g.fillRect(0, y, w, 1); // mortier
+      g.fillStyle = 'rgba(210,200,185,' + (petit ? .12 : .22) + ')'; for (let y = 0; y < h; y += 8 * k) g.fillRect(0, y, w, 1); // mortier
     } else {
-      for (let y = 0; y < h; y += 12){ g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(0, y + 10, w, 2); g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(0, y, w, 2); } // planches à clin
+      for (let y = 0; y < h; y += 12 * k){ g.fillStyle = 'rgba(0,0,0,.28)'; R(g, 0, y + 10 * k, w / k, 2); g.fillStyle = 'rgba(255,255,255,.08)'; R(g, 0, y, w / k, 2); } // planches à clin
     }
     styleBruit(g, w, h, .97, .22);
     fen.forEach(f => {
       const x = f[0], y = f[1];
-      g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(x - 1, y + 42, 38, 30); // coulure sous la fenêtre
-      g.fillStyle = 'rgba(25,20,16,.9)'; g.fillRect(x - 4, y - 4, 44, 48); // cadre
-      g.drawImage(src, x / 2, y / 2, 18, 20, x, y, 36, 40); // vitre d'origine (allumée ou non)
-      if (!f[2]){ const gr = g.createLinearGradient(x, y, x + 36, y + 40); gr.addColorStop(0, 'rgba(120,140,160,.25)'); gr.addColorStop(.5, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(90,110,130,.15)'); g.fillStyle = gr; g.fillRect(x, y, 36, 40); }
-      g.fillStyle = 'rgba(30,24,20,.95)'; g.fillRect(x + 17, y, 2, 40); g.fillRect(x, y + 19, 36, 2); // croisillons
-      g.fillStyle = 'rgba(200,190,175,.75)'; g.fillRect(x - 6, y + 44, 48, 5); // allège
-      g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(x - 6, y + 49, 48, 2);
+      g.fillStyle = 'rgba(0,0,0,.22)'; R(g, x - k, y + 42 * k, 38, 30); // coulure sous la fenêtre
+      g.fillStyle = 'rgba(25,20,16,.9)'; R(g, x - 4 * k, y - 4 * k, 44, 48); // cadre
+      g.drawImage(src, x / S, y / S, 18, 20, x, y, 36 * k, 40 * k); // vitre d'origine (allumée ou non)
+      if (!f[2]){ const gr = g.createLinearGradient(x, y, x + 36 * k, y + 40 * k); gr.addColorStop(0, 'rgba(130,150,175,.4)'); gr.addColorStop(.5, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(100,120,145,.25)'); g.fillStyle = gr; R(g, x, y, 36, 40); }
+      g.fillStyle = 'rgba(30,24,20,.95)'; R(g, x + 17 * k, y, 2, 40); R(g, x, y + 19 * k, 36, 2); // croisillons
+      g.fillStyle = 'rgba(200,190,175,.75)'; R(g, x - 6 * k, y + 44 * k, 48, 5); // allège
+      g.fillStyle = 'rgba(0,0,0,.35)'; R(g, x - 6 * k, y + 49 * k, 48, 2);
     });
     const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(0,0,0,.15)'); gr.addColorStop(.12, 'rgba(0,0,0,0)'); gr.addColorStop(.8, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(25,20,10,.45)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); // saleté
   });
-  const emi = canvasTex(256, 512, (g, w, h) => {
+  const emi = canvasTex(128 * S, 256 * S, (g, w, h) => {
     g.fillStyle = '#000'; g.fillRect(0, 0, w, h);
-    fen.forEach(f => { if (!f[2]) return; g.drawImage(em, f[0] / 2, f[1] / 2, 18, 20, f[0], f[1], 36, 40); g.fillStyle = '#000'; g.fillRect(f[0] + 17, f[1], 2, 40); g.fillRect(f[0], f[1] + 19, 36, 2); });
+    fen.forEach(f => { if (!f[2]) return; g.drawImage(em, f[0] / S, f[1] / S, 18, 20, f[0], f[1], 36 * k, 40 * k); g.fillStyle = '#000'; R(g, f[0] + 17 * k, f[1], 2, 40); R(g, f[0], f[1] + 19 * k, 36, 2); });
   });
-  [col, emi].forEach(t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.copy(m.map.repeat); t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); });
+  [col, emi].forEach(t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.copy(m.map.repeat); t.anisotropy = petit ? 1 : Math.min(8, renderer.capabilities.getMaxAnisotropy()); });
   const fm = new THREE.MeshLambertMaterial({ map:col, emissiveMap:emi, emissive:0xffffff, emissiveIntensity:m.emissiveIntensity });
-  fm.userData.fac = { fen, briques }; // pour la Haute définition (relief et reflets des vitres)
+  if (!petit) fm.userData.fac = { fen, briques }; // pour la Haute définition (relief et reflets des vitres)
   return fm;
 }
 
 /* ---------- Habiller la rue (et la déshabiller) ---------- */
 const STYLE_BOIS = [0x6b4a2c, 0x55391f, 0x3b2a20];
-function styleMat(m, mesh, L){
+// Textures du sol en style Actuel : partagées par toutes les villes (mêmes dimensions de sol partout), jamais refaites
+const STYLE_TEX_LEGER = {};
+function styleTexLeger(nom, rx, ry){
+  if (!STYLE_TEX_LEGER[nom]){ const t = styleRepeter(styleTex(nom).clone(), rx, ry); t.anisotropy = 1; t.userData = { style:true }; STYLE_TEX_LEGER[nom] = t; }
+  return STYLE_TEX_LEGER[nom];
+}
+// leger : style Actuel (sol, trottoirs, gazon et façades seulement, sans ombres ni effets d'image)
+function styleMat(m, mesh, L, leger){
   if (!m || m.type !== 'MeshLambertMaterial' || m.vertexColors || m.transparent) return null;
   const geo = mesh.geometry; if (!geo || !geo.attributes || !geo.attributes.uv) return null;
-  if (m.emissiveMap) return styleFacade(m, L.style !== 'houses');
+  if (m.emissiveMap) return styleFacade(m, L.style !== 'houses', leger);
   if (m.map) return null;
   const hex = m.color.getHex(), p = geo.parameters || {};
+  if (leger){
+    let t = null, k = 1;
+    if (hex === L.ground && geo.type === 'PlaneGeometry' && p.width === 240){ t = styleTexLeger('asphalte', 240 / 7, 300 / 7); k = 1.4; }
+    else if (hex === L.walk && p.depth === 200){ t = styleTexLeger('trottoir', 2, 200 / 3); k = 1.22; }
+    else if (L.lawn !== undefined && hex === L.lawn && p.width === 60){ t = styleTexLeger('gazon', 60 / 4, 200 / 4); k = 1.28; }
+    else if (L.cont && L.cont.indexOf(hex) >= 0){ t = styleTex('crasse'); k = 1.05; } // conteneurs du port : rouille et coulures
+    if (!t) return null;
+    const lm = m.clone(); lm.map = t; lm.color.multiplyScalar(k); return lm;
+  }
   const nm = m.clone();
   if (hex === L.ground && geo.type === 'PlaneGeometry'){ nm.map = styleRepeter(styleTex('asphalte').clone(), (p.width || 240) / 7, (p.height || 300) / 7); nm.color.multiplyScalar(1.45); }
   else if (hex === L.walk){ nm.map = styleRepeter(styleTex('trottoir').clone(), 2, (p.depth || 200) / 3); nm.color.multiplyScalar(1.25); }
@@ -201,12 +218,34 @@ function styleRetirer(){
   if (world) world.traverse(o => { if (o.isMesh){ o.castShadow = false; o.receiveShadow = false; } });
   styleOmbreSoleil(false);
 }
+// Style Actuel, couche légère : mêmes objets, mêmes lumières, seulement des textures dessinées une fois
+// (asphalte, trottoir, gazon, façades avec cadres et allèges à la taille d'origine). Aucune ombre, aucun effet d'image.
+// Les matériaux légers sont gardés (STY.leger : original -> léger) pour revenir à Actuel avec les mêmes.
+function styleLegerAppliquer(){
+  if (!world || !STY.L || STY.legerOn || STY.orig.length) return;
+  const L = STY.L;
+  world.traverse(o => {
+    if (!o.isMesh || Array.isArray(o.material)) return;
+    const m = o.material; if (m.userData && m.userData.keep) return;
+    let nm = STY.leger.get(m);
+    if (nm === undefined){ try { nm = styleMat(m, o, L, true); } catch (e) { errNote(e); nm = null; } STY.leger.set(m, nm); }
+    if (!nm) return;
+    STY.legerListe.push([o, m]); o.material = nm;
+  });
+  STY.legerOn = true;
+}
+function styleLegerRetirer(){
+  STY.legerListe.forEach(([o, m]) => { o.material = m; });
+  STY.legerListe = []; STY.legerOn = false;
+}
 // Nouvelle rue (fin de buildWorld) : les vieux matériaux d'origine ne servent plus, on les libère
 function styleMonde(L){
   STY.orig.forEach(([o, m]) => styleDisposeMat(m));
-  STY.orig = []; STY.neufs = [];
+  STY.legerListe.forEach(([o, m]) => styleDisposeMat(m));
+  STY.leger.forEach(nm => styleDisposeMat(nm));
+  STY.orig = []; STY.neufs = []; STY.leger = new Map(); STY.legerListe = []; STY.legerOn = false;
   STY.L = L;
-  if (styleOn()) styleAppliquer();
+  if (styleOn()) styleAppliquer(); else styleLegerAppliquer();
   styleHDMajSur();
 }
 
@@ -227,15 +266,16 @@ function styleOmbresZombies(){
 /* ---------- Effets d'image ---------- */
 // Couleurs : saturation, contraste, ombres froides et lumières chaudes, coins assombris, grain de film
 const STYLE_GRADE = {
-  uniforms: { tDiffuse:{ value:null }, t:{ value:0 }, sat:{ value:.9 }, con:{ value:1.1 }, vig:{ value:.4 }, grain:{ value:.035 },
+  uniforms: { tDiffuse:{ value:null }, t:{ value:0 }, sat:{ value:.9 }, con:{ value:1.06 }, vig:{ value:.3 }, gam:{ value:.88 }, grain:{ value:.035 },
     ombre:{ value:new THREE.Vector3(.96, .98, 1.03) }, lumiere:{ value:new THREE.Vector3(1.06, 1.0, .93) } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
   fragmentShader: [
-    'uniform sampler2D tDiffuse; uniform float t, sat, con, vig, grain; uniform vec3 ombre, lumiere; varying vec2 vUv;',
+    'uniform sampler2D tDiffuse; uniform float t, sat, con, vig, grain, gam; uniform vec3 ombre, lumiere; varying vec2 vUv;',
     'void main(){',
     '  vec3 c = texture2D(tDiffuse, vUv).rgb;',
     '  float l = dot(c, vec3(.299, .587, .114));',
     '  c = mix(vec3(l), c, sat);',
+    '  c = pow(max(c, 0.0), vec3(gam));', // ombres relevées : la nuit et les rues étroites ne tombent plus au noir
     '  c = (c - .5) * con + .5;',
     '  c *= mix(ombre, lumiere, smoothstep(.05, .7, l));',
     '  vec2 d = vUv - .5; c *= 1.0 - vig * dot(d, d) * 2.2;',
@@ -289,7 +329,7 @@ Jeu.on('monde', L => styleMonde(L));
 function styleSet(p){
   if (STYLES.indexOf(p) < 0) p = 'actuel';
   const avant = STY.pref; STY.pref = p; store.set('dt_style', p);
-  if (avant !== p){ if (styleOn()) styleAppliquer(); else styleRetirer(); styleOmbreSoleil(styleOn() && STY.orig.length > 0); styleHDMajSur(); }
+  if (avant !== p){ if (styleOn()){ styleLegerRetirer(); styleAppliquer(); } else { styleRetirer(); styleLegerAppliquer(); } styleOmbreSoleil(styleOn() && STY.orig.length > 0); styleHDMajSur(); }
   styleBtn();
 }
 function styleBtn(){ const b = $('btnStyle'); if (b) b.textContent = 'Style : ' + STYLE_NOM[STY.pref]; }
@@ -307,4 +347,4 @@ function styleBtn(){ const b = $('btnStyle'); if (b) b.textContent = 'Style : ' 
 })();
 
 // Accès pour les tests automatiques
-window.__style = { STY, STYLES, styleOn, styleHD, styleUltra, styleToit, styleSet, styleRendu, styleTex, styleMonde };
+window.__style = { STY, STYLE_TEX_LEGER, styleLegerAppliquer, styleLegerRetirer, STYLES, styleOn, styleHD, styleUltra, styleToit, styleSet, styleRendu, styleTex, styleMonde };

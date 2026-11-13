@@ -195,6 +195,156 @@ function gfxEmberStep(dt){
   }
 }
 
+/* ---------- Ciel peint (tous les styles) ---------- */
+// Le dégradé de la ville (ou de la météo) devient un ciel de 1024 x 512 dessiné une fois : longs nuages étirés,
+// étoiles la nuit, lueur autour du soleil, silhouettes au loin sur l'horizon (collines et arbres, tours, grues),
+// lueurs d'incendie et colonnes de fumée au Centre-ville. Même sphère, même appel de dessin : rien de plus à chaque image.
+// Gardés en cache pour la ville en cours seulement (les autres sont libérés en changeant de ville).
+const GFX_CIEL = {};
+let gfxCielGr = 1;
+const gfxCielRnd = () => { gfxCielGr = (gfxCielGr * 16807) % 2147483647; return (gfxCielGr - 1) / 2147483646; };
+const gfxRgb = c => { const k = new THREE.Color(c); return [Math.round(k.r * 255), Math.round(k.g * 255), Math.round(k.b * 255)]; };
+const gfxLum = r => (r[0] * .299 + r[1] * .587 + r[2] * .114) / 255;
+const gfxMix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+const gfxCss = (r, a) => 'rgba(' + Math.round(r[0]) + ',' + Math.round(r[1]) + ',' + Math.round(r[2]) + ',' + (a == null ? 1 : a) + ')';
+// Tache ovale floue, répétée de l'autre côté pour que le ciel se raccorde (u = 0 et u = 1)
+function gfxCielOvale(g, W, x, y, rx, ry, rgb, a){
+  [x - W, x, x + W].forEach(px => {
+    if (px + rx < 0 || px - rx > W) return;
+    g.save(); g.translate(px, y); g.scale(rx / ry, 1);
+    const gr = g.createRadialGradient(0, 0, 0, 0, 0, ry); gr.addColorStop(0, gfxCss(rgb, a)); gr.addColorStop(1, gfxCss(rgb, 0));
+    g.fillStyle = gr; g.fillRect(-ry, -ry, ry * 2, ry * 2); g.restore();
+  });
+}
+// u du ciel (0 à 1) pour une direction (x, z) : même formule que SphereGeometry
+const gfxCielU = (x, z) => { let p = Math.atan2(z, -x); if (p < 0) p += Math.PI * 2; return p / (Math.PI * 2); };
+function gfxCielTex(grad, L, fogHex, soleil){
+  const W = 1024, H = 512, HZ = H * .5;
+  gfxCielGr = 11 + (L ? L.id.length * 977 : 3) + grad.join('').length;
+  const rnd = gfxCielRnd, C = grad.map(gfxRgb), nuit = gfxLum(C[2]) < .2, fog = gfxRgb(fogHex);
+  const t = canvasTex(W, H, (g) => {
+    const gr = g.createLinearGradient(0, 0, 0, H), st = [0, .35, .47, .5, .53, 1];
+    grad.forEach((c, i) => gr.addColorStop(st[i], c)); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+    // Étoiles : plus nombreuses et plus vives en haut, effacées près de l'horizon
+    if (nuit) for (let i = 0; i < 520; i++){
+      const y = H * .44 * Math.pow(rnd(), .8), a = (.25 + rnd() * .75) * (1 - y / (H * .46)), big = rnd() < .06;
+      g.fillStyle = gfxCss(rnd() < .2 ? [255, 230, 200] : [215, 228, 255], a.toFixed(2)); g.fillRect(rnd() * W, y, big ? 2 : 1, big ? 2 : 1);
+    }
+    // Lueur autour du soleil, large et basse
+    if (soleil && !nuit){
+      const u = gfxCielU(soleil[0], soleil[2]), el = Math.atan2(soleil[1], Math.hypot(soleil[0], soleil[2])), y = H * (.5 - el / Math.PI);
+      gfxCielOvale(g, W, u * W, y, H * .55, H * .2, gfxMix(C[3], [255, 240, 210], .4), .45);
+      gfxCielOvale(g, W, u * W, y, H * .2, H * .07, [255, 236, 200], .35);
+    }
+    // Longs nuages étirés, plus minces et plus serrés vers l'horizon
+    const clair = nuit ? gfxMix(C[2], [200, 210, 230], .12) : gfxMix(C[3], [255, 245, 230], .35), sombre = gfxMix(C[1], [0, 0, 0], .3);
+    for (let i = 0; i < 70; i++){
+      const p = Math.sqrt(rnd()), y = H * (.16 + .29 * p), x = rnd() * W, rx = 40 + rnd() * 150 * (1 + p), ry = 3 + (1 - p) * 13 * (.6 + rnd() * .6);
+      gfxCielOvale(g, W, x, y + ry * .5, rx * .9, ry, sombre, (nuit ? .08 : .1) * rnd());
+      gfxCielOvale(g, W, x, y, rx, ry, clair, (nuit ? .05 : .09) + rnd() * (nuit ? .06 : .12));
+    }
+    // Lueurs d'incendie et fumée (Centre-ville, et un peu à Val-des-Cendres)
+    const feu = L && (L.id === 'centre' ? 1 : L.id === 'ville' ? .5 : 0);
+    if (feu){
+      for (let i = 0; i < 9; i++) gfxCielOvale(g, W, rnd() * W, HZ, 50 + rnd() * 90, 14 + rnd() * 18, [255, 110, 40], .3 * feu);
+      for (let k = 0; k < 7 * feu; k++){
+        let x = W * (.5 + rnd() * .5), y = HZ - 6, r = 6;
+        for (let j = 0; j < 26; j++){ gfxCielOvale(g, W, x, y, r * 1.3, r, [28, 16, 12], .1 + .06 * (1 - j / 26)); y -= r * .55; x += r * .35; r *= 1.07; }
+      }
+    }
+    // Bande de brume sous l'horizon : le sol qui s'efface y rejoint le ciel sans ligne
+    g.fillStyle = gfxCss(fog); g.fillRect(0, HZ + 2, W, H - HZ - 2);
+    // Silhouettes au loin : un rang pâle, puis un rang plus proche couleur de brume
+    if (L){
+      const loin = gfxMix(fog, C[3], .3), proche = fog;
+      const haut0 = L.style === 'port' ? 7 : L.id === 'centre' ? 24 : 13;
+      [[loin, .7], [proche, 1]].forEach(([col, k], rang) => {
+        const haut = haut0 * k;
+        g.fillStyle = gfxCss(col); g.beginPath(); g.moveTo(0, HZ + 3);
+        if (L.style === 'houses'){
+          const a1 = 1 + Math.floor(rnd() * 3), a2 = 5 + Math.floor(rnd() * 5), f1 = rnd() * 6, f2 = rnd() * 6;
+          for (let x = 0; x <= W; x += 4){
+            let h = (3.2 + 2.2 * Math.sin(x / W * 6.283 * a1 + f1) + 1.3 * Math.sin(x / W * 6.283 * a2 + f2)) * k;
+            if (rang && rnd() < .3) h += 1 + rnd() * 2.5; // cimes d'arbres
+            g.lineTo(x, HZ - h);
+          }
+        } else {
+          for (let x = 0; x < W; ){
+            const w = 5 + rnd() * 16, h = 1.5 + rnd() * haut * (rnd() < .2 ? 1.4 : .7);
+            g.lineTo(x, HZ - h); g.lineTo(x + w, HZ - h); x += w;
+            if (L.style === 'port' && rang && rnd() < .08){ g.lineTo(x, HZ - 18); g.lineTo(x + 9, HZ - 18); g.lineTo(x + 9, HZ - 17); g.lineTo(x + 1, HZ - 17); g.lineTo(x + 1, HZ - 3); g.lineTo(x + 2, HZ - 3); } // grue
+          }
+        }
+        g.lineTo(W, HZ + 3); g.closePath(); g.fill();
+        // Quelques fenêtres allumées sur les tours lointaines
+        if (L.style !== 'houses' && rang) for (let i = 0; i < 110; i++){ g.fillStyle = gfxCss(gfxRgb(L.win || '#ffb35a'), .25 + rnd() * .35); g.fillRect(rnd() * W, HZ - 2 - rnd() * haut * .45, 1, 1); }
+      });
+    }
+  });
+  t.userData = { ciel:true };
+  return t;
+}
+function gfxCielSoleil(L){ return [-60, L.glowY || 14, -280]; }
+// Le ciel d'une ville (Jeu.on('monde')) : remplace le petit dégradé de buildWorld
+function gfxCielMonde(L){
+  if (!world || !L || !L.sky) return;
+  Object.keys(GFX_CIEL).forEach(k => { if (k.split('|')[1] !== L.id){ GFX_CIEL[k].dispose(); delete GFX_CIEL[k]; } }); // garder seulement la ville en cours
+  const sky = world.children.find(o => o.isMesh && o.geometry && o.geometry.type === 'SphereGeometry' && o.material && o.material.side === THREE.BackSide);
+  if (!sky) return;
+  const k = 'ville|' + L.id;
+  if (!GFX_CIEL[k]) GFX_CIEL[k] = gfxCielTex(L.sky, L, L.fog, gfxCielSoleil(L));
+  const m = sky.material; if (m.map === GFX_CIEL[k]) return;
+  if (m.map && !(m.map.userData && m.map.userData.ciel)) m.map.dispose();
+  m.map = GFX_CIEL[k]; m.needsUpdate = true;
+  if (typeof AMB === 'object' && AMB.base && AMB.base.sky && AMB.base.sky.o === sky) AMB.base.sky.map = m.map; // l'ambiance remet ce ciel au beau temps
+}
+// Ciels des météos (js/22-ambiance.js, ambSkyMap) : même dessin, avec les silhouettes de la ville en cours
+function gfxCielMeteo(n){
+  const W = WEATHERS[n], L = (typeof Jeu === 'object' && Jeu.actif()) ? null : curLoc, k = n + '|' + (L ? L.id : 'mode');
+  if (!GFX_CIEL[k]){
+    const c = new THREE.Color((L && L.fog) || 0x303030);
+    if (W.tint) c.lerp(new THREE.Color(W.tint[0]), W.tint[1]); if (W.dark) c.multiplyScalar(W.dark);
+    GFX_CIEL[k] = gfxCielTex(W.skyGrad, L, c.getHex(), W.moon || !W.sun ? null : (L ? gfxCielSoleil(L) : [-60, 14, -280]));
+  }
+  return GFX_CIEL[k];
+}
+if (typeof ambSkyTex === 'object' && typeof WEATHERS === 'object') Object.keys(WEATHERS).forEach(n => {
+  if (WEATHERS[n].skyGrad) Object.defineProperty(ambSkyTex, n, { configurable:true, enumerable:true, get(){ return gfxCielMeteo(n); }, set(){} });
+});
+
+/* ---------- Feux de la rue : lueur au sol et flamme vivante (tous les styles) ---------- */
+const gfxFlammeTex = canvasTex(64, 128, (g, w, h) => {
+  [[255, 120, 30, .9, 1], [255, 190, 80, .9, .62], [255, 245, 210, 1, .32]].forEach(([r, gg, b, a, k]) => {
+    g.save(); g.translate(w / 2, h * .74); g.scale(1, 2.1);
+    const gr = g.createRadialGradient(0, 0, 0, 0, 0, w * .48 * k);
+    gr.addColorStop(0, 'rgba(' + r + ',' + gg + ',' + b + ',' + a + ')'); gr.addColorStop(1, 'rgba(' + r + ',' + gg + ',' + b + ',0)');
+    g.fillStyle = gr; g.fillRect(-w / 2, -h, w, h * 2); g.restore();
+  });
+});
+const gfxFeuSolMat = new THREE.MeshBasicMaterial({ map:glowTex, color:0xff7a30, transparent:true, opacity:.45, blending:THREE.AdditiveBlending, depthWrite:false });
+const gfxFlammeMat = new THREE.SpriteMaterial({ map:gfxFlammeTex, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false });
+gfxFeuSolMat.userData.keep = true; gfxFlammeMat.userData.keep = true; // partagés : disposeWorld ne les jette pas
+function gfxFeuxMonde(){
+  if (typeof fires === 'undefined') return;
+  fires.forEach(f => {
+    const g = f.cones && f.cones[0] && f.cones[0].parent; if (!g || f.sol) return;
+    const p = f.cones[0].geometry.parameters, s = (p && p.radius ? p.radius * 2 : 1);
+    const sol = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), gfxFeuSolMat); sol.rotation.x = -Math.PI / 2; sol.position.y = .06 - g.position.y; sol.renderOrder = 1; g.add(sol);
+    const fl = new THREE.Sprite(gfxFlammeMat); fl.position.y = .75 * s; g.add(fl);
+    f.sol = sol; f.flamme = fl; f.taille = s;
+  });
+}
+function gfxFeuxStep(nuit){
+  if (typeof fires === 'undefined') return;
+  gfxFeuSolMat.opacity = nuit ? .7 : .42;
+  for (const f of fires){
+    if (!f.sol) continue;
+    const k = f.base ? f.light.intensity / f.base : 1, s = f.taille, w = Math.sin(GFX.t * 11 + s * 7) * .08;
+    f.sol.scale.set(7 * s * (.85 + .18 * k), 7 * s * (.85 + .18 * k), 1);
+    f.flamme.scale.set(1.5 * s * (1 - w), 2.3 * s * (.9 + .12 * k + w), 1);
+  }
+}
+
 /* ---------- Teintes selon la météo ---------- */
 const gfxC = new THREE.Color();
 function gfxWeather(){ return (typeof __amb === 'object' && __amb.weather) || 'clair'; }
@@ -236,6 +386,7 @@ function gfxStep(dt){
   const deb = live && Q.debris > 0; Object.keys(gfxDeb).forEach(k => { gfxDeb[k].visible = deb; });
   const night = !!W.night, hop = night ? .55 : W.storm || W.rain || w === 'brouillard' ? .18 : .05;
   gfxHaloMat.opacity = hop;
+  gfxFeuxStep(night);
   gfxHalos.forEach(h => { h.visible = live && Q.halos && !!h.userData.on && hop > .1; /* le jour : rien à dessiner */ if (h.visible){ const k = night ? 6 + Math.sin(GFX.t * 3 + h.position.z) * .3 : 4; h.scale.set(k, k, 1); } });
 }
 
@@ -268,6 +419,8 @@ function gfxBtn(){
 
 /* ---------- Crochets ---------- */
 Jeu.on('image', dt => gfxStep(dt || 0)); // chaque image (registre, js/00-base.js)
+Jeu.on('monde', L => { gfxCielMonde(L); gfxFeuxMonde(); }); // fin de buildWorld : ciel peint, feux habillés
+try { if (typeof curLoc !== 'undefined' && curLoc && world){ gfxCielMonde(curLoc); gfxFeuxMonde(); } } catch (e) { errNote(e); } // la rue du titre est déjà bâtie
 try { const _b = buildWorld; buildWorld = function(){ const r = _b.apply(this, arguments); gfxPlacePuddles(); gfxPlaceDebris(); gfxPlaceHalos(); GFX.wet = 0; gfxSmoke.forEach(o => { o.s.visible = false; o.life = 0; }); return r; }; } catch (e) { errNote(e); }
 // Explosions : un panache de fumée noire
 try { if (typeof rueBoom === 'function'){ const _b = rueBoom; rueBoom = function(x, y, z, size){ const r = _b.apply(this, arguments); if (size >= 10) gfxBoomSmoke(x, y, z, size / 3); return r; }; } } catch (e) { errNote(e); }
@@ -275,4 +428,4 @@ try { if (typeof armExplode === 'function'){ const _b = armExplode; armExplode =
 try { if (typeof pwBoom === 'function'){ const _b = pwBoom; pwBoom = function(x, y, z, size){ const r = _b.apply(this, arguments); gfxBoomSmoke(x, y, z, (size || 6) / 3); return r; }; } } catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
-window.__gfx = { gfxDeb, gfxHalos, gfxEmbers, GFX, GFX_Q, gfxLevel, gfxSet, gfxStep, gfxPuff, gfxClouds, gfxMist, gfxPuddles, gfxShadows, gfxSmoke, gfxPuddleMat };
+window.__gfx = { GFX_CIEL, gfxCielMonde, gfxCielMeteo, gfxFeuSolMat, gfxFlammeMat, gfxDeb, gfxHalos, gfxEmbers, GFX, GFX_Q, gfxLevel, gfxSet, gfxStep, gfxPuff, gfxClouds, gfxMist, gfxPuddles, gfxShadows, gfxSmoke, gfxPuddleMat };

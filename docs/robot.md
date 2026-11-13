@@ -77,6 +77,13 @@ Martin : « Le robot dans la ville a encore des zombies qui spawn en arrière, i
 
 **Jambes.** Dans la scène de la rue (pas dans `world`, qui défile) : bassin, cuisses, tibias, pieds, placés par cinématique inverse (genou vers l'avant). Le pied posé reste collé à la rue ; l'autre fait son pas vers l'endroit où il doit se poser selon la vitesse et la direction (avant, arrière, de côté) ; en tournant sur place, petits pas ; à l'arrêt, le pas en cours se finit et les pieds se remettent sous le robot. Foulée : 4,2 m par pas à pleine vitesse (`HB_J`). Le bruit et la secousse de pas (`mechStomp`) partent quand un pied se pose (`MECH.pasJambes`), plus avec `MECH.step`. Balancement de l'habitacle à chaque pas (`HB_BAL`) ; avec « Secousses » coupé (`dt_secousses`) : balancement réduit au tiers, sans roulis ni secousse.
 
+**Retouches (tâche 107).** Selon la forme de l'écran (`HB_DISPO`, `js/40-robot-habitacle.js`) :
+- Cell vertical : la poutre et le toit vitré (qui barraient le ciel) sont cachés ; le tableau de bord remonte (0,12 rad), décalé pour que l'écran du blindage soit au centre entre les deux manettes, au-dessus des boutons tactiles.
+- Cell couché : tableau de bord remonté (0,1 rad), manettes entre la manette virtuelle et les boutons de tir ; le bouton Minigun se pousse vers le bord (110 px du bord droit, 16 px du bas).
+- Au cell (les deux sens), en habitacle complet : les barres du bas (bras gauche, bras droit, prochaine rue) montent sous le blindage ; la barre du boss descend à 100 px. Tout revient comme avant en vue dégagée ou en quittant le robot.
+- Regard vers le bas : plancher ouvert (plus de jambes du pilote, de bande du milieu ni de lèvre avant), bassin étroit et en arrière, hanches plus écartées (1,5 m), pieds 1,8 m de côté et 1,1 m devant l'œil : on voit cuisses, genoux, tibias et pieds, et le pas qui bouge.
+- Test : `tests/t-robot-habitacle.js` vérifie, pour chaque forme d'écran, où se voient le haut des manettes et l'écran du blindage.
+
 **Coût.** Appels de dessin à l'ordi (rue 1, à l'arrêt) : 175 avant, 180 après (186 au tir) ; en regardant en bas : 98 avant, 53 à 125 après. 9 objets dans l'habitacle, 7 pour les jambes, matériau de l'arme en main partagé (une copie pour la rue), une texture d'écrans, aucune lumière de plus.
 
 ## Succès

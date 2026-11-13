@@ -25,7 +25,7 @@ const HB = {
   gL:{ x:0, z:0 }, gR:{ x:0, z:0 }, trig:0, btn:0, aspect:0, fov:0, ecrT:0, ecrK:'', dx:0
 };
 // Réglages : jambes (m), pas, balancement (avec et sans « Secousses »)
-const HB_J = { hanche:4.35, ecart:1.35, pied:1.6, cuisse:2.35, tibia:2.45, cheville:.32, avant:.35, foulee:4.2, levee:.55 };
+const HB_J = { hanche:4.35, ecart:1.5, pied:1.8, cuisse:2.35, tibia:2.45, cheville:.32, avant:.1, piedAvant:1.1, foulee:4.2, levee:.55 };
 const HB_BAL = { on:{ haut:.11, roule:.014, cote:.06, coup:.07 }, off:{ haut:.035, roule:0, cote:.015, coup:.02 } };
 // Le pas sonore et la secousse viennent des pieds qui se posent (js/39 ne les fait plus avec MECH.step quand ce fichier est là)
 MECH.pasJambes = true;
@@ -38,41 +38,35 @@ const hbVieux = [];   // cadre et écrans de l'ancien cockpit (js/39) : cachés 
   const fm = mechCk.children.find(o => o.isMesh); if (fm) hbVieux.push(fm);
   mechScreens.forEach(m => hbVieux.push(m));
 })();
-(function hbBuild(){
-  const b = vmNew(), D = VC.blue, G = VC.park, L = VC.light, St = VC.steel, Po = VC.poly;
-  // Vitre avant : poutre du haut, montants, rebord bas
-  vmBox(b, 1.9, .035, .05, D, 0, .27, -.95, 0, 0, 0, .01);
+// Trois morceaux : le haut (poutre et toit vitré, caché au cell vertical où il barrait le ciel), le cadre (montants, bords,
+// plancher vitré ouvert pour voir les jambes du robot) et le bas (tableau de bord, écrans, manettes), qu'on remonte un peu
+// au cell (hbBas) pour qu'il reste visible au-dessus des boutons tactiles.
+const hbBas = new THREE.Group(); hbRoot.add(hbBas);
+const hbHaut = (function hbBuild(){
+  const h = vmNew(), b = vmNew(), c = vmNew(), D = VC.blue, G = VC.park, L = VC.light, St = VC.steel, Po = VC.poly;
+  // Haut : poutre de la vitre, toit vitré
+  vmBox(h, 1.9, .035, .05, D, 0, .27, -.95, 0, 0, 0, .01);
+  for (const s of [-1, 1]) vmCylAB(h, [s * .75, .27, -.95], [s * .62, .7, -.12], .04, D, 6);
+  vmBox(h, 1.4, .05, .06, D, 0, .7, -.12, 0, 0, 0, .01);
+  // Cadre : montants, bords de côté, plancher vitré (deux fines bandes de côté, rien au milieu)
   for (const s of [-1, 1]){
     vmCylAB(b, [s * .82, .27, -.95], [s * 1.02, -.62, -.8], .055, D, 6);
     vmCylAB(b, [s * .79, .24, -.9], [s * .98, -.58, -.76], .015, L, 4);
-    // toit vitré : deux barres qui partent vers l'arrière
-    vmCylAB(b, [s * .75, .27, -.95], [s * .62, .7, -.12], .04, D, 6);
-    // bords de côté (appuis) et parois basses
     vmBox(b, .14, .08, 1.15, G, s * .96, -.56, -.25, 0, 0, s * -.12, .02);
     for (let i = 0; i < 4; i++) vmBox(b, .025, .025, .025, St, s * .94, -.52, -.7 + i * .28, 0, 0, 0, 0);   // rivets
-    // plancher vitré : bande de côté et barre en travers
-    vmBox(b, .06, .04, 1.3, G, s * .95, -1.15, -.45, 0, 0, 0, 0);
+    vmBox(b, .05, .04, 1.3, G, s * .97, -1.25, -.45, 0, 0, 0, 0);
   }
-  vmBox(b, 1.4, .05, .06, D, 0, .7, -.12, 0, 0, 0, .01);           // poutre arrière du toit
   vmBox(b, 1.95, .035, .06, D, 0, -.66, -1.1, 0, 0, 0, .01);        // rebord bas de la vitre
-  // Tableau de bord au centre (panneau incliné vers le pilote) et son caisson
-  vmPush(b, 0, -.7, -.88, .5, 0, 0);
-  vmBox(b, .96, .05, .44, G, 0, 0, 0, 0, 0, 0, .02);
-  vmBox(b, .98, .02, .03, St, 0, .025, -.215, 0, 0, 0, 0);
-  for (const x of [-.22, .22]) vmBox(b, .37, .02, .23, Po, x, .03, 0, 0, 0, 0, .01);              // cadres des écrans
-  for (let i = -3; i <= 3; i++) vmBox(b, .02, .015, .02, i === 0 ? [3, .4, .2] : i % 2 ? [.4, 2.6, .9] : [3, 1.5, .3], i * .025, .035, .14, 0, 0, 0, 0); // voyants
-  vmPop(b);
-  vmBox(b, .9, .5, .34, D, 0, -.98, -.95, 0, 0, 0, .02);
-  vmBox(b, 2.0, .1, .1, D, 0, -1.12, -1.12, 0, 0, 0, .02);            // lèvre avant du plancher
-  vmBox(b, .24, .04, 1.0, G, 0, -1.16, -.45, 0, 0, 0, 0);             // bande du milieu (pédales)
-  // Jambes du pilote (combinaison) et bottes sur les pédales
-  for (const s of [-1, 1]){
-    vmCylAB(b, [s * .13, -.74, .1], [s * .15, -.66, -.38], .075, VC.sleeve, 7);
-    vmCylAB(b, [s * .15, -.66, -.38], [s * .17, -1.04, -.56], .06, VC.sleeve, 7);
-    vmBox(b, .1, .09, .22, VC.rubber, s * .17, -1.1, -.62, .2, 0, 0, .02);
-    vmBox(b, .12, .02, .2, St, s * .17, -1.15, -.63, .2, 0, 0, 0);    // pédale
-  }
-  vmMesh(hbRoot, b);
+  // Bas : tableau de bord au centre (panneau incliné vers le pilote) et un caisson mince
+  vmPush(c, 0, -.7, -.88, .5, 0, 0);
+  vmBox(c, .96, .05, .44, G, 0, 0, 0, 0, 0, 0, .02);
+  vmBox(c, .98, .02, .03, St, 0, .025, -.215, 0, 0, 0, 0);
+  for (const x of [-.22, .22]) vmBox(c, .37, .02, .23, Po, x, .03, 0, 0, 0, 0, .01);              // cadres des écrans
+  for (let i = -3; i <= 3; i++) vmBox(c, .02, .015, .02, i === 0 ? [3, .4, .2] : i % 2 ? [.4, 2.6, .9] : [3, 1.5, .3], i * .025, .035, .14, 0, 0, 0, 0); // voyants
+  vmPop(c);
+  vmBox(c, .9, .18, .3, D, 0, -.84, -.97, 0, 0, 0, .02);
+  vmMesh(hbRoot, b); vmMesh(hbBas, c);
+  return vmMesh(hbRoot, h);
 })();
 
 /* ---------- Vitre : reflets légers (additifs, ne cachent rien) ---------- */
@@ -101,7 +95,7 @@ const hbEcr = (function(){
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map:hbEcrTex, fog:false }));
-  const p = new THREE.Group(); p.position.set(0, -.7, -.88); p.rotation.x = .5; p.add(m); m.position.y = .042; hbRoot.add(p);
+  const p = new THREE.Group(); p.position.set(0, -.7, -.88); p.rotation.x = .5; p.add(m); m.position.y = .042; hbBas.add(p);
   return m;
 })();
 function hbEcrans(dt){
@@ -137,7 +131,7 @@ function hbEcrans(dt){
 /* ---------- Manettes et mains du pilote ---------- */
 // Chaque côté : un socle (accoudoir) et une manette qui pivote à sa base, avec la main et l'avant-bras du pilote.
 function hbManette(s){
-  const socle = new THREE.Group(); socle.scale.setScalar(.85); hbRoot.add(socle);
+  const socle = new THREE.Group(); socle.scale.setScalar(.85); hbBas.add(socle);
   const a = vmNew();
   vmBox(a, .16, .1, .2, VC.park, 0, -.07, .03, 0, 0, 0, .02);
   vmBox(a, .17, .015, .21, VC.steel, 0, -.02, .03, 0, 0, 0, 0);
@@ -169,18 +163,39 @@ function hbManette(s){
 }
 const hbMG = hbManette(-1), hbMD = hbManette(1);
 
-// Place les manettes (et rapproche les bras du robot) selon la forme de l'écran : au cell vertical, le champ de vision
-// est étroit, les manettes se rapprochent du centre pour rester visibles au-dessus des boutons tactiles.
+// Place les manettes, le tableau de bord (et rapproche les bras du robot) selon la forme de l'écran.
+//   Ordi : tableau de bord en bas, manettes de chaque côté.
+//   Cell couché : tableau de bord remonté d'un cran (au-dessus des barres du bas), manettes entre la manette virtuelle et
+//     les boutons de tir.
+//   Cell vertical : champ de vision étroit et boutons tactiles en bas ; le tableau de bord remonte au-dessus d'eux, décalé
+//     pour que l'écran du blindage soit au centre entre les deux manettes ; la poutre du haut (qui barrait le ciel) est cachée.
+const HB_DISPO = { ordi:{ rot:0, dx:0 }, couche:{ rot:.1, dx:0, a:.4 }, vertical:{ rot:.12, dx:.22, a:.24, z:-.64 } };
+function hbForme(){ return vmCam.aspect < 1 ? 'vertical' : (isTouch || HB.tactile) ? 'couche' : 'ordi'; }
 function hbDisposer(){
-  if (HB.aspect === vmCam.aspect && HB.fov === vmCam.fov) return;
-  HB.aspect = vmCam.aspect; HB.fov = vmCam.fov;
-  const hh = Math.atan(Math.tan(vmCam.fov * Math.PI / 360) * vmCam.aspect), a = Math.min(.54, hh * .72), z = -.47;
-  hbMG.socle.position.set(-Math.abs(z) * Math.tan(a), -.51, z); hbMD.socle.position.set(Math.abs(z) * Math.tan(a), -.51, z);
+  const f = hbForme();
+  if (HB.aspect === vmCam.aspect && HB.fov === vmCam.fov && HB.forme === f) return;
+  HB.aspect = vmCam.aspect; HB.fov = vmCam.fov; HB.forme = f;
+  const hh = Math.atan(Math.tan(vmCam.fov * Math.PI / 360) * vmCam.aspect), D = HB_DISPO[f], a = D.a != null ? D.a : Math.min(.54, hh * .72), z = D.z || -.47;
+  hbHaut.visible = f !== 'vertical';
+  hbBas.rotation.x = D.rot; hbBas.position.x = D.dx;
+  hbMG.socle.position.set(-Math.abs(z) * Math.tan(a) - D.dx, -.51, z); hbMD.socle.position.set(Math.abs(z) * Math.tan(a) - D.dx, -.51, z);
   // Bras du robot : vers le centre si l'écran est étroit (sinon on ne les voit plus du tout)
   const cible = Math.min(.58, hh * .85), dx = Math.max(0, 1.05 - 1.6 * Math.tan(cible));
   HB.dx = dx;
   Object.keys(mechArmsG).forEach(id => { const W = MECH_W[id]; if (W) mechArmsG[id].position.x = W.side === 'L' ? dx : -dx; });
   mechFlashL.position.x = -1.05 + dx; mechFlashR.position.x = 1.1 - dx;
+}
+// Au cell, en vue complète, les barres du bas (bras gauche, bras droit, prochaine rue) montent sous le blindage (la barre du
+// boss descend d'un cran) et, couché, le bouton Minigun se pousse vers le bord : le tableau de bord et les manettes restent libres.
+function hbHUD(on){
+  on = !!on && hbForme() !== 'ordi';
+  const c = on && vmCam.aspect >= 1, k = on + ',' + c;
+  if (HB.hud === k) return;
+  HB.hud = k;
+  const st = (id, css, oui) => { const el = $(id); if (el) Object.keys(css).forEach(x => { el.style[x] = oui ? css[x] : ''; }); };
+  st('mkBottom', { top:'calc(60px + env(safe-area-inset-top,0px))', bottom:'auto' }, on);
+  st('mkBoss', { top:'calc(100px + env(safe-area-inset-top,0px))' }, on);
+  st('mkFireL', { right:'calc(110px + env(safe-area-inset-right,0px))', bottom:'calc(16px + env(safe-area-inset-bottom,0px))' }, c);
 }
 
 /* ---------- Jambes ---------- */
@@ -188,10 +203,11 @@ const hbMatJ = vmMat.clone();          // même texture et mêmes couleurs, dans
 const hbJ = new THREE.Group(); hbJ.visible = false; scene.add(hbJ);
 const hbBassin = (function(){
   const b = vmNew(), D = VC.blue, G = VC.park, St = VC.steel;
-  vmBox(b, 2.2, .6, 1.0, G, 0, 0, .25, 0, 0, 0, .12);
-  vmBox(b, 1.2, .5, .9, D, 0, -.45, .3, 0, 0, 0, .1);
-  for (const s of [-1, 1]){ vmCyl(b, .34, .5, St, s * 1.35, -.15, 0, 0, Math.PI / 2, 0, 12); vmBox(b, .3, .06, .9, [.9, .55, .12], s * .7, .31, .25, 0, 0, 0, 0); }
-  vmBox(b, 2.0, .9, .5, D, 0, .55, .75, 0, 0, 0, .08);                // dos du torse (le dessous de l'habitacle)
+  // Bassin étroit, en arrière : vu de l'habitacle, il laisse voir les cuisses, les genoux, les tibias et les pieds
+  vmBox(b, 1.0, .5, .7, G, 0, 0, .5, 0, 0, 0, .1);
+  vmBox(b, .7, .4, .5, D, 0, -.4, .5, 0, 0, 0, .08);
+  vmCyl(b, .14, 2 * HB_J.ecart, St, 0, -.2, .1, 0, Math.PI / 2, 0, 10);                                   // axe des hanches
+  for (const s of [-1, 1]) vmCyl(b, .34, .45, D, s * HB_J.ecart, -.2, .1, 0, Math.PI / 2, 0, 12);       // hanches
   const m = new THREE.Mesh(vmGeo(b), hbMatJ); hbJ.add(m); return m;
 })();
 function hbSegment(len, haut){
@@ -223,7 +239,7 @@ const hbAngle = a => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI
 // Où le pied s'arrête sous le robot (sol, coordonnées de la scène) ; avance : décalage dans le sens de la marche
 function hbNeutre(J, out){
   const y = HB.yawP, rx = Math.cos(y), rz = -Math.sin(y), fx = -Math.sin(y), fz = -Math.cos(y);
-  return out.set(MECH.x + rx * J.s * HB_J.pied + fx * HB_J.avant * .3, 0, MECH_CAM.z + rz * J.s * HB_J.pied + fz * HB_J.avant * .3);
+  return out.set(MECH.x + rx * J.s * HB_J.pied + fx * HB_J.piedAvant, 0, MECH_CAM.z + rz * J.s * HB_J.pied + fz * HB_J.piedAvant);
 }
 function hbRemettre(){
   HB.yawP = yaw; HB.phi = 0; HB.m = 0; HB.dip = 0; HB.lastDist = MECH.dist; HB.lastYaw = yaw; HB.lastPitch = pitch; HB.vx = HB.vz = 0; HB.init = true;
@@ -318,7 +334,8 @@ function hbImage(dt){
   const complet = on && HB.vue === 'complet';
   hbRoot.visible = complet && mechCk.visible;
   hbVieux.forEach(o => { o.visible = !complet; });
-  if (!on){ HB.init = false; if (HB.dx){ HB.aspect = 0; Object.keys(mechArmsG).forEach(id => { mechArmsG[id].position.x = 0; }); HB.dx = 0; } return; }
+  hbHUD(complet);
+  if (!on){ HB.init = false; if (HB.dx || HB.aspect){ HB.aspect = 0; Object.keys(mechArmsG).forEach(id => { mechArmsG[id].position.x = 0; }); HB.dx = 0; } return; }
   hbDisposer();
   const actif = state === 'mech' && !MECH.paused && !MECH.choosing && MECH.fade <= 0;
   hbJambes(actif ? dt : 0, actif);
@@ -366,4 +383,4 @@ function hbBoutonPause(){
 try { const _p = mechPause; mechPause = function(){ const r = _p.apply(this, arguments); try { hbBoutonPause(); } catch (e) { errNote(e); } return r; }; mechPause.again = _p.again; } catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
-window.__habitacle = { HB, HB_J, HB_BAL, HB_JAMBES, hbRoot, hbJ, hbMG, hbMD, hbEcr, hbVitre, hbVieux, hbImage, hbRemettre, vue:hbVue, hbSec };
+window.__habitacle = { HB, HB_DISPO, hbBas, hbHaut, hbForme, hbHUD, HB_J, HB_BAL, HB_JAMBES, hbRoot, hbJ, hbMG, hbMD, hbEcr, hbVitre, hbVieux, hbImage, hbRemettre, vue:hbVue, hbSec };

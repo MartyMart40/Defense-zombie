@@ -16,6 +16,10 @@
 // Même contrat que 18-zombies-types.js (ZKINDS[type] = { build, init, update, onKill }), matériaux zmat / zfix :
 // rendu par instances. Crochets par réaffectation (comme 19-boss.js et 35-monstres.js) : wavePlan, damage et defHit
 // (immunité du fouisseur sous terre, dégâts doublés à sa sortie, chute du revenant). Effets : Jeu.on('image').
+// Moments qui comptent, annoncés par Jeu.emit('monstre', quoi, z) : voix (37-bruitages.js) et repères sans son (29-reperes.js)
+//   'cri' le hurleur hurle ; 'creuse' le fouisseur s'enfonce ; 'sort' il ressort ; 'chute' le revenant tombe à genoux ; 'releve' il se relève.
+// Lisibilité du hurleur (de nuit surtout) : bras pâles et très longs qui pendent jusqu'aux genoux, gorge gonflée qui luit
+// (matériaux déjà dans la palette : ZC.blanc et ZKM.core).
 
 /* ---------- Données ---------- */
 Object.assign(ZTYPES, {
@@ -32,7 +36,7 @@ const MT_HURLE = { r:16, k:1.4, dur:6, every:3.2 };
 const MT_FOUIS = { spd:7, dig:.9, emerge:1.5, vuln:2 };
 // Revenant : temps à terre (s), part de sa vie quand il se relève
 const MT_REV = { down:2.8, vie:.5 };
-const MT = { f:-1, cris:0, enrages:0, fouilles:0, sorties:0, chutes:0, releves:0, acheves:0, annonces:0 };
+const MT = { evts:{}, f:-1, cris:0, enrages:0, fouilles:0, sorties:0, chutes:0, releves:0, acheves:0, annonces:0 };
 // Bandeau de la première rencontre : nom et parade
 const MT_ANNONCE = {
   screamer: ['Hurleur !', 'Il rend les zombies autour de lui plus rapides tant qu’il vit : abats-le en premier.'],
@@ -67,13 +71,13 @@ function mtAnnonce(type){
   if (typeof banner === 'function') banner(A[0], A[1], 4200);
   return true;
 }
-const mtSnd = (f, d, t, v, s, dl) => { try { if (typeof Snd === 'object' && Snd.tone) Snd.tone(f, d, t, v, s, dl); } catch (e) { errNote(e); } };
-const mtBruit = (f, d, v, dl) => { try { if (typeof Snd === 'object' && Snd.burst) Snd.burst(f, d, v, dl); } catch (e) { errNote(e); } };
+// Un moment qui compte (voix, sous-titres et repères l'écoutent) ; les erreurs des écouteurs vont au journal (Jeu.emit)
+const mtEvt = (quoi, z) => { MT.evts[quoi] = (MT.evts[quoi] || 0) + 1; if (typeof Jeu === 'object' && Jeu.emit) Jeu.emit('monstre', quoi, z); };
 
-/* ---------- Hurleur : grand, maigre, cou tendu, gueule qui brille ; bras levés quand il hurle ---------- */
+/* ---------- Hurleur : grand, maigre, cou tendu, gueule et gorge qui brillent, bras pâles ; bras levés quand il hurle ---------- */
 ZKINDS.screamer = {
   build(T){
-    const skin = zmat(T.skin), rag = zmat(0x3a3a44);
+    const skin = zmat(T.skin), rag = zmat(0x3a3a44), pale = MT_M.os;
     const g = new THREE.Group(), body = zkGroup(g, 0, 0, 0), PT = [];
     zkMesh(body, ZKG.box, rag, .44, .7, .26, 0, 1.36, 0, PT);                    // torse étroit (haillons)
     zkMesh(body, ZKG.box, skin, .36, .2, .24, 0, 1.78, 0, PT);                   // épaules osseuses
@@ -81,16 +85,17 @@ ZKINDS.screamer = {
     const neck = zkGroup(body, 0, 2.2, .06);
     const head = zkMesh(neck, ZKG.box, skin, .3, .36, .3, 0, .16, 0, PT);
     zkMesh(neck, ZKG.box, ZKM.core, .2, .24, .05, 0, .1, .15);                  // gueule grande ouverte, lumineuse
+    const gorge = zkMesh(body, ZKG.box, ZKM.core, .24, .5, .14, 0, 1.95, .1);    // gorge gonflée qui luit, du menton au sternum (se voit de nuit)
     zkMesh(neck, ZKG.box, eyeMat, .07, .05, .02, -.08, .28, .155); zkMesh(neck, ZKG.box, eyeMat, .07, .05, .02, .08, .28, .155);
     const armL = zkGroup(body, -.3, 1.74, 0), armR = zkGroup(body, .3, 1.74, 0);
-    zkMesh(armL, ZKG.top, skin, .1, 1.05, .1, 0, 0, 0, PT); zkMesh(armR, ZKG.top, skin, .1, 1.05, .1, 0, 0, 0, PT); // bras très longs
-    zkMesh(armL, ZKG.box, skin, .16, .12, .16, 0, -1.08, 0); zkMesh(armR, ZKG.box, skin, .16, .12, .16, 0, -1.08, 0);
+    zkMesh(armL, ZKG.top, pale, .12, 1.05, .12, 0, 0, 0, PT); zkMesh(armR, ZKG.top, pale, .12, 1.05, .12, 0, 0, 0, PT); // bras très longs, pâles
+    zkMesh(armL, ZKG.box, pale, .18, .16, .18, 0, -1.1, 0); zkMesh(armR, ZKG.box, pale, .18, .16, .18, 0, -1.1, 0);
     const legL = zkGroup(body, -.13, 1.02, 0), legR = zkGroup(body, .13, 1.02, 0);
     zkMesh(legL, ZKG.top, rag, .14, 1.02, .15, 0, 0, 0, PT); zkMesh(legR, ZKG.top, rag, .14, 1.02, .15, 0, 0, 0, PT);
     // Ondes du hurlement : anneaux à plat autour de lui (pas des cibles)
     const ondes = [0, 1].map(() => { const m = new THREE.Mesh(MT_G.onde, MT_M.onde); m.position.y = .15; m.visible = false; g.add(m); return m; });
-    g.scale.setScalar(T.scale); g.userData.rig = { neck, ondes };
-    return { g, body, head, armL, armR, legL, legR, parts:PT, mats:[skin, rag], aimY:1.3 * T.scale };
+    g.scale.setScalar(T.scale); g.userData.rig = { neck, ondes, gorge };
+    return { g, body, head, armL, armR, legL, legR, parts:PT, mats:[skin, rag, pale], aimY:1.3 * T.scale };
   },
   init(z){
     z.rig = z.g.userData.rig; z.stopZ = BAR_Z - rand(40, 50); z.mtCri = rand(.4, 1.2); z.mtOnde = -1;
@@ -99,13 +104,14 @@ ZKINDS.screamer = {
   update(z, dt){
     const R = z.rig;
     mtFrame(dt);
-    if (z.st === 'walk'){ R.neck.rotation.x = .25; return false; } // marche par défaut, la tête en avant
+    if (z.st === 'walk'){ mtMarche(z, dt); return true; }
     // Arrivé : il reste là et hurle (jamais de coups sur la barricade)
     z.phase += dt * 3; z.mtCri -= dt;
     const k = z.mtCri < .6 ? clamp(1 - z.mtCri / .6, 0, 1) : 0; // il se cambre avant de hurler
     R.neck.rotation.x = -.2 - .7 * k; z.body.rotation.x = -.05 - .12 * k; z.body.position.y = 0;
     if (z.armL){ z.armL.rotation.x = -2.6 * (.3 + .7 * k) + Math.sin(z.phase) * .1; z.armR.rotation.x = -2.6 * (.3 + .7 * k) - Math.sin(z.phase) * .1; z.armL.rotation.z = -.35; z.armR.rotation.z = .35; }
     if (z.legL){ z.legL.rotation.x = 0; z.legR.rotation.x = 0; }
+    R.gorge.scale.set(.24 + .1 * k, .5 + .06 * k, .14 + .14 * k); // la gorge gonfle avant le cri
     if (z.mtCri <= 0){ z.mtCri = MT_HURLE.every * rand(.9, 1.1); z.mtOnde = 0; mtCri(z); }
     // Ondes : deux anneaux qui s'élargissent jusqu'au rayon du hurlement
     const sc = z.g.scale.x || 1;
@@ -119,6 +125,22 @@ ZKINDS.screamer = {
   },
   onKill(){ if (!mtHurleurVivant()) mtCalme(); }
 };
+// Marche du hurleur : le pas de 07-zombies.js (mêmes vitesse, dérive et arrêt), mais les bras pâles pendent jusqu'aux
+// genoux et se balancent, la tête tendue en avant : une silhouette qu'aucun autre zombie n'a
+function mtMarche(z, dt){
+  const gp = z.g.position, R = z.rig;
+  gp.z += z.speed * dt;
+  gp.x += Math.sin(z.phase * .3) * z.sway * dt * .4;
+  gp.x = clamp(gp.x, -12, 12);
+  z.phase += dt * z.speed * 3.2;
+  const s = Math.sin(z.phase);
+  if (z.legL){ z.legL.rotation.x = s * .6; z.legR.rotation.x = -s * .6; }
+  if (z.armL){ z.armL.rotation.x = -.15 - s * .35; z.armR.rotation.x = -.15 + s * .35; z.armL.rotation.z = -.12; z.armR.rotation.z = .12; }
+  z.body.position.y = Math.abs(Math.cos(z.phase)) * .06;
+  z.body.rotation.x = .1; z.body.rotation.z = Math.sin(z.phase * .5) * .08;
+  R.neck.rotation.x = .25;
+  if (gp.z >= z.stopZ){ gp.z = z.stopZ; z.st = 'attack'; if (z.legL){ z.legL.rotation.x = 0; z.legR.rotation.x = 0; } }
+}
 const mtHurleurVivant = () => { for (let i = 0; i < zombies.length; i++){ const o = zombies[i]; if (o.type === 'screamer' && !o.dead) return o; } return null; };
 // Un hurlement : les zombies autour accélèrent (une seule fois chacun : la durée est remise à neuf)
 function mtCri(z){
@@ -131,7 +153,7 @@ function mtCri(z){
     if (!(o.mtRage > 0)){ o.speed *= MT_HURLE.k; MT.enrages++; }
     o.mtRage = MT_HURLE.dur;
   }
-  if (gp.z > -75){ mtSnd(rand(780, 900), .7, 'sawtooth', .045, 380); mtSnd(rand(1150, 1300), .5, 'square', .02, 600, .05); mtBruit(2600, .5, .06); }
+  mtEvt('cri', z);
   mtV.set(gp.x, 2.4 * (z.g.scale.y || 1), gp.z); burst(mtV, 'dust', 4, 2);
 }
 // Une fois par image (appelé par chaque hurleur vivant) : l'effet s'use
@@ -177,7 +199,7 @@ ZKINDS.burrower = {
   update(z, dt){
     const gp = z.g.position;
     if (z.mtSt === 'walk'){
-      if (z.st === 'walk' && gp.z >= z.mtDigZ && gp.z < z.mtEmerZ){ z.mtSt = 'dig'; z.mtT = 0; MT.fouilles++; mtBruit(260, .6, .18); }
+      if (z.st === 'walk' && gp.z >= z.mtDigZ && gp.z < z.mtEmerZ){ z.mtSt = 'dig'; z.mtT = 0; MT.fouilles++; mtEvt('creuse', z); }
       else return false;
     }
     if (z.mtSt === 'dig'){ // il plonge dans l'asphalte (encore touchable)
@@ -218,7 +240,7 @@ function mtSort(z){
   z.mtSt = 'emerge'; z.mtT = 0; z.mtUnder = false; z.mtVuln = true; z.g.visible = true; MT.sorties++;
   if (z.proxy && hitMeshes.indexOf(z.proxy) < 0) hitMeshes.push(z.proxy);
   mtV.set(z.g.position.x, .4, z.g.position.z); burst(mtV, 'dust', 16, 4); burst(mtV, 'wood', 4, 3);
-  shake = Math.max(shake, .12); mtBruit(320, .55, .3); mtSnd(90, .4, 'sine', .12, 50);
+  shake = Math.max(shake, .12); mtEvt('sort', z);
 }
 // Bosses de terre : un petit lot de maillages réutilisés (aucun créé pendant la partie)
 const MT_BOSSES = [];
@@ -280,7 +302,7 @@ function mtChute(z, point){
   z.hp = 1; z.flashT = .08; z.mtSt0 = z.st; z.st = 'down'; z.mtT = MT_REV.down;
   if (point) zBurst(point, 'blood', 6, 2);
   if (typeof ecrPush === 'function') ecrPush('Revenant à terre : achève-le !', 'weak');
-  if (z.g.position.z > -70) mtSnd(140, .5, 'triangle', .06, 70);
+  mtEvt('chute', z);
 }
 function mtReleve(z){
   MT.releves++;
@@ -289,7 +311,7 @@ function mtReleve(z){
   if (z.legL){ z.legL.rotation.x = 0; z.legR.rotation.x = 0; }
   if (typeof ecrPush === 'function') ecrPush('Le revenant se relève !', 'weak');
   mtV.set(z.g.position.x, 1.4, z.g.position.z); burst(mtV, 'dust', 8, 2.5);
-  if (z.g.position.z > -70){ mtSnd(110, .8, 'sine', .1, 240); mtSnd(165, .7, 'triangle', .04, 330, .1); }
+  mtEvt('releve', z);
 }
 
 /* ---------- Dégâts : fouisseur sous terre ou qui sort, revenant qui tombe ---------- */
@@ -369,4 +391,4 @@ try {
 try { Jeu.on('image', () => { mtBossesImage(); }); } catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
-window.__mt = { MT, MT_TYPES, MT_HURLE, MT_FOUIS, MT_REV, MT_ANNONCE, MT_BOSSES, mtCounts, mtAnnonce, mtNorm, mtCalme, mtBossesImage };
+window.__mt = { MT, MT_TYPES, mtEvt, mtMarche, MT_HURLE, MT_FOUIS, MT_REV, MT_ANNONCE, MT_BOSSES, mtCounts, mtAnnonce, mtNorm, mtCalme, mtBossesImage };

@@ -185,6 +185,74 @@
     ok(r.f.brute < 65 && r.f.colossus < r.f.brute, 'Le costaud et le colosse doivent gronder grave');
   });
 
+  test('Sons : monstres du toit, une voix chacun et un son pour chaque moment qui compte', () => {
+    exiger(); exige2();
+    if (lire('typeof __br === "object" && typeof __br.brMonstre === "function"') !== true) ignorer('Voix des monstres du toit absentes');
+    const r = J(function(){
+      var o = { manque: [], sig: {} };
+      ['screamer', 'burrower', 'revenant', 'hurle', 'creuse', 'sort', 'chute', 'releve'].forEach(function(k){
+        if (!Snd.ZV[k]) o.manque.push(k); else o.sig[k] = JSON.stringify(Snd.ZV[k]);
+      });
+      if (o.manque.length) return o;
+      var Z = Snd.ZV;
+      o.hurleLong = Z.hurle.d[0]; o.hurlePri = Z.hurle.pri; o.hurleAigu = Z.hurle.f[0];
+      o.runnerD = Z.runner.d[1]; o.flyerD = Z.flyer.d[1];
+      o.terre = !!Z.creuse.terre; o.fracas = !!Z.sort.fracas;
+      o.chuteDescend = Z.chute.fin < 1; o.releveMonte = Z.releve.fin > 1;
+      o.vols = ['hurle', 'creuse', 'sort', 'chute', 'releve'].map(function(k){ return Z[k].vol; });
+      o.annonce = ['screamer', 'burrower', 'revenant'].every(function(t){ return __br.BR_ANNONCE[t] > 0; });
+      return o;
+    });
+    egal(r.manque.join(','), '', 'Voix manquantes');
+    const vus = {};
+    Object.keys(r.sig).forEach(k => { ok(!vus[r.sig[k]], 'Même voix pour ' + k + ' et ' + vus[r.sig[k]]); vus[r.sig[k]] = k; });
+    ok(r.hurleLong >= 1.5 && r.hurleLong > 2 * r.runnerD && r.hurleLong > 2 * r.flyerD, 'Le cri du hurleur doit être long (' + r.hurleLong + ' s)');
+    egal(r.hurlePri, 2, 'Cri du hurleur : priorité de danger');
+    ok(r.hurleAigu > 400, 'Cri du hurleur aigu (' + r.hurleAigu + ' Hz)');
+    ok(r.terre && r.fracas, 'Grondement de terre et fracas de sortie');
+    ok(r.chuteDescend && r.releveMonte, 'Râle qui descend à la chute, qui monte à la relève');
+    ok(r.vols.every(function(v){ return v > 0 && v <= .8; }), 'Niveaux dans ceux des cris des zombies : ' + r.vols.join(', '));
+    ok(r.annonce, 'Cri d’approche des trois monstres');
+  });
+
+  test('Sons : les moments des monstres du toit jouent placés, sans mur de cris, et rien son coupé', () => {
+    exiger(); exige2(); avecAudio();
+    if (lire('typeof __br === "object" && typeof __br.brMonstre === "function"') !== true) ignorer('Voix des monstres du toit absentes');
+    reset(); J('startLocation(2)');
+    const r = sonActif(function(){
+      var o = {}, BR = __br.BR;
+      __t.geler(); clearZombies(); state = 'playing';
+      try {
+        var h = __t.placer('screamer', 0, -50), b = __t.placer('burrower', 4, -20), rv = __t.placer('revenant', -4, -25);
+        BR.cd = {}; Snd.voix = [];
+        // Chaque moment : une voix de plus (et un compte)
+        var n0 = Snd.zvoixN, m0 = JSON.stringify(BR.mt);
+        o.joue = ['cri', 'creuse', 'sort', 'chute', 'releve'].map(function(q){
+          var z = q === 'cri' ? h : q === 'chute' || q === 'releve' ? rv : b, a = Snd.zvoixN; Jeu.emit('monstre', q, z); return Snd.zvoixN - a;
+        });
+        o.mt = BR.mt;
+        // Cinq hurleurs qui hurlent au même instant : un seul cri
+        var a2 = Snd.zvoixN; for (var i = 0; i < 5; i++) Jeu.emit('monstre', 'cri', h); o.cinq = Snd.zvoixN - a2;
+        // Trop loin : rien
+        BR.cd = {}; h.g.position.z = -95; var a3 = Snd.zvoixN; Jeu.emit('monstre', 'cri', h); o.loin = Snd.zvoixN - a3;
+        // Son coupé : aucun nœud audio
+        h.g.position.z = -50; BR.cd = {};
+        var c = Snd.ctx, n = 0, noms = ['createOscillator', 'createBufferSource', 'createGain', 'createBiquadFilter', 'createStereoPanner'], orig = {};
+        noms.forEach(function(k){ orig[k] = c[k]; if (orig[k]) c[k] = function(){ n++; return orig[k].apply(c, arguments); }; });
+        Snd.on = false;
+        try { ['cri', 'creuse', 'sort', 'chute', 'releve'].forEach(function(q){ Jeu.emit('monstre', q, q === 'cri' ? h : q === 'chute' || q === 'releve' ? rv : b); }); }
+        finally { noms.forEach(function(k){ if (orig[k]) c[k] = orig[k]; }); Snd.on = true; }
+        o.noeuds = n;
+      } finally { state = 'test'; clearZombies(); Snd.voix = []; }
+      return o;
+    });
+    egal(r.joue.join(','), '1,1,1,1,1', 'Une voix pour chaque moment (cri, creuse, sort, chute, relève)');
+    ok(r.mt.hurle >= 1 && r.mt.creuse >= 1 && r.mt.sort >= 1 && r.mt.chute >= 1 && r.mt.releve >= 1, 'Moments comptés : ' + JSON.stringify(r.mt));
+    egal(r.cinq, 0, 'Cris au même instant : pas de mur de cris (attente entre deux)');
+    egal(r.loin, 0, 'Trop loin dans la rue : rien');
+    egal(r.noeuds, 0, 'Son coupé : aucun nœud audio créé');
+  });
+
   test('Sons : rien ne joue quand le son est coupé (aucun nœud audio créé)', () => {
     exiger(); exige2(); avecAudio(); reset(); J('startLocation(0)');
     const r = J(function(){

@@ -5,13 +5,31 @@ const ZG = { torso:new THREE.BoxGeometry(.62, .8, .34), head:new THREE.BoxGeomet
   box:new THREE.BoxGeometry(1, 1, 1) }; // cube unité : accessoires des tenues, partagé avec 18-zombies-types.js (un seul lot d'instances)
 ZG.arm.translate(0, -.36, 0); ZG.leg.translate(0, -.43, 0);
 const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff3a1a });
+// Yeux des humanoïdes : les deux dans une seule géométrie (un morceau par zombie au lieu de deux), un peu plus grands,
+// et une couleur « plus que pleine » (au-delà de 1) : la brume et la nuit les mangent beaucoup moins que le reste.
+// Matériau à part : eyeMat (les autres formes, 18, 35, 40, 63) ne change pas.
+function zFusion(geos){
+  const pos = [], nrm = [], uv = [], idx = []; let off = 0;
+  geos.forEach(g => {
+    const a = g.attributes; pos.push(...a.position.array); nrm.push(...a.normal.array); uv.push(...a.uv.array);
+    g.index.array.forEach(i => idx.push(i + off)); off += a.position.count;
+  });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+  return g;
+}
+ZG.yeux = zFusion([new THREE.BoxGeometry(.095, .055, .02).translate(-.09, 0, 0), new THREE.BoxGeometry(.095, .055, .02).translate(.09, 0, 0)]);
+const zEyeMat = new THREE.MeshBasicMaterial({ color:new THREE.Color(3.2, .3, .12) });
+// Loin (au-delà de ZPERF.farD), les yeux restent dessinés et grossissent avec la distance (sinon moins d'un pixel)
+const ZYEUX = { loinK:1 / 42, maxX:1.45, maxY:3 };
 const SHIRTS = [0x5b3a2e, 0x3d4a5c, 0x6a6a5a, 0x7a2e2e, 0x4b5a3a, 0x8a7a60, 0x3a3a44];
 const PANTS = [0x2b2b33, 0x3a3226, 0x24303a, 0x403a32];
 const zkind = type => (typeof ZKINDS !== 'undefined' && ZKINDS[type]) || null;
 
 /* ---------- Foule : matériaux partagés, rendu par instances, cibles pré-triées ---------- */
 // Réglages de performance (voir aussi BASE_ALIVE, DEV_CAP et aliveCap dans 06-donnees.js)
-//   farD : au-delà (m de la caméra, à plat), modèle simplifié : sans les tout petits morceaux (yeux, gueule, griffes)
+//   farD : au-delà (m de la caméra, à plat), modèle simplifié : sans les tout petits morceaux (gueule, griffes) ; les yeux grossissent (ZYEUX)
 //   farPose : loin, la pose des membres est recalculée une image sur farPose (la position suit chaque image)
 const ZPERF = { farD: 55, farPose: 3, smallR: .1 };
 // Matériaux : un seul par couleur, partagé par tous les zombies (userData.zshared). Jamais libérés.
@@ -66,7 +84,7 @@ function zmatT(nom){
 function zInstTex(tex){ let m = ZI_FIX.get(tex); if (!m){ m = new THREE.MeshLambertMaterial({ color:0xffffff, map:tex }); m.userData.zinst = true; ZI_FIX.set(tex, m); } return m; }
 // Matériau fixe partagé (yeux, acide, gueule...) : utilisable par le rendu par instances
 const zfix = m => { m.userData.zfixed = true; m.userData.keep = true; return m; };
-zfix(eyeMat);
+zfix(eyeMat); zfix(zEyeMat);
 // Rendu par instances : un InstancedMesh par couple (géométrie, matériau). Tous les zombies dont les maillages
 // utilisent seulement des matériaux zmat/zfix y passent : environ 12 appels de dessin pour toute la foule.
 // Les autres (le boss, un type externe avec ses propres matériaux) restent de vrais objets dans la scène.
@@ -109,14 +127,37 @@ function zInstOk(g){
   g.traverse(o => { if (o.isMesh){ const m = o.material; if (!m || Array.isArray(m) || !(m.userData.zshared || m.userData.zfixed)) ok = false; } });
   return ok;
 }
+// Teintes de la foule : chaque zombie reçoit sa nuance de peau et de vêtements par la couleur d'instance
+// (aucun matériau ni appel de dessin de plus). Tirées du numéro du zombie avec des pas irrationnels :
+// deux zombies apparus l'un après l'autre (donc voisins dans la rue) n'ont jamais la même nuance.
+const ZTEINT = {
+  peau:[0xb4b8a4, 0x7a95a0, 0xaaa460, 0x46553a, 0x8c7c8c, 0xb09a84, 0x6c8a5c], // pâle, bleuté, jaunâtre, pourri, violacé, rosé, vert
+  peauMin:.25, peauMax:.6, // part de la nuance mêlée à la peau du type (le type reste reconnaissable)
+  habitMin:.7, habitMax:1.12, sale:.35 // clarté des vêtements et part de gris sale
+};
+const zFrac = x => x - Math.floor(x);
+function zTeinte(uid){
+  const T = ZTEINT, a = zFrac(uid * .6180339887 + .13), b = zFrac(uid * .7548776662 + .41), c = zFrac(uid * .5698402910 + .77);
+  const v = T.peau[Math.floor(a * T.peau.length)];
+  return { pr:(v >> 16 & 255) / 255, pg:(v >> 8 & 255) / 255, pb:(v & 255) / 255, pk:T.peauMin + (T.peauMax - T.peauMin) * b,
+    hk:T.habitMin + (T.habitMax - T.habitMin) * c, hs:T.sale * zFrac(uid * .4142135624 + .29) };
+}
 function zInstPrep(z, mats){
   const I = []; z.g.updateMatrixWorld(true);
+  const peau = z.g.userData.zPeau || null, t = zTeinte(z.uid || 0);
   z.g.traverse(o => {
     if (!o.isMesh) return;
     const mat = o.material, col = !!mat.userData.zshared;
     if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
-    I.push({ m:o, b:zBatch(o.geometry, mat), mat:col ? mat : null, fl:col && (mat === mats[0] || mat === mats[1]),
-      small:!!o.userData.zsmall || o.geometry.boundingSphere.radius * o.matrixWorld.getMaxScaleOnAxis() < ZPERF.smallR });
+    const e = { m:o, b:zBatch(o.geometry, mat), mat:col ? mat : null, fl:col && (mat === mats[0] || mat === mats[1]), eye:o.geometry === ZG.yeux,
+      small:o.geometry !== ZG.yeux && (!!o.userData.zsmall || o.geometry.boundingSphere.radius * o.matrixWorld.getMaxScaleOnAxis() < ZPERF.smallR) };
+    if (col){
+      const c = mat.color;
+      if (peau && mat === peau){ e.r = c.r + (t.pr - c.r) * t.pk; e.g = c.g + (t.pg - c.g) * t.pk; e.bl = c.b + (t.pb - c.b) * t.pk; }
+      else if (peau){ const gr = (c.r + c.g + c.b) / 3 * .8; e.r = (c.r + (gr - c.r) * t.hs) * t.hk; e.g = (c.g + (gr - c.g) * t.hs) * t.hk; e.bl = (c.b + (gr - c.b) * t.hs) * t.hk; }
+      else { e.r = c.r; e.g = c.g; e.bl = c.b; }
+    }
+    I.push(e);
   });
   z.inst = I;
 }
@@ -147,19 +188,24 @@ function zInstSync(){
     if (far){ if (!z._rel || (zFrame + z.uid) % FP === 0) zRel(z); }
     else { zFresh(z); z._rel = false; }
     const fl = z.flashT > 0, s = z.g.scale, sx = s.x, sy = s.y, sz = s.z, px = p.x, py = p.y, pz = p.z;
+    let ek = 1; if (far) ek = Math.sqrt(dx * dx + dz * dz) * ZYEUX.loinK; // grossissement des yeux au loin
     for (let k = 0; k < I.length; k++){
       const e = I[k], m = e.m;
       if (!m.visible || (far && e.small)) continue;
       const b = e.b; if (b.n >= b.cap) zGrow(b);
       const a = b.im.instanceMatrix.array, o = b.n * 16;
       if (far){
-        const r = e.rel.elements;
-        a[o] = sx * r[0]; a[o + 1] = sy * r[1]; a[o + 2] = sz * r[2]; a[o + 3] = 0;
-        a[o + 4] = sx * r[4]; a[o + 5] = sy * r[5]; a[o + 6] = sz * r[6]; a[o + 7] = 0;
+        const r = e.rel.elements, kx = e.eye ? Math.min(ZYEUX.maxX, ek) : 1, ky = e.eye ? Math.min(ZYEUX.maxY, ek) : 1;
+        a[o] = sx * r[0] * kx; a[o + 1] = sy * r[1] * kx; a[o + 2] = sz * r[2] * kx; a[o + 3] = 0;
+        a[o + 4] = sx * r[4] * ky; a[o + 5] = sy * r[5] * ky; a[o + 6] = sz * r[6] * ky; a[o + 7] = 0;
         a[o + 8] = sx * r[8]; a[o + 9] = sy * r[9]; a[o + 10] = sz * r[10]; a[o + 11] = 0;
         a[o + 12] = sx * r[12] + px; a[o + 13] = sy * r[13] + py; a[o + 14] = sz * r[14] + pz; a[o + 15] = 1;
       } else m.matrixWorld.toArray(a, o);
-      if (b.col){ const c = fl && e.fl ? e.mat.userData.hitC : e.mat.color, ca = b.im.instanceColor.array, co = b.n * 3; ca[co] = c.r; ca[co + 1] = c.g; ca[co + 2] = c.b; }
+      if (b.col){
+        const ca = b.im.instanceColor.array, co = b.n * 3;
+        if (fl && e.fl){ const c = e.mat.userData.hitC; ca[co] = c.r; ca[co + 1] = c.g; ca[co + 2] = c.b; }
+        else { ca[co] = e.r; ca[co + 1] = e.g; ca[co + 2] = e.bl; }
+      }
       b.n++;
     }
   }
@@ -308,7 +354,8 @@ function buildHumanoid(T, tid){
   const wide = rand(.88, 1.16), tall = rand(.94, 1.06), hs = rand(.88, 1.12), al = rand(.9, 1.15);
   const torso = mk(ZG.torso, shirt, 0, 1.28, 0); torso.scale.set(wide, 1, rand(.9, 1.2));
   const head = mk(ZG.head, headM, rand(-.03, .03), 1.9, 0); head.scale.setScalar(hs); head.rotation.z = rand(-.15, .15);
-  mk(ZG.eye, eyeMat, -.09, 1.94, .205 * hs); mk(ZG.eye, eyeMat, .09, 1.94, .205 * hs);
+  const yeux = new THREE.Mesh(ZG.yeux, zEyeMat); yeux.position.set(0, .04, .205); head.add(yeux); // enfants de la tête : ils suivent sa pente et tombent avec elle
+  g.userData.zPeau = skin; // nuance de peau par zombie (zTeinte)
   const armL = mk(ZG.arm, sleeve, -.4 * wide, 1.62, 0), armR = mk(ZG.arm, sleeve, .4 * wide, 1.62, 0);
   armL.scale.y = al; armR.scale.y = al * rand(.92, 1.05);
   if (sleeve !== skin && D.mains !== false){ zAcc(armL, D.mains || skin, .15, .13, .15, 0, -.76, 0, true); zAcc(armR, D.mains || skin, .15, .13, .15, 0, -.76, 0, true); }
@@ -441,6 +488,14 @@ function hitBarricade(z, dmg, shk, chips){
   if (Math.random() < .5) Snd.thud();
   $('dmgflash').style.opacity = .7; setTimeout(() => { $('dmgflash').style.opacity = 0; }, 90);
 }
+// Pose des bras en marchant, propre à chaque zombie (tirée de son numéro, sans hasard) : un bras qui pend chez
+// environ un sur trois, les autres un peu de travers, balancement plus ou moins ample. La tête ne bouge pas.
+function zBras(uid){
+  const a = zFrac(uid * .3819660113 + .5), amp = .16 + .14 * zFrac(uid * .2360679775 + .1);
+  if (a < .18) return { l:.85, r:0, a:amp };
+  if (a < .34) return { l:0, r:.75, a:amp };
+  return { l:(a - .67) * .45, r:-(a - .67) * .3, a:amp };
+}
 function updateZombies(dt){
   for (let i = zombies.length - 1; i >= 0; i--){
     const z = zombies[i];
@@ -465,7 +520,8 @@ function updateZombies(dt){
       z.phase += dt * z.speed * 3.2;
       const s = Math.sin(z.phase);
       if (z.legL) z.legL.rotation.x = s * .6; if (z.legR) z.legR.rotation.x = -s * .6;
-      if (z.armL) z.armL.rotation.x = -1.35 + s * .18; if (z.armR) z.armR.rotation.x = -1.35 - s * .18;
+      const B = z.bras || (z.bras = zBras(z.uid || 0));
+      if (z.armL) z.armL.rotation.x = -1.35 + B.l + s * B.a * (B.l > .3 ? 1.8 : 1); if (z.armR) z.armR.rotation.x = -1.35 + B.r - s * B.a * (B.r > .3 ? 1.8 : 1);
       z.body.position.y = Math.abs(Math.cos(z.phase)) * .06;
       z.body.rotation.x = z.type === 'runner' ? .25 : .06;
       z.body.rotation.z = Math.sin(z.phase * .5) * .06;

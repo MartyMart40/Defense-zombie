@@ -14,3 +14,5 @@ dist/
 
 # Cle d acces GitHub (ne jamais publier)
 .github-token
+# Copies de travail des agents (chantier à plusieurs dossiers)
+.claude/worktrees/

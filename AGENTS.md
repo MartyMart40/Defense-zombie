@@ -51,7 +51,7 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 29 repères, 31 punch, 33 écritures | Repères sans son, ralenti et chiffres, textes à gauche |
 | 32 sauvegarde | Sauvegarde dans un fichier |
 | 37 bruitages, 38 vibrations | Sons placés, vibrations du cell |
-| 39 à 40 | Mode robot (`docs/robot.md`) |
+| 39 à 40 | Mode robot (`docs/robot.md`) : 39 robot, 40-robot-monstres vagues et carrefour, 40-robot-fin course de 9 rues et tours, 40-robot-habitacle habitacle, manettes et jambes (réglage dt_mech_vue) |
 | 41 à 44 | Mode RTS (`docs/rts.md`) : 41 données et vallée, 42 unités et partie, 42-rts-combat zombies, IA et boucle, 43 pilotage, 44 interface |
 | 45 sauvegarde RTS | Partie RTS en cours gardée (dt_rts_partie), bouton « Continuer la guerre » |
 | 46 application | Jeu installable (avec `manifest.webmanifest`, `sw.js`, `icones/`) : plein écran, marche sans réseau |

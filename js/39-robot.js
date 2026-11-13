@@ -15,7 +15,10 @@ const MECH_WALK = 5.5;         // vitesse de marche (m/s)
 const MECH_STRAFE = 4;         // pas de côté (m/s)
 const MECH_CAM = { y:5.4, z:-5.5 };
 const MECH_ARMOR = 1500;       // blindage de départ (+250 par rue)
-const MECH_HEAT = { shot:.0065, cool:.32, lock:2.2 };   // chaleur de la minigun : par balle, refroidissement par seconde, blocage
+// Chaleur de la minigun : par balle, refroidissement par seconde, blocage. 2026-11-13 (simulateur) : .011 par balle (.0065 avant :
+// la minigun ne surchauffait qu'après 55 s de tir sans arrêt, donc l'amélioration « refroidissement » ne changeait rien).
+// Maintenant : surchauffe après environ 12 s de tir, jamais avec le refroidissement au niveau 8.
+const MECH_HEAT = { shot:.011, cool:.32, lock:2.2 };
 const MECH_ROCKET_CD = .65;    // secondes entre deux roquettes
 const MECH = { on:false, paused:false, x:0, dist:0, street:1, heat:0, hot:0, rcd:0, kills:0, step:0, stepSide:0, mv:{ f:0, b:0, l:0, r:0 },
   joy:{ id:null, x:0, y:0, dx:0, dy:0 }, aim:{ id:null, lx:0, ly:0 }, mini:false, rocket:false, turn:0, autoFire:store.get('dt_mech_auto', true) !== false, rcdMax:.65, fade:0, fadeTo:null, pow:1, xp0:0, scr0:0, best:+store.get('dt_mech_best', 0) || 0 };
@@ -42,14 +45,17 @@ const MECH_UPG_ORDER = Object.keys(MECH_UPG);
 //       d'un trait, mais plus tirer sans arrêt. L'amélioration « cadence » raccourcit aussi rg.
 //   k : part des dégâts de l'arme du toit gardée par le robot. Les armes du toit ont été renforcées le 12 novembre 2026 ;
 //       k remet au robot les dégâts qu'il avait avant (ex. minigun 34 × 0,706 = 24), pour ne pas changer son équilibrage.
+//   Canon électromagnétique : cd 1.9 (1.3 avant, 2026-11-13, simulateur) : à ferraille égale (7 500), il menait 14 rues au lieu
+//       de 9 pour « toutes les améliorations au moins cher » et 7 à 11 pour les autres armes (son onde de choc couche toute la file).
+//   Arc électrique : cd .18 (.35 avant, même jour) : l'acheter rendait le robot plus faible que garder les roquettes.
 const MECH_W = {
   minigun: { side:'L', name:'Minigun',               cost:0,    k:.706, desc:'Rafale continue, chauffe.' },
   flamer:  { side:'L', name:'Lance-flammes lourd',   cost:600,  k:.76, desc:'Nappe de feu devant le robot : tout ce qui brûle continue de brûler.' },
   laser:   { side:'L', name:'Laser lourd',           cost:1200, desc:'Rayon instantané qui traverse toute la file.' },
   rocket:  { side:'R', name:'Roquettes',             cost:0,    k:.8, cd:.65, ch:4, rg:1.6, salvo:true, desc:'Grosses explosions.' },
   gl:      { side:'R', name:'Lance-grenades',        cost:800,  k:.5, cd:.3,  ch:8, rg:.6, salvo:true, desc:'Trois grenades par seconde.' },
-  arc:     { side:'R', name:'Arc électrique',        cost:1000, k:.625, cd:.35, desc:'L’éclair saute de zombie en zombie.' },
-  railgun: { side:'R', name:'Canon électromagnétique', cost:1500, k:.625, cd:1.3, desc:'Un trait qui traverse toute la rue.' }
+  arc:     { side:'R', name:'Arc électrique',        cost:1000, k:.625, cd:.18, desc:'L’éclair saute de zombie en zombie.' },
+  railgun: { side:'R', name:'Canon électromagnétique', cost:1500, k:.625, cd:1.9, desc:'Un trait qui traverse toute la rue.' }
 };
 const MECH_W_ORDER = Object.keys(MECH_W);
 function mechNorm(){

@@ -277,7 +277,7 @@
       // Pose de marche : bras qui pendent (les autres zombies les tendent devant eux), même vitesse que la marche commune
       var z0 = z.g.position.z, w0 = w.g.position.z; z.speed = w.speed = 1.5;
       for (var i = 0; i < 20; i++) update(1 / 30);
-      o.brasZ = z.armL.rotation.x; o.brasW = w.armL.rotation.x;
+      o.brasZ = z.armL.rotation.x; o.brasW = Math.min(w.armL.rotation.x, w.armR.rotation.x); // le bras tendu du marcheur (depuis la tâche 111, un marcheur sur trois a l'autre bras qui pend)
       o.avance = (z.g.position.z - z0) / (w.g.position.z - w0);
       // Aucun matériau de plus dans la foule (palette ZMATS inchangée)
       for (var k = 0; k < 6; k++) __t.placer('screamer', -6 + k * 2, -80);

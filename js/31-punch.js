@@ -4,7 +4,8 @@
 //   update (échelle de temps), updateParts, visuals (chiffres, effet du ralenti), damage, defHit, weakHit, kill, fire,
 //   armFlame, armExplode, armStep, pwUpdate, pwBlast, cpnShootSniper, cpnShootGunner, rueBarrelBlow, comboKill,
 //   newGame (remise à zéro des statistiques), showEnd (section ajoutée sous les statistiques existantes).
-// Réglages de l'écran Pause, sauvegardés : dt_slow (ralenti, activé par défaut), dt_dmgnum (chiffres, activés par défaut).
+// Réglages de l'écran Pause, sauvegardés : dt_slow (ralenti, activé par défaut), dt_dmgnum (chiffres, activés par défaut),
+// dt_tirfx (« Effets de tir » : sursaut et chute des zombies, repères tête et mort au réticule, impacts, sensation des armes).
 
 /* ---------- Réglages ---------- */
 const PK = {
@@ -14,6 +15,9 @@ const PK = {
   src: null, fireK: 0, weak: 0,        // contexte du coup en cours : source, feu, point faible
   shotHits: 0, shotKills: 0,           // compteurs pendant un tir
   clock: 0, m0: null,
+  tir: store.get('dt_tirfx', true) !== false,              // Effets de tir
+  boom: 0, dmgZ: null, dmgAmt: 0, dmgSrc: null, dmgF: false, // coup en cours (explosion, zombie, dégâts, source, feu)
+  react: [], dying: [], hmH: 0, hmK: 0, hmKH: false, hmCls: '', snd: { headPop: -1, killConfirm: -1 },
   frameEma: 1 / 60, costEma: 0, capT: 0, dropped: 0
 };
 // Ralenti : échelle pendant « hold » secondes, puis retour progressif en « ramp » secondes. prio : un plus fort remplace, jamais d'empilement.
@@ -194,9 +198,11 @@ try {
   damage = function(z, amt, head, point){
     if (!z || z.dead) return _dmgPk.apply(this, arguments);
     const hp0 = z.hp, sf = pkSrcNow(point), w = PK.weak > 0;
-    const r = _dmgPk.apply(this, arguments);
+    const z0 = PK.dmgZ, a0 = PK.dmgAmt, s0 = PK.dmgSrc, f0 = PK.dmgF;
+    PK.dmgZ = z; PK.dmgAmt = amt; PK.dmgSrc = sf.s; PK.dmgF = sf.f;
+    let r; try { r = _dmgPk.apply(this, arguments); } finally { PK.dmgZ = z0; PK.dmgAmt = a0; PK.dmgSrc = s0; PK.dmgF = f0; }
     const d = hp0 - z.hp;
-    if (d > 0) pkDealt(z, d, hp0, head, point, sf.s, w ? 'w' : head ? 'h' : sf.f ? 'f' : 'n');
+    if (d > 0){ pkDealt(z, d, hp0, head, point, sf.s, w ? 'w' : head ? 'h' : sf.f ? 'f' : 'n'); pkTouche(z, d, head, point, sf); }
     return r;
   };
 } catch (e) { errNote(e); }
@@ -221,10 +227,10 @@ try {
 } catch (e) { errNote(e); }
 // Contexte de la source (statistiques par arme, couleur du feu) : fonctions globales réaffectées, vues partout
 try { if (typeof pwUpdate === 'function'){ const _b = pwUpdate; pwUpdate = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'pow'; PK.fireK = 1; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; } }; } } catch (e) { errNote(e); }
-try { if (typeof pwBlast === 'function'){ const _b = pwBlast; pwBlast = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'pow'; PK.fireK = 0; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; } }; } } catch (e) { errNote(e); }
+try { if (typeof pwBlast === 'function'){ const _b = pwBlast; pwBlast = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'pow'; PK.fireK = 0; PK.boom++; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; PK.boom--; } }; } } catch (e) { errNote(e); }
 try { if (typeof cpnShootSniper === 'function'){ const _b = cpnShootSniper; cpnShootSniper = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'cpn'; PK.fireK = 0; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; } }; } } catch (e) { errNote(e); }
 try { if (typeof cpnShootGunner === 'function'){ const _b = cpnShootGunner; cpnShootGunner = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'cpn'; PK.fireK = 0; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; } }; } } catch (e) { errNote(e); }
-try { if (typeof rueBarrelBlow === 'function'){ const _b = rueBarrelBlow; rueBarrelBlow = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'rue'; PK.fireK = 0; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; } }; } } catch (e) { errNote(e); }
+try { if (typeof rueBarrelBlow === 'function'){ const _b = rueBarrelBlow; rueBarrelBlow = function(){ const s0 = PK.src, f0 = PK.fireK; PK.src = 'rue'; PK.fireK = 0; PK.boom++; try { return _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; PK.boom--; } }; } } catch (e) { errNote(e); }
 try {
   if (typeof armFlame === 'function'){
     const _b = armFlame;
@@ -242,8 +248,8 @@ try {
     const _b = armExplode;
     armExplode = function(pos, id){
       const s0 = PK.src, f0 = PK.fireK, h0 = PK.shotHits, k0 = PK.shotKills, src = id || 'rocket';
-      PK.src = src; PK.fireK = 0;
-      let r; try { r = _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; }
+      PK.src = src; PK.fireK = 0; PK.boom++;
+      let r; try { r = _b.apply(this, arguments); } finally { PK.src = s0; PK.fireK = f0; PK.boom--; }
       const st = pkSt();
       if (st && pkIsWeapon(src) && PK.shotHits > h0) st.hits++;
       pkMulti(PK.shotKills - k0, src);
@@ -288,7 +294,7 @@ try {
 } catch (e) { errNote(e); }
 try {
   const _killPk = kill;
-  kill = function(z){
+  kill = function(z, head, point){
     const was = !!z && !z.dead;
     const r = _killPk.apply(this, arguments);
     if (was && z.dead){
@@ -296,6 +302,7 @@ try {
       const st = pkSt();
       if (st){ st.kt[z.type] = (st.kt[z.type] || 0) + 1; if (z.type === 'boss') st.boss++; }
       if (z.type === 'boss') pkSlow('boss');
+      pkMort(z, head, point);
     }
     return r;
   };
@@ -312,13 +319,150 @@ try {
   }
 } catch (e) { errNote(e); }
 
+/* ---------- Sensations du tir : sursaut des zombies touchés, chute selon le coup, repères tête et mort ---------- */
+// Purement visuel. Le sursaut tourne le corps (surtout autour de l'axe vertical, presque rien vers l'arrière) et penche
+// la tête autour de son centre : les cibles bougent à peine. Il est retiré au début de chaque update() (pkPoseOff) et
+// remis à la fin (pkPoseOn) : les tirs, qui passent dans update(), visent toujours la pose normale du zombie.
+// Le rendu par instances (07-zombies.js, zInstSync à la fin de visuals) relit les matrices après pkPoseOn : la rotation
+// est bien affichée ; z._rel = false force aussi le recalcul de la pose des zombies lointains.
+const PK_FEEL = {
+  decay: 11, decayH: 9,                       // retour du sursaut (corps, tête), par seconde
+  back: .07, twist: .32, lean: .05,           // corps : vers l'arrière, torsion selon le côté touché, bascule
+  torso: .14, head: .5,                       // torse et tête (autour de leur centre)
+  maxReact: 24, maxDying: 40,                 // zombies suivis à la fois (au-delà : pose normale)
+  hmHead: .2, hmKill: .32                     // durée des repères au réticule (s)
+};
+function pkTouche(z, d, head, point, sf){
+  const mine = pkIsWeapon(sf.s);
+  if (mine && head && state === 'playing'){ if (PK.tir) PK.hmH = PK_FEEL.hmHead; pkSnd('headPop', .07); }
+  if (!PK.tir || state !== 'playing' || z.dead || !z.body || !z.g) return;
+  const now = PK.clock;
+  if (sf.f && now - (z.pkT != null ? z.pkT : -1) < .3) return;   // brûlure : un petit sursaut de temps en temps
+  z.pkT = now;
+  let k = .3 + .7 * Math.min(1, Math.sqrt(2 * d / Math.max(1, z.maxHp || 1)));
+  if (sf.f) k *= .25; else if (PK.boom > 0) k *= 1.3; else if (sf.s === 'def') k *= .6;
+  if (z.type === 'boss' || z.g.scale.x > 1.8) k *= .35;          // les géants bronchent à peine
+  let h = 0; if (head && z.head){ h = k; k *= .6; }
+  z.pkA = Math.min(1.2, Math.max((z.pkA || 0) * .5 + k, k));
+  z.pkHA = Math.min(1.2, Math.max((z.pkHA || 0) * .5 + h, h));
+  const sc = Math.max(.2, z.g.scale.x || 1);
+  z.pkS = point && point.isVector3 ? clamp((point.x - z.g.position.x) / (.45 * sc), -1, 1) : rand(-.5, .5);
+  if (!z.pkIn){ if (PK.react.length >= PK_FEEL.maxReact) return; z.pkIn = true; PK.react.push(z); }
+}
+// Retire la pose du sursaut (avant update : les tirs visent la pose normale)
+function pkPoseOff(){
+  const R = PK.react;
+  for (let i = 0; i < R.length; i++){
+    const z = R[i]; if (!z.pkOn) continue;
+    const b = z.body; b.rotation.x -= z.pkOx; b.rotation.y -= z.pkOy; b.rotation.z -= z.pkOz;
+    if (z.pkTo) z.pkTo.rotation.x -= z.pkOt;
+    if (z.head) z.head.rotation.x -= z.pkOh;
+    z.pkOn = false; z._mwF = -1;
+  }
+}
+const pkEase = u => u <= 0 ? 0 : u >= 1 ? 1 : 1 - (1 - u) * (1 - u);
+// Remet le sursaut (après update) et pose les chutes ; dt du jeu (ralenti compris)
+function pkPoseOn(dt){
+  const R = PK.react, F = PK_FEEL;
+  for (let i = R.length - 1; i >= 0; i--){
+    const z = R[i];
+    if (z.dead || !z.body || !PK.tir){ z.pkIn = false; z.pkA = z.pkHA = 0; R.splice(i, 1); continue; }
+    z.pkA *= Math.exp(-F.decay * dt); z.pkHA *= Math.exp(-F.decayH * dt);
+    if (z.pkA < .01 && z.pkHA < .01){ z.pkIn = false; z.pkA = z.pkHA = 0; R.splice(i, 1); continue; }
+    const k = z.pkA, h = z.pkHA, s = z.pkS || 0, b = z.body;
+    z.pkOx = -F.back * k - .05 * h; z.pkOy = s * F.twist * k; z.pkOz = s * F.lean * k;
+    z.pkTo = z.tenue && z.meshes[0] && z.meshes[0] !== z.head ? z.meshes[0] : null; z.pkOt = -F.torso * k;
+    z.pkOh = z.head ? -F.head * h - .12 * k : 0;
+    b.rotation.x += z.pkOx; b.rotation.y += z.pkOy; b.rotation.z += z.pkOz;
+    if (z.pkTo) z.pkTo.rotation.x += z.pkOt;
+    if (z.head) z.head.rotation.x += z.pkOh;
+    z.pkOn = true; z._rel = false; z._mwF = -1;
+  }
+  const D = PK.dying;
+  for (let i = D.length - 1; i >= 0; i--){
+    const z = D[i];
+    if (!z.dead || !z.body || z.deadT > 3.2 || !PK.tir){ D.splice(i, 1); continue; }
+    pkChute(z); z._rel = false;
+  }
+}
+// Chute : tête (part vers l'arrière, d'un coup), corps (s'affaisse puis tombe en avant), explosion (projeté)
+function pkChute(z){
+  const t = z.deadT, b = z.body, s = z.pkDs || 0, k = z.pkDk || 1, libre = b !== z.g;
+  if (z.pkDie === 'tete'){
+    const u = Math.min(1, t / .32), c = u - 1;
+    b.rotation.x = -Math.PI / 2 * (1 + 2.4 * c * c * c + 1.4 * c * c);   // léger rebond au bout
+    b.rotation.y = s * .4 * Math.min(1, t / .25);
+  } else if (z.pkDie === 'boom'){
+    const u = Math.min(1, t / .6), D = 1.4 + 1.8 * k;
+    b.rotation.x = -Math.PI / 2 * (t < .45 ? Math.min(1.25, t / .3) : 1.25 - .25 * Math.min(1, (t - .45) / .2));
+    b.rotation.z = s * .7 * u;
+    if (libre){ b.position.z = -D * pkEase(u); b.position.y = (.5 + .6 * k) * 4 * u * (1 - u); }
+  } else {
+    // corps : les genoux lâchent, puis il bascule vers l'avant
+    if (t < .2){ const v = t / .2; b.rotation.x = .12 * v; if (libre) b.position.y = -.22 * v; }
+    else { const w = Math.min(1, (t - .2) / .5); b.rotation.x = .12 + (Math.PI / 2 - .12) * w * w; b.rotation.z = s * .25 * w; if (libre) b.position.y = -.22 * (1 - w); }
+  }
+}
+function pkMort(z, head, point){
+  const src = PK.dmgZ === z ? PK.dmgSrc : pkSrcNow(point).s, play = state === 'playing';
+  if (pkIsWeapon(src) && play){ if (PK.tir){ PK.hmK = PK_FEEL.hmKill; PK.hmKH = !!head; } pkSnd('killConfirm', .09); }
+  if (!PK.tir || !play || !z.body || !z.g || z.type === 'boss' || z.g.scale.x > 2.2) return;
+  const amt = PK.dmgZ === z ? PK.dmgAmt : 0, over = amt / Math.max(1, z.maxHp || 1), fire = PK.dmgZ === z && PK.dmgF;
+  const boom = PK.boom > 0 || (over >= 4 && !head && !fire);
+  z.pkDie = boom ? 'boom' : head && z.headGone ? 'tete' : 'corps';
+  z.pkDk = PK.boom > 0 ? 1 : clamp(over / 8, .35, 1);
+  z.pkDs = point && point.isVector3 ? clamp((point.x - z.g.position.x) / .5, -1, 1) : rand(-.6, .6);
+  if (PK.dying.length < PK_FEEL.maxDying) PK.dying.push(z);
+  // Petite gerbe à la mesure du zombie (le pool de 05 est réutilisé ; moins dans une grosse foule)
+  const sc = clamp(z.g.scale.x || 1, .7, 2), p = point && point.isVector3 ? point : pkCenter(z);
+  if (z.pkDie === 'boom'){ zBurst(p, 'blood', Math.round(8 * sc), 4.5); zBurst(p, 'dust', 3, 3); }
+  else if (z.pkDie === 'corps') zBurst(p, 'blood', Math.round(5 * sc), 2.6);
+}
+// Sons nouveaux (fichier des sons) appelés seulement s'ils existent ; au plus un par « gap » secondes
+function pkSnd(nom, gap){
+  if (typeof Snd === 'undefined' || typeof Snd[nom] !== 'function') return false;
+  const l = PK.snd[nom]; if (l >= 0 && PK.clock - l < gap) return false;
+  PK.snd[nom] = PK.clock;
+  try { Snd[nom](); } catch (e) { errNote(e); }
+  return true;
+}
+function pkFeelClear(){
+  PK.react.forEach(z => { z.pkIn = false; z.pkA = z.pkHA = 0; }); PK.react.length = 0;
+  PK.dying.length = 0; PK.hmH = PK.hmK = 0;
+}
+// Repère au réticule : 4 traits en X, blanc-jaune pour la tête, rouges pour un mort (dorés : mort par la tête)
+let pkHmEl = null;
+function pkHmFrame(dt, vis){
+  if (!pkHmEl && document.createElement){
+    pkHmEl = document.createElement('div'); pkHmEl.id = 'pkHm';
+    for (let i = 0; i < 4; i++) pkHmEl.appendChild(document.createElement('i'));
+    if (document.body && document.body.appendChild) document.body.appendChild(pkHmEl);
+  }
+  if (PK.hmK > 0) PK.hmK -= dt;
+  if (PK.hmH > 0) PK.hmH -= dt;
+  const K = PK.hmK > 0 && vis, H = PK.hmH > 0 && vis;
+  const cls = K ? (PK.hmKH ? 'on kill head' : 'on kill') : H ? 'on head' : '';
+  if (!pkHmEl) return cls;
+  if (cls !== PK.hmCls){ PK.hmCls = cls; pkHmEl.className = cls; if (!cls) pkHmEl.style.opacity = '0'; }
+  if (cls){
+    const life = K ? PK_FEEL.hmKill : PK_FEEL.hmHead, t = life - (K ? PK.hmK : PK.hmH), u = t / life;
+    const sc = K ? (t < .06 ? 1.6 - 6 * t : 1.24 - .3 * u) : 1 + .25 * (1 - u);
+    pkHmEl.style.transform = 'scale(' + sc.toFixed(2) + ')';
+    pkHmEl.style.opacity = (u < .6 ? 1 : Math.max(0, 1 - (u - .6) / .4)).toFixed(2);
+  }
+  return cls;
+}
+
 /* ---------- Boucle : échelle de temps sur update(), chiffres et effet dans visuals() ---------- */
 try {
   const _updPk = update;
   update = function(dt){
     const k = pkSlowStep(dt);
     const st = pkSt(); if (st) st.time += dt; // temps de jeu réel
-    return _updPk.call(this, dt * k);
+    pkPoseOff();
+    const r = _updPk.call(this, dt * k);
+    try { pkPoseOn(dt * k); } catch (e) { errNote(e); }
+    return r;
   };
 } catch (e) { errNote(e); }
 try {
@@ -342,6 +486,7 @@ try {
       PK.costEma += (performance.now() - t0 - PK.costEma) * .05;
       pknAdapt(dt);
     } else if (state !== 'paused' && pknActive()) pknClear();
+    pkHmFrame(play ? dt : 0, play || state === 'paused');
     return r;
   };
 } catch (e) { errNote(e); }
@@ -350,11 +495,11 @@ try {
   newGame = function(){
     const r = _ngPk.apply(this, arguments);
     if (S) S.pk = pkNew();
-    pkSlowStop(); PK.slowCd = 0; pknClear(); PK.shotHits = PK.shotKills = 0;
+    pkSlowStop(); PK.slowCd = 0; pknClear(); PK.shotHits = PK.shotKills = 0; pkFeelClear();
     return r;
   };
 } catch (e) { errNote(e); }
-try { const _b = clearZombies; clearZombies = function(){ const r = _b.apply(this, arguments); pknClear(); return r; }; } catch (e) { errNote(e); }
+try { const _b = clearZombies; clearZombies = function(){ const r = _b.apply(this, arguments); pknClear(); pkFeelClear(); return r; }; } catch (e) { errNote(e); }
 
 /* ---------- Argent dépensé : achats de la boutique (différence autour du clic) ---------- */
 (function(){
@@ -371,13 +516,15 @@ try { const _b = clearZombies; clearZombies = function(){ const r = _b.apply(thi
 function pkSyncBtns(){
   const a = $('btnSlow'); if (a) a.textContent = 'Ralenti : ' + (PK.slow ? 'activé' : 'désactivé');
   const b = $('btnDmgNum'); if (b) b.textContent = 'Chiffres de dégâts : ' + (PK.nums ? 'affichés' : 'cachés');
+  const c = $('btnTirFx'); if (c) c.textContent = 'Effets de tir : ' + (PK.tir ? 'activés' : 'désactivés');
 }
 function pkSetSlow(on){ PK.slow = !!on; store.set('dt_slow', PK.slow); if (!PK.slow) pkSlowStop(); pkSyncBtns(); }
 function pkSetNums(on){ PK.nums = !!on; store.set('dt_dmgnum', PK.nums); if (!PK.nums) pknClear(); pkSyncBtns(); }
+function pkSetTir(on){ PK.tir = !!on; store.set('dt_tirfx', PK.tir); if (!PK.tir){ pkPoseOff(); pkFeelClear(); pkHmFrame(0, false); } pkSyncBtns(); }
 (function(){
   const res = $('btnResume');
   if (res && res.parentNode && res.parentNode.insertBefore){
-    [['btnSlow', () => pkSetSlow(!PK.slow)], ['btnDmgNum', () => pkSetNums(!PK.nums)]].forEach(d => {
+    [['btnSlow', () => pkSetSlow(!PK.slow)], ['btnDmgNum', () => pkSetNums(!PK.nums)], ['btnTirFx', () => pkSetTir(!PK.tir)]].forEach(d => {
       const b = document.createElement('button'); b.className = 'ghost'; b.id = d[0]; b.type = 'button';
       res.parentNode.insertBefore(b, res);
       b.addEventListener('click', d[1]);
@@ -464,4 +611,5 @@ try {
 
 // Accès pour les tests automatiques et tests/perf.html
 window.__punch = { PK, PKN, PK_SLOW, PKN_MAX, pkFmt, pkSlow, pkSlowStop, pkSlowStep, pkNum, pknFrame, pknClear, pknActive, pkSetSlow, pkSetNums,
+  pkSetTir, pkPoseOff, pkPoseOn, pkHmFrame, PK_FEEL,
   pkEndData, pkEndHTML, pkEndRender, pkNew, get cap(){ return pknCap; }, setCap(n){ pknCap = clamp(n | 0, 1, PKN_MAX); } };

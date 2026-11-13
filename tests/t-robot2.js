@@ -177,4 +177,27 @@
     ok(r.nb >= 1 && !r.tourelles, 'Robot : les tourelles du toit sont cachées');
     ok(apres.menu, 'Retour au menu : elles reviennent'); ok(!apres.rts, 'RTS : cachées'); ok(apres.fin, 'Après le RTS : elles reviennent');
   });
+
+  // Chiffres du garage changés d'après le simulateur (2026-11-13, banc à ferraille égale)
+  test('Robot : la minigun surchauffe en tirant sans arrêt, et plus avec le refroidissement au maximum', () => {
+    exiger(); reset();
+    const r = J(function(){
+      var K = __mech, H = K.MECH_HEAT, o = { shot: H.shot };
+      // Chaleur nette par seconde en tenant la gâchette (20 balles par seconde, refroidissement réduit pendant le tir)
+      var net = function(lv){ return H.shot * Math.max(.3, 1 - .08 * lv) * 20 - H.cool * .35; };
+      o.base = net(0); o.max = net(K.MECH_UPG.cool.max);
+      o.secondes = 1 / o.base;
+      return o;
+    });
+    egal(r.shot, .011, 'Chaleur par balle (avant : 0,0065, la surchauffe venait après 55 s)');
+    ok(r.secondes > 6 && r.secondes < 20, 'Surchauffe après environ 12 s de tir sans arrêt : ' + r.secondes.toFixed(1) + ' s');
+    ok(r.max < 0, 'Refroidissement au niveau 8 : plus de surchauffe');
+  });
+
+  test('Robot : armes du garage remises à leur prix (canon aux 1,9 s ; arc aux 0,18 s)', () => {
+    exiger(); reset();
+    const W = J(function(){ var M = __mech.MECH_W; return { rail: M.railgun.cd, arc: M.arc.cd }; });
+    egal(W.rail, 1.9, 'Canon électromagnétique : secondes entre deux tirs (avant : 1,3 : 14 rues à 7 500 ⚙ au lieu de 9 pour le reste)');
+    egal(W.arc, .18, 'Arc électrique : secondes entre deux tirs (avant : 0,35 : plus faible que garder les roquettes)');
+  });
 })();

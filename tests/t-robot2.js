@@ -61,12 +61,12 @@
     egal(r.file, 1, 'Un boss dans la rue 3'); egal(r.file4, 0, 'Pas de boss dans la rue 4');
   });
 
-  test('Robot : vagues de tous les côtés (devant, derrière, ruelles) et carrefour pour choisir la rue suivante', () => {
+  test('Robot : vagues du bout de la rue et des ruelles (jamais derrière) et carrefour pour choisir la rue suivante', () => {
     exiger(); reset(); depart();
     const r = J(function(){
       var o = {}, M = __mech.MECH, MZ = -5.5;
       var n = __mb.mbWave(); var zs = zombies.filter(function(z){ return !z.dead; });
-      o.n = n; o.devant = zs.filter(function(z){ return z.g.position.z < -60; }).length; o.derriere = zs.filter(function(z){ return z.g.position.z > MZ + 5; }).length;
+      o.n = n; o.devant = zs.filter(function(z){ return z.g.position.z < -60; }).length; o.derriere = zs.filter(function(z){ return z.g.position.z > MZ; }).length;
       o.cotes = zs.filter(function(z){ return Math.abs(z.g.position.x) > 12.5; }).length;
       o.banniere = /Vague/.test(document.getElementById('bTitle').textContent);
       // Vagues automatiques
@@ -85,7 +85,7 @@
     });
     fin();
     ok(r.n >= 10, 'Zombies dans la vague : ' + r.n);
-    ok(r.devant > 0 && r.derriere > 0 && r.cotes > 0, 'Devant ' + r.devant + ', derrière ' + r.derriere + ', côtés ' + r.cotes);
+    ok(r.devant > 0 && r.cotes > 0, 'Devant ' + r.devant + ', côtés ' + r.cotes); egal(r.derriere, 0, 'Personne derrière le robot (dossier 105)');
     ok(r.banniere, 'Annonce de la vague'); ok(r.auto, 'Les vagues reviennent toutes seules');
     ok(r.carrefour, 'Carrefour au bout de la rue'); egal(r.choix, 3, 'Trois rues au choix');
     ok(r.toujours, 'La reprise ne saute pas le carrefour');

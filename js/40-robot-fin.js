@@ -70,7 +70,7 @@ try {
   const _t = mechTread;
   mechTread = function(d){ if (d > 0 && mechFinRue()) d = Math.min(d, Math.max(0, mechFinLim() - MECH.dist)); if (d) return _t.call(this, d); };
 } catch (e) { errNote(e); }
-// Rue 9, à chaque image : le boss arrive au milieu de la rue ; à mi-vie, il appelle une vague de tous les côtés (une fois)
+// Rue 9, à chaque image : le boss arrive au milieu de la rue ; à mi-vie, il appelle une vague (une fois), qui sort devant le robot
 function mechFinPas(){
   if (!MECH.finBoss && MECH.dist >= MECH_FIN.bossA * MECH_LEN) mechFinBoss();
   if (MECH.dist > mechFinLim()) MECH.dist = mechFinLim();
@@ -78,7 +78,7 @@ function mechFinPas(){
   if (b && !MECH.finMoitie && b.hp < b.maxHp * .5){
     MECH.finMoitie = true;
     if (typeof mbWave === 'function') mbWave();
-    banner('Le ' + MECH_FIN.nom + ' appelle la horde !', 'Ils arrivent de partout', 2000);
+    banner('Le ' + MECH_FIN.nom + ' appelle la horde !', 'Ils arrivent du bout de la rue et des ruelles', 2000);
   }
 }
 try {

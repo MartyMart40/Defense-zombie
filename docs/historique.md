@@ -4,6 +4,7 @@ Les tâches plus anciennes que les 10 dernières (les récentes sont dans `TACHE
 
 | # | Tâche | Date |
 |---|-------|------|
+| 88 | RTS, pilotage à l’ordi : la 2e arme (Hellfire de l’Apache, 105 mm de l’AC-130, roquettes du Mech) ne partait pas si on tenait déjà le clic gauche (le navigateur n’envoie pas de « bouton enfoncé » pour le 2e bouton). Corrigé ; touche E pour la 2e arme ; aide du pilotage mise à jour | 2026-11-04 |
 | 87 | Graphismes, style Ultra (ordi seulement, 4e choix du bouton Style ; sauté au cell) : rue mouillée qui reflète vraiment la scène (flaques, plus fort sous la pluie), rayons de soleil dans la brume, ombres douces (VSM), ombres de contact pleine résolution (js/61-graphismes-ultra.js, Reflector ajouté à lib/three-hd.js, tests/t-style.js) | 2026-11-04 |
 | 86 | Graphismes, Haute définition séance 3 improvisée (sans téléchargement) : zombies en matériaux physiques (crasse, sang séché et frais, griffures, relief ; couleurs plus justes), flaque de sang où chaque zombie tombe, flou de profondeur en visant (net au point visé) (js/60-graphismes-zombies.js, tests/t-style.js) | 2026-11-04 |
 | 85 | Graphismes, Haute définition, décor improvisé (sans téléchargement) : autos détaillées (vraies roues, vitres qui reflètent, phares, feux, pare-chocs, rétroviseurs), fils électriques entre les lampadaires, débris dans la rue (papiers, briques, planches, pneus, sacs, canettes) ; autos marquées dans js/03-scene.js (1 ligne) (js/59-graphismes-decor.js, tests/t-style.js) | 2026-11-04 |

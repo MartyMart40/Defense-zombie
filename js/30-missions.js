@@ -95,9 +95,13 @@ function msNorm(){
   const num = v => (+v > 0 && isFinite(+v) ? Math.floor(+v) : 0);
   const st = P.st && typeof P.st === 'object' ? P.st : {}, o = {};
   MS_STATS.forEach(k => { o[k] = num(st[k]); });
+  // Les compteurs que ce fichier ne connaît pas sont gardés : ceux du robot et du RTS (js/51-succes-modes.js) sont ajoutés
+  // après ce chargement. Avant le 2026-11-13, ils étaient effacés à chaque ouverture du jeu.
+  Object.keys(st).forEach(k => { if (!(k in o) && num(st[k])) o[k] = num(st[k]); });
   P.st = o;
   const a = P.ach && typeof P.ach === 'object' ? P.ach : {}, b = {};
   ACH.forEach(x => { const v = num(a[x.id]); if (v) b[x.id] = Math.min(v, x.tiers.length); });
+  Object.keys(a).forEach(k => { if (!(k in b) && !ACH.some(x => x.id === k) && num(a[k])) b[k] = Math.min(num(a[k]), 9); }); // paliers des succès ajoutés plus loin (robot, RTS)
   P.ach = b;
   P.achScrap = num(P.achScrap);
   const m = P.miss && typeof P.miss === 'object' ? P.miss : {};

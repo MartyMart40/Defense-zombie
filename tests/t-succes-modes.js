@@ -40,4 +40,21 @@
     ok(r.cache, 'Visibles dès le départ'); ok(r.visible, 'Visibles une fois débloqué');
     egal(r.kills, 3, 'Zombies abattus avec le robot'); egal(r.rues, 5, 'Rues traversées (rue 6 atteinte)'); ok(r.ach, 'Succès Briseur de rues');
   });
+  // Bogue corrigé le 2026-11-13 : la remise en ordre du profil (msNorm, au chargement) effaçait les compteurs et paliers du robot et du RTS
+  test('Succès des modes : la remise en ordre du profil garde les compteurs du robot et du RTS', () => {
+    if (lire('typeof __missions === "object" && typeof __succesModes === "object"') !== true) ignorer('Succès des modes absents');
+    reset();
+    const r = J(function(){
+      var st0 = P.st, ach0 = P.ach, o = {};
+      // Comme au chargement : seuls les succès du toit sont connus quand msNorm passe
+      var retires = ACH.splice(ACH.length - __succesModes.ACH_MODES.length, __succesModes.ACH_MODES.length);
+      P.st = { kills: 12, mechKills: 4321, rtsNests: 7, bidon: 'x' }; P.ach = { mechKills: 1, rtsNests: 1 };
+      try { __missions.msNorm(); o.mk = P.st.mechKills; o.rn = P.st.rtsNests; o.k = P.st.kills; o.bidon = 'bidon' in P.st; o.am = P.ach.mechKills; o.ar = P.ach.rtsNests; }
+      finally { retires.forEach(function(a){ ACH.push(a); }); P.st = st0; P.ach = ach0; __missions.msNorm(); }
+      return o;
+    });
+    egal(r.mk, 4321, 'Zombies abattus avec le robot gardés'); egal(r.rn, 7, 'Nids détruits gardés'); egal(r.k, 12, 'Compteur du toit gardé');
+    ok(!r.bidon, 'Une valeur qui n’est pas un nombre est écartée');
+    egal(r.am, 1, 'Palier du robot gardé'); egal(r.ar, 1, 'Palier du RTS gardé');
+  });
 })();

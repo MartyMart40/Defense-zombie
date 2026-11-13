@@ -20,7 +20,7 @@ const MECH_ARMOR = 1500;       // blindage de départ (+250 par rue)
 // Maintenant : surchauffe après environ 12 s de tir, jamais avec le refroidissement au niveau 8.
 const MECH_HEAT = { shot:.011, cool:.32, lock:2.2 };
 const MECH_ROCKET_CD = .65;    // secondes entre deux roquettes
-const MECH = { on:false, paused:false, x:0, dist:0, street:1, heat:0, hot:0, rcd:0, kills:0, step:0, stepSide:0, mv:{ f:0, b:0, l:0, r:0 },
+const MECH = { on:false, paused:false, x:0, dist:0, street:1, tour:1, heat:0, hot:0, rcd:0, kills:0, step:0, stepSide:0, mv:{ f:0, b:0, l:0, r:0 },
   joy:{ id:null, x:0, y:0, dx:0, dy:0 }, aim:{ id:null, lx:0, ly:0 }, mini:false, rocket:false, turn:0, autoFire:store.get('dt_mech_auto', true) !== false, rcdMax:.65, fade:0, fadeTo:null, pow:1, xp0:0, scr0:0, best:+store.get('dt_mech_best', 0) || 0 };
 
 /* ---------- Déblocage et améliorations permanentes (Garage, payées en ferraille) ---------- */
@@ -48,9 +48,10 @@ const MECH_UPG_ORDER = Object.keys(MECH_UPG);
 //   Canon électromagnétique : cd 1.9 (1.3 avant, 2026-11-13, simulateur) : à ferraille égale (7 500), il menait 14 rues au lieu
 //       de 9 pour « toutes les améliorations au moins cher » et 7 à 11 pour les autres armes (son onde de choc couche toute la file).
 //   Arc électrique : cd .18 (.35 avant, même jour) : l'acheter rendait le robot plus faible que garder les roquettes.
+//   Lance-flammes lourd : k 1.2 (.76 avant, dossier 102) : à 7 500 ⚙, 10,1 rues au lieu d'être sous « toujours le moins cher ».
 const MECH_W = {
   minigun: { side:'L', name:'Minigun',               cost:0,    k:.706, desc:'Rafale continue, chauffe.' },
-  flamer:  { side:'L', name:'Lance-flammes lourd',   cost:600,  k:.76, desc:'Nappe de feu devant le robot : tout ce qui brûle continue de brûler.' },
+  flamer:  { side:'L', name:'Lance-flammes lourd',   cost:600,  k:1.2, desc:'Nappe de feu devant le robot : tout ce qui brûle continue de brûler.' },
   laser:   { side:'L', name:'Laser lourd',           cost:1200, desc:'Rayon instantané qui traverse toute la file.' },
   rocket:  { side:'R', name:'Roquettes',             cost:0,    k:.8, cd:.65, ch:4, rg:1.6, salvo:true, desc:'Grosses explosions.' },
   gl:      { side:'R', name:'Lance-grenades',        cost:800,  k:.5, cd:.3,  ch:8, rg:.6, salvo:true, desc:'Trois grenades par seconde.' },
@@ -226,17 +227,26 @@ function mechHideBarricade(){
 // fois que la horde de la rue se reforme, et plus de ferraille ni d'expérience à partir du 2e renfort, pour qu'on ne puisse
 // pas rester sur place à en ramasser sans risque.
 const MECH_RAMPE = [1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6], MECH_RENFORT = 1.35;
-const mechRampe = n => MECH_RAMPE[Math.min(MECH_RAMPE.length, Math.max(1, n)) - 1];
+// Entre deux valeurs du tableau, on prend le point entre les deux (l'indice de force peut être un nombre à virgule)
+const mechRampe = n => { const i = clamp(n, 1, MECH_RAMPE.length) - 1, a = Math.floor(i), f = i - a; return MECH_RAMPE[a] + (f ? (MECH_RAMPE[Math.min(a + 1, MECH_RAMPE.length - 1)] - MECH_RAMPE[a]) * f : 0); };
+// Courbe de la course (dossier 102) : la force d'une rue suit un indice e = e0 + pente × (rue - 1), qui remplace le numéro
+// de la rue dans tous les calculs (nombre, vie, dégâts, sorties des zombies, force des armes, ferraille).
+// Avant : e = rue. Mesuré au simulateur : rues 1 à 3 sans aucun dégât, puis un mur à la rue 5 ou 6 (×7 de dégâts d'une rue
+// à l'autre). Avec e0 = 3 et pente 0,7 : la rue 1 vaut l'ancienne rue 3, la rue 9 l'ancienne rue 8,6 ; dégâts par rue du joueur moyen
+// (profil neuf) : 11, 76, 961, 760, 2 052, 2 057, il tombe vers la rue 5 ou 6.
+// Le tour (js/40-robot-fin.js) ne change pas e : il multiplie la vie et les dégâts des zombies à part.
+const MECH_COURBE = { e0:3, pente:.7 };
+const mechE = n => MECH_COURBE.e0 + MECH_COURBE.pente * ((n == null ? MECH.street : n) - 1);
 function mechPlan(){
-  const n = MECH.street, w = Math.min(10, n + 1), k = mechRampe(n), r = Math.pow(MECH_RENFORT, MECH.renf || 0);
+  const n = mechE(), w = Math.min(10, Math.floor(n) + 1), k = mechRampe(n), r = Math.pow(MECH_RENFORT, MECH.renf || 0);
   const L = Object.assign({}, curLoc, { diff:1, off:0, dur:1, xp:k });
   // Sorties plus serrées depuis le 2026-11-13 (0,55 - 0,04 par rue avant) : les premières rues se traversaient sans rien recevoir
-  const p = hordePlan(60 + 35 * n, { wave:w, loc:L, maxAlive:Math.min(DEV_CAP, (isTouch ? 45 : 70) + 12 * n), interval:Math.max(.12, .42 - .04 * n), burst:Math.min(4, 1 + Math.floor(n / 2)) });
+  const p = hordePlan(Math.round(60 + 35 * n), { wave:w, loc:L, maxAlive:Math.min(DEV_CAP, Math.round((isTouch ? 45 : 70) + 12 * n)), interval:Math.max(.12, .42 - .04 * n), burst:Math.min(4, 1 + Math.floor(n / 2)) });
   p.hpMult *= Math.pow(1.22, n - 1) * k * r; p.dmgMult *= Math.pow(1.12, n - 1) * k * r; p.spdMult = Math.min(1.7, p.spdMult * (1 + .1 * (k - 1)));
   p.cashMult = 1 + .5 * (k - 1);
   if ((MECH.renf || 0) >= 2) p.xp = 0;
   // Grosse baston : un boss au milieu de la rue, toutes les 3 rues
-  if (n % 3 === 0 && !MECH.bossDone && typeof bossReady === 'function' && bossReady()){ p.queue.splice(Math.round(p.queue.length * .5), 0, 'boss'); MECH.bossDone = true; }
+  if (MECH.street % 3 === 0 && !MECH.bossDone && typeof bossReady === 'function' && bossReady()){ p.queue.splice(Math.round(p.queue.length * .5), 0, 'boss'); MECH.bossDone = true; }
   return p;
 }
 function mechStreet(first){
@@ -250,7 +260,7 @@ function mechStreet(first){
   world.position.z = 0; MECH.dist = 0; MECH.x = 0; MECH.bossDone = false; MECH.renf = 0; MECH.rch = (MECH_W[mW('R')] || {}).ch || 0;
   clearZombies();
   plan = mechPlan(); spawnT = 1.5;
-  MECH.pow = 2.4 * Math.pow(1.16, MECH.street - 1);       // les armes du robot montent avec les rues
+  MECH.pow = 2.4 * Math.pow(1.16, mechE() - 1);           // les armes du robot montent avec les rues (même indice que les zombies)
   if (!first){ S.barMax += 250; S.bar = Math.min(S.barMax, S.bar + S.barMax * (.35 + .08 * mUp('repair'))); } // réparation à chaque rue
   if (typeof saveP === 'function') saveP();
   banner('Rue ' + MECH.street, (RT && RT.title ? RT.title + ' · ' : '') + L.name + (first ? ' : avance et nettoie la rue' : ' · blindage réparé'), 2200);
@@ -430,8 +440,9 @@ function mechStep(dt){
   if (typeof comboTick === 'function') comboTick(dt); // le combo retombe comme en partie normale
   groanT -= dt;
   if (groanT <= 0){ groanT = rand(1.2, 3); if (zAliveCount() > 0) Snd.groan(); }
-  // Fin de rue
-  if (MECH.dist >= MECH_LEN && MECH.fade <= 0){ MECH.fade = 1.2; MECH.fadeTo = 'street'; }
+  // Fin de rue. Avec js/40-robot-monstres.js, c'est son carrefour qui lance le fondu : avant le dossier 102, le fondu partait
+  // ici dans la même image où le robot passait le bout de la rue, donc le carrefour n'apparaissait jamais.
+  if (MECH.dist >= MECH_LEN && MECH.fade <= 0 && typeof mbCrossroads !== 'function'){ MECH.fade = 1.2; MECH.fadeTo = 'street'; }
   if (S.bar <= 0) mechOver();
 }
 function mechStomp(){
@@ -613,4 +624,4 @@ try {
 } catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
-window.__mech = { MECH_W, mW, mechWeapon, mechArms, mechArmsG, MECH_UPG, mUp, mechUpgBuy, mechUpgCost, mechUnlocked, mechUnlock, mechGarage, mechNorm, mechBtn, MECH, MECH_LEN, MECH_HEAT, MECH_RAMPE, MECH_RENFORT, MECH_ASSIST, mechAssist, mechAssistFin, mechRampe, mechStart, mechQuit, mechStep, mechStreet, mechPause, mechResume, mechOver, mechPlan, mechCk };
+window.__mech = { MECH_W, mW, mechWeapon, mechArms, mechArmsG, MECH_UPG, mUp, mechUpgBuy, mechUpgCost, mechUnlocked, mechUnlock, mechGarage, mechNorm, mechBtn, MECH, MECH_LEN, MECH_HEAT, MECH_RAMPE, MECH_RENFORT, MECH_COURBE, mechE, MECH_ASSIST, mechAssist, mechAssistFin, mechRampe, mechStart, mechQuit, mechStep, mechStreet, mechPause, mechResume, mechOver, mechPlan, mechCk };

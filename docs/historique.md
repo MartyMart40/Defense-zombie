@@ -4,6 +4,7 @@ Les tâches plus anciennes que les 10 dernières (les récentes sont dans `TACHE
 
 | # | Tâche | Date |
 |---|-------|------|
+| 89 | RTS : AC-130 deux fois plus haut (60 m au lieu de 30, portée 95 m, zoom des postes resserré : 30° et 20°) pour viser plus calmement ; la 2e arme se voit (gros texte « HELLFIRE ! », « 105 MM ! », « ROQUETTES ! » au tir, temps restant ou « À SEC » si on appuie trop tôt, état dans le bandeau du poste et sur le bouton jaune au cell) ; les 4 tours du toit ne restent plus dans la vallée du RTS | 2026-11-04 |
 | 88 | RTS, pilotage à l’ordi : la 2e arme (Hellfire de l’Apache, 105 mm de l’AC-130, roquettes du Mech) ne partait pas si on tenait déjà le clic gauche (le navigateur n’envoie pas de « bouton enfoncé » pour le 2e bouton). Corrigé ; touche E pour la 2e arme ; aide du pilotage mise à jour | 2026-11-04 |
 | 87 | Graphismes, style Ultra (ordi seulement, 4e choix du bouton Style ; sauté au cell) : rue mouillée qui reflète vraiment la scène (flaques, plus fort sous la pluie), rayons de soleil dans la brume, ombres douces (VSM), ombres de contact pleine résolution (js/61-graphismes-ultra.js, Reflector ajouté à lib/three-hd.js, tests/t-style.js) | 2026-11-04 |
 | 86 | Graphismes, Haute définition séance 3 improvisée (sans téléchargement) : zombies en matériaux physiques (crasse, sang séché et frais, griffures, relief ; couleurs plus justes), flaque de sang où chaque zombie tombe, flou de profondeur en visant (net au point visé) (js/60-graphismes-zombies.js, tests/t-style.js) | 2026-11-04 |

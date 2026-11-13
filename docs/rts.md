@@ -15,11 +15,12 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | `js/47-rts-astuces.js` | Astuces des premières parties : une bulle à la fois, au bon moment, une fois chacune ; « Plus d’astuces » les coupe, la pause permet de les revoir |
 | `js/54-rts-postes.js` | Postes de pilotage (ce qu'on voit quand on pilote un véhicule), munitions des avions et retour à l'aérodrome, 2 avions par aérodrome |
 | `js/55-rts-niveaux.js` | Les armes embellissent avec leurs améliorations (niveau visuel de 0 à 1 par arme) |
+| `js/55-rts-effets.js` | Effets des armes dès le niveau 0 : traçantes, projectiles en vol, explosions au rayon réel, rayons, éclairs, flammes (tâche 106) |
 | `js/56-rts-postes-robots.js` | Poste des petits robots : visière, bras et arme propre à chaque robot, recul, éclair, détails selon les améliorations |
 | `js/48-rts-liste.js` | Choisir les unités une par une : rangée « Unités » repliable (fermée : une pastille « 👥 Unités · N » et les groupes ; ouverte : une pastille par unité avec sa vie ; choix gardé dans `dt_rts_liste`), Tab pour la suivante, double-clic pour le même type ; groupes enregistrés (5 au plus) |
 | `js/49-rts-commandement.js` | Mini-carte (toucher pour y aller), point de ralliement, alerte « Base attaquée » à paliers, « ✋ Tenir » (u.hold), mode photo (dans la pause) |
 | `js/65-rts-ruche.js` | La Ruche (modèle, garde, ponte, victoire « Vallée libérée ! »), les vallées (choix sur l'écran titre), les sièges (annonce, bandeau, pastille sur la mini-carte). Réglages : `RTS_REGL` dans `js/41-rts.js` |
-| `tests/t-rts.js`, `tests/t-rts-ruche.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js` | Tests |
+| `tests/t-rts.js`, `tests/t-rts-effets.js`, `tests/t-rts-ruche.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js` | Tests |
 
 ## Règles et chiffres actuels
 - Départ : 900 $, QG, usine de robots, 3 tourelles mitrailleuses, 3 fantassins.
@@ -67,6 +68,29 @@ Les prix exacts sont dans `RTS_UNITS` et `RTS_BLD` (`js/41-rts.js`) : si un chif
 - Au début : petit « pew pew », traînée fine, petite explosion, presque pas de recul. En montant : traînée plus large avec un cœur blanc, son plus lourd, explosion plus grosse (poussière, fumée, boule de feu du 105 mm), écran qui tremble plus, recul et éclair plus forts.
 - Dans le poste, le modèle gagne des détails à 1/3, 2/3 et au maximum (frein de bouche, manchons, cylindres de recul, canons en plus sur l'Apache, métal rougi).
 - Les dégâts ne changent pas : seule la mise en scène suit les améliorations.
+
+## Effets des armes dès le niveau 0 (2026-11-13, tâche 106, demande de Martin : « une rocket est une ligne sans explosion »)
+Le plancher monte : dès l'achat, chaque arme a un tir qui se lit de la caméra du RTS et du poste. Les paliers (`RTS_TIER`, ci-dessus) ajoutent par-dessus. Seulement le visuel et le son : les dégâts restent instantanés, au même moment qu'avant ; le projectile qu'on voit voler arrive au plus 0,6 s après (mortier), d'habitude 0,1 à 0,45 s.
+
+| Famille | Armes | Niveau 0 | Ce que les paliers ajoutent |
+|---|---|---|---|
+| Balles | fantassin, mitrailleur, mech (minigun), chasseur, Warthog, canons de l'Apache, du tank et de l'AC-130, tourelle mitrailleuse | traçante qui file (4 m), éclair de bouche, sang ou poussière à l'impact | traçante plus longue et plus large, cœur blanc, étincelles |
+| Tir d'élite | tireur d'élite | longue traçante rapide, ligne qui reste 0,3 s, gros impact | plus large, ligne plus longue à s'effacer |
+| Obus | tank (120 mm), AC-130 (40 mm), tourelle canon | éclair et fumée au départ (le tank soulève le sable), obus brillant, explosion avec terre soulevée | obus plus gros, plus de débris et de fumée |
+| Mortier | tourelle mortier (aussi pilotée) | obus en arc avec fumée, explosion | idem |
+| 105 mm | AC-130 | chute visible avec traînée, grosse boule de feu, colonne de feu et de fumée, deux ondes au sol | plus de feu ; obus incendiaires : le sol brûle |
+| Roquettes et missiles | lance-roquettes, roquettes de l'Apache et du Mech, Hellfire (blanc, en cloche) | corps, flamme, traînée de fumée qui reste ~1 s, explosion : éclair, boule de feu, fumée, étincelles, débris, marque au sol 5 s, onde | corps plus gros, traînée plus épaisse et plus longue (jusqu'à 2,3 s), deuxième boule de feu au maximum |
+| Énergie | mech lourd (laser) | rayon avec cœur clair et halo bleu, point d'impact qui chauffe, petite brûlure au sol | rayon plus large, plus d'étincelles |
+| Tesla | tourelle Tesla | éclair ramifié qui crépite (refait toutes les 35 ms), lueur à chaque zombie touché | plus de branches, plus large |
+| Feu | robot et tourelle lance-flammes | jet de boules de feu qui grossissent, fumée au bout, sol qui brûle un instant | plus de flammes, plus grosses |
+| Ennemis | Béhémoth, Titan | crachat d'acide en arc avec éclaboussure verte ; piétinement : onde au sol de 12 m (son vrai rayon) et anneau de poussière | |
+
+- L'onde et la marque au sol d'une explosion ont le rayon réel des dégâts (`S2.splash`, améliorations comprises). Secousse si l'explosion est près de la caméra pilotée.
+- Les tourelles ont maintenant un niveau visuel : (niveau − 1) / 5.
+- Coût : 6 appels de dessin en tout (lueurs et fumée en nuages de points, rubans, corps des projectiles, marques, ondes), réserves de taille fixe, aucune lumière. Plafonds (`RFX_CAP`) à l'ordi / au cell : 950 / 450 lueurs, 760 / 380 bouffées de fumée et débris, 440 / 220 rubans, 150 / 70 projectiles en vol, 80 / 40 corps, 48 / 24 marques, 32 / 16 ondes. Débit maximum par seconde (`RFX_DEBIT`) : 90 / 40 traçantes, 70 / 30 impacts, 16 / 8 explosions complètes (au-delà, explosion allégée : éclair, onde, un peu de feu), 50 / 24 jets de flammes.
+- Mesures (banc : 30 unités mixtes et 5 tourelles contre 300 zombies gardés à 300, hasard fixé, 120 images de 1/30 s, Chromium sans carte graphique, donc dessin fait par le processeur) : appels de dessin 243 avant, 227 après au niveau 0 (264 puis 228 avec tout amélioré) ; temps du code par image pareil (13 ms au niveau 0, 20 à 23 ms au maximum, avant comme après) ; temps total par image pareil au niveau 0 et au cell, environ 10 à 15 % de plus à l'ordi avec tout amélioré (fumée et boules de feu qui se superposent ; mesure qui varie de 15 % d'une fois à l'autre). Effets en vie : environ 650 en moyenne au niveau 0 et 1 150 au maximum à l'ordi, 410 et 630 au cell.
+- Les effets ont leur propre hasard : ils ne puisent pas dans `Math.random` (le simulateur à graine fixée garde presque la même partie).
+- Sans `js/55-rts-effets.js`, `js/42-rts-combat.js` retombe sur les anciens traits (`js/55-rts-niveaux.js`).
 
 ## Petits robots (2026-11-04, demande de Martin)
 - Les jambes sont des pièces à part (`rtsLegGeo`) : elles font des pas pendant la marche (une devant, l'autre derrière) et reviennent droites à l'arrêt.

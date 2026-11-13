@@ -66,7 +66,7 @@ function rtsBossAbility(z, dt){
   const gp = z.g.position;
   if (z.type === 'titan'){                        // piétinement : tout ce qui est au sol autour
     z.abT = rand(4.5, 6);
-    shake = Math.max(shake, .5); rtsV.set(gp.x, .3, gp.z); burst(rtsV, 'dust', 26, 8); if (typeof Snd === 'object' && Snd.boom) Snd.boom(1.2);
+    shake = Math.max(shake, .5); rtsV.set(gp.x, .3, gp.z); burst(rtsV, 'dust', 26, 8); if (typeof rtsFxStomp === 'function') rtsFxStomp(gp.x, gp.z, 12); /* onde au sol (js/55-rts-effets.js) */ if (typeof Snd === 'object' && Snd.boom) Snd.boom(1.2);
     RTS.units.slice().forEach(u => { if (!u.dead && !rtsIsAir(u) && Math.hypot(u.g.position.x - gp.x, u.g.position.z - gp.z) < 12) rtsDmgTarget(u, z.dmg * .5); });
     RTS.blds.slice().forEach(o => { if (!o.dead && Math.hypot(o.x - gp.x, o.z - gp.z) < 12 + o.r) rtsDmgTarget(o, z.dmg * .5); });
   } else if (z.type === 'broodmother'){           // elle pond des araignées ou des rampants
@@ -78,7 +78,8 @@ function rtsBossAbility(z, dt){
     RTS.blds.forEach(o => { if (o.dead) return; const d = (o.x - gp.x) ** 2 + (o.z - gp.z) ** 2; if (d < bd){ bd = d; best = o; } });
     if (best){
       const tp = rtsPos(best), to = new THREE.Vector3(tp.x, best.B ? 2 : best.g.position.y + 1, tp.z);
-      if (typeof arsBeam === 'function') arsBeam(rtsV.set(gp.x, gp.y + 2, gp.z), to, 0x8aff40, .35, .25);
+      if (typeof rtsFxAcid === 'function') rtsFxAcid(rtsV.set(gp.x, gp.y + 2, gp.z), to); // crachat en arc (js/55-rts-effets.js)
+      else if (typeof arsBeam === 'function') arsBeam(rtsV.set(gp.x, gp.y + 2, gp.z), to, 0x8aff40, .35, .25);
       burst(to, PMATS.acid ? 'acid' : 'dust', 9, 2.4);
       rtsDmgTarget(best, z.dmg * .6);
     }
@@ -162,9 +163,10 @@ function rtsShotSnd(id){ if (RTS.sndT > 0 || typeof Snd !== 'object') return; RT
 // Explosion au sol (roquettes, obus, bombes)
 function rtsBlast(x, z, S2){
   for (const zz of zombies){ if (zz.dead) continue; const d = Math.hypot(zz.g.position.x - x, zz.g.position.z - z); if (d < S2.splash){ damage(zz, S2.dmg * (1 - .5 * d / S2.splash), false, zz.g.position.clone()); if (S2.burn && !zz.dead){ zz.burnT = 5; zz.burnDps = 45; } } }
-  if (S2.burn) burst(rtsV.set(x, .6, z), PMATS.ember ? 'ember' : 'dust', 10, 3);
+  if (S2.burn && typeof rtsFxBlast !== 'function') burst(rtsV.set(x, .6, z), PMATS.ember ? 'ember' : 'dust', 10, 3);
   for (const n of RTS.nests){ if (n.dead) continue; if (Math.hypot(n.x - x, n.z - z) < S2.splash + n.r){ n.hp -= S2.dmg * .8 * (n.ruche ? RTS_REGL.ruche.blindage : 1); rtsHpSet(n.hpb, n.hp / n.maxHp); if (n.hp <= 0) rtsNestDie(n); } }
-  if (typeof rtsTierBlast === 'function') rtsTierBlast(x, z, S2); // explosion selon le niveau de l'arme (js/55-rts-niveaux.js)
+  if (typeof rtsFxBlast === 'function') rtsFxBlast(x, z, S2); // explosion au rayon réel, selon le niveau de l'arme (js/55-rts-effets.js)
+  else if (typeof rtsTierBlast === 'function') rtsTierBlast(x, z, S2); // ancienne explosion (js/55-rts-niveaux.js)
   else {
   if (typeof rueBoom === 'function') rueBoom(x, 1.2, z, S2.splash * 2.4);
   if (S2.big){ // obus de 105 mm : grosse boule de feu, colonne de fumée, la terre tremble
@@ -185,14 +187,16 @@ function rtsBeamOk(a, b){
 function rtsHit(from, tgt, kind, S2){
   const to = kind === 'nest' ? rtsV2.set(tgt.x, 3 + rand(-1, 2), tgt.z) : kind === 'pt' ? rtsV2.set(tgt.x, .5, tgt.z) : rtsV2.set(tgt.g.position.x, tgt.g.position.y + (tgt.aimY || 1.1), tgt.g.position.z);
   const clear = rtsBeamOk(from, to);
-  if (typeof rtsTierBeam === 'function') rtsTierBeam(from, to, S2, clear); // traînée selon le niveau de l'arme (js/55-rts-niveaux.js)
+  const fx = typeof rtsFxShot === 'function';
+  if (fx) rtsFxShot(from, to, S2, clear, kind); // départ, vol et impact selon la famille et le niveau de l'arme (js/55-rts-effets.js)
+  else if (typeof rtsTierBeam === 'function') rtsTierBeam(from, to, S2, clear); // traînée selon le niveau de l'arme (js/55-rts-niveaux.js)
   else if (S2.beam && clear && typeof arsBeam === 'function') arsBeam(from, to, S2.beam, S2.pierce ? .14 : .05, S2.pierce ? .12 : .05);
-  if (S2.chain && typeof arsBolt === 'function') arsBolt(from, to);
+  if (S2.chain && !fx && typeof arsBolt === 'function') arsBolt(from, to);
   if (typeof rtsTierBeam !== 'function' && !S2.beam && !S2.chain && !S2.flame && clear && typeof arsBeam === 'function') arsBeam(from, to, 0xffa040, .12, .08); // traînée de roquette, d'obus ou de bombe
   if (S2.snd !== null || S2.tsnd) rtsShotSnd(S2.tsnd || S2.snd); // son plus lourd en montant de niveau
   if (kind === 'nest'){
     tgt.hp -= S2.dmg * (S2.splash ? (tgt.ruche ? 1.6 * RTS_REGL.ruche.blindage : 1.6) : 1); rtsHpSet(tgt.hpb, tgt.hp / tgt.maxHp); // la Ruche résiste aux explosions burst(to, 'dust', 2, 2);
-    if (S2.splash && typeof rueBoom === 'function') rueBoom(to.x, to.y, to.z, 6);
+    if (S2.splash && !fx && typeof rueBoom === 'function') rueBoom(to.x, to.y, to.z, 6);
     if (tgt.hp <= 0) rtsNestDie(tgt);
     return;
   }
@@ -216,14 +220,17 @@ function rtsHit(from, tgt, kind, S2){
       let best = null, bd = 49;
       for (const z of zombies){ if (z.dead || hit.indexOf(z) >= 0) continue; const d = (z.g.position.x - cur.g.position.x) ** 2 + (z.g.position.z - cur.g.position.z) ** 2; if (d < bd){ bd = d; best = z; } }
       if (!best) break;
-      if (typeof arsBolt === 'function') arsBolt(rtsV.set(cur.g.position.x, 1.2, cur.g.position.z), rtsV3.set(best.g.position.x, 1.2, best.g.position.z));
+      if (fx && typeof rtsFxBolt === 'function') rtsFxBolt(rtsV.set(cur.g.position.x, 1.2, cur.g.position.z), rtsV3.set(best.g.position.x, 1.2, best.g.position.z), S2.tier);
+      else if (typeof arsBolt === 'function') arsBolt(rtsV.set(cur.g.position.x, 1.2, cur.g.position.z), rtsV3.set(best.g.position.x, 1.2, best.g.position.z));
       damage(best, S2.dmg * .8, false, best.g.position.clone()); hit.push(best); cur = best;
     }
   } else if (S2.flame){
     for (const z of zombies){ if (z.dead) continue; const d = Math.hypot(z.g.position.x - from.x, z.g.position.z - from.z); if (d < S2.range + 1 && (z.g.position.x - from.x) * (to.x - from.x) + (z.g.position.z - from.z) * (to.z - from.z) > 0){ damage(z, S2.dmg, false, z.g.position.clone()); z.burnT = 3; z.burnDps = S2.dmg * 2; } }
     // Jet de flammes bien visible : deux traits (orange large, jaune au cœur) et des braises le long
-    if (clear && typeof arsBeam === 'function'){ arsBeam(from, to, 0xff6a1a, .9, .1); arsBeam(from, to, 0xffd040, .35, .07); }
-    for (let k = 0; k < 2; k++){ rtsV.copy(from).lerp(to, rand(.3, 1)); burst(rtsV, PMATS.ember ? 'ember' : 'dust', 2, 2.5); }
+    if (!fx){ // sans js/55-rts-effets.js : l'ancien jet
+      if (clear && typeof arsBeam === 'function'){ arsBeam(from, to, 0xff6a1a, .9, .1); arsBeam(from, to, 0xffd040, .35, .07); }
+      for (let k = 0; k < 2; k++){ rtsV.copy(from).lerp(to, rand(.3, 1)); burst(rtsV, PMATS.ember ? 'ember' : 'dust', 2, 2.5); }
+    }
   } else damage(tgt, S2.dmg, false, to.clone());
 }
 function rtsNestDie(n){
@@ -256,7 +263,7 @@ const rtsS25 = u => { const G = RTS_GUNS[u.type], l = rtsLv(u.type, G.k) + (G.ba
 function rtsHellfire(u, dt, tgt, pilot){
   const l = rtsLv(u.type, 'hellfire') + (u.type === 'heli' ? 1 : 0); if (!l) return; // l'Apache a ses Hellfire dès l'achat
   u.cd4 = (u.cd4 || 0) - dt; if (u.cd4 > 0 || !tgt) return;
-  u.cd4 = 3; const S4 = { tier:(typeof rtsTier === 'function' ? rtsTier(u, 'w2') : .5), tsnd:(typeof rtsTierSndFor === 'function' ? rtsTierSndFor(u, 'w2') : null), dmg:300 * (1 + .4 * (l - 1)) * (1 + RTS_UPG.arm.k * rtsLv(u.type, 'arm')), splash:4, snd:'rocket', range:rtsStat(u, 'range') + 8 };
+  u.cd4 = 3; const S4 = { fam:'missile', tier:(typeof rtsTier === 'function' ? rtsTier(u, 'w2') : .5), tsnd:(typeof rtsTierSndFor === 'function' ? rtsTierSndFor(u, 'w2') : null), dmg:300 * (1 + .4 * (l - 1)) * (1 + RTS_UPG.arm.k * rtsLv(u.type, 'arm')), splash:4, snd:'rocket', range:rtsStat(u, 'range') + 8 };
   if (pilot){ rtsPilotShot(u, S4, 1.5, 'w2'); if (typeof rtsPosteShot === 'function') rtsPosteShot(u, 'w2'); } else rtsHit(rtsMuzzle(u, new THREE.Vector3()), tgt, tgt.g ? 'z' : 'nest', S4);
 }
 function rtsGat(u, dt, tgt, pilot){
@@ -449,7 +456,7 @@ function rtsBuildings(dt){
       if (t){
         const want = Math.atan2(t.g.position.x - o.x, t.g.position.z - o.z), cur = o.head.rotation.y, df = Math.atan2(Math.sin(want - cur), Math.cos(want - cur));
         o.head.rotation.y = cur + clamp(df, -dt * 5, dt * 5);
-        if (o.cd <= 0 && Math.abs(df) < .3){ o.cd = 1 / rtsTStat(o, 'rate'); rtsHit(new THREE.Vector3(o.x, 2.2, o.z), t, 'z', Object.assign({}, B.turret, { dmg:rtsTStat(o, 'dmg'), range:rng })); }
+        if (o.cd <= 0 && Math.abs(df) < .3){ o.cd = 1 / rtsTStat(o, 'rate'); rtsHit(new THREE.Vector3(o.x, 2.2, o.z), t, 'z', Object.assign({}, B.turret, { dmg:rtsTStat(o, 'dmg'), range:rng, tier:(o.lv - 1) / (RTS_TMAX - 1) })); } // tier : niveau visuel (js/55-rts-effets.js)
       }
     } else if (B.heal){
       o.healT = (o.healT || 0) - dt;

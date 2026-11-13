@@ -231,6 +231,68 @@
     ok(r.vus.every(Boolean) && r.sauve.every(Boolean), 'Gardé dans le profil (P.mtVus)');
   });
 
+  test('Monstres du toit : chaque moment qui compte est annoncé (Jeu.emit « monstre ») pour la voix et les repères', () => {
+    exiger(); partie(2);
+    if (lire('typeof __mt.mtEvt === "function" && typeof Jeu.emit === "function"') !== true) ignorer('Annonces des monstres absentes');
+    const r = J(function(){
+      var vus = [], f = Jeu.on('monstre', function(quoi, z){ vus.push(quoi + ':' + (z && z.type)); });
+      var o = {};
+      try {
+        state = 'playing';
+        // Hurleur arrivé : il hurle
+        var h = __t.placer('screamer', 0, -40); h.g.position.z = h.stopZ - .05; h.mtCri = .05;
+        for (var i = 0; i < 10; i++) update(1 / 30);
+        // Fouisseur : creuse, puis sort
+        var b = __t.placer('burrower', 3, -48); b.hp = b.maxHp = 1e6; b.mtDigZ = -48.5;
+        var t = 0; while (b.mtSt !== 'emerge' && t < 15){ update(1 / 30); t += 1 / 30; }
+        // Revenant : tombe, se relève
+        var rv = __t.placer('revenant', -3, -30); rv.speed = 0;
+        damage(rv, 1e9, false, rv.g.position.clone());
+        for (var k = 0; k < 30 * 3.2; k++) update(1 / 30);
+        o.evts = JSON.stringify(__mt.MT.evts);
+      } finally { Jeu.off('monstre', f); state = 'test'; clearZombies(); }
+      o.vus = vus;
+      return o;
+    });
+    const a = r.vus.join(' ');
+    ok(/cri:screamer/.test(a), 'Cri du hurleur annoncé : ' + a);
+    ok(/creuse:burrower/.test(a) && /sort:burrower/.test(a), 'Fouisseur qui creuse et qui sort : ' + a);
+    ok(a.indexOf('creuse:burrower') < a.indexOf('sort:burrower'), 'Il creuse avant de sortir');
+    ok(/chute:revenant/.test(a) && /releve:revenant/.test(a), 'Revenant qui tombe et qui se relève : ' + a);
+  });
+
+  test('Monstres du toit : le hurleur se reconnaît de loin (gorge qui luit, bras pâles qui pendent) sans matériau de plus', () => {
+    exiger(); partie(2);
+    const r = J(function(){
+      var o = {}, w = __t.placer('walker', 3, -70), n0 = ZMATS.size;
+      var z = __t.placer('screamer', 0, -70);
+      var mats = [], lum = [];
+      z.g.traverse(function(m){ if (m.isMesh && mats.indexOf(m.material) < 0) mats.push(m.material); });
+      o.partages = mats.every(function(m){ return !!(m.userData.zshared || m.userData.zfixed); });
+      o.lueur = mats.indexOf(ZKM.core) >= 0;
+      // Gorge lumineuse : assez grande pour se voir à 45 m (au moins 0,1 m² de face)
+      var g = z.g.userData.rig && z.g.userData.rig.gorge; o.gorge = g ? g.material === ZKM.core && g.scale.x * g.scale.y >= .1 : false;
+      // Bras pâles : couleur claire (pas le gris sombre des haillons)
+      var c = z.armL && z.armL.children[0] && z.armL.children[0].material.color; o.bras = c ? (c.r + c.g + c.b) / 3 : 0;
+      // Pose de marche : bras qui pendent (les autres zombies les tendent devant eux), même vitesse que la marche commune
+      var z0 = z.g.position.z, w0 = w.g.position.z; z.speed = w.speed = 1.5;
+      for (var i = 0; i < 20; i++) update(1 / 30);
+      o.brasZ = z.armL.rotation.x; o.brasW = w.armL.rotation.x;
+      o.avance = (z.g.position.z - z0) / (w.g.position.z - w0);
+      // Aucun matériau de plus dans la foule (palette ZMATS inchangée)
+      for (var k = 0; k < 6; k++) __t.placer('screamer', -6 + k * 2, -80);
+      o.mats = ZMATS.size - n0;
+      clearZombies();
+      return o;
+    });
+    ok(r.partages, 'Matériaux partagés seulement (palette des zombies)');
+    ok(r.lueur && r.gorge, 'Gorge lumineuse (ZKM.core) assez grande');
+    ok(r.bras > .6, 'Bras pâles (clarté ' + r.bras.toFixed(2) + ')');
+    ok(r.brasZ > -.7 && r.brasW < -1, 'Bras qui pendent en marchant (' + r.brasZ.toFixed(2) + ' ; marcheur ' + r.brasW.toFixed(2) + ')');
+    ok(Math.abs(r.avance - 1) < .02, 'Même pas que les autres zombies (×' + r.avance.toFixed(3) + ')');
+    egal(r.mats, 0, 'Matériaux de la foule en plus');
+  });
+
   test('Monstres du toit : une vague avec les trois se termine (rien ne reste bloqué)', () => {
     exiger(); reset(); J('startLocation(2)');
     const r = J(function(){

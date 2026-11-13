@@ -6,7 +6,12 @@
 //     marcheur grognement rauque ; coureur cri aigu et bref ; costaud grondement grave ; cracheur gargouille,
 //     puis gargouille plus fort 0,8 s avant de cracher ; volant cri strident et battements d'ailes ; sauteur « hop » à chaque saut ;
 //     colosse mugissement très grave et long ; gargouille pierre qui racle ; rampant crépitement ; corbeau croassement ;
-//     gonflé rot mouillé ; bouclier grognement étouffé.
+//     gonflé rot mouillé ; bouclier grognement étouffé ; hurleur gémissement aigu ; fouisseur reniflement grave ;
+//     revenant plainte creuse.
+//   Monstres du toit (js/63-monstres-toit.js, Jeu.on('monstre')) : le hurleur pousse un cri long (1,7 à 2 s, deux voix
+//     qui frottent : c'est le signal « tue-le ») ; le fouisseur gronde sous la terre quand il creuse et sort dans un fracas
+//     d'asphalte ; le revenant râle quand il tombe à genoux et gronde en se relevant. Placés dans l'espace, au plus un
+//     de chaque toutes les BR_MT_CD secondes (cinq hurleurs ne font pas un mur de cris).
 //     Le grognement de fond (toutes les 1,5 à 4 s) prend la voix d'un zombie au hasard. Un zombie dangereux crie aussi
 //     la première fois qu'il approche (z > -70), au plus une fois par BR_ANNONCE secondes pour chaque type.
 //   Douilles : tintement sur le toit un instant après l'éjection. Au plus BR_TINK_MAX par seconde (minigun).
@@ -18,10 +23,14 @@
 //   Vagues (toit) : signature au début (plus lourde pour la dernière vague), à la fin, et cloches de victoire.
 
 const BR = { tinks:0, drops:0, crunch:0, creaks:0, tinkSec:0, tinkT:0, dropT:0, creakT:4, horde:null, hordeLvl:0,
-  annonces:0, gargles:0, hops:0, cd:{}, beats:0, alarmes:0, beatT:0, bas:false, debuts:0, derniere:0, fins:0, victoires:0, vWave:0, vS:null, vSt:'' };
+  annonces:0, gargles:0, hops:0, mt:{}, cd:{}, beats:0, alarmes:0, beatT:0, bas:false, debuts:0, derniere:0, fins:0, victoires:0, vWave:0, vS:null, vSt:'' };
 const BR_TINK_MAX = 10;
 // Attente entre deux cris d'approche d'un même type (s)
-const BR_ANNONCE = { runner:1, jumper:1.5, crawler:2, flyer:2, crow:2.5, brute:2.5, spitter:3, gargoyle:3, bloater:3, shield:3, colossus:5, boss:5 };
+const BR_ANNONCE = { runner:1, jumper:1.5, crawler:2, flyer:2, crow:2.5, brute:2.5, spitter:3, gargoyle:3, bloater:3, shield:3, colossus:5, boss:5,
+  screamer:3, burrower:3, revenant:2.5 };
+// Moments des monstres du toit : voix jouée, attente minimale entre deux (s)
+const BR_MT = { cri:'hurle', creuse:'creuse', sort:'sort', chute:'chute', releve:'releve' };
+const BR_MT_CD = { hurle:1.2, creuse:.6, sort:.3, chute:.3, releve:.4 };
 const brV = new THREE.Vector3();
 const brOk = () => typeof Snd === 'object' && !!Snd._ok && Snd._ok();
 
@@ -42,7 +51,17 @@ Object.assign(Snd, {
     crawler:  { f:[180, 240], fin:.9, d:[.25, .4], vib:[25, 30], vibA:.15, formants:[[2000, 2600, 6], [3500, 4200, 8]], vol:.7, atk:.02, souffle:[3000, 5000, .16], pri:1 },
     crow:     { f:[500, 620], depart:1.1, fin:.8, d:[.15, .22], vib:[30, 40], vibA:.05, formants:[[1100, 1500, 4], [2400, 2900, 6]], vol:.35, atk:.01, rep:2, gap:.17, pri:1 },
     bloater:  { f:[55, 75], fin:.6, d:[.9, 1.3], vib:[4, 6], vibA:.08, formants:[[300, 450, 3], [700, 900, 5]], vol:.6, atk:.15, bulles:[10, 16], souffle:[300, 500, .1], pri:1 },
-    shield:   { f:[65, 110], fin:.7, d:[.8, 1.4], vib:[5, 9], vibA:.06, formants:[[350, 550, 4], [800, 1000, 6]], vol:.42, atk:.18, souffle:[500, 700, .05], pri:1 }
+    shield:   { f:[65, 110], fin:.7, d:[.8, 1.4], vib:[5, 9], vibA:.06, formants:[[350, 550, 4], [800, 1000, 6]], vol:.42, atk:.18, souffle:[500, 700, .05], pri:1 },
+    // Monstres du toit (63-monstres-toit.js) : voix de fond, puis les moments qui comptent
+    screamer: { f:[240, 300], depart:.9, monte:.3, fin:.8, d:[.7, 1.1], vib:[6, 8], vibA:.05, formants:[[900, 1200, 4], [2200, 2700, 6]], vol:.5, atk:.1, souffle:[1800, 2600, .08], pri:1 },
+    hurle:    { f:[560, 640], depart:.55, monte:.18, fin:.72, d:[1.7, 2], vib:[5, 6.5], vibA:.07, formants:[[1000, 1300, 5], [2400, 2900, 7]], vol:.5, atk:.08, souffle:[2800, 3800, .12], pri:2,
+                couche:{ f:[290, 320], depart:.6, monte:.2, fin:.7, d:[1.6, 1.8], vib:[7, 8], vibA:.05, formants:[[700, 900, 4], [1600, 1900, 6]], vol:.25, atk:.1 } },
+    burrower: { f:[75, 95], fin:.8, d:[.4, .6], vib:[16, 22], vibA:.1, formants:[[400, 600, 3], [1000, 1300, 5]], vol:.55, atk:.04, souffle:[500, 900, .12], pri:1 },
+    creuse:   { f:[38, 48], fin:.8, d:[1.1, 1.4], vib:[8, 12], vibA:.15, formants:[[150, 250, 2], [400, 550, 4]], vol:.35, atk:.15, sub:35, subV:.3, souffle:[200, 400, .16], terre:true, pri:1 },
+    sort:     { f:[55, 70], fin:.6, d:[.5, .7], vib:[20, 25], vibA:.12, formants:[[300, 450, 3], [800, 1100, 5]], vol:.6, atk:.02, sub:45, subV:.35, souffle:[600, 1200, .16], fracas:true, pri:2 },
+    revenant: { f:[70, 90], depart:1.1, fin:.6, d:[1.2, 1.8], vib:[3, 4], vibA:.04, formants:[[300, 420, 6], [750, 900, 8]], vol:.45, atk:.3, souffle:[400, 700, .08], pri:1 },
+    chute:    { f:[90, 115], depart:1.15, fin:.5, d:[.9, 1.2], vib:[22, 28], vibA:.14, formants:[[500, 700, 3], [1200, 1500, 5]], vol:.7, atk:.03, souffle:[700, 1100, .12], pri:2 },
+    releve:   { f:[70, 90], depart:.6, monte:.85, fin:1.25, d:[1.1, 1.4], vib:[20, 26], vibA:.1, formants:[[350, 500, 4], [900, 1200, 6]], vol:.52, atk:.25, sub:50, subV:.2, souffle:[500, 900, .1], pri:2 }
   },
   zvoixN: 0,
   // Voix d'un type de zombie (inconnu : grognement commun) ; rend false si rien n'a joué
@@ -53,6 +72,15 @@ Object.assign(Snd, {
       this._cri(o);
       if (o.ailes) for (let i = 0; i < 3; i++) this._nz(t + i * .14, 'lowpass', 650, 1, .09, .2, null, 180); // battements d'ailes
       if (o.pierre) this._nz(t, 'bandpass', 1800, 2, .5, .12, null, 900, .05); // pierre qui racle
+      if (o.couche) this._cri(o.couche); // deuxième voix (le cri du hurleur : deux voix qui frottent)
+      if (o.terre){ // terre qui roule, cailloux qui crépitent
+        this._nz(t, 'lowpass', 260, 1, 1.4, .22, null, 90, .25);
+        for (let i = 0; i < 5; i++) this._nz(t + rand(.1, 1.1), 'bandpass', rand(1400, 2600), 3, .04, .05);
+      }
+      if (o.fracas){ // asphalte qui casse, débris qui retombent
+        this._nz(t, 'bandpass', 2600, 1, .07, .3); this._nz(t, 'lowpass', 1800, 1, .6, .4, null, 120, .01);
+        for (let i = 0; i < 5; i++) this._nz(t + rand(.15, .7), 'bandpass', rand(1200, 3200), 2, .05, .08);
+      }
     });
     if (r) this.zvoixN++;
     return r;
@@ -248,6 +276,19 @@ function brVoix(){
   }
 }
 
+/* ---------- Monstres du toit : les moments qui comptent ---------- */
+// quoi : 'cri', 'creuse', 'sort', 'chute' ou 'releve' (js/63-monstres-toit.js). Rend true si la voix est demandée.
+function brMonstre(quoi, z){
+  const v = BR_MT[quoi];
+  if (!v || !z || !z.g || state !== 'playing' || typeof Snd !== 'object') return false;
+  const gp = z.g.position; if (gp.z < -80) return false; // trop loin pour s'entendre
+  const now = Snd._now(); if (now - (BR.cd[v] || -99) < BR_MT_CD[v]) return false;
+  BR.cd[v] = now; BR.mt[v] = (BR.mt[v] || 0) + 1;
+  brAt(gp.x, Math.max(0, gp.y) + 1.5, gp.z, () => Snd.zvoix(v));
+  return true;
+}
+Jeu.on('monstre', (quoi, z) => brMonstre(quoi, z));
+
 /* ---------- Signatures des vagues (toit) ---------- */
 function brVague(){
   if (typeof S === 'undefined' || !S) return;
@@ -299,4 +340,4 @@ try {
 Jeu.on('image', dt => { dt = dt || 0; brHorde(dt); brCreak(dt); brCoeur(dt); brVoix(); brVague(); });
 
 // Accès pour les tests automatiques
-window.__br = { BR, BR_ANNONCE, brSpot, brAt, brTink, brKill, brHorde, brCreak, brCoeur, brVoix, brVague };
+window.__br = { BR, BR_ANNONCE, BR_MT, BR_MT_CD, brMonstre, brSpot, brAt, brTink, brKill, brHorde, brCreak, brCoeur, brVoix, brVague };

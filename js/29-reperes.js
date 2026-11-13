@@ -6,6 +6,11 @@
 // 2. Barricade frappée : dégradé rouge sur le bord gauche, droit ou bas selon d'où vient le coup, plus fort pour les gros coups.
 // 3. Sous-titres des sons (en bas au centre, 3 lignes au plus, qui s'effacent). La même légende : au plus une fois par RP_REPEAT ms.
 // 4. Arrivée du boss : grosse icône au-dessus de la bannière (css, #banner.boss) et bords rouges.
+// 5. Monstres du toit (js/63-monstres-toit.js, Jeu.on('monstre')) : étiquettes posées dans la rue (au plus RP_TAGS, pool) :
+//    hurleur arrivé « 📢 Hurleur » (vive pendant le cri) ; fouisseur sous terre « ⛏ Sortie » à l'endroit où il va ressortir,
+//    avec le temps qui reste, puis « ⛏ Tire ! ×2 » pendant qu'il sort ; revenant à genoux « 💀 Achève » avec le temps qui
+//    reste et une barre qui se vide. Hors champ : flèches (📢, ⛏, 💀). Sous-titres : cri, grondement (avec l'endroit de la
+//    sortie), fracas, râle, relève.
 // Réglages dans l'écran Pause : « Repères visuels » (dt_cues) et « Sous-titres » (dt_subs), activés par défaut.
 // Tout passe par des enveloppes de fonctions globales (aucun son ni aucune règle du jeu n'est changé).
 
@@ -20,8 +25,12 @@ const RP_KINDS = {
   colossus:{ c:'#ff9a2a', ic:'⚠' },
   flyer:   { c:'#c07aff', ic:'🦇' },
   spitter: { c:'#9cff3a', ic:'☣' },
-  bar:     { c:'#ffd04a', ic:'✋' }
+  bar:     { c:'#ffd04a', ic:'✋' },
+  screamer:{ c:'#ffb43a', ic:'📢' },
+  burrower:{ c:'#d8a860', ic:'⛏' },
+  revenant:{ c:'#dfe8c8', ic:'💀' }
 };
+const RP_TAGS = 6;         // étiquettes des monstres du toit à la fois
 const RP = {
   cues: store.get('dt_cues', true) !== false,
   subs: store.get('dt_subs', true) !== false,
@@ -49,6 +58,20 @@ for (let i = 0; i < RP_LINES; i++){
   rpSubs.appendChild(el); RP.lines.push({ el, key:'', t0:0, on:false });
 }
 document.body.appendChild(rpSubs);
+// Étiquettes des monstres du toit (styles ici : aucun élément ni règle de plus dans css/style.css)
+const rpTagBox = document.createElement('div'); rpTagBox.id = 'rpTags';
+rpTagBox.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:6;overflow:hidden';
+const rpTags = [];
+for (let i = 0; i < RP_TAGS; i++){
+  const el = document.createElement('div');
+  el.style.cssText = 'position:absolute;left:0;top:0;display:none;white-space:nowrap;font-weight:700;font-size:14px;line-height:1.1;'
+    + 'padding:2px 6px 3px;border-radius:4px;background:rgba(12,8,6,.66);color:#fff;text-shadow:0 1px 2px #000;border:2px solid #fff';
+  const tx = document.createElement('span'), bar = document.createElement('i');
+  bar.style.cssText = 'display:block;height:3px;margin-top:2px;background:#fff;transform-origin:0 50%';
+  el.appendChild(tx); el.appendChild(bar); rpTagBox.appendChild(el);
+  rpTags.push({ el, tx, bar, on:false, txt:'', tr:'', c:'', k:-2, op:'' });
+}
+document.body.appendChild(rpTagBox);
 
 /* ---------- Caméra : passage en coordonnées écran ---------- */
 const rpInv = new THREE.Matrix4(), rpV = new THREE.Vector3(), rpP = { nx:0, ny:0, behind:false };
@@ -96,6 +119,10 @@ function rpThreat(z){
     if (z.g.position.z > -60) return ['flyer', .45];
     return null;
   }
+  // Monstres du toit : hurleur arrivé (qui hurle), fouisseur sous terre ou qui sort, revenant à genoux
+  if (t === 'screamer' && st === 'attack') return ['screamer', z.mtOnde >= 0 ? .85 : .6];
+  if (t === 'burrower' && (z.mtUnder || z.mtVuln)) return ['burrower', z.mtVuln ? .9 : .7];
+  if (t === 'revenant' && st === 'down') return ['revenant', .85];
   if (t === 'spitter' && st === 'attack') return ['spitter', .5 + .45 * (z.spitT < .8 ? clamp(1 - z.spitT / .8, 0, 1) : 0)];
   if (st === 'attack' || (z.downed === 'crawl' && z.g.position.z > BAR_Z - 2)) return ['bar', .35 + .25 * clamp((z.dmg || 0) / 30, 0, 1)];
   return null;
@@ -138,6 +165,7 @@ function rpSelect(){
   }
   for (let k = n; k < RP.sel.length; k++) RP.sel[k].z = null;
   for (let k = 0; k < rpNC; k++) rpCands[k].z = null; // pas de référence gardée sur les zombies morts
+  rpTagSelect();
 }
 function rpHide(A){ if (A.on){ A.on = false; A.el.classList.remove('on'); } }
 function rpPlace(A, s){
@@ -156,6 +184,60 @@ function rpPlace(A, s){
   const urg = s.u >= .8; if (urg !== A.urg){ A.urg = urg; A.el.classList.toggle('urg', urg); }
   if (!A.on){ A.on = true; A.el.classList.add('on'); }
 }
+
+/* ---------- 5. Étiquettes des monstres du toit ---------- */
+const rpTagSel = []; // { z, pri } choisis 10 fois par seconde
+const rpSec = v => (Math.max(0, v)).toFixed(1).replace('.', ',') + ' s';
+// Étiquette d'un monstre : [texte, couleur, barre de 0 à 1 ou -1, x, y, z dans la rue, vive] ou null
+function rpTagOf(z){
+  const gp = z.g.position, sc = z.g.scale.y || 1;
+  if (z.type === 'revenant' && z.st === 'down'){
+    const dn = typeof MT_REV === 'object' ? MT_REV.down : 2.8, t = +z.mtT || 0;
+    return ['💀 Achève : ' + rpSec(t), RP_KINDS.revenant.c, clamp(t / dn, 0, 1), gp.x, 1.7 * sc, gp.z, t < 1];
+  }
+  if (z.type === 'burrower' && z.mtUnder){
+    const v = typeof MT_FOUIS === 'object' ? MT_FOUIS.spd : 7, t = Math.max(0, (z.mtEmerZ - gp.z) / v);
+    const x = typeof z.mtTx === 'number' ? z.mtTx : gp.x;
+    return ['⛏ Sortie : ' + rpSec(t), RP_KINDS.burrower.c, -1, x, .4, z.mtEmerZ, t < 1];
+  }
+  if (z.type === 'burrower' && z.mtVuln){
+    const e = typeof MT_FOUIS === 'object' ? MT_FOUIS.emerge : 1.5;
+    return ['⛏ Tire ! ×2', RP_KINDS.burrower.c, clamp(1 - (z.mtT || 0) / e, 0, 1), gp.x, 1.9 * sc, gp.z, true];
+  }
+  if (z.type === 'screamer' && z.st === 'attack') return ['📢 Hurleur', RP_KINDS.screamer.c, -1, gp.x, 2.9 * sc, gp.z, z.mtOnde >= 0];
+  return null;
+}
+function rpTagSelect(){
+  rpTagSel.length = 0;
+  for (let i = 0; i < zombies.length; i++){
+    const z = zombies[i]; if (z.dead || !z.g) continue;
+    const t = z.type;
+    if (t !== 'revenant' && t !== 'burrower' && t !== 'screamer') continue;
+    const pri = t === 'revenant' ? (z.st === 'down' ? 3 : 0) : t === 'burrower' ? (z.mtUnder || z.mtVuln ? 2 : 0) : (z.st === 'attack' ? 1 : 0);
+    if (pri) rpTagSel.push({ z, pri, d:z.g.position.z });
+  }
+  rpTagSel.sort((a, b) => b.pri - a.pri || b.d - a.d); // le plus urgent, puis le plus proche
+  if (rpTagSel.length > RP_TAGS) rpTagSel.length = RP_TAGS;
+}
+function rpTagHide(T){ if (T.on){ T.on = false; T.el.style.display = 'none'; } }
+function rpTagsFrame(){
+  for (let i = 0; i < RP_TAGS; i++){
+    const T = rpTags[i], s = rpTagSel[i], z = s && s.z;
+    const d = z && !z.dead ? rpTagOf(z) : null;
+    if (!d){ rpTagHide(T); continue; }
+    const p = rpProj(d[3], d[4], d[5]);
+    if (p.behind || Math.abs(p.nx) > 1.05 || Math.abs(p.ny) > 1.05){ rpTagHide(T); continue; }
+    const x = Math.round((p.nx + 1) / 2 * innerWidth), y = Math.round((1 - p.ny) / 2 * innerHeight);
+    if (d[0] !== T.txt){ T.txt = d[0]; T.tx.textContent = d[0]; }
+    if (d[1] !== T.c){ T.c = d[1]; T.el.style.borderColor = d[1]; T.bar.style.background = d[1]; T.tx.style.color = d[1]; }
+    const k = d[2] < 0 ? -1 : Math.round(d[2] * 50) / 50;
+    if (k !== T.k){ T.k = k; T.bar.style.display = k < 0 ? 'none' : 'block'; if (k >= 0) T.bar.style.transform = 'scaleX(' + k + ')'; }
+    const tr = 'translate(' + x + 'px,' + y + 'px) translate(-50%,-100%)'; if (tr !== T.tr){ T.tr = tr; T.el.style.transform = tr; }
+    const op = d[6] ? '1' : '.8'; if (op !== T.op){ T.op = op; T.el.style.opacity = op; }
+    if (!T.on){ T.on = true; T.el.style.display = 'block'; }
+  }
+}
+function rpTagsOff(){ rpTags.forEach(rpTagHide); rpTagSel.length = 0; }
 
 /* ---------- 2. Flash de la barricade ---------- */
 function rpFlash(side, k){ if (!RP.cues) return; RP.fl[side] = Math.max(RP.fl[side], clamp(k, 0, 1)); rpFlashDraw(); }
@@ -206,7 +288,7 @@ function rpFrame(dt){
   }
   if (!RP.subs || !live) rpSubsHide(); else rpSubsTick();
   if (!RP.cues || !live){
-    if (RP.shown){ RP.shown = false; rpArrows.forEach(rpHide); for (const s of RP.sel) s.z = null; }
+    if (RP.shown){ RP.shown = false; rpArrows.forEach(rpHide); for (const s of RP.sel) s.z = null; rpTagsOff(); }
     return;
   }
   RP.shown = true;
@@ -217,6 +299,7 @@ function rpFrame(dt){
     if (!s || !s.z || s.z.dead) { if (s) s.z = null; rpHide(A); continue; }
     rpPlace(A, s);
   }
+  rpTagsFrame();
 }
 
 /* ---------- Réglages (écran Pause) ---------- */
@@ -227,7 +310,7 @@ function rpSync(){
 }
 function rpSetCues(on){
   RP.cues = !!on; store.set('dt_cues', RP.cues);
-  if (!RP.cues){ RP.fl.L = RP.fl.R = RP.fl.B = 0; rpFlashDraw(); rpArrows.forEach(rpHide); for (const s of RP.sel) s.z = null; RP.shown = false; }
+  if (!RP.cues){ RP.fl.L = RP.fl.R = RP.fl.B = 0; rpFlashDraw(); rpArrows.forEach(rpHide); for (const s of RP.sel) s.z = null; rpTagsOff(); RP.shown = false; }
   rpSync();
 }
 function rpSetSubs(on){ RP.subs = !!on; store.set('dt_subs', RP.subs); if (!RP.subs) rpSubsHide(); rpSync(); }
@@ -368,11 +451,28 @@ try {
   };
 } catch (e) { errNote(e); }
 
+// Monstres du toit (js/63-monstres-toit.js) : sous-titres de leurs sons
+function rpMonstre(quoi, z){
+  if (!z || !z.g || state !== 'playing') return false;
+  const gp = z.g.position, ou = w => w === 'devant' ? '' : ' ' + w;
+  if (quoi === 'cri') return rpCaption('[Cri du hurleur' + ou(rpDirWord(gp.x, 2.5, gp.z)) + ' : les zombies autour accélèrent]', 'hurle');
+  if (quoi === 'creuse'){
+    const x = typeof z.mtTx === 'number' ? z.mtTx : gp.x, zz = typeof z.mtEmerZ === 'number' ? z.mtEmerZ : BAR_Z - 12;
+    return rpCaption('[Grondement sous la rue : le fouisseur ressort' + ou(rpDirWord(x, .4, zz)) + ', à ' + Math.round(BAR_Z - zz) + ' m]', 'creuse');
+  }
+  if (quoi === 'sort') return rpCaption('[Fracas : le fouisseur sort' + ou(rpDirWord(gp.x, 1, gp.z)) + ', tire !]', 'sort');
+  if (quoi === 'chute') return rpCaption('[Râle : un revenant tombe à genoux, achève-le]', 'chute');
+  if (quoi === 'releve') return rpCaption('[Le revenant se relève]', 'releve');
+  return false;
+}
+Jeu.on('monstre', (quoi, z) => rpMonstre(quoi, z));
+
 // Accès pour les tests automatiques
 window.__reperes = {
-  RP, RP_MAX, RP_LINES, RP_REPEAT, rpArrows, rpFlashEl, rpSubs, rpBox,
+  RP, RP_MAX, RP_LINES, RP_REPEAT, RP_TAGS, rpArrows, rpFlashEl, rpSubs, rpBox, rpTagBox, rpMonstre, rpTagOf,
+  tagsOn(){ return rpTags.filter(T => T.on).map(T => ({ txt:T.txt, k:T.k, x:+(T.tr.match(/translate\((-?\d+)px/) || [0, 0])[1], y:+(T.tr.match(/translate\(-?\d+px,(-?\d+)px/) || [0, 0])[1] })); },
   select: rpSelect, frame: rpFrame, caption: rpCaption, flash: rpFlash, sideOf: rpSideOf, setCues: rpSetCues, setSubs: rpSetSubs,
   arrowsOn(){ return rpArrows.filter(A => A.on).map(A => ({ kind:A.kind, x:+(A.tr.match(/translate\((-?\d+)px/) || [0, 0])[1], urg:A.urg })); },
   linesOn(){ return RP.lines.filter(l => l.on).map(l => l.el.textContent); },
-  domCount(){ return rpBox.childElementCount + rpSubs.childElementCount + 3; }
+  domCount(){ return rpBox.childElementCount + rpSubs.childElementCount + rpTagBox.childElementCount + 3; }
 };

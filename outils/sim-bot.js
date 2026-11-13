@@ -4,7 +4,7 @@
 // Il joue avec les vraies règles du jeu, en accéléré (pas de rendu) :
 //   - toit : vise le zombie le plus proche de la barricade avec une erreur de visée réglable, tire, recharge ;
 //            entre les vagues : répare, achète des armes et des améliorations, place ses talents, achète des défenses ;
-//   - RTS : bâtit (usine lourde, tourelles), achète des unités, des améliorations, attaque le nid le plus proche.
+//   - RTS : voir outils/sim-bot-rts.js (plusieurs stratégies, banc des appuis).
 // Il lance ses pouvoirs (grenade, Molotov, frappe aérienne) dans les groupes serrés, comme un joueur.
 // Il ne se sert pas des accessoires, des compagnons ni du contrôle des tourelles : un vrai joueur fait donc un peu mieux que lui.
 
@@ -253,63 +253,8 @@
   }
 
   /* ---------- RTS ---------- */
-  function rtsPlace(type){
-    const B = RTS_BLD[type], R = RTS.baseR;
-    for (let k = 0; k < 120; k++){
-      // Tourelles devant (au nord), le reste derrière
-      const a = (type.indexOf('t_') === 0 ? -Math.PI / 2 : Math.PI / 2) + (Math.random() - .5) * (type.indexOf('t_') === 0 ? 2.2 : 3.4);
-      const d = (type.indexOf('t_') === 0 ? .55 + Math.random() * .4 : .25 + Math.random() * .6) * (R - B.size - 1);
-      const x = Math.round(Math.cos(a) * d / 2) * 2, z = Math.round(Math.sin(a) * d / 2) * 2;
-      if (!rtsBldOk(type, x, z)) return rtsBuild(type, x, z, 0);
-    }
-    return null;
-  }
-  const nb = t => RTS.blds.filter(o => !o.dead && o.type === t).length;
-  const armee = () => RTS.units.filter(u => !u.dead);
-  function rtsDecide(){
-    const m = () => S.money, nd = RTS.nests.filter(n => n.dead).length;
-    if (!nb('heavyfac') && m() >= RTS_BLD.heavyfac.cost + 200) rtsPlace('heavyfac');
-    if (nb('heavyfac') && !nb('repair') && m() >= RTS_BLD.repair.cost + 600) rtsPlace('repair');
-    if (!nb('scrap') && m() >= RTS_BLD.scrap.cost + 400) rtsPlace('scrap');
-    const tour = RTS.blds.filter(o => !o.dead && o.B.turret).length;
-    if (tour < 5 + 2 * nd + Math.floor(RTS.t / 180) && m() >= 600) rtsPlace(RTS.t > 240 && Math.random() < .5 ? 't_cannon' : 't_mg');
-    // Unités : du plus fort qu'on peut se payer
-    const voulu = Math.min(RTS_CFG.maxUnits, 10 + nd * 3 + Math.floor(RTS.t / 90));
-    if (armee().length < voulu){
-      const t = ['heavy', 'rocket', 'gunner', 'rifle'].find(t => rtsFactoryFor(t) && m() >= RTS_UNITS[t].cost + 150);
-      if (t) rtsBuy(t);
-      if (t && m() > 3000){ const t2 = ['heavy', 'rocket', 'gunner'].find(x => rtsFactoryFor(x) && m() >= RTS_UNITS[x].cost + 150); if (t2) rtsBuy(t2); }
-    }
-    // Améliorations quand l'armée est là
-    if (armee().length >= 8 && m() > 1800){
-      const types = [...new Set(armee().map(u => u.type))];
-      for (const t of types) for (const k of ['arm', 'hp', 'rate']){ if (rtsUpgCost(t, k) < m() - 800) rtsUpgBuy(t, k); }
-    }
-    // Tourelles plus fortes
-    RTS.blds.filter(o => !o.dead && o.B.turret).forEach(o => { if (m() > 1000) rtsTurretUp(o); });
-    // Attaque : le nid vivant le plus proche, quand l'armée au sol est assez grosse
-    const sol = armee().filter(u => u.U.kind === 'ground');
-    if (BOT.rtsAttaque !== false && sol.length >= 8){
-      let best = null, bd = 1e9; RTS.nests.forEach(n => { if (!n.dead){ const d = Math.hypot(n.x, n.z); if (d < bd){ bd = d; best = n; } } });
-      if (best) sol.forEach(u => { if (u.cmd !== 'attack' && !u.retreat){ u.nest = best; u.cmd = 'attack'; } });
-    }
-  }
-  async function rts(opts){
-    preparer(); hasard(opts.graine || 7); BOT.rtsAttaque = opts.attaque !== false;
-    const dt = 1 / 20, maxT = (opts.maxMin || 30) * 60, pas = [];
-    rtsStart(); let t = 0, n = 0, dec = 0, mark = 0;
-    const photo = () => ({ min:Math.round(RTS.t / 6) / 10, nids:RTS.nests.filter(n => n.dead).length, unites:armee().length, tourelles:RTS.blds.filter(o => !o.dead && o.B.turret).length,
-      argent:Math.round(S.money), menace:Math.round(RTS.threat * 10) / 10, qg:RTS.base ? Math.max(0, Math.round(100 * RTS.base.hp / RTS.base.maxHp)) : 0, zombies:zAliveCount(), tues:RTS.kills, perdues:RTS.lost, boss:RTS.bossKills });
-    while (t < maxT && state === 'rts'){
-      dec -= dt; if (dec <= 0){ dec = 2; rtsDecide(); }
-      visuals(dt); t += dt; horloge(dt); if (BOT.chaque) BOT.chaque(t, dt);
-      if (t >= mark){ pas.push(photo()); mark += 300; }
-      if (++n % 400 === 0) await pause();
-    }
-    const fin = photo(); fin.tombe = state === 'rtsover';
-    try { if (RTS.on) rtsQuit(); } catch (e) {}
-    return { pas, fin };
-  }
+  // Le robot-joueur du RTS est dans outils/sim-bot-rts.js (chargé après ce fichier, il remplace SIM.rts).
+  const rts = null;
 
   /* ---------- Duel à budget égal ---------- */
   // La mesure qui dit si une arme vaut son prix : à la vague o.vague de la ville o.ville, avec o.budget dollars,

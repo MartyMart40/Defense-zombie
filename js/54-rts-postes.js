@@ -12,7 +12,7 @@
 // Branché sur js/42-rts-combat.js (rtsAir, rtsGunship, rtsGat, rtsHellfire, rtsFrame) et js/43-rts-pilotage.js.
 
 /* ---------- 1. Munitions et aérodromes ---------- */
-const RTS_AMMO = { jet:{ w1:200 }, warthog:{ w1:660 }, bomber:{ w1:100, w2:20 } };
+const RTS_AMMO = { jet:{ w1:300 }, warthog:{ w1:660 }, bomber:{ w1:100, w2:20 } };
 const RTS_REARM_T = { jet:3, warthog:4, bomber:6 };   // secondes au-dessus de l'aérodrome pour refaire le plein
 const RTS_AIR_CAP = 2;                                 // avions par aérodrome
 const rtsAmmoMax = (u, k) => { const A = RTS_AMMO[u.type]; return A && A[k] != null ? A[k] : null; };

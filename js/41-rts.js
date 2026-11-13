@@ -22,13 +22,13 @@ const RTS_UNITS = {
   sniper:  { name:'Tireur d’élite',  cost:500,  hp:300,  dmg:150, rate:.6,  range:42, speed:5.5, r:.8,  snd:'sniper',  col:0x5a5a3a, beam:0xfff0c0, pierce:true, fac:'factory', kind:'ground', cat:'rob' },
   flamebot:{ name:'Robot lance-flammes', cost:450, hp:600, dmg:18, rate:9,  range:11, speed:5,   r:.9,  snd:'flamer',  col:0x8a3a20, flame:true, fac:'factory', kind:'ground', cat:'rob' },
   rocket:  { name:'Lance-roquettes', cost:700,  hp:420,  dmg:170, rate:.8,  range:26, speed:4.5, r:.9,  snd:'gl',      col:0x8a6a2a, splash:3.5, fac:'heavyfac', kind:'ground', cat:'rob' },
-  heavy:   { name:'Mech lourd',      cost:1500, hp:1600, dmg:95,  rate:1.6, range:22, speed:3.6, r:1.4, snd:'laser',   col:0x6a3a6a, beam:0x50f0ff, pierce:true, fac:'heavyfac', kind:'ground', cat:'rob' },
+  heavy:   { name:'Mech lourd',      cost:1500, hp:2600, dmg:140, rate:1.6, range:22, speed:3.6, r:1.4, snd:'laser',   col:0x6a3a6a, beam:0x50f0ff, pierce:true, fac:'heavyfac', kind:'ground', cat:'rob' },
   tank:    { name:'Tank',            w1:'Canon 120 mm', cost:1800, hp:8000, dmg:900, rate:.33, range:38, speed:5.5, r:2.2, snd:'mg50', col:0x5a6040, splash:6.5, fac:'vehdepot', kind:'ground', cat:'veh' },
   heli:    { name:'Apache',          w1:'30 mm + roquettes', w2n:'Hellfire', cost:2200, hp:1200, dmg:90,  rate:2.2, range:28, speed:12,  r:2.6, snd:'gl', col:0x3a4a3a, splash:3, fac:'heliport', kind:'heli', alt:11, cat:'veh' },
-  jet:     { name:'Chasseur',        w1:'Canon 20 mm', cost:3000, hp:800,  dmg:75,  rate:10,  range:36, speed:32,  r:3,   snd:'mg50', col:0x6a7080, beam:0xffd890, fac:'airfield', kind:'air', alt:20, orbit:30, turn:1.3, cat:'veh' },
-  warthog: { name:'Warthog',         w1:'Canon 30 mm', cost:3800, hp:1500, dmg:55,  rate:22,  range:30, speed:18,  r:3,   snd:'mg50',    col:0x6a7058, beam:0xffd890, fac:'airfield', kind:'air', alt:14, orbit:22, turn:1, cat:'veh' },
-  mech:    { name:'⭐ Mech de combat', w1:'Minigun',  cost:6000, hp:5000, dmg:16,  rate:20,  range:26, speed:4.5, r:2.6, snd:'minigun', col:0x5a5d50, beam:0xffd890, fac:'heavyfac', kind:'ground', cat:'rob', big:true,
-             w2:{ name:'Roquettes', dmg:260, rate:1.5, range:34, splash:4.5, snd:'rocket' } },
+  jet:     { name:'Chasseur',        w1:'Canon 20 mm', cost:3000, hp:800,  dmg:150, rate:10,  range:36, speed:32,  r:3,   snd:'mg50', col:0x6a7080, beam:0xffd890, fac:'airfield', kind:'air', alt:20, orbit:30, turn:1.3, cat:'veh' },
+  warthog: { name:'Warthog',         w1:'Canon 30 mm', cost:3800, hp:1500, dmg:110, rate:22,  range:30, speed:18,  r:3,   snd:'mg50',    col:0x6a7058, beam:0xffd890, fac:'airfield', kind:'air', alt:14, orbit:22, turn:1, cat:'veh' },
+  mech:    { name:'⭐ Mech de combat', w1:'Minigun',  cost:6000, hp:8000, dmg:36,  rate:20,  range:26, speed:4.5, r:2.6, snd:'minigun', col:0x5a5d50, beam:0xffd890, fac:'heavyfac', kind:'ground', cat:'rob', big:true,
+             w2:{ name:'Roquettes', dmg:380, rate:1.5, range:34, splash:4.5, snd:'rocket' } },
   bomber:  { name:'AC-130',          cost:4500, hp:2400, dmg:110, rate:2.5, range:95, speed:16,  r:4,   snd:'sniper',  col:0x5a6068, splash:3, gunship:true, fac:'airfield', kind:'air', alt:60, orbit:45, turn:.7, cat:'veh',
              w1:'40 mm', w2:{ name:'105 mm', dmg:1100, rate:.3, range:95, splash:11, snd:'rocket', big:true } }
 };

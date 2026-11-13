@@ -16,6 +16,9 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 | # | Tâche | Priorité |
 |---|-------|----------|
 | - | Équilibrage après essais de Martin | Après essais |
+| - | Une fin qu’on peut gagner au robot (ex. 9 rues, boss final, « course réussie », puis un 2e tour plus dur). Accepté par Martin le 2026-11-13 ; à ouvrir quand le dossier 95 est fusionné, avec ses chiffres | Suivant (robot) |
+| - | Une fin qu’on peut gagner au RTS (ex. un nid mère à détruire, puis une vallée plus dure), et un danger qui monte au lieu d’une base à 100 % qui s’écroule en une minute. Accepté par Martin le 2026-11-13 ; à ouvrir quand le dossier 96 est fusionné, avec ses chiffres | Suivant (RTS) |
+| - | Toit : des moments de crise dans une vague (avoir chaud et s’en sortir), au lieu de zombies seulement plus forts. Accepté par Martin le 2026-11-13 ; à ouvrir quand le dossier 94 est fusionné | Suivant (toit) |
 | - | Dossier performance au cell : mesurer la boucle du jeu (`tests/perf.html`) et alléger ce qui coûte | À choisir par Martin |
 
 Écarté par Martin : choisir 1 bonus parmi 3.

@@ -71,7 +71,7 @@ const ECO = .35; // part de l'argent et de l'XP par zombie (il y en a environ 5 
 // Chaque ville est CITY_SCALE fois plus dure que la précédente (vie et dégâts des zombies), en plus de L.diff :
 // à partir de la deuxième ville, le joueur a déjà talents, défenses et compagnon.
 const CITY_SCALE = 1.2;
-const cityScale = L => Math.pow(CITY_SCALE, (L && L.off) || 0);
+const cityScale = L => Math.pow(CITY_SCALE, (L && L.off) || 0) * ((L && !L.inf && L.dur) || 1); // L.dur : durcissement propre à la ville (js/02-villes.js)
 function wavePlan(w, L){
   L = L || curLoc;
   const ew = w + L.off, k = L.diff - 1, cs = cityScale(L);

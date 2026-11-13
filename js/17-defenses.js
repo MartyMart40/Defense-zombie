@@ -399,8 +399,14 @@ defRebuild();
 
 // Accès pour les tests automatiques
 window.__atelier = { DEF_TYPES, DEF_SLOTS, DEF_ORDER, DEF_LINES, defStats, defSoft, defGrow, defUpgCost, defSellValue, defBuy, defUpgrade, defSell, scrapFor, SCRAP_Z,
-  openAtelier, renderAtelier, defRebuild, defUpdate, get RT(){ return RT; }, defRoot, fxRoot, clearFx,
+  openAtelier, renderAtelier, defRebuild, defUpdate, defSurToit, get RT(){ return RT; }, defRoot, fxRoot, clearFx,
   SYN_SAME, SYN_SAME_NUKE, SYN_COMBOS, SYN, defSynergies, defSynMods, defStatsSyn, defSynText, TICK, splash, get synLinks(){ return synLinks; } };
 window.__syn = { SYN_SAME, SYN_SAME_NUKE, SYN_COMBOS, SYN, defSynergies, defSynMods, defStatsSyn, defSynText, defSynGain, renderSynergies, TICK, updateFx, get RT(){ return RT; }, get synLinks(){ return synLinks; } };
 // Les tours du toit n'ont rien à faire dans la vallée du RTS : cachées pendant la guerre des robots
-Jeu.on('image', () => { defRoot.visible = !(typeof RTS !== 'undefined' && RTS.on); });
+// ni dans la rue du robot de combat (2026-11-13, Martin). Elles ne sont là que sur le toit et dans ses menus.
+function defSurToit(){
+  if (typeof RTS !== 'undefined' && RTS.on) return false;
+  if (typeof MECH !== 'undefined' && MECH.on) return false;
+  return state !== 'rts' && state !== 'rtsover' && state !== 'mech' && state !== 'mechover';
+}
+Jeu.on('image', () => { const v = defSurToit(); defRoot.visible = v; if (!v && fxRoot.visible){ clearFx(); } fxRoot.visible = v; });

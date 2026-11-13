@@ -116,7 +116,7 @@
     fin();
     const hors = J(function(){ return scrapFor('walker', LOCS[4]) / scrapFor('walker', LOCS[0]); });
     ok(r.memeVie && r.memeDeg, 'Rue 3 à Saint-Clou et au Port : même vie et mêmes dégâts');
-    ok(r.monte, 'La vie des zombies monte avec la rue'); egal(r.rampe1, 1, 'Rue 1 : force de base'); egal(r.rampe20, 2.6, 'Plafond de la montée');
+    ok(r.monte, 'La vie des zombies monte avec la rue'); egal(r.rampe1, 1.2, 'Rue 1 : force de départ'); egal(r.rampe20, 2.6, 'Plafond de la montée');
     ok(Math.abs(r.r1 - 1.35) < 1e-6 && Math.abs(r.r1d - 1.35) < 1e-6, 'Premier renfort : +35 % de vie et de dégâts (' + r.r1 + ')');
     ok(r.xp1, 'Premier renfort : il rapporte encore'); egal(r.xp2, 0, 'Deuxième renfort : plus d’expérience'); egal(r.f2, 0, 'Deuxième renfort : plus de ferraille');
     egal(r.compte, 1, 'File vide : un renfort arrive'); ok(/Renforts/.test(r.annonce), 'Annonce : ' + r.annonce);
@@ -136,5 +136,45 @@
     reset(); const toit = J(function(){ startLocation(0); S.barMax = S.bar = 10000; __types.spitLaunch(0, 2, -40, 8, 1, BAR_Z, 50); for (var i = 0; i < 120 && __types.spitsActifs > 0; i++) __types.zkFrame(1 / 30); return 10000 - S.bar; });
     egal(r.touche, 50, 'Robot immobile : le crachat fait ses dégâts'); egal(r.esquive, 0, 'Robot qui a fait un pas de côté : aucun dégât');
     egal(toit, 50, 'Sur le toit, un crachat abîme toujours la barricade');
+  });
+  test('Robot : chargeur de roquettes, zombies des vagues plus loin, aide à la visée au cell, pas de tourelles du toit', () => {
+    exiger(); reset();
+    J(function(){ P.scrap = 1e6; __atelier.defBuy(0, 'turret'); __atelier.defRebuild(); });
+    depart();
+    const r = J(function(){
+      var o = {}, M = __mech.MECH, K = __mech, W = K.MECH_W.rocket, dt = 1 / 30;
+      // 1. Chargeur : W.ch roquettes d'un trait, puis il faut attendre
+      o.plein = M.rch; M.rocket = true; var tirs = 0, a0 = __armes.ARM.rockets;
+      var f0 = fire, n = 0; fire = function(){ if (S.cur === 'rocket') n++; return f0.apply(this, arguments); };
+      for (var i = 0; i < 30 * 4; i++) visuals(dt); o.en4s = n;
+      for (i = 0; i < 30 * 8; i++) visuals(dt); o.en12s = n; M.rocket = false; fire = f0;
+      for (i = 0; i < 30 * 8; i++) visuals(dt); o.refait = M.rch;
+      // 2. Vague : personne à moins de 25 m du robot
+      clearZombies(); __mb.mbWave(); var MZ = -5.5, pres = 1e9;
+      zombies.forEach(function(z){ if (z.dead) return; var d = Math.hypot(z.g.position.x - M.x, z.g.position.z - MZ); if (d < pres) pres = d; }); o.pres = pres;
+      // 3. Aide à la visée : un petit zombie à 3,4 degrés du réticule est touché au cell, pas à la souris
+      clearZombies(); visuals(dt);
+      var essai = function(aide){
+        clearZombies(); var z = __t.placer('crawler', 0, -35); z.hp = z.maxHp = 1e6; z.speed = 0; z.g.updateMatrixWorld(true);
+        var c = new THREE.Vector3(z.g.position.x, z.g.position.y + (z.aimY != null ? z.aimY : 1.1), z.g.position.z);
+        camera.lookAt(c); camera.rotateY(.06); camera.updateMatrixWorld(true);
+        M.assist = aide; S.cur = 'minigun'; spin = 1; cool = 0; reloadT = 0; S.ammo.minigun = 99;
+        var q0 = camera.quaternion.clone(); for (var k = 0; k < 15; k++){ cool = 0; var on = K.mechAssist(); fire(); K.mechAssistFin(on); } // 15 balles : le minigun disperse
+        return { touche: z.hp < 1e6, vue: camera.quaternion.angleTo(q0) < 1e-6 };
+      };
+      o.sans = essai(false); o.avec = essai(true); M.assist = false;
+      // 4. Tourelles du toit cachées
+      visuals(dt); o.tourelles = __atelier.defRoot.visible; o.nb = __atelier.RT.filter(function(x){ return x.type; }).length;
+      return o;
+    });
+    fin();
+    const apres = J(function(){ visuals(1 / 30); var a = __atelier.defRoot.visible; __rts.rtsStart(); visuals(1 / 30); var b = __atelier.defRoot.visible; __rts.rtsQuit(); visuals(1 / 30);
+      P.slots = P.slots.map(function(){ return null; }); __atelier.defRebuild(); return { menu: a, rts: b, fin: __atelier.defRoot.visible }; });
+    egal(r.plein, 4, 'Chargeur plein au départ'); ok(r.en4s >= 5 && r.en4s <= 6, 'Roquettes tirées en 4 s : 4 du chargeur, plus 1 ou 2 revenues (avant : 7), obtenu ' + r.en4s); ok(r.en12s <= 11, 'En 12 s : au plus 11 roquettes (avant : 18), obtenu ' + r.en12s);
+    egal(r.refait, 4, 'Le chargeur se refait');
+    ok(r.pres >= 25, 'Zombie de vague le plus proche du robot : ' + r.pres.toFixed(1) + ' m');
+    ok(!r.sans.touche, 'Sans aide (souris) : le tir à côté rate'); ok(r.avec.touche, 'Avec l’aide (cell) : le tir part vers le petit zombie'); ok(r.avec.vue, 'La vue ne bouge pas');
+    ok(r.nb >= 1 && !r.tourelles, 'Robot : les tourelles du toit sont cachées');
+    ok(apres.menu, 'Retour au menu : elles reviennent'); ok(!apres.rts, 'RTS : cachées'); ok(apres.fin, 'Après le RTS : elles reviennent');
   });
 })();

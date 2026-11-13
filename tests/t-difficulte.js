@@ -14,4 +14,16 @@
     }
     ok(Math.abs(r.p[0].hp - (1 + .1 * 2)) < 1e-9, 'Saint-Clou ne change pas : ' + r.p[0].hp);
   });
+  test('Difficulté : villes 2 à 5 durcies le 13 novembre 2026, pas le mode infini ni le robot', () => {
+    reset();
+    const r = J(function(){
+      var o = { dur: LOCS.map(function(L){ return L.dur || 1; }) };
+      o.val = wavePlan(3, LOCS[1]).hpMult / (1.2 * (1 + .4 * .6) * 1.2); o.port = wavePlan(3, LOCS[4]).dmgMult / ((1 + 2.4 * .6) * Math.pow(1.2, 4));
+      o.inf = wavePlan(3, Object.assign({}, LOCS[4], { diff:1, off:0, inf:true })).hpMult;
+      return o;
+    });
+    egal(r.dur.join(','), '1,1.35,1.6,1.4,1.25', 'Durcissement par ville');
+    ok(Math.abs(r.val - 1.35) < 1e-6, 'Val-des-Cendres : vie ×1,35 (' + r.val + ')'); ok(Math.abs(r.port - 1.25) < 1e-6, 'Port : dégâts ×1,25 (' + r.port + ')');
+    ok(Math.abs(r.inf - 1.2) < 1e-9, 'Mode infini : pas de durcissement (' + r.inf + ')');
+  });
 })();

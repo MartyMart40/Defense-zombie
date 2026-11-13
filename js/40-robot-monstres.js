@@ -218,6 +218,7 @@ try {
 } catch (e) { errNote(e); }
 
 /* ---------- Vagues : de tous les côtés, régulièrement ---------- */
+const MB_LOIN = { derriere:[34, 50], ruelles:[30, 55] }; // distance (m) où sortent les zombies d'une vague, derrière et dans les ruelles
 const MB_SIDE = ['walker', 'runner', 'crawler', 'spider', 'stalker', 'bloater', 'shield'];
 function mbWave(){
   MB.waveN++;
@@ -231,8 +232,10 @@ function mbWave(){
     const z = spawnZombie(t); if (!z) continue; k++;
     const r = i / tot, gp = z.g.position;
     if (r < .5) gp.z = rand(-110, -70);                                         // devant, au bout de la rue
-    else if (r < .8){ gp.z = MZ + rand(16, 30); gp.x = rand(-10, 10); }        // derrière
-    else { gp.x = (Math.random() < .5 ? -1 : 1) * 13; gp.z = MZ - rand(10, 32); } // ruelles sur les côtés
+    // 2026-11-13, Martin : « les zombies nous apparaissent dessus et beaucoup trop proche ». Derrière : 16 à 30 m avant ;
+    // ruelles : 10 à 32 m devant avant, donc parfois à 4 m du robot.
+    else if (r < .8){ gp.z = MZ + rand(MB_LOIN.derriere[0], MB_LOIN.derriere[1]); gp.x = rand(-10, 10); }        // derrière
+    else { gp.x = (Math.random() < .5 ? -1 : 1) * 13; gp.z = MZ - rand(MB_LOIN.ruelles[0], MB_LOIN.ruelles[1]); } // ruelles sur les côtés, plus loin devant
     z.g.updateMatrixWorld(true);
   }
   return k;
@@ -321,4 +324,4 @@ try { const _rs = mechResume; mechResume = function(){ if (MECH.choosing) return
 try { const _q = mechQuit; mechQuit = function(){ MECH.choosing = false; MECH.route = null; mbBar.classList.add('hide'); return _q.apply(this, arguments); }; } catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
-window.__mb = { MB, MB_BOSS, MB_RULES, MW_EVERY, mbWave, mbCrossroads, mbGo, mbRoutes, mbBossAlive };
+window.__mb = { MB, MB_LOIN, MB_BOSS, MB_RULES, MW_EVERY, mbWave, mbCrossroads, mbGo, mbRoutes, mbBossAlive };

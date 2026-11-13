@@ -37,14 +37,17 @@ const MECH_UPG = {
 const MECH_UPG_ORDER = Object.keys(MECH_UPG);
 // Armes des bras : on en achète en ferraille au garage, on en équipe une par bras.
 //   cd : secondes entre deux tirs du bras droit ; salvo : la salve s'applique ; heat : chauffe (bras gauche, réglée sur la cadence)
+//   ch, rg : chargeur du bras droit (2026-11-13, Martin : « juste à tirer sur le plancher avec les roquettes en avançant et on
+//       clenche les premières rues ») : ch coups en réserve, un coup revient toutes les rg secondes. On peut vider le chargeur
+//       d'un trait, mais plus tirer sans arrêt. L'amélioration « cadence » raccourcit aussi rg.
 //   k : part des dégâts de l'arme du toit gardée par le robot. Les armes du toit ont été renforcées le 12 novembre 2026 ;
 //       k remet au robot les dégâts qu'il avait avant (ex. minigun 34 × 0,706 = 24), pour ne pas changer son équilibrage.
 const MECH_W = {
   minigun: { side:'L', name:'Minigun',               cost:0,    k:.706, desc:'Rafale continue, chauffe.' },
   flamer:  { side:'L', name:'Lance-flammes lourd',   cost:600,  k:.76, desc:'Nappe de feu devant le robot : tout ce qui brûle continue de brûler.' },
   laser:   { side:'L', name:'Laser lourd',           cost:1200, desc:'Rayon instantané qui traverse toute la file.' },
-  rocket:  { side:'R', name:'Roquettes',             cost:0,    k:.8, cd:.65, salvo:true, desc:'Grosses explosions.' },
-  gl:      { side:'R', name:'Lance-grenades',        cost:800,  k:.5, cd:.3,  salvo:true, desc:'Trois grenades par seconde.' },
+  rocket:  { side:'R', name:'Roquettes',             cost:0,    k:.8, cd:.65, ch:4, rg:1.6, salvo:true, desc:'Grosses explosions.' },
+  gl:      { side:'R', name:'Lance-grenades',        cost:800,  k:.5, cd:.3,  ch:8, rg:.6, salvo:true, desc:'Trois grenades par seconde.' },
   arc:     { side:'R', name:'Arc électrique',        cost:1000, k:.625, cd:.35, desc:'L’éclair saute de zombie en zombie.' },
   railgun: { side:'R', name:'Canon électromagnétique', cost:1500, k:.625, cd:1.3, desc:'Un trait qui traverse toute la rue.' }
 };
@@ -198,7 +201,8 @@ function mechHUD(){
   set('mkNext', MECH.dist < MECH_LEN ? 'Prochaine rue : ' + Math.ceil(MECH_LEN - MECH.dist) + ' m' : 'Rue suivante…');
   const a = $('mkArmorFill'); if (a){ const k = clamp(S.bar / S.barMax, 0, 1); a.style.width = (k * 100).toFixed(1) + '%'; a.parentNode.parentNode.classList.toggle('low', k < .3); }
   const h = $('mkHeat'); if (h){ h.style.width = (MECH.heat * 100).toFixed(0) + '%'; h.classList.toggle('hot', MECH.hot > 0); }
-  const r = $('mkRocket'); if (r) r.style.width = ((1 - clamp(MECH.rcd / Math.max(.05, MECH.rcdMax || MECH_ROCKET_CD), 0, 1)) * 100).toFixed(0) + '%';
+  const WR = MECH_W[mW('R')], r = $('mkRocket');
+  if (r){ r.style.width = ((WR && WR.ch ? clamp((MECH.rch || 0) / WR.ch, 0, 1) : 1 - clamp(MECH.rcd / Math.max(.05, MECH.rcdMax || MECH_ROCKET_CD), 0, 1)) * 100).toFixed(0) + '%'; r.classList.toggle('hot', !!(WR && WR.ch) && (MECH.rch || 0) < 1); }
   const col = MECH.hot > 0 || S.bar < S.barMax * .3 ? 0xff4a3a : MECH.heat > .7 ? 0xffb030 : 0x2aff8a;
   mechScreens.forEach(m => m.material.color.setHex(col));
 }
@@ -212,15 +216,16 @@ function mechHideBarricade(){
 }
 // Force des zombies du robot : elle suit le numéro de la rue, pas la ville tirée au carrefour (la ville n'est que le décor).
 // Avant le 12 novembre 2026, une rue à Centre-ville ou au Port frappait 3,4 ou 5 fois plus fort qu'une rue à Saint-Clou,
-// au hasard. MECH_RAMPE monte en 9 rues jusqu'à la moyenne d'avant (2,6) ; renfort : +35 % de vie et de dégâts à chaque
+// au hasard. MECH_RAMPE monte en 8 rues (1,2 à la rue 1) jusqu'à la moyenne d'avant (2,6) ; renfort : +35 % de vie et de dégâts à chaque
 // fois que la horde de la rue se reforme, et plus de ferraille ni d'expérience à partir du 2e renfort, pour qu'on ne puisse
 // pas rester sur place à en ramasser sans risque.
-const MECH_RAMPE = [1, 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6], MECH_RENFORT = 1.35;
+const MECH_RAMPE = [1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6], MECH_RENFORT = 1.35;
 const mechRampe = n => MECH_RAMPE[Math.min(MECH_RAMPE.length, Math.max(1, n)) - 1];
 function mechPlan(){
   const n = MECH.street, w = Math.min(10, n + 1), k = mechRampe(n), r = Math.pow(MECH_RENFORT, MECH.renf || 0);
-  const L = Object.assign({}, curLoc, { diff:1, off:0, xp:k });
-  const p = hordePlan(60 + 35 * n, { wave:w, loc:L, maxAlive:Math.min(DEV_CAP, (isTouch ? 45 : 70) + 12 * n), interval:Math.max(.12, .55 - .04 * n), burst:Math.min(4, 1 + Math.floor(n / 2)) });
+  const L = Object.assign({}, curLoc, { diff:1, off:0, dur:1, xp:k });
+  // Sorties plus serrées depuis le 2026-11-13 (0,55 - 0,04 par rue avant) : les premières rues se traversaient sans rien recevoir
+  const p = hordePlan(60 + 35 * n, { wave:w, loc:L, maxAlive:Math.min(DEV_CAP, (isTouch ? 45 : 70) + 12 * n), interval:Math.max(.12, .42 - .04 * n), burst:Math.min(4, 1 + Math.floor(n / 2)) });
   p.hpMult *= Math.pow(1.22, n - 1) * k * r; p.dmgMult *= Math.pow(1.12, n - 1) * k * r; p.spdMult = Math.min(1.7, p.spdMult * (1 + .1 * (k - 1)));
   p.cashMult = 1 + .5 * (k - 1);
   if ((MECH.renf || 0) >= 2) p.xp = 0;
@@ -236,7 +241,7 @@ function mechStreet(first){
   buildWorld(L);
   try { if (typeof __amb === 'object') __amb.set(RT && RT.weather ? RT.weather : first ? 'soleil' : __amb.pick(L, MECH.street + 1)); } catch (e) { errNote(e); }
   mechHideBarricade();
-  world.position.z = 0; MECH.dist = 0; MECH.x = 0; MECH.bossDone = false; MECH.renf = 0;
+  world.position.z = 0; MECH.dist = 0; MECH.x = 0; MECH.bossDone = false; MECH.renf = 0; MECH.rch = (MECH_W[mW('R')] || {}).ch || 0;
   clearZombies();
   plan = mechPlan(); spawnT = 1.5;
   MECH.pow = 2.4 * Math.pow(1.16, MECH.street - 1);       // les armes du robot montent avec les rues
@@ -321,6 +326,28 @@ function mechTread(d){
     G.gfxSmoke.forEach(o => { if (o.s.visible) o.s.position.z += d; });
   }
 }
+// Aide à la visée au cell (2026-11-13, Martin : « les petits zombies sont chiants à tirer avec le cellulaire ») :
+// si un zombie est à moins de MECH_ASSIST radians du réticule, le tir part vers lui. La vue ne bouge pas : seule la direction
+// du tir est corrigée, le temps du coup. À la souris, rien ne change.
+const MECH_ASSIST = .075, mkQ = new THREE.Quaternion(), mkA = new THREE.Vector3(), mkAD = new THREE.Vector3();
+function mechAssist(){
+  if (!(isTouch || MECH.assist)) return false;
+  mkAD.set(0, 0, -1).applyQuaternion(camera.quaternion);
+  const o = camera.position; let best = null, ba = MECH_ASSIST;
+  for (const z of zombies){
+    if (z.dead || !z.g) continue;
+    mkA.set(z.g.position.x, z.g.position.y + (z.aimY != null ? z.aimY : 1.1), z.g.position.z).sub(o);
+    const d = mkA.length(); if (d < 1.5 || d > 95) continue;
+    const a = Math.acos(clamp(mkA.dot(mkAD) / d, -1, 1)) - Math.atan(.45 * ((ZTYPES[z.type] || {}).scale || 1) / d); // l'écart au bord du zombie, pas à son centre
+    if (a < ba){ ba = a; best = z; }
+  }
+  if (!best) return false;
+  mkQ.copy(camera.quaternion);
+  mkA.set(best.g.position.x, best.g.position.y + (best.aimY != null ? best.aimY : 1.1), best.g.position.z);
+  camera.lookAt(mkA); camera.updateMatrixWorld(true);
+  return true;
+}
+function mechAssistFin(on){ if (on){ camera.quaternion.copy(mkQ); camera.updateMatrixWorld(true); } }
 function mechStep(dt){
   if (!MECH.on || MECH.paused || state !== 'mech') return;
   // Le robot tourne sur lui-même sans limite (pour revenir sur ses pas) ; visée verticale bornée
@@ -349,10 +376,14 @@ function mechStep(dt){
   if (MECH.hot > 0){ MECH.hot -= dt; if (MECH.hot <= 0) MECH.heat = .6; }
   else MECH.heat = Math.max(0, MECH.heat - MECH_HEAT.cool * dt * (lHeld ? .35 : 1));
   MECH_W_ORDER.forEach(id => { S.ammo[id] = magSize(id); }); reloadT = 0;
-  if (MECH.rocket && MECH.rcd <= 0){
+  const WRm = MECH_W[wr], rrk = Math.max(.3, 1 - .08 * mUp('rrate'));
+  if (WRm.ch) MECH.rch = Math.min(WRm.ch, (MECH.rch || 0) + dt / (WRm.rg * rrk)); // le chargeur du bras droit se refait
+  if (MECH.rocket && MECH.rcd <= 0 && (!WRm.ch || MECH.rch >= 1)){
+    if (WRm.ch) MECH.rch -= 1;
+    const visR = mechAssist();
     S.cur = wr; const c0 = cool; cool = 0; MECH.src = 'right';
     try { fire(); if (MECH_W[wr].salvo) for (let i = 0; i < mUp('salvo'); i++) mechExtraRocket(wr); }
-    finally { S.cur = wl; cool = c0; MECH.src = null; recoilAcc = Math.min(recoilAcc, .015); } // le robot absorbe le recul
+    finally { S.cur = wl; cool = c0; MECH.src = null; recoilAcc = Math.min(recoilAcc, .015); mechAssistFin(visR); } // le robot absorbe le recul
     MECH.rcdMax = MECH_W[wr].cd * Math.max(.3, 1 - .08 * mUp('rrate')); MECH.rcd = MECH.rcdMax;
     mechFlashR.visible = true; setTimeout(() => { mechFlashR.visible = false; }, 70);
   }
@@ -360,7 +391,7 @@ function mechStep(dt){
   firing = lHeld && MECH.hot <= 0;
   if (typeof armStep === 'function') armStep(dt); // montée en régime, roquettes et flammes en vol
   if (firing && cool <= 0 && (wl !== 'minigun' || typeof spin === 'undefined' || spin >= 1)){
-    fire(); MECH.heat += MECH_HEAT.shot * (20 / Math.max(1, WL.rate)) * Math.max(.3, 1 - .08 * mUp('cool')); recoilAcc = Math.min(recoilAcc, .012); // le robot absorbe le recul
+    const visL = mechAssist(); fire(); mechAssistFin(visL); MECH.heat += MECH_HEAT.shot * (20 / Math.max(1, WL.rate)) * Math.max(.3, 1 - .08 * mUp('cool')); recoilAcc = Math.min(recoilAcc, .012); // le robot absorbe le recul
     if (MECH.heat >= 1){ MECH.heat = 1; MECH.hot = MECH_HEAT.lock; banner('Surchauffe !', MECH_W[wl].name + ' : refroidissement', 1200); }
     mechFlashL.visible = wl !== 'flamer'; mechFlashL.material.rotation = Math.random() * 6;
   } else if (!firing) mechFlashL.visible = false;
@@ -576,4 +607,4 @@ try {
 } catch (e) { errNote(e); }
 
 // Accès pour les tests automatiques
-window.__mech = { MECH_W, mW, mechWeapon, mechArms, mechArmsG, MECH_UPG, mUp, mechUpgBuy, mechUpgCost, mechUnlocked, mechUnlock, mechGarage, mechNorm, mechBtn, MECH, MECH_LEN, MECH_HEAT, MECH_RAMPE, MECH_RENFORT, mechRampe, mechStart, mechQuit, mechStep, mechStreet, mechPause, mechResume, mechOver, mechPlan, mechCk };
+window.__mech = { MECH_W, mW, mechWeapon, mechArms, mechArmsG, MECH_UPG, mUp, mechUpgBuy, mechUpgCost, mechUnlocked, mechUnlock, mechGarage, mechNorm, mechBtn, MECH, MECH_LEN, MECH_HEAT, MECH_RAMPE, MECH_RENFORT, MECH_ASSIST, mechAssist, mechAssistFin, mechRampe, mechStart, mechQuit, mechStep, mechStreet, mechPause, mechResume, mechOver, mechPlan, mechCk };

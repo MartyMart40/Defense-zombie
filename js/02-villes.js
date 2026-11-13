@@ -1,5 +1,8 @@
 'use strict';
 /* ================= Villes ================= */
+// dur : villes plus dures depuis le 13 novembre 2026 (Martin : « oui, je veux que tu rendes ça plus difficile pour les villes »).
+// Multiplie la vie et les dégâts des zombies de la ville, en plus de diff et de CITY_SCALE (wavePlan, js/06-donnees.js).
+// Au simulateur, avec des défenses, même le joueur débutant libérait les 4 premières villes du premier coup.
 const LOCS = [
   { id:'village', name:'Saint-Clou', kind:'Village', waves:5, diff:1, xp:1, cash:0, off:0, style:'houses', end:'church',
     desc:'Un village tranquille, des maisons et des arbres. Les zombies sont encore lents.',
@@ -8,26 +11,26 @@ const LOCS = [
     ground:0x332c24, walk:0x4a4440, lawn:0x2e3a22, walls:['#7a6a55','#6b5a48','#857560','#5e5040'], lit:.1, win:'#ffb35a',
     roofs:[0x4a2a22,0x2f2f35,0x5a3a28], bh:[3.5,5.5], hw:[7,10], gap:[5,12], trees:.85, lamps:true,
     fires:[[8,1.6,-42,1.3,1],[-11.5,1,-13,.6,0]] },
-  { id:'ville', name:'Val-des-Cendres', kind:'Petite ville', waves:6, diff:1.4, xp:1.6, cash:300, off:1, style:'town', end:'tower',
+  { dur:1.35, id:'ville', name:'Val-des-Cendres', kind:'Petite ville', waves:6, diff:1.4, xp:1.6, cash:300, off:1, style:'town', end:'tower',
     desc:'Une petite ville en briques. Plus de zombies, plus coriaces.',
     sky:['#0f0b1c','#2b1b3a','#7a3a4a','#d0603a','#4a2a30','#201418'], fog:0x4a2a34, fogNear:30, fogFar:125,
     hemi:[0xe0907a,0x201420,.78], sunCol:0xff8a60, sunI:.8, amb:0x3a2030, glow:0xffc0a0, glowY:10,
     ground:0x2c2724, walk:0x4a4440, walls:['#3a302b','#4a3a30','#2f2a28','#55453a','#3d3433'], lit:.06, win:'#ffb35a',
     bh:[10,22], gap:[0,2], lamps:true, fires:[[8,1.6,-42,1.3,1],[-11.5,1,-13,.6,0],[-6,1.4,-75,1,1]] },
-  { id:'banlieue', name:'Banlieue Nord', kind:'Banlieue de nuit', waves:7, diff:1.9, xp:2.4, cash:700, off:2, style:'houses', end:'tower',
+  { dur:1.6, id:'banlieue', name:'Banlieue Nord', kind:'Banlieue de nuit', waves:7, diff:1.9, xp:2.4, cash:700, off:2, style:'houses', end:'tower',
     desc:'La nuit est tombée sur les grosses maisons. On voit moins loin.',
     sky:['#03050c','#0a1224','#1a2a44','#33465e','#141c28','#0a0d12'], fog:0x141c28, fogNear:22, fogFar:100,
     hemi:[0x6a88b8,0x101418,.62], sunCol:0x8fa0d0, sunI:.4, amb:0x202838, glow:0xbfd8ff, glowY:60,
     ground:0x22252a, walk:0x3a3d42, lawn:0x1c2620, walls:['#4a4e58','#5a5550','#3e4450','#6a6560'], lit:.16, win:'#ffd27a',
     roofs:[0x2a2c33,0x3a3530,0x22262e], bh:[5,7.5], hw:[9,13], gap:[4,9], trees:.5, lamps:true, lampGlow:true,
     fires:[[8,1.6,-42,1.3,1],[-11.5,1,-13,.6,0],[10,1,-20,.7,0]] },
-  { id:'centre', name:'Centre-ville', kind:'Gratte-ciel', waves:8, diff:2.6, xp:3.4, cash:1200, off:3, style:'town', end:'tower',
+  { dur:1.4, id:'centre', name:'Centre-ville', kind:'Gratte-ciel', waves:8, diff:2.6, xp:3.4, cash:1200, off:3, style:'town', end:'tower',
     desc:'Des tours à perte de vue et une ville en feu. Les costauds arrivent tôt.',
     sky:['#120606','#3a0c0a','#8a1e10','#e04a1a','#4a120c','#1a0a08'], fog:0x4a1810, fogNear:25, fogFar:120,
     hemi:[0xff7050,0x1a0c08,.78], sunCol:0xff6030, sunI:.9, amb:0x401810, glow:0xffa080, glowY:8,
     ground:0x2a2422, walk:0x45403e, walls:['#3a3436','#2c2a2e','#45403e','#353a40'], lit:.1, win:'#ffb35a',
     bh:[28,60], gap:[0,1], lamps:true, fires:[[8,1.6,-42,1.3,1],[-11.5,1,-13,.6,0],[-7,1.6,-60,1.3,1],[9,1.2,-95,1.1,0]] },
-  { id:'port', name:'Port industriel', kind:'Zone portuaire', waves:10, diff:3.4, xp:4.8, cash:2000, off:4, style:'port', end:'cranes',
+  { dur:1.25, id:'port', name:'Port industriel', kind:'Zone portuaire', waves:10, diff:3.4, xp:4.8, cash:2000, off:4, style:'port', end:'cranes',
     desc:'Conteneurs, grues et brume toxique. La dernière ville, la plus dure.',
     sky:['#0a100a','#18241a','#3a5a2a','#9ab040','#2a3a1e','#101408'], fog:0x2a3a20, fogNear:20, fogFar:105,
     hemi:[0xb0d070,0x101408,.7], sunCol:0xc0e060, sunI:.7, amb:0x203018, glow:0xe0ff90, glowY:12,

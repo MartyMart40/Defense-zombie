@@ -67,3 +67,9 @@ Banc du simulateur : le joueur ne tire pas, même ferraille dans un seul type de
 - Mortier 120 dégâts (70 avant), laser 80 par seconde et brûlure 20 (45 et 12), missiles 250 (160). Tourelle et ogive inchangées.
 - Après (essayé avec ×1,6, ×2,2 et ×1,5 ; les chiffres retenus sont un peu différents et n'ont pas été remesurés un par un) : tourelles les meilleures jusqu'à environ 3 000 ferrailles, laser et mortier vers 7 000 à 12 000, missiles à 25 000.
 - Constat laissé tel quel : 4 tourelles de base (1 000 ferrailles) tiennent seules la vague 4 de Saint-Clou. Les défenses pèsent lourd dans la campagne ; le simulateur les ignorait jusqu'au 12 novembre (elles étaient achetées mais ne tiraient pas).
+
+## Villes plus dures (2026-11-13)
+Martin : « oui, je veux que tu rendes ça plus difficile pour les villes ».
+- Un chiffre par ville, `dur` dans `js/02-villes.js` : il multiplie la vie et les dégâts des zombies. Saint-Clou 1, Val-des-Cendres 1,35, Banlieue Nord 1,6, Centre-ville 1,4, Port 1,25. Pas le mode infini, ni le robot.
+- Essayé avant : monter seulement `diff` (aucun effet visible) et monter `CITY_SCALE` à 1,45 (rien aux villes 2 et 3, mur au Port).
+- Au simulateur (défenses actives) : débutant, 2 essais à Banlieue Nord, Centre-ville et Port ; moyen, 1 ou 2 à Centre-ville et au Port ; bon, tout du premier coup mais de justesse (23 % de barricade à Centre-ville).

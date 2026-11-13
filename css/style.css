@@ -415,6 +415,7 @@ body.mech #hud, body.mech #touch{ display:none !important; }
 #mkHeat{ background:linear-gradient(90deg,#ffd040,#ff6a20) !important; }
 #mkHeat.hot{ background:#ff3a2a !important; }
 #mkRocket{ background:linear-gradient(90deg,#ffb030,#ffe080) !important; }
+#mkRocket.hot{ background:#ff3a2a !important; }
 #mkBottom{ position:absolute; left:50%; bottom:calc(12px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); display:flex; gap:14px; align-items:flex-end; font-size:12px; }
 .mk-g{ width:120px; text-align:center; }
 #mkNext{ font-size:13px; color:#cfe8d8; white-space:nowrap; }

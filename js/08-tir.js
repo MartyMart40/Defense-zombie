@@ -66,10 +66,7 @@ function fire(){
         anyHit = true;
         if (++pierced >= pierce) break;
       }
-      if (!pierced && fwd.y < -0.01){
-        const t = -origin.y / fwd.y; tmpV.copy(origin).addScaledVector(fwd, t);
-        if (p % 3 === 0) burst(tmpV, 'dust', 3, 1.5);
-      }
+      if (!pierced) impactRate(origin, fwd, p); // balle perdue : sol ou mur (05-particules.js)
     }
     if (anyHit){ hitmT = .12; Snd.hit(); }
   }

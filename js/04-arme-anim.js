@@ -48,11 +48,45 @@ function vmShellStep(dt){
 function vmShellClear(){ const P = vmShells; P.list.forEach((s, i) => { s.life = 0; P.mesh.setMatrixAt(i, P.zero); }); P.mesh.instanceMatrix.needsUpdate = true; P.mesh.visible = false; }
 
 /* ---------- Animations : appelées par visuals() (15-boucle.js) après la pose de l'arme ---------- */
-const VMA = { hooked: false, pumpT: -1, boltT: -1, slideK: 0, id: null, loadT: 0 };
+const VMA = { hooked: false, pumpT: -1, boltT: -1, slideK: 0, id: null, loadT: 0, fu: 0, fb: 0, fr: 0, vibT: 0, vib: 0, dec: 14 };
+/* ---------- Sensation de chaque arme : purement visuel (modèle en main et champ de vision) ---------- */
+// k : remplace kick (recul du modèle, 15-boucle.js) ; up : canon qui se relève (rad) ; back : modèle qui recule (m) ;
+// roll : bascule de côté (rad, sens au hasard) ; dec : vitesse de retour (grand = sec) ; vib : tremblement (m) ;
+// fov : « coup » dans le champ de vision (degrés), que 15-boucle.js ramène tout seul. Le rayon du tir part toujours
+// du centre de la caméra : ni la visée ni W.recoil ne changent. « Effets de tir » coupé (PK.tir) : comme avant.
+const VM_FEEL = {
+  pistol:  { k: .75, up: .09, back: .012, roll: .02, dec: 30, fov: .3 },         // sec et bref
+  shotgun: { k: 1.3, up: .22, back: .05, roll: .05, dec: 9, fov: 1.8 },           // lourd, retour lent
+  rifle:   { k: .6, up: .035, back: .01, roll: .015, dec: 24, vib: .0015, fov: .15 },
+  sniper:  { k: 1.25, up: .16, back: .05, roll: .03, dec: 8, fov: 1.2 },
+  crossbow:{ k: .55, up: .05, back: -.008, roll: .01, dec: 12 },                  // corde qui claque, doux
+  flamer:  { k: .12, vib: .0025, dec: 20 },
+  minigun: { k: .3, up: .01, dec: 30, vib: .0065, fov: .12 },                     // vibre tant qu'il tire
+  rocket:  { k: 1.2, up: .14, back: .07, roll: .03, dec: 6, fov: 2.4 },
+  mg50:    { k: .55, up: .05, back: .015, roll: .02, dec: 16, vib: .004, fov: .45 },
+  laser:   { k: .2, up: .01, dec: 30, vib: .001 },
+  railgun: { k: 1.4, up: .22, back: .09, roll: .04, dec: 5, fov: 2.8 },
+  gl:      { k: .8, up: .1, back: .04, roll: .03, dec: 10, fov: .9 },
+  arc:     { k: .5, up: .06, back: .02, roll: .04, dec: 14, vib: .002, fov: .5 }
+};
+const vmFeelOn = () => typeof PK === 'undefined' || PK.tir !== false;
+function vmFeel(id){
+  const F = VM_FEEL[id]; if (!F || state !== 'playing' || !vmFeelOn()) return false;
+  const a = ads > .5 ? .55 : 1; // à l'œil : plus retenu
+  if (F.k != null) kick = F.k;
+  VMA.fu = Math.min(.45, VMA.fu + (F.up || 0) * a);
+  VMA.fb = Math.min(.12, VMA.fb + (F.back || 0) * a);
+  VMA.fr = (Math.random() < .5 ? -1 : 1) * (F.roll || 0) * a;
+  VMA.dec = F.dec || 14;
+  if (F.vib){ VMA.vib = F.vib; VMA.vibT = .12; }
+  if (F.fov && camera && camera.isPerspectiveCamera){ camera.fov += F.fov * (zoomed ? .35 : 1); camera.updateProjectionMatrix(); }
+  return true;
+}
 // Chaque tir réel (fire() renvoie autre chose que false) déclenche les animations de l'arme
 function vmShot(){
   if (!S) return;
   const id = S.cur, ud = VMS[id] && VMS[id].userData; if (!ud) return;
+  vmFeel(id);
   if (ud.slide) VMA.slideK = 1;
   if (id === 'shotgun') VMA.pumpT = 0;
   else if (id === 'sniper') VMA.boltT = 0;
@@ -75,6 +109,18 @@ function vmAnim(dt){
   if (VMA.id !== id){ VMA.id = id; VMA.pumpT = VMA.boltT = -1; VMA.slideK = 0; }
   if (flash.parent === g) flash.position.y = ud.muzzleY;
   const rel = reloadT > 0 && reloadDur > 0 ? 1 - reloadT / reloadDur : -1; // avancement de la recharge (0 à 1)
+  // Sensation de l'arme (vmFeel) : canon qui se relève, recul, bascule, tremblement ; retour selon l'arme
+  if (VMA.fu || VMA.fb || VMA.fr || VMA.vibT > 0){
+    const e = Math.exp(-VMA.dec * dt);
+    VMA.fu *= e; VMA.fb *= e; VMA.fr *= e;
+    if (VMA.fu < 1e-4 && VMA.fb < 1e-4 && Math.abs(VMA.fr) < 1e-4) VMA.fu = VMA.fb = VMA.fr = 0;
+    vmRoot.rotation.x += VMA.fu; vmRoot.rotation.z += VMA.fr; vmRoot.position.z += VMA.fb;
+    if (VMA.vibT > 0){ VMA.vibT -= dt; const v = VMA.vib * (1 - .5 * ads); vmRoot.position.x += (Math.random() - .5) * v; vmRoot.position.y += (Math.random() - .5) * v; }
+  }
+  // Minigun : vibre aussi pendant la montée en régime, tant qu'on tient la détente
+  if (id === 'minigun' && firing && state === 'playing' && spin > 0 && reloadT <= 0 && vmFeelOn()){
+    const v = .003 * spin * (1 - .5 * ads); vmRoot.position.x += (Math.random() - .5) * v; vmRoot.position.y += (Math.random() - .5) * v;
+  }
   // Légère respiration en visée
   if (ads > 0){ vmRoot.position.y += Math.sin(time * 1.3) * .0006 * ads; vmRoot.position.x += Math.sin(time * .7 + 1) * .0004 * ads; }
   // Glissière, culasse

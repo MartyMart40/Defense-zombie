@@ -196,4 +196,175 @@
     ok(r.voisin, 'La section est placée à côté des statistiques existantes');
     egal(JSON.stringify(r.reset), JSON.stringify({ shots: 0, hits: 0, heads: 0, dmg: 0, src: 0, kt: 0, time: 0 }), 'Remise à zéro par newGame');
   });
+  /* ---------- Sensations du tir (Effets de tir) ---------- */
+  const exigerTir = () => { exiger(); if (lire('typeof pkPoseOn === "function" && typeof impactRate === "function"') !== true) ignorer('Effets de tir absents'); };
+
+  test('Tir : un zombie touché sursaute (affiché par instances), puis revient ; les tirs visent la pose normale', () => {
+    exigerTir(); partie(); J(OUTILS);
+    const r = J(function(){
+      __punch.pkSetTir(true);
+      var o = {};
+      var z = __tpk.gros('walker', 0, -30); z.sway = 0; z.speed = 0;
+      update(1 / 60);
+      o.ry0 = z.body.rotation.y; o.rx0 = z.body.rotation.x;
+      // Coup sur le flanc droit (x +)
+      var p = __tpk.centre(z); p.x += .25;
+      damage(z, z.maxHp * .3, false, p);
+      o.react = __punch.PK.react.indexOf(z) >= 0;
+      update(1 / 60);
+      o.ry1 = z.body.rotation.y; o.rx1 = z.body.rotation.x;
+      // Rendu par instances : la matrice du torse dans son lot doit être celle de la pose tournée
+      zInstSync();
+      var torse = z.meshes[0], e = null;
+      for (var i = 0; i < z.inst.length; i++) if (z.inst[i].m === torse) e = z.inst[i];
+      o.inst = !!e;
+      if (e){
+        var a = e.b.im.instanceMatrix.array, m = torse.matrixWorld.elements, trouve = false;
+        for (var k = 0; k < e.b.n && !trouve; k++){ var bon = true; for (var j = 0; j < 16; j++) if (Math.abs(a[k * 16 + j] - m[j]) > 1e-5){ bon = false; break; } trouve = bon; }
+        o.trouve = trouve;
+        // axe X du torse : tourné autour de la verticale (sa composante z n'est plus nulle)
+        o.axeXz = m[2];
+      }
+      // Pendant update(), la pose est normale : pkPoseOff retire le sursaut
+      __punch.pkPoseOff(); o.ryOff = z.body.rotation.y; __punch.pkPoseOn(0);
+      for (var n = 0; n < 40; n++) update(1 / 60);
+      o.ryFin = z.body.rotation.y; o.reactFin = __punch.PK.react.indexOf(z) >= 0;
+      o.pos = z.g.position.z;
+      state = 'test';
+      return o;
+    });
+    ok(r.react, 'Le zombie touché est suivi');
+    ok(r.ry1 - r.ry0 > .03, 'Torsion vers l’arrière du côté touché : ' + r.ry0 + ' puis ' + r.ry1);
+    ok(r.rx1 < r.rx0, 'Le corps part un peu vers l’arrière : ' + r.rx0 + ' puis ' + r.rx1);
+    ok(r.inst, 'Le zombie passe par le rendu par instances');
+    ok(r.trouve, 'La matrice tournée est bien dans le lot d’instances');
+    ok(Math.abs(r.axeXz) > .02, 'Rotation visible dans la matrice affichée : ' + r.axeXz);
+    ok(Math.abs(r.ryOff - r.ry0) < 1e-9, 'Pose normale pendant update() (tirs) : ' + r.ryOff + ' contre ' + r.ry0);
+    ok(Math.abs(r.ryFin - r.ry0) < 1e-6 && !r.reactFin, 'Retour à la pose normale : ' + r.ryFin);
+    egal(r.pos, -30, 'Aucun déplacement du zombie');
+  });
+
+  test('Tir : tête touchée (tête qui part en arrière, repère au réticule, son si présent), aucun changement de dégâts', () => {
+    exigerTir(); partie(); J(OUTILS);
+    const r = J(function(){
+      __punch.pkSetTir(true);
+      var o = {}, sons = 0, avant = Snd.headPop;
+      Snd.headPop = function(){ sons++; }; __punch.PK.snd.headPop = -1;
+      var z = __tpk.gros('walker', 0, -30); z.speed = 0; z.sway = 0;
+      update(1 / 60); var hx0 = z.head.rotation.x, hp0 = z.hp;
+      __tpk.tirer('pistol', __tpk.tete(z));
+      o.perte = hp0 - z.hp; o.attendu = wDmg('pistol') * headMult() * (WEAPONS.pistol.headX || 1);
+      update(1 / 60);
+      o.hx = z.head.rotation.x - hx0;
+      o.cls = __punch.pkHmFrame(.01, true);
+      o.el = !!document.getElementById('pkHm');
+      o.sons = sons;
+      // Même tir, effets coupés : mêmes dégâts, pas de repère
+      __punch.pkSetTir(false); __punch.PK.snd.headPop = -1;
+      var z2 = __tpk.gros('walker', 3, -30); z2.speed = 0; update(1 / 60); var h2 = z2.hp;
+      __tpk.tirer('pistol', __tpk.tete(z2)); o.perte2 = h2 - z2.hp;
+      o.cls2 = __punch.pkHmFrame(.01, true);
+      __punch.pkSetTir(true);
+      if (avant) Snd.headPop = avant; else delete Snd.headPop;
+      state = 'test';
+      return o;
+    });
+    ok(Math.abs(r.perte - r.attendu) < 1e-6, 'Dégâts à la tête inchangés : ' + r.perte + ' contre ' + r.attendu);
+    ok(r.hx < -.1, 'La tête part vers l’arrière : ' + r.hx);
+    egal(r.cls, 'on head', 'Repère « tête » au réticule');
+    ok(r.el, 'Élément du repère créé');
+    egal(r.sons, 1, 'Son de la tête appelé une fois (Snd.headPop)');
+    ok(Math.abs(r.perte2 - r.perte) < 1e-6, 'Effets coupés : mêmes dégâts');
+    egal(r.cls2, '', 'Effets coupés : pas de repère tête');
+  });
+
+  test('Tir : la chute dépend du coup (tête, corps, explosion), repère de mort, réglage sauvegardé', () => {
+    exigerTir(); partie(); J(OUTILS);
+    const r = J(function(){
+      __punch.pkSetTir(true);
+      var o = {}, sons = 0, avant = Snd.killConfirm;
+      Snd.killConfirm = function(){ sons++; }; __punch.PK.snd.killConfirm = -1;
+      var a = __t.placer('walker', -6, -30), b = __t.placer('walker', 0, -30), c = __t.placer('walker', 6, -30);
+      [a, b, c].forEach(function(z){ z.speed = 0; z.sway = 0; });
+      update(1 / 60);
+      __punch.PK.src = 'pistol'; __punch.PK.dmgF = false;
+      damage(a, 1e6, true, __tpk.tete(a));                 // tête
+      o.cls = __punch.pkHmFrame(.01, true);
+      damage(b, b.maxHp * 1.2, false, __tpk.centre(b));     // corps
+      __punch.PK.boom++; damage(c, c.maxHp * 1.2, false, __tpk.centre(c)); __punch.PK.boom--; // explosion
+      __punch.PK.src = null;
+      o.die = [a.pkDie, b.pkDie, c.pkDie];
+      for (var i = 0; i < 18; i++) update(1 / 60);          // 0,3 s
+      o.ax = a.body.rotation.x; o.bx = b.body.rotation.x; o.cz = c.body.position.z;
+      for (var k = 0; k < 30; k++) update(1 / 60);
+      o.ax2 = a.body.rotation.x; o.bx2 = b.body.rotation.x; o.cy2 = c.body.position.y;
+      o.sons = sons; o.dying = __punch.PK.dying.length;
+      // Réglage
+      var btn = document.getElementById('btnTirFx');
+      __punch.pkSetTir(false); o.saved = localStorage.getItem('dt_tirfx'); o.btn = btn ? btn.textContent : null;
+      var d = __t.placer('walker', 0, -40); update(1 / 60); damage(d, 1e6, false, __tpk.centre(d));
+      o.dieOff = d.pkDie || null; o.dyingOff = __punch.PK.dying.length;
+      __punch.pkSetTir(true); o.saved2 = localStorage.getItem('dt_tirfx');
+      if (avant) Snd.killConfirm = avant; else delete Snd.killConfirm;
+      state = 'test';
+      return o;
+    });
+    egal(r.cls, 'on kill head', 'Repère de mort par la tête');
+    egal(r.die.join(','), 'tete,corps,boom', 'Chute selon le coup');
+    ok(r.ax < -1.2, 'Tête : part vers l’arrière (' + r.ax + ')');
+    ok(r.bx > 0 && r.bx2 > 1.4, 'Corps : s’affaisse puis tombe vers l’avant (' + r.bx + ', ' + r.bx2 + ')');
+    ok(r.cz < -1, 'Explosion : projeté vers l’arrière (' + r.cz + ')');
+    ok(Math.abs(r.cy2) < .2, 'Explosion : retombe au sol (' + r.cy2 + ')');
+    ok(r.ax2 < -1.4, 'Tête : reste au sol (' + r.ax2 + ')');
+    ok(r.sons >= 1 && r.sons <= 3, 'Son de mort appelé (Snd.killConfirm) : ' + r.sons);
+    egal(r.saved, 'false', 'Réglage sauvegardé (dt_tirfx)');
+    ok(r.btn === null || /Effets de tir : désactivés/.test(r.btn), 'Texte du bouton : ' + r.btn);
+    egal(r.dieOff, null, 'Effets coupés : chute d’avant');
+    egal(r.dyingOff, 0, 'Effets coupés : aucune chute suivie');
+    egal(r.saved2, 'true', 'Réglage réactivé');
+  });
+
+  test('Tir : balles perdues (sol et mur) et sensation propre à chaque arme, sans toucher la visée', () => {
+    exigerTir(); partie(); J(OUTILS);
+    const r = J(function(){
+      __punch.pkSetTir(true);
+      var o = {};
+      o.murs = impMurs();
+      var org = EYE.clone(), dir = new THREE.Vector3(0, -.3, -1).normalize();
+      o.sol = impactRate(org, dir, 0);
+      if (IMP.murs.length){
+        var c = new THREE.Vector3(); IMP.murs[0].getCenter(c); c.y = Math.min(c.y, 3);
+        o.mur = impactRate(org, c.clone().sub(org).normalize(), 0);
+      }
+      o.plomb = impactRate(org, dir, 1);
+      // Aucun objet créé : le pool de particules garde sa taille
+      o.pool = parts.length;
+      // Sensation : chaque arme du toit a son profil, et ils diffèrent
+      o.profils = WORDER.filter(function(id){ return !!VM_FEEL[id]; }).length; o.armes = WORDER.length;
+      o.pistol = VM_FEEL.pistol; o.shotgun = VM_FEEL.shotgun; o.minigun = VM_FEEL.minigun;
+      // Le recul de la visée (recoilAcc) est le même avec ou sans effets
+      var rec = function(on){
+        __punch.pkSetTir(on); var z = __tpk.gros('brute', 0, -60);
+        __tpk.tirer('shotgun', __tpk.centre(z)); var v = recoilAcc; clearZombies(); return v;
+      };
+      o.recOn = rec(true); var fov0 = baseFov; o.fov = camera.fov - fov0; o.fu = VMA.fu;
+      o.recOff = rec(false);
+      __punch.pkSetTir(true);
+      for (var i = 0; i < 40; i++) visuals(1 / 60);
+      o.fovFin = Math.abs(camera.fov - baseFov);
+      state = 'test';
+      return o;
+    });
+    ok(r.murs > 0, 'Murs relevés dans la rue : ' + r.murs);
+    egal(r.sol, 'sol', 'Balle au sol : impact');
+    egal(r.mur, 'mur', 'Balle dans un mur : éclats');
+    egal(r.plomb, null, 'Plombs : un impact sur trois');
+    egal(r.pool, 180, 'Pool de particules inchangé');
+    egal(r.profils, r.armes, 'Chaque arme du toit a sa sensation');
+    ok(r.pistol.dec > r.shotgun.dec && r.shotgun.up > r.pistol.up, 'Pistolet sec, pompe lourd');
+    ok(r.minigun.vib > 0, 'Minigun vibrant');
+    ok(Math.abs(r.recOn - r.recOff) < 1e-9, 'Recul de la visée inchangé : ' + r.recOn + ' contre ' + r.recOff);
+    ok(r.fov > .5 && r.fu > .05, 'Coup du pompe : champ de vision ' + r.fov + ', canon ' + r.fu);
+    ok(r.fovFin < .1, 'Le champ de vision revient : ' + r.fovFin);
+  });
 })();

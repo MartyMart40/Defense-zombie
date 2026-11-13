@@ -4,6 +4,7 @@ Les tâches plus anciennes que les 10 dernières (les récentes sont dans `TACHE
 
 | # | Tâche | Date |
 |---|-------|------|
+| 84 | Graphismes, Haute définition séance 2 (partie sans téléchargement) : la nuit, les lampadaires éclairent vraiment la rue (8 projecteurs, ombres des 4 plus proches) avec un cône de brume éclairée ; textures photo encore en attente (sites bloqués par le réseau) (js/58-graphismes-hd.js, tests/t-style.js) | 2026-11-04 |
 | 83 | RTS : la rangée « Unités » est repliée par défaut (une pastille « 👥 Unités · N » et les groupes) ; la toucher montre une pastille par unité à choisir une par une, la retoucher la referme (choix gardé, dt_rts_liste) (js/48-rts-liste.js, tests/t-rts-selection.js) | 2026-11-04 |
 | 82 | Graphismes, Haute définition séance 1 (la lumière) : 3e choix du bouton Style. Matériaux physiques (relief et rugosité tirés des textures : flaques d’huile et vitres qui reflètent, briques en relief), lumière d’ambiance tirée d’une vraie image HDR par ville (Poly Haven, CC0, dossier `hdri/`), rendu en couleurs linéaires et étendues avec exposition et courbe ACES, ombres de contact (SSAO), ombre du soleil 4096 sur ordi (js/58-graphismes-hd.js, lib/three-hd.js, tests/t-style.js) | 2026-11-04 |
 | 81 | Robot de combat ouvert dès le départ (plus besoin de tomber en mode infini ni de finir les villes). Style : bouton « Style » monté en haut de la pause (visible au cell couché sans défiler) ; en qualité basse, pas d’éclat et ombres moins fines (moins de lag sur un petit ordi) | 2026-11-04 |

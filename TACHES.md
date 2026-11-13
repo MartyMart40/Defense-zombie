@@ -7,15 +7,17 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
+| 95 | Dossier robot : robot-joueur du robot dans le simulateur, puis mesure du garage | En cours | Sous-agent, ouvert le 2026-11-13 |
+| 96 | Dossier RTS : meilleur robot-joueur (garage, héliport, aérodrome), puis mesure des véhicules et des avions en appui | En cours | Sous-agent, ouvert le 2026-11-13 |
 
 ## À faire
 
 | # | Tâche | Priorité |
 |---|-------|----------|
 | - | Équilibrage après essais de Martin | Après essais |
-| - | Dossier toit : le feeling du tir (recul, impact, réaction des zombies touchés, son). Jamais commencé ; `js/31-punch.js` existe déjà, à lire d'abord | À choisir par Martin |
-| - | Dossier robot : mettre un robot-joueur du robot dans `outils/sim-bot.js` et le rapport (les essais du 12 et 13 novembre venaient d'un script jetable), puis mesurer les améliorations et les armes du garage | À choisir par Martin |
-| - | Dossier RTS : meilleur robot-joueur (il ne bâtit ni garage, ni héliport, ni aérodrome), puis mesurer les véhicules et les avions en appui | À choisir par Martin |
+| - | Une fin qu’on peut gagner au robot (ex. 9 rues, boss final, « course réussie », puis un 2e tour plus dur). Accepté par Martin le 2026-11-13 ; à ouvrir quand le dossier 95 est fusionné, avec ses chiffres | Suivant (robot) |
+| - | Une fin qu’on peut gagner au RTS (ex. un nid mère à détruire, puis une vallée plus dure), et un danger qui monte au lieu d’une base à 100 % qui s’écroule en une minute. Accepté par Martin le 2026-11-13 ; à ouvrir quand le dossier 96 est fusionné, avec ses chiffres | Suivant (RTS) |
+| - | Toit : des moments de crise dans une vague (avoir chaud et s’en sortir), au lieu de zombies seulement plus forts. Accepté par Martin le 2026-11-13 ; à ouvrir quand le dossier 94 est fusionné | Suivant (toit) |
 | - | Dossier performance au cell : mesurer la boucle du jeu (`tests/perf.html`) et alléger ce qui coûte | À choisir par Martin |
 
 Écarté par Martin : choisir 1 bonus parmi 3.
@@ -24,6 +26,7 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 | # | Tâche | Date |
 |---|-------|------|
+| 94 | Toit, ressenti du tir (« ça brasse pas assez ») : coup de caméra et recul de l’arme dosés par arme (le sniper, le fusil à pompe et les roquettes brassent, le pistolet à peine), éclair de bouche selon l’arme ; gerbe de sang dans le sens du tir, poussière ou étincelles quand on rate ; marqueur au réticule (or pour la tête, croix rouge pour un tué) ; zombies qui sursautent quand ils encaissent et corps poussés à la mort ; son « toc » pour la tête et coup sec pour le tué, impacts du minigun qui ne saturent plus ; très court gel sur un gros coup. Seulement visuel et sonore : dégâts, balles et zombies inchangés. Réglage « Secousses » dans la Pause (js/62-ressenti.js, css/style.css, tests/t-ressenti.js) | 2026-11-13 |
 | 93 | D’après l’essai de Martin. Robot : les zombies des vagues sortent plus loin (derrière 34 à 50 m, ruelles 30 à 55 m devant ; avant, parfois à 4 m du robot) ; roquettes et lance-grenades avec un chargeur qui se refait (4 roquettes, une aux 1,6 s : fini le tir sans arrêt au plancher) ; aide à la visée au cell (le tir part vers le zombie quand le réticule passe à moins de 4 degrés, la vue ne bouge pas) ; premières rues plus dures (force 1,2 dès la rue 1, zombies qui sortent plus serrés). Les tourelles du toit ne s’affichent plus dans le robot ni dans le RTS. Campagne plus dure : vie et dégâts des zombies ×1,35 à Val-des-Cendres, ×1,6 à Banlieue Nord, ×1,4 à Centre-ville, ×1,25 au Port (js/02-villes.js, 06-donnees.js, 17-defenses.js, 39-robot.js, 40-robot-monstres.js, tests) | 2026-11-13 |
 | 92 | Suite du tour des modes, mesuré à budget égal. RTS : une unité à explosion (tank, lance-roquettes, Apache) visait un groupe juste hors de sa portée et restait sans tirer, des zombies à ses pieds (un tank tirait aux 7,5 s au lieu d’aux 3 s) : une cible à portée passe maintenant avant ; tank 900 dégâts et 8 000 de vie (560 et 3 200 : trois tanks tuaient 4 fois moins que le même prix en n’importe quoi d’autre) ; tourelle mitrailleuse 26 dégâts et portée 24 m (14 et 20 m), Tesla 80 dégâts à 2 tirs/s. Toit, défenses : à ferraille égale, 4 tourelles de base améliorées battaient mortier, laser et missiles presque partout ; mortier 120 dégâts (70), laser 80 par seconde et brûlure 20 (45 et 12), missiles 250 (160). Simulateur : les défenses achetées par le robot-joueur ne tiraient jamais, corrigé (js/16-atelier.js, 41-rts.js, 42-rts-combat.js, outils/sim-bot.js, tests/t-equilibrage.js) | 2026-11-12 |
 | 91 | Tour des trois modes au simulateur, ce qui clochait est corrigé. Toit : les autos lancées par le boss se détruisent en vol (3 balles ou une roquette ; avant, elles enlevaient à coup sûr près de la moitié d’une barricade de base) ; canon électromagnétique : onde de choc qui couche un couloir de 4,4 m sur toute la rue, 1 tir/s, chargeur 6 ; lance-grenades 600 dégâts, rayon 5,5 m, barillet de 16 ; mitrailleuse .50 150 dégâts. Robot : la force des zombies suit la rue (montée douce sur 9 rues), plus la ville tirée au carrefour (avant : 1 à 5 fois plus fort au hasard) ; « Renforts ! » quand la horde d’une rue se reforme (+35 % chaque fois, plus de ferraille ni d’expérience au 2e), pour qu’on ne puisse plus camper au début de la rue sans risque. Un pas de côté esquive maintenant les crachats (avant : ils touchaient toujours). RTS : les dégâts des boss montent moins vite que ceux des autres zombies (un Titan rasait une base intacte en 20 secondes) (js/19-boss.js, 20-armes.js, 34-arsenal.js, 39-robot.js, 40-robot-monstres.js, 42-rts-combat.js, outils/, tests) | 2026-11-12 |
@@ -33,10 +36,10 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 | 87 | Graphismes, style Ultra (ordi seulement, 4e choix du bouton Style ; sauté au cell) : rue mouillée qui reflète vraiment la scène (flaques, plus fort sous la pluie), rayons de soleil dans la brume, ombres douces (VSM), ombres de contact pleine résolution (js/61-graphismes-ultra.js, Reflector ajouté à lib/three-hd.js, tests/t-style.js) | 2026-11-04 |
 | 86 | Graphismes, Haute définition séance 3 improvisée (sans téléchargement) : zombies en matériaux physiques (crasse, sang séché et frais, griffures, relief ; couleurs plus justes), flaque de sang où chaque zombie tombe, flou de profondeur en visant (net au point visé) (js/60-graphismes-zombies.js, tests/t-style.js) | 2026-11-04 |
 | 85 | Graphismes, Haute définition, décor improvisé (sans téléchargement) : autos détaillées (vraies roues, vitres qui reflètent, phares, feux, pare-chocs, rétroviseurs), fils électriques entre les lampadaires, débris dans la rue (papiers, briques, planches, pneus, sacs, canettes) ; autos marquées dans js/03-scene.js (1 ligne) (js/59-graphismes-decor.js, tests/t-style.js) | 2026-11-04 |
-| 84 | Graphismes, Haute définition séance 2 (partie sans téléchargement) : la nuit, les lampadaires éclairent vraiment la rue (8 projecteurs, ombres des 4 plus proches) avec un cône de brume éclairée ; textures photo encore en attente (sites bloqués par le réseau) (js/58-graphismes-hd.js, tests/t-style.js) | 2026-11-04 |
 
 ## À valider par Martin
 
+- Ressenti du tir (tâche 94) : à essayer sur le toit, au cell et à l’ordi, avec le son. Dire arme par arme si ça brasse trop ou pas assez (une ligne par arme dans `RS_ARME`, `js/62-ressenti.js`), si le gel sur un gros coup dérange, et si le sang est de trop. « Secousses » dans la Pause coupe le coup de caméra et le gel. Proposé, pas fait : un zombie qui titube pour vrai sous le pompe, le sniper ou la .50 (ça changerait l’équilibrage).
 - RTS (tâche 83) : liste des unités repliée par défaut. Dire si on veut qu’elle se referme seule après avoir choisi une unité.
 - Style Ultra (tâche 87) : à essayer sur l’ordi (Pause, « Style » trois fois), surtout une nuit de pluie. Dire les images par seconde et si la rue brille trop.
 - Zombies Haute définition (tâche 86) : dire si le flou en visant est trop fort ou pas assez, et si le sang au sol est de trop.

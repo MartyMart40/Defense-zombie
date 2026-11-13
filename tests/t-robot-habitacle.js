@@ -90,10 +90,15 @@
       if (b) b.click(); o.apres = b ? b.textContent : null; o.garde = store.get('dt_mech_vue');
       mechResume(); visuals(dt); o.degage = H.hbRoot.visible; o.vieuxDegage = H.hbVieux.every(function(x){ return x.visible; }); o.jambesDegage = H.hbJ.visible;
       H.vue('complet'); visuals(dt); o.retour = H.hbRoot.visible;
-      // Écran étroit (cell vertical) : manettes plus près du centre
-      var a0 = vmCam.aspect, f0 = vmCam.fov, xL = Math.abs(H.hbMG.socle.position.x);
-      vmCam.aspect = 390 / 844; vmCam.fov = 78; visuals(dt); o.xV = Math.abs(H.hbMG.socle.position.x); o.xL = xL; o.brasV = H.HB.dx;
-      vmCam.aspect = a0; vmCam.fov = f0; visuals(dt);
+      // Où se voient le haut des manettes et l'écran du blindage (coordonnées de l'écran, -1 à 1), selon la forme de l'écran
+      var a0 = vmCam.aspect, f0 = vmCam.fov, v = new THREE.Vector3();
+      var ou = function(){ vmCam.updateProjectionMatrix(); vmCam.updateMatrixWorld(true); H.hbRoot.updateMatrixWorld(true);
+        var p = function(obj, x, y, z){ v.set(x, y, z); obj.localToWorld(v); v.applyMatrix4(vmCam.matrixWorldInverse).applyMatrix4(vmCam.projectionMatrix); return { x: v.x, y: v.y }; };
+        return { g: p(H.hbMG.piv, 0, .27, 0), d: p(H.hbMD.piv, 0, .27, 0), e: p(H.hbEcr, -.22, 0, 0), haut: H.hbHaut.visible, bas: !document.getElementById('mkBottom').style.top }; };
+      vmCam.aspect = 390 / 844; vmCam.fov = 78; H.HB.tactile = true; visuals(dt); o.vert = ou(); o.brasV = H.HB.dx;
+      vmCam.aspect = 844 / 390; vmCam.fov = 55; visuals(dt); o.couche = ou(); o.fireL = document.getElementById('mkFireL').style.right;
+      H.HB.tactile = false; vmCam.aspect = 1280 / 720; visuals(dt); o.ordi = ou();
+      vmCam.aspect = a0; vmCam.fov = f0; vmCam.updateProjectionMatrix(); visuals(dt);
       __mech.mechQuit(); visuals(dt); o.cache = !H.hbRoot.visible && !H.hbJ.visible;
       return o;
     });
@@ -117,7 +122,15 @@
     egal(r.garde, 'degage', 'Réglage gardé (dt_mech_vue)');
     ok(!r.degage && r.vieuxDegage && r.jambesDegage, 'Vue dégagée : l’ancien cockpit, les jambes toujours là');
     ok(r.retour, 'Retour à l’habitacle complet');
-    ok(r.xV < r.xL && r.xV < .15, 'Cell vertical : manettes plus près du centre (' + r.xV.toFixed(2) + ' au lieu de ' + r.xL.toFixed(2) + ')');
+    // Boutons tactiles : en bas sur environ 25 % de la hauteur au cell vertical (y < -0.5), 45 % couché ; au centre, la rue
+    const dans = (q, bas) => Math.abs(q.x) < .95 && q.y > bas && q.y < 0;
+    ok(dans(r.vert.g, -.5) && dans(r.vert.d, -.5), 'Cell vertical : le haut des deux manettes au-dessus des boutons ' + JSON.stringify([r.vert.g, r.vert.d]));
+    ok(dans(r.vert.e, -.5) && Math.abs(r.vert.e.x) < .4, 'Cell vertical : écran du blindage au centre, visible ' + JSON.stringify(r.vert.e));
+    ok(!r.vert.haut && r.couche.haut && r.ordi.haut, 'La poutre du haut est cachée au cell vertical seulement');
+    ok(dans(r.couche.g, -.85) && dans(r.couche.d, -.85) && Math.abs(r.couche.g.x) < .45 && Math.abs(r.couche.d.x) < .45, 'Cell couché : manettes entre les boutons ' + JSON.stringify([r.couche.g, r.couche.d]));
+    ok(dans(r.ordi.g, -1) && dans(r.ordi.d, -1), 'Ordi : manettes visibles en bas');
+    ok(!r.vert.bas && !r.couche.bas && r.ordi.bas, 'Barres du bas montées sous le blindage au cell, en bas à l’ordi');
+    ok(!!r.fireL, 'Cell couché : le bouton Minigun se pousse vers le bord');
     ok(r.brasV > .2, 'Cell vertical : bras du robot rapprochés (' + r.brasV.toFixed(2) + ')');
     ok(r.cache, 'Tout est caché en quittant le robot');
   });
@@ -147,7 +160,7 @@
       // Arrêt propre : le pas en cours se finit, puis plus rien ne bouge
       M.mv.f = 0; for (i = 0; i < 90; i++) visuals(dt);
       o.arretEnl = JJ.some(function(J){ return J.enl; }); var pa = H.HB.pas; for (i = 0; i < 30; i++) visuals(dt); o.arretPas = H.HB.pas - pa;
-      o.arretPlace = Math.max.apply(null, JJ.map(function(J){ var n = new THREE.Vector3(); var y = H.HB.yawP; n.set(M.x + Math.cos(y) * J.s * L.pied - Math.sin(y) * L.avant * .3, 0, MECH_CAM.z - Math.sin(y) * J.s * L.pied - Math.cos(y) * L.avant * .3); return n.distanceTo(J.pos); }));
+      o.arretPlace = Math.max.apply(null, JJ.map(function(J){ var n = new THREE.Vector3(); var y = H.HB.yawP; n.set(M.x + Math.cos(y) * J.s * L.pied - Math.sin(y) * L.piedAvant, 0, MECH_CAM.z - Math.sin(y) * J.s * L.pied - Math.cos(y) * L.piedAvant); return n.distanceTo(J.pos); }));
       o.m = H.HB.m;
       // De côté : les pieds vont à droite
       var x0 = (JJ[0].pos.x + JJ[1].pos.x) / 2; M.mv.r = 1; for (i = 0; i < 60; i++) visuals(dt); M.mv.r = 0; for (i = 0; i < 60; i++) visuals(dt);

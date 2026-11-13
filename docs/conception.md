@@ -106,3 +106,13 @@ Constat : les zombies sortaient à un rythme plat ; on était soit en sécurité
 | Bon | 1,6 % | 5 % | 1,38 | 1,25 | 1,38 | 1,5 |
 
 Les trois premières villes restent du premier coup. Les brèches sauvent la partie environ 7 fois sur 10.
+
+## Visée et armes en main (tâche 104, 2026-11-13)
+Martin : « certaines armes comme le scope sur le laser ne change rien quand tu vises, c'est juste que tu vois le design d'un scope sans approcher la vision ».
+- Cause : la lunette ×4 n'avait pas de cadre de lunette (seul le sniper en avait un). En visant, on voyait le tube de la lunette en 3D devant l'œil, avec un trou de moins de 5 % de l'écran, et des mires fixes (fusil d'assaut, arbalète, lance-roquettes) cachaient en plus le point rouge ou la lunette.
+- Règle de visée (`js/66-visee.js`, réglages dans `VISEE`) :
+  - lunette (celle d'origine du sniper, ou la lunette ×4 achetée) : vrai cadre de lunette, l'arme disparaît, zoom net. La lunette ×4 divise le champ de vision par 4 sur toutes les armes, avec son réticule (point rouge au centre, trait ouvert, poteau du bas) ;
+  - point rouge : champ des mires × 0,88, on vise par le point rouge ; les mires se rabattent ;
+  - sans optique : on aligne les mires, champ entre 60 % et 90 % du champ au repos (×1,1 à ×1,67).
+- Zooms changés (champ en visée, au repos 70°) : lunette ×4 sur le fusil d'assaut 27,5° → 17,5°, arbalète 18,7° → 17,5°, .50 24,2° → 17,5°, laser 22° → 17,5°, canon électromagnétique 11° → 17,5° ; sans optique : arbalète 34° → 42°, canon électromagnétique 20° → 42°, laser 40° → 42° ; point rouge : arbalète 30° → 37°, laser 35,2° → 37°. Les autres ne bougent pas. Aucun chiffre de dégâts, cadence ou dispersion n'a changé.
+- Armes en main : chaque pièce a sa matière (métal qui brille, polymère satiné, bois et gants mats, verre), sans appel de dessin de plus ; les pièces d'énergie (laser, canon électromagnétique, arc) s'illuminent au tir et faiblissent puis remontent pendant la recharge. Lumières plus neutres. Fusil laser refait ; point rouge et lunette ×4 refaits ; détails ajoutés à la .50 et au lance-grenades. Tests : `tests/t-visee.js`.

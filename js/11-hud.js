@@ -15,8 +15,8 @@ function updateHUD(){
   if (reloadT > 0) $('rlFill').style.width = Math.round((1 - reloadT / reloadDur) * 100) + '%';
   $('cross').classList.toggle('hit', hitmT > 0);
   $('hitm').classList.toggle('show', hitmT > 0);
-  const scopeOn = S.cur === 'sniper' && ads > .85 && state === 'playing';
-  $('scope').classList.toggle('on', scopeOn);
+  if (typeof viseeHUD === 'function') viseeHUD(); // cadre de lunette : sniper et lunette ×4 (66-visee.js)
+  else $('scope').classList.toggle('on', S.cur === 'sniper' && ads > .85 && state === 'playing');
   $('cross').style.opacity = Math.max(0, 1 - ads * 1.6).toFixed(2);
   $('btnZoom').classList.toggle('on', zoomed);
   if (typeof defHUD === 'function') defHUD(); // ferraille et ogive (17-defenses.js)

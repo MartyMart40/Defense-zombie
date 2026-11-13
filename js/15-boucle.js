@@ -41,7 +41,7 @@ function visuals(dt){
   if (hitmT > 0) hitmT -= dt;
   kick *= Math.exp(-14 * dt);
   shake *= Math.exp(-6 * dt);
-  const targetFov = (zoomed && state === 'playing') ? baseFov * (WEAPONS[S ? S.cur : 'pistol'].zoomFov * (S ? accK(S.cur, 'zoom') : 1) / 70) : baseFov;
+  const targetFov = typeof viseeFov === 'function' ? viseeFov() : (zoomed && state === 'playing') ? baseFov * (WEAPONS[S ? S.cur : 'pistol'].zoomFov / 70) : baseFov; // zoom selon l'optique (66-visee.js)
   if (Math.abs(camera.fov - targetFov) > .05){ camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 14); camera.updateProjectionMatrix(); }
   const sx = (Math.random() - .5) * shake * .05, sy = (Math.random() - .5) * shake * .05;
   camera.rotation.set(pitch + recoilAcc + sy, yaw + sx, 0);
@@ -56,7 +56,7 @@ function visuals(dt){
   const bob = Math.sin(time * 1.6) * .004 * (1 - ads);
   vmRoot.position.set(hx + (ax - hx) * ads, hy + (ay - hy) * ads + bob, hz + (az - hz) * ads + kick * (.07 - .04 * ads));
   vmRoot.rotation.set(kick * (.18 - .12 * ads) - rl * .7, 0, rl * .3);
-  vmRoot.visible = !(S && S.cur === 'sniper' && ads > .85);
+  vmRoot.visible = !(typeof viseeLunette === 'function' ? viseeLunette() : (S && S.cur === 'sniper' && ads > .85)); // derrière le cadre de lunette
   if (typeof vmAnim === 'function') vmAnim(dt); // culasse, pompe, chargeur, douilles, respiration (04-arme-en-main.js)
 }
 function loop(t){

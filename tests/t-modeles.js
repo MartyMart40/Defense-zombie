@@ -5,7 +5,7 @@
    Utilise l'API de tests.js : test(), J(), lire(), ok(), egal(), ignorer(), reset(). */
 (function(){
   if (typeof test !== 'function') return;
-  const BUDGET_TRIS = 1500, MAX_APPELS = 6;
+  const BUDGET_TRIS = 2500, MAX_APPELS = 6; // 2500 depuis la tâche 104 (laser refait, détails ; toujours un seul appel par pièce)
   const pret = () => lire('typeof VMS === "object" && typeof vmStats === "function" && typeof vmAnim === "function" && typeof vmShells === "object"') === true;
   const exiger = () => { if (!pret()) ignorer('Armes en main détaillées absentes (vmStats, vmAnim ou vmShells introuvables)'); };
   // Partie lancée à Saint-Clou, sans apparitions, toutes les armes données

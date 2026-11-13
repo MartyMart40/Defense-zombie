@@ -48,12 +48,13 @@ function vmShellStep(dt){
 function vmShellClear(){ const P = vmShells; P.list.forEach((s, i) => { s.life = 0; P.mesh.setMatrixAt(i, P.zero); }); P.mesh.instanceMatrix.needsUpdate = true; P.mesh.visible = false; }
 
 /* ---------- Animations : appelées par visuals() (15-boucle.js) après la pose de l'arme ---------- */
-const VMA = { hooked: false, pumpT: -1, boltT: -1, slideK: 0, id: null, loadT: 0 };
+const VMA = { hooked: false, pumpT: -1, boltT: -1, slideK: 0, id: null, loadT: 0, lueur: 0 };
 // Chaque tir réel (fire() renvoie autre chose que false) déclenche les animations de l'arme
 function vmShot(){
   if (!S) return;
   const id = S.cur, ud = VMS[id] && VMS[id].userData; if (!ud) return;
   if (ud.slide) VMA.slideK = 1;
+  VMA.lueur = 1; // pièces d'énergie : éclat au tir
   if (id === 'shotgun') VMA.pumpT = 0;
   else if (id === 'sniper') VMA.boltT = 0;
   else if (ud.eject) vmEject(id);
@@ -75,6 +76,10 @@ function vmAnim(dt){
   if (VMA.id !== id){ VMA.id = id; VMA.pumpT = VMA.boltT = -1; VMA.slideK = 0; }
   if (flash.parent === g) flash.position.y = ud.muzzleY;
   const rel = reloadT > 0 && reloadDur > 0 ? 1 - reloadT / reloadDur : -1; // avancement de la recharge (0 à 1)
+  // Lueur des pièces d'énergie (vmMatArme) : éclat au tir, puis plus faible et qui remonte pendant que l'arme se recharge
+  VMA.lueur = (VMA.lueur || 0) * Math.exp(-dt * 7);
+  const per = 1 / Math.max(.5, WEAPONS[id].rate || 1), rec = 1 - .7 * Math.min(1, Math.max(0, cool / per));
+  VM_LUEUR.value = (.22 + .07 * Math.sin(time * 3.1)) * (rel >= 0 ? .25 + .75 * rel : rec) + VMA.lueur * 1.8;
   // Légère respiration en visée
   if (ads > 0){ vmRoot.position.y += Math.sin(time * 1.3) * .0006 * ads; vmRoot.position.x += Math.sin(time * .7 + 1) * .0004 * ads; }
   // Glissière, culasse

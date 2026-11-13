@@ -8,6 +8,7 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
 | 100 | Dossier toit : des moments de crise (assauts annoncés dans une vague, brèche « dernier souffle » une fois par ville, danger qu’on sent sous 30 % de barricade). Accepté par Martin | En cours | Sous-agent, ouvert le 2026-11-13 |
+| 101 | Dossier RTS : un but et un danger qui monte. La Ruche (8 nids détruits la débusquent, la détruire libère la vallée, vallées de plus en plus dures), sièges annoncés toutes les 3 hordes, fin de la chute du QG en 3 secondes. Accepté par Martin | En cours | Sous-agent, ouvert le 2026-11-13 |
 | 95 | Dossier robot : robot-joueur du robot dans le simulateur, puis mesure du garage | En cours | Sous-agent, ouvert le 2026-11-13 |
 
 ## À faire
@@ -16,7 +17,6 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 |---|-------|----------|
 | - | Équilibrage après essais de Martin | Après essais |
 | - | Une fin qu’on peut gagner au robot (ex. 9 rues, boss final, « course réussie », puis un 2e tour plus dur). Accepté par Martin le 2026-11-13 ; à ouvrir quand le dossier 95 est fusionné, avec ses chiffres | Suivant (robot) |
-| - | Une fin qu’on peut gagner au RTS (ex. un nid mère à détruire, puis une vallée plus dure), et un danger qui monte au lieu d’une base à 100 % qui s’écroule en une minute. Accepté par Martin le 2026-11-13 ; à ouvrir quand le dossier 96 est fusionné, avec ses chiffres | Suivant (RTS) |
 | - | Simulateur reproductible : les pages du duel lancées en parallèle partagent la même sauvegarde et le son lit l’horloge réelle (trouvé au dossier 94 : le même duel donne 444 à 1 849 d’un lancement à l’autre). À faire quand les dossiers 95 et 96 sont fusionnés (mêmes fichiers) | Suivant (outils) |
 | - | Dossier performance au cell : mesurer la boucle du jeu (`tests/perf.html`) et alléger ce qui coûte | À choisir par Martin |
 

@@ -90,3 +90,18 @@ Martin : « continue d'améliorer : graphisme, sons, monstres ». Règle suivie 
 - Le « porteur d'explosifs » envisagé existait déjà (le Gonflé de `js/35-monstres.js`).
 - Ils remplacent des marcheurs (au plus la moitié de ceux qui restent). Port, vague 10 : environ 10 revenants, 5 hurleurs et 7 fouisseurs sur 480 zombies.
 - Fichier `js/63-monstres-toit.js` : il enveloppe `wavePlan`, `damage` et `defHit` (comme `19-boss.js` et `35-monstres.js`).
+
+## Moments de crise (tâche 100, 2026-11-13)
+Constat : les zombies sortaient à un rythme plat ; on était soit en sécurité, soit mort (au simulateur, 75 à 90 % des vagues tenues sans que la barricade descende sous 90 %). Martin a accepté l'idée ; il avait refusé « choisir 1 bonus parmi 3 » : rien n'arrête le jeu. Fichier `js/64-crise.js`, tous les réglages dans `CRISE` en haut du fichier.
+- Assauts : dès la vague 2, 1 par vague (Saint-Clou, Val-des-Cendres), 1 ou 2 (Banlieue Nord, Centre-ville, une chance sur deux), 2 (Port, mode infini). 3 s d'avertissement (bandeau « ASSAUT ! », sirène, sous-titre et bords rouges pour jouer sans son), puis 15 à 25 % des zombies de la vague sortent 4 fois plus serrés, puis 6 s de creux (sorties 2,5 fois plus espacées). Le total de la vague ne change pas : ce sont les zombies suivants de la file. Le plafond de zombies en vie reste respecté. Jamais dans les 10 premières secondes, ni avec le boss en vie, ni si le boss serait dans le paquet, ni pendant une bulle du tutoriel. Au plus un fouisseur par paquet (les autres sont échangés avec des zombies plus loin dans la file).
+- Brèche (dernier souffle) : une fois par partie (mode infini : rechargée à chaque boss abattu). Quand la barricade tombe à 0 : « BRÈCHE ! Tiens bon ! », ralenti court (s'il est activé), 10 s où elle ne peut plus descendre, chaque zombie abattu répare 1,5 % (35 % au plus). Ce qui est réparé reste acquis pendant la brèche (essayé d'abord sans : les coups mangeaient la réparation et seule 1 brèche sur 4 sauvait la partie chez le débutant). Sous 5 % à la fin, elle cède. Deuxième chute : fin. Petit cœur à côté de « Barricade » : rouge si disponible, gris si utilisé.
+- Danger : sous 30 % le bord rouge bat, la barre clignote, battement de cœur ; sous 15 % plus vite et plus fort. Seulement des classes CSS (opacité), léger au cell.
+- Mesure : `node outils/mesure-crise.js` (8 campagnes par joueur, jusqu'à 4 essais par ville, hasard et horloge fixés : même graine = même campagne). « Vague chaude » : la barricade passe sous 30 % et la vague est tenue quand même. Avec les monstres de la tâche 98 :
+
+| Joueur | Vagues chaudes avant | après | Essais Centre-ville avant | après | Essais Port avant | après |
+|---|---|---|---|---|---|---|
+| Débutant | 2,1 % | 8,6 % | 2,13 | 1,88 | 3 (7 sur 8 libérées) | 3,25 (6 sur 8) |
+| Moyen | 1,8 % | 6,7 % | 1,25 | 1,5 | 2,63 (8 sur 8) | 2,5 (7 sur 8) |
+| Bon | 1,6 % | 5 % | 1,38 | 1,25 | 1,38 | 1,5 |
+
+Les trois premières villes restent du premier coup. Les brèches sauvent la partie environ 7 fois sur 10.

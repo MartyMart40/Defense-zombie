@@ -72,6 +72,7 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 61 ultra | Style Ultra (ordi seulement) : rue mouillée qui reflète (Reflector), rayons de soleil, ombres douces (VSM), ombres de contact pleines |
 | 62 ressenti | Ressenti du tir sur le toit : coup de caméra et recul dosés par arme, sang et poussière aux impacts, marqueur tête et tué, sursaut et mort poussée des zombies, sons tête et tué, gel sur un gros coup ; réglage « Secousses » (dt_secousses). Seulement visuel et sonore |
 | 63 monstres du toit | Hurleur, fouisseur, revenant : 3 monstres du toit avec chacun sa parade (`docs/conception.md`) |
+| 64 crise | Moments de crise sur le toit : assauts annoncés (paquet serré puis creux, total de la vague inchangé), brèche (dernier souffle une fois par partie, rechargé par boss en infini), danger sous 30 % (bord rouge, barre qui clignote, cœur). Réglages : `CRISE` en haut du fichier ; mesure : `node outils/mesure-crise.js` |
 | 90 branchements | Branche le registre `Jeu` sur le jeu commun ; toujours le dernier |
 
 Les const, let et function de haut niveau sont partagés entre tous les fichiers (portée globale). Un fichier peut appeler une fonction d'un fichier plus loin **seulement à l'intérieur d'une fonction**, jamais au chargement. Chaque fichier commence par `'use strict';`.

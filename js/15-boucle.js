@@ -17,13 +17,14 @@ function update(dt){
     if (spawnT <= 0 && alive < plan.maxAlive){
       // plan.burst : plusieurs zombies par sortie (mode horde, hordePlan dans 06-donnees.js) ; 1 dans la campagne
       for (let k = plan.burst || 1; k > 0 && alive < plan.maxAlive && plan.queue.length; k--){ spawnZombie(plan.queue.pop()); alive = zAliveCount(); } // recompté : un chef de meute amène ses petits
-      spawnT = plan.interval * rand(.6, 1.4);
+      spawnT = plan.interval * rand(.6, 1.4) * (typeof criseRythme === 'function' ? criseRythme() : 1); // assauts et creux (64-crise.js)
     }
   }
   updateZombies(dt);
   if (typeof defUpdate === 'function') defUpdate(dt); // défenses automatiques (17-defenses.js)
   groanT -= dt;
   if (groanT <= 0){ groanT = rand(1.5, 4); if (zAliveCount() > 0) Snd.groan(); }
+  if (typeof criseStep === 'function') criseStep(dt); // assauts et brèche (64-crise.js), avant le test de fin de partie
   if (S.bar <= 0 && overT < 0){ overT = 1.1; shake = 1; firing = false; banner('Ils passent !', '', 1200); }
   if (overT > 0){ overT -= dt; if (overT <= 0) gameOver(); return; }
   if (!plan.queue.length && zAliveCount() === 0){

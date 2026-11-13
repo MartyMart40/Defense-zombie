@@ -5,11 +5,18 @@
 // Usage :
 //   python3 -m http.server 8765      (à la racine du dépôt, dans un autre terminal)
 //   node outils/simulateur.js [quoi] [joueurs] [graine]
-//     quoi    : tout (défaut), duel, toit, infini, rts
+//     quoi    : tout (défaut), duel, toit, infini, rts, rts-banc
 //     joueurs : liste séparée par des virgules parmi debutant, moyen, bon (défaut : moyen,bon)
 //     graine  : nombre pour le hasard (défaut 1) ; même graine = mêmes parties
 //     strategie : achat des armes pour la campagne : malin (défaut), boutique, patient, pistolet ou pompe (voir outils/sim-bot.js)
 // Durée : quelques minutes par joueur. Le jeu n'est pas modifié.
+// RTS (robot-joueur : outils/sim-bot-rts.js) :
+//   node outils/simulateur.js rts [stratégies] [graines] [minutes]
+//     stratégies : tourelles, blindes, air, mixte, séparées par des virgules (défaut : les quatre)
+//     graines : ex. 1,2 (défaut 1,2) ; minutes : durée de jeu au plus (défaut 60)
+//   node outils/simulateur.js rts-banc [menaces] [graines] [secondes] [unités]
+//     banc des appuis : une armée au sol fixe plus 9 000 $ d'un seul type, menaces ex. 5,8,14 (défaut), graines 1,2, 150 s
+//     [unités] : seulement les lots qui contiennent ces unités, ex. jet,warthog (sans le banc des améliorations)
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -65,10 +72,80 @@ function mdInf(c){
   c.parties.forEach(r => { h += '| ' + r.ville + ' | ' + r.tenues + (r.finTemps ? ' (arrêté, trop long)' : '') + ' | ' + r.abattus.toLocaleString('fr-CA') + ' | ' + r.arme + ' | ' + String(r.minutes).replace('.', ',') + ' |\n'; });
   return h;
 }
-function mdRts(r){
-  let h = '| Minute | Nids détruits | Unités | Tourelles | Argent | Menace | Vie du QG | Zombies en vie | Zombies tués | Unités perdues | Boss abattus |\n|---|---|---|---|---|---|---|---|---|---|---|\n';
-  r.pas.concat([r.fin]).forEach(s => { h += '| ' + String(s.min).replace('.', ',') + ' | ' + s.nids + ' | ' + s.unites + ' | ' + s.tourelles + ' | ' + s.argent.toLocaleString('fr-CA') + ' $ | ' + String(s.menace).replace('.', ',') + ' | ' + pct(s.qg) + ' | ' + s.zombies + ' | ' + s.tues + ' | ' + s.perdues + ' | ' + s.boss + ' |\n'; });
-  return h + '\n' + (r.fin.tombe ? '**Le QG est tombé à ' + String(r.fin.min).replace('.', ',') + ' min.**' : 'Le QG tient encore à la fin de la simulation (' + String(r.fin.min).replace('.', ',') + ' min).') + '\n';
+/* ---------- RTS : rapport ---------- */
+const RTS_SIM = { strategies:['tourelles', 'blindes', 'air', 'mixte'], graines:[1, 2], maxMin:60, menaces:[5, 8, 14], duree:150, lots:null };
+if (quoi === 'rts' || quoi === 'rts-banc'){
+  const liste = (i, f) => (process.argv[i] || '').split(',').filter(Boolean).map(f);
+  if (quoi === 'rts'){
+    if (process.argv[3]) RTS_SIM.strategies = liste(3, String);
+    if (process.argv[4]) RTS_SIM.graines = liste(4, Number);
+    if (process.argv[5]) RTS_SIM.maxMin = +process.argv[5];
+  } else {
+    if (process.argv[3]) RTS_SIM.menaces = liste(3, Number);
+    if (process.argv[4]) RTS_SIM.graines = liste(4, Number);
+    if (process.argv[5]) RTS_SIM.duree = +process.argv[5];
+    if (process.argv[6]) RTS_SIM.lots = liste(6, String); // seulement les lots qui contiennent ces unités (et la référence)
+  }
+}
+async function pageRts(b){
+  const p = await page(b);
+  await p.addScriptTag({ path: path.join(__dirname, 'sim-bot-rts.js') });
+  return p;
+}
+const v1 = x => String(x).replace('.', ',');
+const mn = s => s == null ? 'jamais' : v1(Math.round(s / 6) / 10) + ' min';
+const nf = x => Math.round(x).toLocaleString('fr-CA');
+function mdRtsResume(parties){
+  let h = '| Stratégie | Graine | Fin | Nids détruits | Tués | Unités perdues | 1re unité perdue | 1re tourelle perdue | 1er coup au QG | QG de 90 % à 0 | Part des boss dans les dégâts au QG | Dépenses : unités, bâtiments, tourelles, améliorations |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n';
+  parties.forEach(r => {
+    const A = r.achats;
+    h += '| ' + r.nom + ' | ' + r.graine + ' | ' + (r.fin.tombe ? '**QG tombé à ' + v1(r.fin.min) + ' min**' : 'tient à ' + v1(r.fin.min) + ' min') + ' | ' + r.fin.nids + ' | ' + nf(r.fin.tues) + ' | ' + r.fin.perdues + ' | '
+      + mn(r.cles.premUnite) + ' | ' + mn(r.cles.premTourelle) + ' | ' + mn(r.cles.premQG) + ' | ' + (r.cles.chute == null ? '' : r.cles.chute + ' s') + ' | ' + (r.cles.premQG == null ? '' : r.chute.partBoss + ' %') + ' | '
+      + [A.depUnites, A.depBats, A.depTour, A.depAmel].map(x => nf(x / 1000) + ' k$').join(', ') + ' |\n';
+  });
+  return h;
+}
+function mdRtsCourbe(r){
+  let h = '| Minute | Nids détruits | Unités | Tourelles | Argent | Menace | Vie du QG | Zombies en vie | À moins de 45 m du QG | Boss en vie | Tués | Unités perdues |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n';
+  const L = r.courbe.filter(s => (s.min % 5 === 0 || s.min > r.fin.min - 2.6) && s.min < r.fin.min);
+  L.concat([r.fin]).forEach(s => { h += '| ' + v1(s.min) + ' | ' + s.nids + ' | ' + s.unites + ' | ' + s.tourelles + ' | ' + nf(s.argent) + ' $ | ' + v1(s.menace) + ' | ' + pct(s.qg) + ' | ' + s.zombies + ' | ' + s.pres + ' | ' + (s.boss || 'aucun') + ' | ' + nf(s.tues) + ' | ' + s.perdues + ' |\n'; });
+  return h;
+}
+// Banc des appuis : les lots mesurés (9 000 $ au plus en unités d'un seul type ; le bâtiment requis est posé gratuitement et dit à part)
+const BANC_LOTS = [
+  { nom:'Référence seule', unites:{} },
+  { nom:'Mitrailleurs', unites:{ gunner:22 } },
+  { nom:'Lance-roquettes', unites:{ rocket:12 } },
+  { nom:'Mechs lourds', unites:{ heavy:6 } },
+  { nom:'Mech de combat', unites:{ mech:1 } },
+  { nom:'Tanks', unites:{ tank:5 } },
+  { nom:'Apaches', unites:{ heli:4 } },
+  { nom:'Chasseurs', unites:{ jet:3 } },
+  { nom:'Warthogs', unites:{ warthog:2 } },
+  { nom:'AC-130', unites:{ bomber:2 } }
+];
+// Améliorations contre unités, à la menace du milieu : même somme
+const BANC_AMEL = [
+  { nom:'5 mitrailleurs de plus (2 000 $)', unites:{ gunner:5 } },
+  { nom:'Améliorations des mitrailleurs (1 984 $ : Armes 2, Blindage 2, Cadence 1)', unites:{}, amel:{ gunner:{ arm:2, hp:2, rate:1 } } },
+  { nom:'4 tanks (7 200 $)', unites:{ tank:4 } },
+  { nom:'3 tanks et Armes 1 (6 840 $)', unites:{ tank:3 }, amel:{ tank:{ arm:1 } } },
+  { nom:'3 tanks et Blindage réactif 1 (7 200 $)', unites:{ tank:3 }, amel:{ tank:{ reactive:1 } } }
+];
+const BAT_NOM = { heavyfac:'usine lourde', vehdepot:'garage', heliport:'héliport', airfield:'aérodrome' };
+function mdBanc(lignes, menaces){
+  let h = '| Appui | Prix des unités | Bâtiment requis (à part) | ' + menaces.map(m => 'Menace ' + v1(m)).join(' | ') + ' |\n|---|---|---|' + menaces.map(() => '---').join('|') + '|\n';
+  lignes.forEach(L => {
+    const r0 = L.res[0], bat = Object.keys(r0.batiments).map(f => (r0.batiments[f] > 1 ? r0.batiments[f] + ' ' : '') + BAT_NOM[f] + (f === 'heavyfac' ? ' (déjà dans la référence)' : '')).join(', ');
+    h += '| ' + L.nom + ' | ' + nf(r0.prixUnites + r0.prixAmel) + ' $ | ' + (bat ? bat + ' ' + nf(r0.prixBat) + ' $' : 'aucun') + ' | ';
+    h += menaces.map(m => {
+      const R = L.res.filter(r => r.menace === m); if (!R.length) return '';
+      const moy = k => R.reduce((s, r) => s + r[k], 0) / R.length, tenu = R.reduce((s, r) => s + (r.tombe != null ? r.tombe : r.duree), 0) / R.length;
+      const nt = R.filter(r => r.tombe == null).length;
+      return (nt === R.length ? '**tient**' : nf(tenu) + ' s' + (nt ? ' (tient ' + nt + ' fois sur ' + R.length + ')' : '')) + ' · ' + nf(moy('tues')) + ' tués · ' + nf(moy('degatsBase')) + ' de dégâts · ' + v1(Math.round(moy('pertesAppui') * 10) / 10) + ' sur ' + r0.nAppui + ' perdus';
+    }).join(' | ') + ' |\n';
+  });
+  return h + '\nDans chaque case : combien de temps le QG a tenu (moyenne ; « tient » : debout au bout du banc), zombies tués, dégâts encaissés par les bâtiments, unités d’appui perdues.\n';
 }
 
 (async () => {
@@ -121,21 +198,57 @@ function mdRts(r){
     }
   }
   if (quoi === 'tout' || quoi === 'rts'){
-    const p = await page(b);
-    md += '## Guerre des robots (RTS)\n\nLe robot-joueur bâtit une usine lourde, un récupérateur, un atelier de réparation, des tourelles devant la base (5, plus 2 par nid détruit, plus une toutes les 3 minutes), '
-      + 'achète l’unité la plus forte qu’il peut payer (10, plus 3 par nid détruit, plus une toutes les 90 secondes), des améliorations dès qu’il a de l’argent en trop. Deux façons de jouer : il attaque le nid le plus proche dès qu’il a 8 unités au sol, '
-      + 'ou il garde toute son armée à la base. Une ligne toutes les 5 minutes de jeu. Rappel : menace = 1 + minutes / 4 + 0,5 par nid détruit + zombies tués / 600.\n\n';
-    out.rts = {};
-    for (const [cle, attaque, titre] of [['attaque', true, 'Il attaque les nids'], ['defense', false, 'Il reste à la base']]){
-      const p2 = await page(b);
-      console.log('RTS, ' + titre.toLowerCase() + ' (60 min de jeu au plus)...');
-      const r = await p2.evaluate(o => SIM.rts(o), { graine, maxMin: 60, attaque });
-      out.rts[cle] = r;
-      md += '### ' + titre + '\n\n' + mdRts(r) + '\n';
-      console.log('  fin : ' + r.fin.min + ' min, ' + r.fin.nids + ' nids détruits, ' + r.fin.tues + ' tués, QG ' + r.fin.qg + ' %' + (r.fin.tombe ? ' (tombé)' : ''));
+    md += '## Guerre des robots (RTS)\n\nLe robot-joueur du RTS (`outils/sim-bot-rts.js`) passe par les vraies fonctions du jeu : pose sur le quadrillage, achat, améliorations, ordres de marche et d’attaque, « Tenir », point de ralliement. '
+      + 'Il ne pilote jamais : le pilotage n’est pas mesuré. Il décide toutes les 2 secondes de jeu, sans hésiter : un vrai joueur est plus lent à réagir, mais il voit mieux le danger.\n\n'
+      + 'Pour blindés, air et mixte : point de ralliement devant la base ; une garde qui reste à la base (les tireurs d’élite, lance-roquettes et mechs lourds de la garde « tiennent » la ligne) ; '
+      + 'un groupe d’attaque qui part sur le nid le plus proche quand il est assez fort, revient s’il fond ou si un boss arrive à 25 m du QG ou que le QG passe sous 85 % ; les unités sous 40 % de vie envoyées à l’atelier, puis renvoyées à la ligne ; les pertes remplacées.\n\n'
+      + 'Rappel : menace = 1 + minutes / 4 + 0,5 par nid détruit + zombies tués / 600.\n\n';
+    const parties = [];
+    for (const g of RTS_SIM.graines) for (const st of RTS_SIM.strategies){
+      const p2 = await pageRts(b);
+      console.log('RTS, stratégie ' + st + ', graine ' + g + ' (' + RTS_SIM.maxMin + ' min de jeu au plus)...');
+      const r = await p2.evaluate(o => SIM.rts(o), { strategie: st, graine: g, maxMin: RTS_SIM.maxMin });
+      parties.push(r);
+      console.log('  fin : ' + r.fin.min + ' min, ' + r.fin.nids + ' nids, ' + r.fin.tues + ' tués, ' + r.fin.perdues + ' perdues, QG ' + r.fin.qg + ' %' + (r.fin.tombe ? ' (tombé, de 90 % à 0 en ' + r.cles.chute + ' s)' : ''));
       await p2.close();
     }
-    await p.close();
+    out.rts = { parties };
+    const noms = {}; parties.forEach(r => { noms[r.strategie] = r; });
+    md += '### Une ligne par partie\n\n' + mdRtsResume(parties) + '\n';
+    md += 'Ce que fait chaque stratégie :\n\n' + Object.keys(noms).map(k => '- ' + noms[k].nom + ' : ' + (noms[k].desc || '')).join('\n') + '\n\n';
+    const ex = parties.find(r => r.strategie === 'mixte' && r.fin.tombe) || parties.find(r => r.fin.tombe) || parties[parties.length - 1];
+    md += '### Courbe d’une partie : ' + ex.nom.toLowerCase() + ', graine ' + ex.graine + '\n\nUne ligne toutes les 5 minutes, puis toutes les 30 s pendant les 2 dernières minutes et demie.\n\n' + mdRtsCourbe(ex) + '\n';
+  }
+  if (quoi === 'rts-banc'){
+    md += '## Banc des appuis du RTS\n\nUne armée au sol fixe (6 mitrailleurs, 4 fantassins, 2 lance-roquettes en ligne à 20 m devant le QG, les 3 tourelles mitrailleuses du départ et 2 tourelles canon), sans amélioration, '
+      + 'plus un appui d’un seul type (9 000 $ au plus ; le bâtiment requis est posé gratuitement, son prix est dit à part). Même flot de zombies pour tous, calqué sur le jeu : 6 nids virtuels à 90-140 m qui pondent comme de vrais nids, '
+      + 'une horde toutes les 45 s, un Titan avec la 2e horde, plafond de 500 zombies. Menace fixe pendant ' + RTS_SIM.duree + ' s (les tués ne la font pas monter). Moyenne de ' + RTS_SIM.graines.length + ' graines. '
+      + 'Dégâts à la base : tout ce que les bâtiments (QG, tourelles, usines) ont encaissé. Repères, d’après les parties du robot-joueur qui tient bien : menace 5 vers 6 min de jeu, 8 vers 9 min, 14 vers 15 min, 50 vers 60 min (les tués font les deux tiers de la menace).\n\n';
+    const lignes = [];
+    for (const L of BANC_LOTS.filter(L => !RTS_SIM.lots || !Object.keys(L.unites).length || Object.keys(L.unites).some(t => RTS_SIM.lots.indexOf(t) >= 0))){
+      const res = [];
+      for (const m of RTS_SIM.menaces) for (const g of RTS_SIM.graines){
+        const p2 = await pageRts(b);
+        const r = await p2.evaluate(o => SIM.rtsBanc(o), { lot: L, menace: m, graine: g, duree: RTS_SIM.duree });
+        res.push(r); await p2.close();
+        console.log('  ' + L.nom + ', menace ' + m + ', graine ' + g + ' : ' + r.tues + ' tués, ' + r.degatsBase + ' dégâts à la base, pertes ' + r.pertesRef + ' + ' + r.pertesAppui + (r.tombe != null ? ', QG tombé à ' + Math.round(r.tombe) + ' s' : ''));
+      }
+      lignes.push({ nom: L.nom, res });
+    }
+    md += mdBanc(lignes, RTS_SIM.menaces) + '\n';
+    const mMid = RTS_SIM.menaces[Math.floor(RTS_SIM.menaces.length / 2)], amel = [];
+    for (const L of (RTS_SIM.lots ? [] : BANC_AMEL)){
+      const res = [];
+      for (const g of RTS_SIM.graines){
+        const p2 = await pageRts(b);
+        const r = await p2.evaluate(o => SIM.rtsBanc(o), { lot: L, menace: mMid, graine: g, duree: RTS_SIM.duree });
+        res.push(r); await p2.close();
+        console.log('  ' + L.nom + ', menace ' + mMid + ', graine ' + g + ' : ' + r.tues + ' tués, ' + r.degatsBase + ' dégâts à la base, pertes ' + r.pertesRef + ' + ' + r.pertesAppui);
+      }
+      amel.push({ nom: L.nom, res });
+    }
+    md += '### Améliorations contre unités (même banc, menace ' + v1(mMid) + ')\n\n' + mdBanc(amel, [mMid]) + '\n';
+    out.rtsBanc = { lots: lignes, amel };
   }
   await b.close();
   md += '\n_Simulation faite en ' + Math.round((Date.now() - t0) / 1000) + ' s._\n';

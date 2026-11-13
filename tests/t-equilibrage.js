@@ -165,4 +165,60 @@
     ok(r.tues < 3, '1 000 zombies tués ne doivent pas faire exploser la menace : ' + r.tues.toFixed(2));
     ok(r.temps > 3 && r.temps < 4, '10 minutes de jeu : menace entre 3 et 4 (' + r.temps.toFixed(2) + ')');
   });
+
+  // Banc des appuis du RTS (13 novembre 2026, node outils/simulateur.js rts-banc) : à somme égale, ces unités tenaient
+  // bien moins longtemps que des mitrailleurs (menace 14 : 40 à 50 s contre 72 s)
+  const unitesRts = () => J(function(){ var U = __rts.RTS_UNITS; return JSON.parse(JSON.stringify({ heavy:U.heavy, mech:U.mech, jet:U.jet, warthog:U.warthog, gunner:U.gunner, ammo:(typeof RTS_AMMO === 'object' ? RTS_AMMO : null) })); });
+  test('Équilibrage : le Mech lourd vaut ses 1 500 $ (140 dégâts, 2 600 de vie)', () => {
+    if (lire('typeof __rts === "object"') !== true) ignorer('Mode RTS absent');
+    const U = unitesRts();
+    egal(U.heavy.dmg, 140, 'Dégâts du Mech lourd (avant : 95)'); egal(U.heavy.hp, 2600, 'Vie du Mech lourd (avant : 1 600)');
+    ok(U.heavy.dmg * U.heavy.rate / U.heavy.cost >= U.gunner.dmg * U.gunner.rate / U.gunner.cost * .4, 'Il perce la file : au moins 40 % des dégâts par dollar du mitrailleur');
+  });
+  test('Équilibrage : le Mech de combat vaut ses 6 000 $ (minigun 36, roquettes 380, 8 000 de vie)', () => {
+    if (lire('typeof __rts === "object"') !== true) ignorer('Mode RTS absent');
+    const U = unitesRts();
+    egal(U.mech.dmg, 36, 'Minigun (avant : 16)'); egal(U.mech.w2 && U.mech.w2.dmg, 380, 'Roquettes (avant : 260)'); egal(U.mech.hp, 8000, 'Vie (avant : 5 000)');
+  });
+  test('Équilibrage : le chasseur vaut son prix (150 dégâts, 300 obus)', () => {
+    if (lire('typeof __rts === "object"') !== true) ignorer('Mode RTS absent');
+    const U = unitesRts();
+    egal(U.jet.dmg, 150, 'Canon de 20 mm (avant : 75)');
+    if (U.ammo) egal(U.ammo.jet.w1, 300, 'Obus du chasseur (avant : 200)');
+  });
+  test('Équilibrage : le Warthog vaut son prix (110 dégâts)', () => {
+    if (lire('typeof __rts === "object"') !== true) ignorer('Mode RTS absent');
+    const U = unitesRts();
+    egal(U.warthog.dmg, 110, 'Canon de 30 mm (avant : 55)');
+    if (U.ammo) egal(U.ammo.warthog.w1, 660, 'Obus du Warthog : inchangés');
+  });
+
+  // Robot-joueur du RTS (outils/sim-bot-rts.js) : il bâtit et achète par les vraies fonctions du jeu, sans tricher
+  test('Simulateur : le robot-joueur du RTS bâtit dans la base et achète avec son argent', async () => {
+    if (lire('typeof __rts === "object"') !== true) ignorer('Mode RTS absent');
+    const r1 = await fetch('../outils/sim-bot.js', { cache:'no-store' }), r2 = await fetch('../outils/sim-bot-rts.js', { cache:'no-store' });
+    if (!r1.ok || !r2.ok) ignorer('outils/sim-bot-rts.js absent');
+    const c1 = await r1.text(), c2 = await r2.text();
+    reset();
+    if (lire('typeof SIM === "object" && typeof SIM.rtsTour === "function"') !== true){ J(c1); J(c2); }
+    const r = J(function(){
+      __rts.rtsStart(); var R = __rts.RTS; R.nests.forEach(function(n){ n.spawnT = 1e9; }); R.hordeT = 1e9; clearZombies();
+      var o = { strats: Object.keys(SIM.STRATS_RTS) };
+      S.money = 20000; var m0 = S.money, u0 = R.units.length, b0 = R.blds.slice();
+      for (var i = 0; i < 12; i++) SIM.rtsTour('mixte');
+      o.depense = m0 - S.money;
+      o.unites = R.units.filter(function(u){ return !u.dead; }).length - u0;
+      o.scrap = R.blds.filter(function(b){ return !b.dead && b.type === 'scrap'; }).length;
+      o.dansBase = R.blds.every(function(b){ return b.dead || Math.hypot(b.x, b.z) + b.r <= R.baseR + .01; });
+      o.grille = R.blds.every(function(b){ return b0.indexOf(b) >= 0 || (b.x % 2 === 0 && b.z % 2 === 0); });
+      o.positif = S.money >= 0;
+      __rts.rtsQuit();
+      return o;
+    });
+    ['tourelles', 'blindes', 'air', 'mixte'].forEach(k => ok(r.strats.indexOf(k) >= 0, 'Stratégie ' + k));
+    ok(r.depense > 0 && r.positif, 'Il dépense son argent sans passer sous zéro (' + r.depense + ' $)');
+    ok(r.unites >= 3, 'Il achète des unités : ' + r.unites);
+    ok(r.scrap >= 1, 'Il bâtit un récupérateur');
+    ok(r.dansBase, 'Tout est bâti dans la base'); ok(r.grille, 'Sur le quadrillage de 2 m');
+  });
 })();

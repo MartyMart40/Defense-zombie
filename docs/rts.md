@@ -51,7 +51,7 @@ Les prix exacts sont dans `RTS_UNITS` et `RTS_BLD` (`js/41-rts.js`) : si un chif
 ## Véhicules et postes de pilotage (2026-11-04, demande de Martin : « chaque arme représentative de la vraie vie »)
 - Tank : canon de 120 mm, un obus toutes les 3 s, 900 dégâts (560 avant le 2026-11-12), explosion de 6,5 m, 8 000 de vie (3 200 avant) ; mitrailleuse coaxiale en amélioration. Poste : le gros canon devant soi, qui recule à chaque tir.
 - Apache (l'hélicoptère) : canon rotatif de 30 mm sous le nez et missiles Hellfire dès l'achat (les améliorations les renforcent), roquettes Hydra. Poste : vue du casque, verrière, écrans, canon qui tourne quand il tire, Hellfire sur les ailettes qui disparaissent quand ils partent.
-- Chasseur : canon de 20 mm (75 dégâts, 10 coups/s), 200 obus ; Warthog : canon de 30 mm, 660 obus. AC-130 : 100 obus de 40 mm et 20 de 105 mm. À sec, l'avion retourne à l'aérodrome le plus proche refaire le plein (3 à 6 s au-dessus). Piloté : on y retourne soi-même, le viseur donne la distance.
+- Chasseur : canon de 20 mm (150 dégâts, 10 coups/s ; 75 avant le 2026-11-13), 300 obus (200 avant) ; Warthog : canon de 30 mm, 110 dégâts (55 avant), 660 obus. AC-130 : 100 obus de 40 mm et 20 de 105 mm. À sec, l'avion retourne à l'aérodrome le plus proche refaire le plein (3 à 6 s au-dessus). Piloté : on y retourne soi-même, le viseur donne la distance.
 - 2 avions par aérodrome : pour plus d'avions, il faut plus d'aérodromes.
 - AC-130 : vole à 60 m (il était à 30 m : le sol défilait trop vite pour viser), portée 95 m, zoom 30° au 40 mm et 20° au 105 mm.
 - 2e arme (Hellfire, 105 mm, roquettes du Mech) : gros texte au centre quand elle part ; si on appuie avant qu'elle soit prête, le temps restant ou « À SEC ». Les petits robots n'ont qu'une arme.
@@ -95,7 +95,19 @@ Mesuré à budget égal (6 000 $ d'un seul type d'unité, même flot de zombies,
 - Tank : 900 dégâts et 8 000 de vie. Il ne recule pas devant les zombies comme les robots : il lui faut le blindage pour tenir. Après : environ 1 050 tués au même banc.
 - Tourelles (3 000 $ d'un seul type) : la mitrailleuse (14 dégâts, portée 20 m) et la Tesla tombaient là où le canon et le lance-flammes tenaient. Mitrailleuse : 26 dégâts, portée 24 m. Tesla : 80 dégâts, 2 tirs/s. Le mortier seul ne tient pas (il ne tire pas à moins de 8 m) : c'est une arme d'appui, laissé tel quel.
 - La durée des parties n'a pas changé au simulateur (23 à 28 min).
-- Pas mesuré : les améliorations des unités, les avions comme appui d'une armée au sol (seuls, ils ne retiennent pas les zombies), le pilotage.
+- Pas mesuré : le pilotage. Les appuis et les améliorations ont été mesurés le 2026-11-13 (section suivante).
+
+## Robot-joueur et banc des appuis (2026-11-13, tâche 96)
+Commandes : `node outils/simulateur.js rts [tourelles,blindes,air,mixte] [graines] [minutes]` et `node outils/simulateur.js rts-banc [menaces] [graines] [secondes] [unités]`. Le robot-joueur est dans `outils/sim-bot-rts.js`.
+- Quatre stratégies : tourelles (l'ancien robot-joueur), blindés (garage, jusqu'à 24 tanks), air (héliport, aérodromes, armée au sol qui retient), mixte (récupérateurs, atelier, armée variée, améliorations). Il passe par les vraies fonctions (pose, achat, ordres, « Tenir », ralliement, retour à l'atelier sous 40 % de vie). Il ne pilote pas, réagit sans délai, pose ses bâtiments au hasard dans la bonne zone, ne vend rien. Une partie varie beaucoup d'une graine à l'autre.
+- Constat principal : avec un joueur correct, le QG ne prend pas un seul coup en 60 minutes (11 parties sur 12). Seul l'ancien robot-joueur est tombé (43 min).
+- Menace : 9 à 11 à 10 min, environ 30 à 30 min, 44 à 57 à 60 min. Les tués en font les deux tiers. Le plafond de 500 zombies est atteint dès la 4e minute et y reste : ce n'est plus le nombre qui monte, c'est la force (à menace 43, un marcheur frappe 18 fois plus fort qu'au départ).
+- La chute, quand elle arrive : les tourelles tombent pendant 2 à 3 minutes (seul signe avant-coureur), puis le QG passe de 90 % à 0 en 3 secondes. 87 % des dégâts au QG viennent des zombies ordinaires, 13 % des boss. La base est soit intouchable, soit rasée d'un coup.
+- Banc des appuis : armée de référence (6 mitrailleurs, 4 fantassins, 2 lance-roquettes, 3 tourelles mitrailleuses, 2 tourelles canon) plus 9 000 $ au plus d'un seul type, bâtiment requis posé gratuitement, 150 s, 2 graines. Temps tenu par le QG à menace 14 : référence seule 29 s ; mitrailleurs 72 s ; lance-roquettes 84 s ; tanks 96 s ; Apaches 101 s (le meilleur par dollar) ; AC-130 34 s (il tue beaucoup mais ne protège pas, laissé tel quel).
+- Corrigé (ils ne valaient pas leur prix : 43 à 47 s à menace 14) : Mech lourd 140 dégâts et 2 600 de vie (95 et 1 600) : 82 s après ; Mech de combat minigun 36, roquettes 380, 8 000 de vie (16, 260, 5 000) : 64 s après ; chasseur 150 dégâts et 300 obus : 73 s après ; Warthog 110 dégâts : 72 s après.
+- Améliorations : 2 000 $ d'améliorations valent à peu près 2 000 $ d'unités au banc ; en partie elles valent plus (elles touchent toutes les unités du type).
+- À surveiller : le tank avec Blindage 5, Blindage réactif 3 et l'atelier ne meurt presque plus (0 perte en 60 min).
+- Pas vérifié : le pilotage, le cell (plafond de 300), le banc refait seulement pour les unités changées, les parties longues « après » sur une seule graine.
 
 ## À équilibrer en jouant
 - Menace (tâche 67) : 1 + minutes / 4 + 0,5 par nid détruit + tués / 600 (`RTS_THREAT`).

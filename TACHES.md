@@ -8,13 +8,13 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
 | 101 | Dossier RTS : un but et un danger qui monte. La Ruche (8 nids détruits la débusquent, la détruire libère la vallée, vallées de plus en plus dures), sièges annoncés toutes les 3 hordes, fin de la chute du QG en 3 secondes. Accepté par Martin | En cours | Sous-agent, ouvert le 2026-11-13 |
+| 102 | Dossier robot : une fin qu’on peut gagner (9 rues, boss final, « course réussie », 2e tour plus dur), carrefour réparé, un but après la course 10, premières rues moins gratuites et mur de la rue 5 adouci, lance-flammes lourd. Accepté par Martin le 2026-11-13 | En cours | Sous-agent, ouvert le 2026-11-13 |
 
 ## À faire
 
 | # | Tâche | Priorité |
 |---|-------|----------|
 | - | Équilibrage après essais de Martin | Après essais |
-| 102 | Dossier robot : une fin qu’on peut gagner (9 rues, boss final, « course réussie », 2e tour plus dur), carrefour réparé, un but après la course 10, premières rues moins gratuites et mur de la rue 5 adouci, lance-flammes lourd. Accepté par Martin le 2026-11-13 | Suivant (robot) |
 | - | Simulateur reproductible : les pages du duel lancées en parallèle partagent la même sauvegarde et le son lit l’horloge réelle (trouvé au dossier 94 : le même duel donne 444 à 1 849 d’un lancement à l’autre). À faire quand les dossiers 95 et 96 sont fusionnés (mêmes fichiers) | Suivant (outils) |
 | - | Dossier performance au cell : mesurer la boucle du jeu (`tests/perf.html`) et alléger ce qui coûte | À choisir par Martin |
 

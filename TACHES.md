@@ -7,7 +7,7 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
-| 97 | Dossier toit : des moments de crise (assauts annoncés dans une vague, brèche « dernier souffle » une fois par ville, danger qu’on sent sous 30 % de barricade). Accepté par Martin | En cours | Sous-agent, ouvert le 2026-11-13 |
+| 100 | Dossier toit : des moments de crise (assauts annoncés dans une vague, brèche « dernier souffle » une fois par ville, danger qu’on sent sous 30 % de barricade). Accepté par Martin | En cours | Sous-agent, ouvert le 2026-11-13 |
 | 95 | Dossier robot : robot-joueur du robot dans le simulateur, puis mesure du garage | En cours | Sous-agent, ouvert le 2026-11-13 |
 | 96 | Dossier RTS : meilleur robot-joueur (garage, héliport, aérodrome), puis mesure des véhicules et des avions en appui | En cours | Sous-agent, ouvert le 2026-11-13 |
 

@@ -7,6 +7,9 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
+| 104 | Dossier toit : visuel des armes tenues monté d’un cran, et visée qui rapproche vraiment pour toutes les armes (la lunette sur le laser ne rapprochait pas). Demandé par Martin | En cours | Sous-agent, ouvert le 2026-11-13 |
+| 105 | Dossier robot : plus aucun zombie n’apparaît derrière le robot, jambes visibles qui marchent, habitacle complet avec manettes qui bougent. Demandé par Martin | En cours | Sous-agent, ouvert le 2026-11-13 |
+| 106 | Dossier RTS : visuel de toutes les armes monté d’un cran dès le niveau 0 (roquette avec corps, traînée et explosion) ; les paliers d’amélioration ajoutent par-dessus. Demandé par Martin | En cours | Sous-agent, ouvert le 2026-11-13 |
 
 ## À faire
 

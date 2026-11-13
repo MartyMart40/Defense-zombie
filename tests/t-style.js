@@ -267,3 +267,34 @@
   });
 })();
 
+/* Style Actuel : couche légère (sol, trottoirs, gazon, façades, conteneurs) */
+(function(){
+  if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
+  test('Style Actuel : sol, trottoirs, gazon et façades texturés sans ombre ni effet ; Amélioré part toujours des originaux', () => {
+    if (lire('typeof __style === "object" && !!__style.STYLE_TEX_LEGER') !== true) ignorer('Couche légère absente');
+    reset();
+    const r = J(function(){
+      __style.styleSet('actuel'); startLocation(0);
+      var o = {}, sol = 0, fac = 0, mats = [], T = __style.STYLE_TEX_LEGER;
+      world.traverse(function(m){ if (!m.isMesh) return; mats.push([m, m.material]);
+        if (m.material.map && (m.material.map === T.asphalte || m.material.map === T.trottoir || m.material.map === T.gazon)) sol++;
+        if (m.material.emissiveMap && m.material.map && m.material.map.image.width === 128 && __style.STY.legerListe.some(function(p){ return p[0] === m; })) fac++; });
+      o.sol = sol; o.fac = fac; o.leger = __style.STY.legerOn; o.ombres = renderer.shadowMap.enabled; o.rendu = __style.styleRendu();
+      __style.styleSet('ameliore');
+      var vieux = 0; world.traverse(function(m){ if (m.isMesh && m.material.map === T.asphalte) vieux++; });
+      o.vieux = vieux; o.orig = __style.STY.orig.length; o.legerOff = !__style.STY.legerOn;
+      __style.styleSet('actuel'); visuals(1 / 30);
+      o.pareil = mats.every(function(p){ return p[0].material === p[1]; });
+      startLocation(4); o.port = 0; world.traverse(function(m){ if (m.isMesh && m.material.map === __style.styleTex('crasse')) o.port++; });
+      return o;
+    });
+    ok(r.sol >= 3, 'Sol, trottoirs et gazon texturés : ' + r.sol);
+    ok(r.fac >= 10, 'Façades redessinées à la taille d\'origine : ' + r.fac);
+    ok(r.leger && !r.ombres && r.rendu === false, 'Actuel : pas d\'ombres ni d\'effets d\'image');
+    egal(r.vieux, 0, 'Amélioré ne garde pas les textures légères');
+    ok(r.orig > 20 && r.legerOff, 'Amélioré habille la rue : ' + r.orig);
+    ok(r.pareil, 'Retour à Actuel : les mêmes matériaux légers');
+    ok(r.port >= 5, 'Conteneurs du port salis : ' + r.port);
+  });
+})();
+

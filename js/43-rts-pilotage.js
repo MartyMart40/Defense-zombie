@@ -56,13 +56,15 @@ function rtsTurretStep(dt){
   if (o.head) o.head.rotation.y = P2.yaw + Math.PI;
   o.cd -= dt;
   const firing = P2.fire || (isTouch && P2.aim.id !== null);
-  const S2 = Object.assign({}, T, { dmg:rtsTStat(o, 'dmg'), range:rtsTStat(o, 'range') });
+  const S2 = Object.assign({}, T, { dmg:rtsTStat(o, 'dmg'), range:rtsTStat(o, 'range'), tier:(o.lv - 1) / (RTS_TMAX - 1) });
   if (T.splash){
     const sp = rtsMortarSpot(o); RTS.mortSpot = sp;
     if (RTS.mortRing){ RTS.mortRing.position.set(sp.x, .15, sp.z); RTS.mortRing.scale.setScalar(S2.splash); RTS.mortRing.material.opacity = .55 + .35 * Math.sin(RTS.t * 8); }
     if (firing && o.cd <= 0){
       o.cd = 1 / rtsTStat(o, 'rate'); rtsShotSnd('gl'); burst(rtsV.set(o.x, 3, o.z), 'dust', 6, 3);
-      RTS.shells.push({ x:sp.x, z:sp.z, t:1 + Math.hypot(sp.x - o.x, sp.z - o.z) / 40, S2 }); // l'obus met un peu de temps à retomber
+      const tv = 1 + Math.hypot(sp.x - o.x, sp.z - o.z) / 40;
+      RTS.shells.push({ x:sp.x, z:sp.z, t:tv, S2 }); // l'obus met un peu de temps à retomber
+      if (typeof rtsFxMortar === 'function') rtsFxMortar(o.x, o.z, sp.x, sp.z, tv, S2); // on le voit monter et retomber (js/55-rts-effets.js)
     }
     return;
   }

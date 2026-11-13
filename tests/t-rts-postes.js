@@ -82,6 +82,8 @@
       var z1 = __t.placer('walker', 0, -60), z2 = __t.placer('walker', 9.5, -60); [z1, z2].forEach(function(z){ z.hp = z.maxHp = 1e6; z.speed = 0; });
       var b = { big:true, dmg:1100, splash:11, snd:'rocket' };
       var sh0 = shake; rtsHit(new THREE.Vector3(0, 30, -40), { x:0, z:-60 }, 'pt', b);
+      // l'explosion se voit (et secoue) quand l'obus touche le sol (js/55-rts-effets.js)
+      if (typeof __rtsEffets === 'object') for (var i = 0; i < 20; i++) __rtsEffets.rtsFxFrame(1 / 30);
       return { centre: 1e6 - z1.hp, loin: 1e6 - z2.hp, secousse: shake > .3 };
     `));
     fin();

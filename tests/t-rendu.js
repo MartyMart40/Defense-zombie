@@ -129,3 +129,32 @@
     ok(!r.bas.d && !r.bas.e, 'Qualité basse : ni débris ni braises');
   });
 })();
+(function(){
+  if (typeof test !== 'function' || typeof TESTS === 'undefined') return;
+  test('Rendu : ciel peint par ville et par météo, gardé seulement pour la ville en cours ; feux avec lueur au sol et flamme', () => {
+    if (lire('typeof __gfx === "object" && !!__gfx.GFX_CIEL') !== true) ignorer('Ciel peint absent');
+    reset(); J('startLocation(2)');
+    const r = J(function(){
+      var o = {}, sky = world.children.find(function(c){ return c.isMesh && c.material && c.material.side === THREE.BackSide; });
+      o.ciel = sky && sky.material.map && sky.material.map.image ? sky.material.map.image.width : 0;
+      o.cielPeint = !!(sky && sky.material.map.userData && sky.material.map.userData.ciel);
+      __amb.set('nuitClaire'); o.meteo = sky.material.map === __gfx.gfxCielMeteo('nuitClaire') && !!sky.material.map.userData.ciel;
+      __amb.set('clair'); o.retour = sky.material.map === __gfx.GFX_CIEL['ville|banlieue'];
+      startLocation(0);
+      o.cles = Object.keys(__gfx.GFX_CIEL).every(function(k){ return k.split('|')[1] === 'village'; });
+      o.feux = fires.length; o.habilles = fires.filter(function(f){ return f.sol && f.flamme && f.sol.parent && f.flamme.parent; }).length;
+      state = 'playing'; __t.geler(); for (var i = 0; i < 5; i++) visuals(1 / 30);
+      o.flamme = !!fires[0] && fires[0].flamme.scale.y > .5; o.garde = __gfx.gfxFeuSolMat.userData.keep && __gfx.gfxFlammeMat.userData.keep;
+      startLocation(0); o.toujours = !!(__gfx.gfxFeuSolMat.map && __gfx.gfxFlammeMat.map); state = 'test';
+      return o;
+    });
+    egal(r.ciel, 1024, 'Ciel peint en 1024 de large');
+    ok(r.cielPeint, 'Le ciel de la ville est le ciel peint');
+    ok(r.meteo, 'Le ciel de la nuit claire est peint aussi');
+    ok(r.retour, 'Retour au beau temps : le ciel peint de la ville');
+    ok(r.cles, 'Seuls les ciels de la ville en cours sont gardés');
+    ok(r.feux >= 2 && r.habilles === r.feux, 'Feux habillés : ' + r.habilles + ' sur ' + r.feux);
+    ok(r.flamme, 'La flamme bouge');
+    ok(r.garde && r.toujours, 'Matériaux des feux partagés, jamais jetés');
+  });
+})();

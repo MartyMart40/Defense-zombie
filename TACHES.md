@@ -7,6 +7,8 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
+| 130 | Toit : explosions et pouvoirs plus beaux (grenade, molotov, frappe aérienne, barils, roquettes), visuel et sonore seulement (js/85-explosions.js) | En cours | Sous-agent, lancé le 2026-11-18 |
+| 131 | RTS : zombies et nids qui vivent (démarche, attaque, morts variées, nids qui pulsent et crèvent), visuel seulement (js/86-rts-zombies-anim.js) | En cours | Sous-agent, lancé le 2026-11-18 |
 
 ## À faire
 

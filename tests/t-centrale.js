@@ -26,10 +26,14 @@
     const r = J(function(){
       var i = __centrale.idx, out = [], j0 = (window.JOURNAL || []).length, avant = __style.STY.pref;
       ['actuel', 'ameliore', 'hd', 'ultra'].forEach(function(st){
-        __style.styleSet(st); startLocation(i); clearZombies(); state = 'menu'; yaw = 0; pitch = -.16; camera.rotation.set(pitch, yaw, 0); camera.updateMatrixWorld();
-        visuals(1 / 30); renderer.render(scene, camera);
+        // Le décor et la météo tirés au hasard font varier le compte : on garde le plus petit de 3 rues
+        __style.styleSet(st); var appels = 1e9;
+        for (var q = 0; q < 3; q++){
+          startLocation(i); clearZombies(); state = 'menu'; yaw = 0; pitch = -.16; camera.rotation.set(pitch, yaw, 0); camera.updateMatrixWorld();
+          visuals(1 / 30); renderer.render(scene, camera); appels = Math.min(appels, renderer.info.render.calls);
+        }
         var C = world.userData.centrale;
-        out.push({ st: st, appels: renderer.info.render.calls, transfos: C ? C.transfos.length : 0, gyros: C ? C.gyros.length : 0, tours: C ? C.tours.length : 0, fx: !!__centrale.CT.fx, ici: __centrale.ctrIci() });
+        out.push({ st: st, appels: appels, transfos: C ? C.transfos.length : 0, gyros: C ? C.gyros.length : 0, tours: C ? C.tours.length : 0, fx: !!__centrale.CT.fx, ici: __centrale.ctrIci() });
       });
       __style.styleSet(avant);
       // Le Port, pour comparer

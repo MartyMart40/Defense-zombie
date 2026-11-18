@@ -16,11 +16,13 @@ let RT = [];
 function buildTower(i, slot){
   const P0 = DEF_SLOTS[i], h = P0.h;
   const g = new THREE.Group(); g.position.set(P0.x, 0, P0.z); defRoot.add(g);
-  [[-.75, -.75], [.75, -.75], [-.75, .75], [.75, .75]].forEach(p => dpart(g, .22, h, .22, DMAT.steel, p[0], h / 2, p[1]));
-  dpart(g, 1.7, .12, .12, DMAT.steel, 0, h * .45, -.75); dpart(g, 1.7, .12, .12, DMAT.steel, 0, h * .45, .75);
-  dpart(g, .12, .12, 1.7, DMAT.steel, -.75, h * .7, 0); dpart(g, .12, .12, 1.7, DMAT.steel, .75, h * .7, 0);
-  dpart(g, 2.3, .3, 2.3, DMAT.wood, 0, h, 0);
-  dpart(g, 2.3, .35, .4, DMAT.bag, 0, h + .3, -1); dpart(g, .4, .35, 1.6, DMAT.bag, P0.x < 0 ? -1 : 1, h + .3, -.1);
+  // Pied de la tour (montants, plancher, sacs) : fusionné avec celui des autres tours par defRebuild (js/03-scene-fusion.js)
+  const pied = (sx, sy, sz, m, x, y, z) => fixe(dpart(g, sx, sy, sz, m, x, y, z));
+  [[-.75, -.75], [.75, -.75], [-.75, .75], [.75, .75]].forEach(p => pied(.22, h, .22, DMAT.steel, p[0], h / 2, p[1]));
+  pied(1.7, .12, .12, DMAT.steel, 0, h * .45, -.75); pied(1.7, .12, .12, DMAT.steel, 0, h * .45, .75);
+  pied(.12, .12, 1.7, DMAT.steel, -.75, h * .7, 0); pied(.12, .12, 1.7, DMAT.steel, .75, h * .7, 0);
+  pied(2.3, .3, 2.3, DMAT.wood, 0, h, 0);
+  pied(2.3, .35, .4, DMAT.bag, 0, h + .3, -1); pied(.4, .35, 1.6, DMAT.bag, P0.x < 0 ? -1 : 1, h + .3, -.1);
   const rt = { i, type:slot ? slot.type : null, g, h, x:P0.x, z:P0.z, head:null, mz:new THREE.Vector3(), cd:rand(.2, .8), st:null };
   if (!slot) return rt;
   rt.st = defStatsSyn(slot.type, slot.lv, P.slots);
@@ -54,8 +56,10 @@ function buildTower(i, slot){
   return rt;
 }
 function defRebuild(){
+  defRoot.children.forEach(o => { if (o.userData.fusion) o.geometry.dispose(); }); // pieds fusionnés : géométrie propre
   while (defRoot.children.length) defRoot.remove(defRoot.children[0]);
   RT = P.slots.map((s, i) => buildTower(i, s));
+  if (FUSION.on){ const pieds = []; RT.forEach(rt => rt.g.children.forEach(o => { if (o.userData.fixe) pieds.push(o); })); fusionCalme(() => fusionPieces(pieds, defRoot, { garder:true })); } // 3 appels de dessin au lieu de 44
   buildSynFx();
   defS = null; // les minuteries repartent au prochain update
 }

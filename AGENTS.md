@@ -22,7 +22,7 @@ Trois modes : le toit (campagne de 6 villes et mode infini), le robot de combat,
 - `index.html` : écrans, HUD, boutons et la liste des scripts, dans l'ordre. `css/style.css` : tout le style.
 - `lib/three.min.js` : Three.js r128 (ne pas modifier ; secours sur cdnjs si absent). `lib/three-effets.js` : effets d'image de r128 (éclat, FXAA), ne pas modifier. `lib/three-hd.js` : EXRLoader, SSAO et Reflector de r128 pour la Haute définition et Ultra, ne pas modifier. `hdri/` : images HDR (Poly Haven, CC0).
 - `manifest.webmanifest`, `sw.js`, `icones/` : application installable. `sw.js` sert la copie en cache seulement sans réseau.
-- `outils/` : `lancer-tests.js` (toute la suite dans Chromium), `version.sh` (change les ?v= avant une mise en ligne), `simulateur.js` et `sim-bot.js` (simulateur d'équilibrage, rapport dans `docs/equilibrage.md` ; `sim-page.js` et `sim-horloge.js` isolent chaque page et fixent l'heure et le hasard : même graine, même résultat). `.github/workflows/tests.yml` lance les tests sur GitHub à chaque push.
+- `outils/` : `lancer-tests.js` (toute la suite dans Chromium), `version.sh` (change les ?v= avant une mise en ligne), `simulateur.js` et `sim-bot.js` (simulateur d'équilibrage, rapport dans `docs/equilibrage.md` ; `sim-page.js` et `sim-horloge.js` isolent chaque page et fixent l'heure et le hasard : même graine, même résultat), `mesure-perf.js` (appels de dessin, temps de la boucle, allocations, captures comparées pixel à pixel). `.github/workflows/tests.yml` lance les tests sur GitHub à chaque push.
 - `js/NN-nom.js`, chargés dans l'ordre du numéro :
 
 | Fichiers | Rôle |
@@ -30,7 +30,7 @@ Trois modes : le toit (campagne de 6 villes et mode infini), le robot de combat,
 | 00 base | Outils (`$`, `store`, `fmt`, `rand`, `clamp`), journal des erreurs cachées (`errNote`, `JOURNAL`), registre des modes `Jeu` |
 | 01 son | Sons et musique (`Snd`) |
 | 02 villes | Les 6 villes (`LOCS`) ; la 6e, la Centrale, depuis le dossier 117 |
-| 03 scène | Scène, caméra, rendu, décor de la rue (`buildWorld`) |
+| 03 scène | Scène, caméra, rendu, décor de la rue (`buildWorld`) ; `03-scene-fusion` : décor fixe fusionné, un appel de dessin par matériau (`fixe(m)`, `docs/architecture.md`) |
 | 04 arme en main, modèles, anim | Arme tenue : base et mains (`04-arme-en-main`), les modèles (`04-arme-modeles` : pistolet, pompe, assaut, sniper ; `04-arme-modeles2` : arbalète, lance-flammes, minigun, lance-roquettes, canon électromagnétique, arc), douilles et animations (`04-arme-anim`) |
 | 05 particules | Particules |
 | 06 données | Armes, améliorations, difficulté (`WEAPONS`, `WUPG`, `CITY_SCALE`) |

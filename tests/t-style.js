@@ -192,7 +192,7 @@
       __style.styleSet('actuel');
       return o;
     });
-    ok(r.autos >= 3 && r.caches >= r.autos * 4, 'Roues d\'origine remplacées sur les ' + r.autos + ' autos');
+    ok(r.autos >= 3 && r.caches >= r.autos, 'Roues d\'origine remplacées sur les ' + r.autos + ' autos'); // les 4 roues d'une auto : un seul maillage (js/03-scene-fusion.js)
     egal(r.inst, 6, 'Six sortes de débris en instances');
     ok(r.fils >= 10, 'Fils électriques : ' + r.fils);
     ok(r.n > 100, 'Pièces de décor ajoutées : ' + r.n);

@@ -42,6 +42,8 @@ const zkV = new THREE.Vector3();
 function zkEyes(parent, y, z, dx, s){ s = s || 1; zkMesh(parent, ZKG.box, eyeMat, .08 * s, .05 * s, .02, -dx, y, z); zkMesh(parent, ZKG.box, eyeMat, .08 * s, .05 * s, .02, dx, y, z); }
 
 /* ---------- Sauteur : maigre, longues jambes repliées, avance par bonds ---------- */
+// Jambes du sauteur (fonction fixe : pas de fermeture créée à chaque image et pour chaque sauteur, dossier 120)
+function zkJambes(R, th, kn){ for (let i = 0; i < 2; i++){ R.hip[i].rotation.x = th; R.knee[i].rotation.x = kn; } }
 ZKINDS.jumper = {
   build(T){
     const skin = zmat(T.skin), rag = zmat(pick(PANTS)), top = Math.random() < .5 ? rag : zmat(pick(ZK_HAILLONS));
@@ -72,8 +74,7 @@ ZKINDS.jumper = {
   },
   update(z, dt){
     const R = z.rig, gp = z.g.position;
-    const legs = (th, kn) => { for (let i = 0; i < 2; i++){ R.hip[i].rotation.x = th; R.knee[i].rotation.x = kn; } };
-    if (z.st === 'attack'){ gp.y = 0; z.body.position.y = -.2; z.body.rotation.x = .3; legs(-1.25, 2.3); return false; } // griffes : code par défaut
+    if (z.st === 'attack'){ gp.y = 0; z.body.position.y = -.2; z.body.rotation.x = .3; zkJambes(R, -1.25, 2.3); return false; } // griffes : code par défaut
     if (z.lame && z.jst !== 'air'){ // boite lentement vers la barricade
       gp.y = 0; gp.z += z.limpSpd * dt; z.phase += dt * 4;
       const s = Math.sin(z.phase);
@@ -85,7 +86,7 @@ ZKINDS.jumper = {
     }
     if (z.jst === 'crouch'){
       z.jt -= dt; const k = clamp(1 - z.jt / .32, 0, 1);
-      legs(-1.1 - .35 * k, 2 + .5 * k); z.body.position.y = -.38 * k; z.body.rotation.x = .35 + .2 * k;
+      zkJambes(R, -1.1 - .35 * k, 2 + .5 * k); z.body.position.y = -.38 * k; z.body.rotation.x = .35 + .2 * k;
       if (z.armL){ z.armL.rotation.x = -.3 + .6 * k; z.armR.rotation.x = -.3 + .6 * k; }
       if (z.jt <= 0){
         const d = Math.min(z.speed * .95 * rand(.85, 1.2), z.stopZ - gp.z);
@@ -96,7 +97,7 @@ ZKINDS.jumper = {
     } else {
       z.ju += dt / z.jT; const u = Math.min(1, z.ju);
       gp.z = z.jz0 + z.jd * u; gp.x = z.jx0 + z.jdx * u; gp.y = z.jh * 4 * u * (1 - u);
-      legs(-.25 - .3 * u, .35 + .6 * u); z.body.position.y = 0; z.body.rotation.x = .55 - .5 * u;
+      zkJambes(R, -.25 - .3 * u, .35 + .6 * u); z.body.position.y = 0; z.body.rotation.x = .55 - .5 * u;
       if (z.armL){ z.armL.rotation.x = .9 - 1.6 * u; z.armR.rotation.x = .9 - 1.6 * u; }
       if (u >= 1){
         gp.y = 0; z.jst = 'crouch'; z.jt = .32;

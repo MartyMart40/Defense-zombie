@@ -166,7 +166,9 @@ const gfxHaloMat = new THREE.SpriteMaterial({ map:glowTex, color:0xffc870, trans
 for (let i = 0; i < 12; i++){ const s = new THREE.Sprite(gfxHaloMat); s.scale.set(5, 5, 1); s.visible = false; gfxRoot.add(s); gfxHalos.push(s); }
 function gfxPlaceHalos(){
   let n = 0;
-  if (typeof world !== 'undefined' && world) world.children.forEach(o => {
+  const T = typeof world !== 'undefined' && world && world.userData.tetes; // têtes fusionnées (js/03-scene-fusion.js) : positions gardées par buildWorld
+  if (T && T.length) T.forEach(p => { if (n < gfxHalos.length){ gfxHalos[n].position.set(p[0], 6.75, p[2]); gfxHalos[n].userData.on = true; n++; } });
+  else if (typeof world !== 'undefined' && world) world.children.forEach(o => {
     if (n < gfxHalos.length && o.isMesh && Math.abs(o.position.y - 6.9) < .01 && Math.abs(Math.abs(o.position.x) - 12.7) < .01){ gfxHalos[n].position.set(o.position.x, 6.75, o.position.z); gfxHalos[n].userData.on = true; n++; }
   });
   for (let i = n; i < gfxHalos.length; i++) gfxHalos[i].userData.on = false;

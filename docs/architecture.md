@@ -86,6 +86,15 @@ Règle : **pas de nouveau crochet par réaffectation pour un mode**. Utiliser `J
 - Les résultats varient un peu d'un lancement à l'autre (le hasard est fixé, mais pas tout le minutage) : comparer plusieurs lancements avant de conclure.
 - Après un changement de chiffres (vie, dégâts, prix), relancer et comparer avec le rapport d'avant (git garde les anciens).
 
+## Décor fusionné (dossier 120, `js/03-scene-fusion.js`)
+Au cell, ce qui coûte, c'est le nombre d'appels de dessin (un par maillage dessiné). `buildWorld` bâtit la rue pièce par pièce comme avant, puis `fusionMonde()` réunit tout ce qui est marqué `fixe(m)` en une seule géométrie par matériau.
+- Marquer `fixe(m)` seulement ce qui ne bouge pas, n'est pas une cible (`hitMeshes`) et que personne ne retrouve par sa position ou ses dimensions. Ne jamais marquer : façades (`facadeMat`, lues par `js/68` pour les fenêtres et par `js/57`), sol, trottoirs et gazon (`js/57` lit leurs dimensions), sacs de sable (`js/68`), cônes des feux (animés).
+- Les matériaux restent les mêmes objets ; deux copies identiques (même couleur, mêmes réglages) sont réunies, mais une pièce cachée (« fantôme ») garde chaque copie dans la rue : les styles font autant de copies de matériaux qu'avant.
+- Hasard : Three.js tire 4 nombres de `Math.random` pour l'uuid de chaque objet créé. La fusion se fait dans `fusionCalme()`, qui prête `Math.random` à un générateur à part : le jeu tire exactement les mêmes nombres qu'avant (vérifié dans des pages neuves, 6 villes, Actuel, Amélioré et Haute définition, et par l'empreinte du duel du simulateur).
+- Autos (`userData.auto`, `js/59`) : les 4 roues deviennent un maillage, 3e pièce de l'auto. Barricade : béton fusionné ; planches et poteaux (`fixe(m, true)`, que `js/68` fait pencher et tomber) passent sur la couche 1, jamais dessinée, et une copie fusionnée par matériau est refaite par `fusionSuivre()` (appelée par `scene.onBeforeRender`) seulement quand l'une d'elles bouge.
+- Têtes de lampadaires : le maillage fusionné est posé sur la première tête (`js/22` y trouve le matériau à allumer la nuit), toutes les positions sont dans `world.userData.tetes` (halos de `js/36`). Pieds des tours de défense : fusionnés dans `defRoot` par `defRebuild` (`js/17`).
+- `FUSION.on = false` : rue bâtie sans fusion (tests, comparaison d'images). Mesures et captures : `node outils/mesure-perf.js` (en-tête du fichier). Tests : `tests/t-fusion.js`.
+
 ## Tests
 - `tests/index.html` charge le jeu dans un iframe et lance tous les `tests/t-*.js`. Résultat dans `window.RESULTATS`.
 - `__t.graine(n, fn)` fixe le hasard pour un test qui en dépend.

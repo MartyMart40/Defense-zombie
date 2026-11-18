@@ -51,12 +51,12 @@ function makeFire(x, y, z, size){
 function car(x, z, rot, mat, burnt){
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; world.add(g); g.userData.auto = { burnt: !!burnt }; // détails en Haute définition (js/59)
   box(2, .8, 4.3, burnt ? lam(0x1a1614) : mat, 0, .7, 0, g); box(1.8, .6, 2.2, burnt ? lam(0x141110) : mat, 0, 1.4, -.2, g);
-  const wm = lam(0x111111); [[-1, -1.4], [1, -1.4], [-1, 1.4], [1, 1.4]].forEach(p => box(.3, .6, .6, wm, p[0], .3, p[1], g));
+  const wm = lam(0x111111); [[-1, -1.4], [1, -1.4], [-1, 1.4], [1, 1.4]].forEach(p => fixe(box(.3, .6, .6, wm, p[0], .3, p[1], g))); // roues : un seul maillage (js/03-scene-fusion.js)
   return g;
 }
 function roof(x, y, z, w, d, h, col){
   const g = new THREE.Group(); g.position.set(x, y, z); world.add(g);
-  const c = new THREE.Mesh(new THREE.ConeGeometry(1, 1, 4), lam(col)); c.rotation.y = Math.PI / 4; c.position.y = .5; g.add(c);
+  const c = fixe(new THREE.Mesh(new THREE.ConeGeometry(1, 1, 4), lam(col))); c.rotation.y = Math.PI / 4; c.position.y = .5; g.add(c);
   g.scale.set(w / Math.SQRT2 * 1.12, h, d / Math.SQRT2 * 1.12);
 }
 function house(x, z, w, d, h, roofCol, seed){
@@ -364,7 +364,7 @@ function centraleFond(L, seed){
 const BAR_Z = -9;
 function buildWorld(L){
   disposeWorld(); fires.length = 0; treeStart(L);
-  world = new THREE.Group(); scene.add(world);
+  world = new THREE.Group(); scene.add(world); world.userData.tetes = []; // têtes de lampadaires (halos de js/36)
   scene.fog.color.setHex(L.fog); scene.background.setHex(L.fog); scene.fog.near = L.fogNear; scene.fog.far = L.fogFar;
   world.add(new THREE.HemisphereLight(L.hemi[0], L.hemi[1], L.hemi[2]));
   const sun = new THREE.DirectionalLight(L.sunCol, L.sunI); sun.position.set(-30, 25, -120); world.add(sun);
@@ -381,7 +381,7 @@ function buildWorld(L){
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(240, 300, 40, 50), lam(L.ground));
   ground.rotation.x = -Math.PI / 2; ground.position.set(0, 0, -120); world.add(ground);
   const lineMat = lam(0x9a7a2a);
-  for (let z = -12; z > -170; z -= 7) box(0.25, 0.02, 3, lineMat, 0, 0.01, z);
+  for (let z = -12; z > -170; z -= 7) fixe(box(0.25, 0.02, 3, lineMat, 0, 0.01, z));
   const walkMat = lam(L.walk);
   box(6, 0.2, 200, walkMat, -16, 0.1, -100); box(6, 0.2, 200, walkMat, 16, 0.1, -100);
   WALLS = L.walls; LIT = 0; WIN = L.win; // fenêtres allumées : js/68-toit-decor.js (elles s'allument et s'éteignent)
@@ -408,7 +408,7 @@ function buildWorld(L){
       }
       for (let z = -16; z > -150; z -= rand(8, 13)){
         const n = 1 + Math.floor(Math.random() * 3), cm = lam(pick(L.cont));
-        for (let k = 0; k < n; k++){ const c = box(2.5, 2.6, 6, cm, side * rand(16.5, 18), 1.3 + k * 2.6, z); c.rotation.y = rand(-.08, .08); }
+        for (let k = 0; k < n; k++){ const c = fixe(box(2.5, 2.6, 6, cm, side * rand(16.5, 18), 1.3 + k * 2.6, z)); c.rotation.y = rand(-.08, .08); }
       }
     });
   } else {
@@ -424,15 +424,15 @@ function buildWorld(L){
   if (L.end === 'church'){
     const m = new THREE.Mesh(new THREE.BoxGeometry(14, 10, 12), facadeMat(seed++, 14, 10)); m.position.set(0, 5, -182); world.add(m);
     roof(0, 10, -182, 14, 12, 4, 0x3a2a24);
-    box(3.5, 14, 3.5, lam(0x857560), 0, 7, -174);
+    fixe(box(3.5, 14, 3.5, lam(0x857560), 0, 7, -174));
     roof(0, 14, -174, 3.5, 3.5, 7, 0x3a2a24);
   } else if (L.end === 'reacteur'){
     seed = centraleFond(L, seed);
   } else if (L.end === 'cranes'){
     const cm = lam(0xa07a1e);
     [-14, 12].forEach((x, i) => {
-      const z = -150 - i * 18; box(1.2, 34, 1.2, cm, x - 3, 17, z); box(1.2, 34, 1.2, cm, x + 3, 17, z);
-      box(30, 1.6, 1.6, cm, x + (i ? -8 : 8), 34, z); box(.15, 14, .15, lam(0x222222), x + (i ? -18 : 18), 27, z);
+      const z = -150 - i * 18; fixe(box(1.2, 34, 1.2, cm, x - 3, 17, z)); fixe(box(1.2, 34, 1.2, cm, x + 3, 17, z));
+      fixe(box(30, 1.6, 1.6, cm, x + (i ? -8 : 8), 34, z)); fixe(box(.15, 14, .15, lam(0x222222), x + (i ? -18 : 18), 27, z));
     });
     const endB = new THREE.Mesh(new THREE.BoxGeometry(70, 16, 10), facadeMat(seed++, 70, 16)); endB.position.set(0, 8, -185); world.add(endB);
   } else {
@@ -450,22 +450,23 @@ function buildWorld(L){
   // Lampadaires
   if (L.lamps){
     const poleMat = lam(0x222224), headMat = new THREE.MeshBasicMaterial({ color: L.lampGlow ? 0xffd27a : 0x3a2a1a });
-    for (let z = -20; z > -160; z -= 26) [-1, 1].forEach(sd => { box(.2, 7, .2, poleMat, sd * 14, 3.5, z); box(1.6, .15, .3, poleMat, sd * 13.3, 7, z); box(.6, .15, .4, headMat, sd * 12.7, 6.9, z); });
+    for (let z = -20; z > -160; z -= 26) [-1, 1].forEach(sd => { fixe(box(.2, 7, .2, poleMat, sd * 14, 3.5, z)); fixe(box(1.6, .15, .3, poleMat, sd * 13.3, 7, z)); fixe(box(.6, .15, .4, headMat, sd * 12.7, 6.9, z)); world.userData.tetes.push([sd * 12.7, 6.9, z]); });
   }
   // Autos abandonnées
   const carMats = [lam(0x5a2a22), lam(0x2d3b4a), lam(0x5c5a50), lam(0x1f2224)];
   car(-10.5, -30, .2, carMats[1]); car(11, -64, -.4, carMats[2]); car(-9, -88, 2.9, carMats[0]);
   // Feux (certains sur des carcasses d'autos)
-  L.fires.forEach(f => { if (f[4]) car(f[0], f[2], rand(0, 3), null, true); else box(.7, 1, .7, lam(0x3b2a20), f[0], .5, f[2]); makeFire(f[0], f[1], f[2], f[3]); });
+  L.fires.forEach(f => { if (f[4]) car(f[0], f[2], rand(0, 3), null, true); else fixe(box(.7, 1, .7, lam(0x3b2a20), f[0], .5, f[2])); makeFire(f[0], f[1], f[2], f[3]); });
   // Barricade
   const barricade = new THREE.Group(); barricade.userData.barricade = true; world.add(barricade); // état visible : js/68-toit-decor.js
   const woodMat = lam(0x6b4a2c), wood2 = lam(0x55391f), concMat = lam(0x77736c);
   for (let x = -13; x <= 13; x += 3.2){
-    box(.25, 1.6, .25, wood2, x, .8, BAR_Z, barricade);
-    const p1 = box(3.6, .28, .1, woodMat, x + 1.6, .9, BAR_Z - .15, barricade); p1.rotation.z = rand(-.35, .35);
-    const p2 = box(3.6, .28, .1, woodMat, x + 1.6, .5, BAR_Z - .2, barricade); p2.rotation.z = rand(-.25, .25);
+    fixe(box(.25, 1.6, .25, wood2, x, .8, BAR_Z, barricade), true); // planches et poteaux : penchent et tombent (js/68)
+    const p1 = fixe(box(3.6, .28, .1, woodMat, x + 1.6, .9, BAR_Z - .15, barricade), true); p1.rotation.z = rand(-.35, .35);
+    const p2 = fixe(box(3.6, .28, .1, woodMat, x + 1.6, .5, BAR_Z - .2, barricade), true); p2.rotation.z = rand(-.25, .25);
   }
-  for (let x = -12; x <= 12; x += 6) box(2.4, .8, .7, concMat, x + rand(-1, 1), .4, BAR_Z + .5, barricade);
+  for (let x = -12; x <= 12; x += 6) fixe(box(2.4, .8, .7, concMat, x + rand(-1, 1), .4, BAR_Z + .5, barricade));
   car(-15, BAR_Z, 1.57, carMats[3]); car(15, BAR_Z, -1.5, carMats[0]);
+  if (FUSION.on) fusionMonde(); // décor fixe : un maillage par matériau (js/03-scene-fusion.js)
   Jeu.emit('monde', L); // la rue est bâtie (style graphique, js/57-graphismes.js)
 }

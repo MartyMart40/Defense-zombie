@@ -661,3 +661,23 @@ body.rtphoto #rtSiege{ display:none !important; }
 #rtValRow.hide{ display:none; }
 #rtValRow button{ min-width:44px; min-height:40px; padding:4px 10px; border-radius:8px; border:1px solid #ffd060; background:rgba(40,30,10,.7); color:#ffd060; font-size:16px; }
 #rtValRow button:disabled{ opacity:.35; }
+/* Mise en scène des boss du toit (dossier 128, js/82-boss-scene.js) : sous-titre de menace, apparition, paliers, récompense */
+#bsMenace{ font-size:13px; line-height:1.2; color:#ffd0a0; font-weight:700; letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin:1px 0 3px; }
+#bossBar.bsArrive #bossName{ animation:bsNom 2.6s ease-out both; }
+#bossBar.bsArrive #bsMenace{ animation:bsSous 2.6s ease-out both; }
+#bossBar.bsArrive #bossTrack{ animation:bsPiste 1.2s ease-out both; }
+#bossBar.bsArrive.bsCourt #bossName, #bossBar.bsArrive.bsCourt #bsMenace{ animation-duration:1.2s; }
+#bossBar.bsMoitie #bossFill{ background:linear-gradient(90deg,#6a0f0a,#e0281a 70%,#ff8a3a); }
+#bossBar.bsQuart #bossFill{ animation:bsBat .55s ease-in-out infinite alternate; }
+#bossBar.bsQuart #bsMenace{ color:#ff8a6a; }
+#banner.bsButin #bTitle{ animation:bsButinT .7s cubic-bezier(.2,1.6,.4,1) both; color:#ffe2a0; }
+#banner.bsButin #bSub{ animation:bsButinS 1.1s ease-out both; color:#ffd060; font-weight:800; text-shadow:0 0 12px rgba(255,190,60,.55),0 2px 4px #000; }
+@keyframes bsNom{ 0%{ opacity:0; letter-spacing:.4em; text-shadow:0 0 22px #ff3a1a,0 2px 3px #000; } 30%{ opacity:1; } 100%{ letter-spacing:.03em; text-shadow:0 2px 3px #000; } }
+@keyframes bsSous{ 0%,35%{ opacity:0; transform:translateY(-4px); } 60%{ opacity:1; transform:none; } 100%{ opacity:1; } }
+@keyframes bsPiste{ from{ transform:scaleX(0); } to{ transform:scaleX(1); } }
+@keyframes bsBat{ from{ filter:brightness(1); } to{ filter:brightness(1.7); } }
+@keyframes bsButinT{ from{ transform:scale(.55); opacity:0; } to{ transform:none; opacity:1; } }
+@keyframes bsButinS{ 0%,35%{ opacity:0; transform:translateY(8px); } 100%{ opacity:1; transform:none; } }
+@media (orientation: landscape) and (max-height:480px){ #bsMenace{ font-size:11px; margin:0 0 2px; } }
+@media (orientation: portrait){ #bsMenace{ font-size:12px; } }
+@media (prefers-reduced-motion:reduce){ #bossBar.bsArrive #bossName, #bossBar.bsArrive #bsMenace, #bossBar.bsArrive #bossTrack, #bossBar.bsQuart #bossFill, #banner.bsButin #bTitle, #banner.bsButin #bSub{ animation:none; } }

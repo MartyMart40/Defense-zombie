@@ -164,3 +164,53 @@ Seulement sonore, rien ne change dans le jeu. Fichier `js/76-centrale-sons.js`, 
 
 - Le fond reste 17 dB sous le fusil d'assaut (court) et 22 dB au cell ; le Geiger au plus fort, 8 dB sous le fusil (2 au cell) ; le grésillement de la flaque est à peu près au niveau d'un tir de fusil au cell : on l'entend. Pire cas réaliste (vague 12, Cœur et 3 transformateurs, fond, Geiger au plus fort, flaque qui ronge, battements rapides, tirs absorbés) mêlé au fusil d'assaut qui tire 8 coups par seconde : crête -3,9, court -18,3, cell -21,9 dBFS (fusil seul : -6, -22,2, -27,1), sans saturer (limiteur de `Snd`).
 - Personne n'a encore écouté ces sons : à juger à l'oreille (cell et ordi), réglages dans `CTS_REGL`.
+
+## Mise en scène des boss du toit (dossier 128, 2026-11-18)
+Seulement visuel et sonore : vie, dégâts, vitesse, moment d'apparition, récompense et boîtes de tir ne changent pas, aucune pause du jeu. Fichiers `js/82-boss-scene.js` (réglages `BS_REGL`, interrupteur `on`) et `js/82-boss-sons.js` (réglages `BSS_REGL`). Branchés seulement par `Jeu.on('image')` et `Jeu.on('tue')` : aucune fonction du jeu n'est réaffectée, rien n'a changé dans `js/19`, `js/35`, `js/09` ni `js/11`. Sur le toit seulement (aucun mode `Jeu` actif) : le Titan du robot et les zombies du RTS n'en ont rien. Le Cœur de la Centrale garde sa propre mise en scène (`js/71`, `js/76`) ; le Liquidateur (Centrale, vagues 5 et 10) a un profil simple (contre-jour vert, vapeur).
+
+Pour tous : un contre-jour (lueur sans brouillard derrière le boss, que son corps découpe en silhouette) pendant 4,6 s, une gerbe à l'apparition, un sous-titre de menace sous son nom dans la barre de vie (le nom arrive en se resserrant, la barre se déroule), un cri propre à chacun, un grondement grave (bus ambiance) qui monte à mesure qu'il approche de la barricade. Sous 50 % de vie, la lueur des yeux et de la plaie rougit et bat lentement, fumée des blessures ; sous 25 %, elle bat vite jusqu'au blanc, braises, la barre de vie clignote, un beuglement marque chaque palier. Chaque coup reçu fait des étincelles et des éclats sur sa plaque. À la mort : il titube, plie les genoux (ou non), tombe toujours vers l'arrière (loin de la caméra, le corps ne cache jamais la rue devant la barricade), anneau de poussière au ras du sol, l'image tremble une fois (ressort de `js/62`, coupé avec « Secousses »), boum grave et gravats, les yeux s'éteignent ; le bandeau « Boss abattu ! » et la récompense entrent avec un rebond doré. Le cadavre reste 3 s puis s'enfonce en 2,2 s (si `js/07` range le corps avant, ce fichier remet le même groupe dans la scène le temps de finir). Le ralenti reste celui qui existait (`pkSlow('boss')`, `js/31`) : rien de neuf sur le temps de jeu.
+
+| Boss | Arrivée | Présence | Mort |
+|---|---|---|---|
+| Le Fossoyeur (Saint-Clou) | Mottes de terre qui jaillissent, corbeaux qui s'envolent des toits, contre-jour de lanterne ; râle et pelle qui racle | Mottes à chaque pas, lampadaires qui clignotent à son passage | Tourne sur lui-même en tombant à genoux, s'effondre ; cloche au loin |
+| Le Colosse des Cendres (Val-des-Cendres) | Nuage de cendres et braises, contre-jour de feu ; rugissement qui crépite | Fumée qui monte de ses épaules, braises toujours | Tombe raide sur le dos, gerbe de braises ; braises qui sifflent |
+| L'Ogre de minuit (Banlieue Nord) | Contre-jour de lune, corbeaux ; hurlement qui monte | Il éteint les lampadaires sur son passage (lueurs de `js/36` et lampes de nuit de `js/22`), ils restent éteints | Part de côté en titubant, tombe en biais ; les lampadaires se rallument un à un |
+| Le Titan de béton (Centre-ville) | Poussière de béton et éclats, pigeons, contre-jour gris ; béton qui grince | Chaque pas fait trembler l'image (dosé par la distance), grosse poussière, coup sourd | À genoux, puis s'écroule en arrière ; béton qui s'effrite |
+| Le Docker (Port industriel, vague 5) | Vapeur, mouettes, contre-jour de phare ; corne de brume | Vapeur qui monte de lui | Tombe sur le derrière puis sur le dos ; la corne s'éteint |
+| Le Léviathan du port (vague 10) | Vapeur, mouettes, contre-jour rouge ; deux cornes de brume et un rugissement | Pas qui font trembler l'image, lampadaires éteints | Le plus long : titube, genoux, chute lente avec un gros rebond ; corne qui s'éteint |
+
+- Version abrégée dès le 2e boss d'une partie (mode infini surtout, défi « Boss pressé ») : contre-jour plus court et plus faible, pas d'oiseaux ni de légende, barre en 1,2 s, cri raccourci, chute un peu plus courte.
+- Légendes pour jouer sans le son (`rpCaption`, `js/29`) à la première arrivée.
+- Abandonné : la boiterie (la pose d'un boss vivant déplace sa tête, qui est une cible : on n'y touche pas) ; les zombies ordinaires qui s'écartent ou marquent un temps (ils sont dessinés par instances : il faudrait envelopper `zInstSync`, risqué pour l'identité du jeu et le coût) ; la silhouette qui sort de terre (même raison que la boiterie).
+- Hasard : jamais `Math.random`. Réserves faites au chargement dans `bsCalme` (Three.js tire ses uuid dans le hasard propre), sons avec leur propre hasard. Mesures : `node outils/mesure-boss-scene.js` (identité en pages neuves, appels de dessin, sons) ; `tests/t-boss-scene.js` (sonde : aucun tirage et aucun changement d'état pendant les deux fichiers, 6 boss, 900 images ; dessins ; paliers ; mort ; sons).
+- Les sons courts prennent la priorité la plus basse du budget de voix de `Snd` : ils ne font jamais refuser un autre son (un cri peut être coupé par un tir quand les 10 voix sont prises).
+- Mesures (2026-11-18) : empreinte du duel `SIM_DUELS=1,3 node outils/simulateur.js duel` identique avant et après (993/30,45/22,4029/13 ; 40680/36,14950/25,15571/42,10278/16). Identité du jeu en pages neuves (heure et hasard fixés), 900 images par boss, fichier coupé puis allumé : mêmes tirages et même empreinte des positions, vies, barricade et argent pour les 6 boss. Appels de dessin pendant l'arrivée : +3 (145 à 148 à Saint-Clou, 159 à 162 au Centre-ville).
+- Niveaux des sons (`node outils/mesure-boss-scene.js adresse sons`, même méthode que les sons de la Centrale, dBFS) :
+
+| Son | Groupe | Crête | Court | Moyen | Cell |
+|---|---|---|---|---|---|
+| Le Fossoyeur : cri d’arrivée | Cri | -14,8 | -22,5 | -29,6 | -30,2 |
+| Le Fossoyeur : chute | Mort | -10,6 | -17,5 | -27,8 | -35,8 |
+| Le Colosse des Cendres : cri d’arrivée | Cri | -14,6 | -22,7 | -29,3 | -28,4 |
+| Le Colosse des Cendres : chute | Mort | -12,3 | -17,5 | -24,5 | -35,1 |
+| L’Ogre de minuit : cri d’arrivée | Cri | -14,4 | -21,7 | -29 | -23,8 |
+| L’Ogre de minuit : chute | Mort | -11,8 | -17,8 | -24,7 | -36,5 |
+| Le Titan de béton : cri d’arrivée | Cri | -16,2 | -24,4 | -29,7 | -34,6 |
+| Le Titan de béton : chute | Mort | -12,1 | -17,5 | -25,1 | -34,8 |
+| Le Docker : cri d’arrivée | Cri | -17,1 | -24,2 | -31,1 | -31,4 |
+| Le Docker : chute | Mort | -12,3 | -17,5 | -25,3 | -36 |
+| Le Léviathan du port : cri d’arrivée | Cri | -17,4 | -25,3 | -31,4 | -32,5 |
+| Le Léviathan du port : chute | Mort | -11,9 | -17,7 | -25,1 | -37,2 |
+| Cri abrégé (2e boss de la partie) | Cri | -14,7 | -22,7 | -29,4 | -28,4 |
+| Pas du Titan (tout près) | Pas | -18,7 | -24,7 | -30,8 | -52 |
+| Palier de vie (sous 25 %) | Moment | -16,9 | -25,4 | -32,1 | -29,7 |
+| Râle de la mort | Mort | -15,4 | -24 | -30,6 | -30,5 |
+| Râle de la mort de l’Ogre | Mort | -15,5 | -23,1 | -29,1 | -26,1 |
+| Nappe, boss loin | Nappe | -39,8 | -47,1 | -51,5 | -64,1 |
+| Nappe, boss à la barricade | Nappe | -24,4 | -31,4 | -36 | -48,1 |
+| Toit : fusil d’assaut | Toit | -9,1 | -25,1 | -31,1 | -30,8 |
+| Toit : fusil à pompe | Toit | -2,3 | -12,8 | -20,7 | -22,9 |
+| Pire cas : Titan à la barricade, pas, chute, fusil d’assaut | Mélange | -5,7 | -17,5 | -26 | -27,1 |
+
+- Les cris sont au niveau d'un tir de fusil d'assaut (court -22 à -25), la chute un peu au-dessus (-17,5, sous le fusil à pompe à -12,8), les pas du Titan 6 dB sous le fusil et presque rien au cell, la nappe 6 dB sous le fusil quand le boss est à la barricade et presque muette quand il arrive. Personne ne les a encore écoutés : à juger à l'oreille, réglages dans `BSS_REGL`.
+- En Haute définition, la poussière (matériau sans éclairage) ressort un peu plus claire et chaude, comme les autres lueurs de ce style.

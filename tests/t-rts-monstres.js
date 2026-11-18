@@ -42,7 +42,7 @@
     egal(r.choix0, 'walker', 'Avant le seuil, le type tiré passe tel quel'); egal(r.tirages2, 0, 'Toujours aucun tirage');
     ok(r.ouvert2, 'Seuil atteint : le sapeur est ouvert');
     ok(r.attente >= 2, 'Premier paquet en attente : ' + r.attente);
-    egal(r.nouveaux, 6, 'Le total du flot ne change pas'); ok(r.sapeurs >= 2, 'Des sapeurs à la place de zombies : ' + r.sapeurs);
+    egal(r.spawn, 6, 'Le total du flot ne change pas'); ok(r.nouveaux >= 6, 'Zombies nés (une meute peut faire naître des petits en plus) : ' + r.nouveaux); ok(r.sapeurs >= 2, 'Des sapeurs à la place de zombies : ' + r.sapeurs);
     egal(r.attente2, 0, 'Plus rien en attente');
     ok(r.seuils[0].temps >= 600 && r.seuils[0].menace >= 8, 'Sapeur pas avant 10 min et menace 8 : ' + JSON.stringify(r.seuils[0]));
     ok(r.seuils[1].temps > r.seuils[0].temps && r.seuils[2].temps > r.seuils[1].temps, 'Les suivants plus tard');

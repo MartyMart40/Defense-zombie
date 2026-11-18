@@ -150,7 +150,7 @@ ZKINDS.titan = {
     if (z.stompT <= 0 && z.g.position.z > z.stopZ - 30){
       z.stompT = rand(4.5, 6.5); MB.stomps++;
       shake = Math.max(shake, 1); mbV.set(z.g.position.x, .3, z.g.position.z); burst(mbV, 'dust', 26, 7);
-      if (typeof Snd === 'object' && Snd.boom) Snd.boom(1.4);
+      if (typeof rsnFrappe !== 'function' && typeof Snd === 'object' && Snd.boom) Snd.boom(1.4); // js/70-robot-sons.js a son propre son de frappe
       if (S && z.g.position.z > z.stopZ - 22) S.bar = Math.max(0, S.bar - z.dmg * .35);           // l'onde de choc touche le robot
       if (typeof vib === 'function') vib([90, 40, 140], 30);
     }
@@ -264,7 +264,7 @@ const MB_RULES = [
 const MB_DIRS = ['⬅ À gauche', '⬆ Tout droit', '➡ À droite'];
 function mbRoutes(){
   const rules = MB_RULES.slice().sort(() => Math.random() - .5).slice(0, 3);
-  const locs = LOCS.slice().sort(() => Math.random() - .5);
+  const locs = LOCS.slice(0, MECH_VILLES).sort(() => Math.random() - .5); // les villes du robot seulement (pas la Centrale)
   return rules.map((r, i) => Object.assign({ dir:MB_DIRS[i], loc:locs[i % locs.length] }, r));
 }
 function mbCrossroads(){

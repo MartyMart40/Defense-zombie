@@ -204,6 +204,139 @@
     ok(r.apres, 'Tout est arrêté en quittant');
   });
 
+  /* ---------- Dossier 121 : sons des trois monstres à parade (js/73-robot-monstres2.js), sons en double ---------- */
+  const exigerM = () => { exiger(); if (lire('typeof __mr2 === "object" && typeof __rsn.rsnMonstre === "function"') !== true) ignorer('Monstres du robot ou leurs sons absents'); };
+  // Dans le jeu : départ à une rue, sans zombies ni vagues, blindage énorme, monstres déjà annoncés (pas de bandeau)
+  const PREPM = 'window.__rsnM = { prep:function(rue){ P.mr2Vus = { belier:true, grappin:true, mortier:true }; __mech.mechStart(); __mb.MB.waveT = 1e9; __mech.MECH.street = rue; __mech.mechStreet(false); clearZombies(); __mb.MB.waveT = 1e9; plan.queue = []; S.bar = S.barMax = 1e7; },'
+    + ' pas:function(n){ for (var i = 0; i < n; i++){ spawnT = 1e9; plan.queue = [\'walker\']; __mb.MB.waveT = 1e9; visuals(1 / 30); } },'
+    + ' accroche:function(g){ for (var i = 0; i < 150 && g.mr !== \'accroche\'; i++) this.pas(1); return g.mr === \'accroche\'; },'
+    + ' secouer:function(g){ var dir = 1, t = 0; for (var i = 0; i < 120 && g.mr === \'accroche\'; i++){ t += 1 / 30; if (t > .16){ t = 0; dir = -dir; } yaw += dir * 5 / 30; this.pas(1); } return g.mr !== \'accroche\'; } };';
+
+  test('Robot, sons : chaque moment du Bélier, du Grappin et du Mortier vivant a son propre son, une fois, sans son d’emprunt', () => {
+    exigerM(); reset();
+    J(PREPM);
+    const r = sonActif(function(){
+      var R = __rsn.RSN, M2 = __mr2, T = __rsnM, o = {}, i, emprunt = [], sv = { tone:Snd.tone, boom:Snd.boom, roar:window.mbRoar };
+      Snd.tone = function(){ emprunt.push('tone'); return sv.tone.apply(Snd, arguments); };
+      Snd.boom = function(){ emprunt.push('boom'); return sv.boom.apply(Snd, arguments); };
+      if (typeof sv.roar === 'function') window.mbRoar = function(){ emprunt.push('roar'); return sv.roar.apply(this, arguments); };
+      try {
+        T.prep(4);
+        var m0 = JSON.stringify(R.mons), e0 = JSON.stringify(M2.MR2.evts), v0 = Snd.voixN;
+        // Bélier : élan, charge, pas de côté, il s'écrase (sonné)
+        var z = spawnZombie('belier'); z.g.position.set(0, 0, MECH_CAM.z - 40); z.mrX = 0; z.mrCd = 0; z.mrDist = 40;
+        var dodge = false;
+        for (i = 0; i < 600 && z.mr !== 'sonne'; i++){ if (z.mr === 'charge' && !dodge){ __mech.MECH.mv.r = 1; dodge = true; } if (dodge && __mech.MECH.x > 4) __mech.MECH.mv.r = 0; T.pas(1); }
+        __mech.MECH.mv.r = 0; o.sonne = z.mr === 'sonne';
+        clearZombies(); T.pas(1);
+        // Grappin : saut, accroché, secoué, décroché
+        var g = spawnZombie('grappin'); g.g.position.set(1, 0, MECH_CAM.z - 14);
+        o.accroche = T.accroche(g); T.pas(10); o.decroche = T.secouer(g);
+        clearZombies(); T.pas(1);
+        // Mortier vivant : tir, impact (le robot reste planté)
+        var m = spawnZombie('mortier'); m.g.position.set(-2, 0, MECH_CAM.z - 60);
+        for (i = 0; i < 900 && !(M2.MR2.evts.impact > (JSON.parse(e0).impact || 0)); i++) T.pas(1);
+        o.voix = Snd.voixN - v0;
+        var m1 = JSON.parse(m0), e1 = JSON.parse(e0);
+        o.sons = {}; o.evts = {};
+        Object.keys(R.mons).forEach(function(k){ o.sons[k] = R.mons[k] - (m1[k] || 0); });
+        Object.keys(M2.MR2.evts).forEach(function(k){ o.evts[k] = M2.MR2.evts[k] - (e1[k] || 0); });
+        o.siffle = R.sifflets;
+        __mech.mechQuit(); __rsn.rsnImage(1 / 30);
+      } finally { Snd.tone = sv.tone; Snd.boom = sv.boom; if (typeof sv.roar === 'function') window.mbRoar = sv.roar; }
+      o.emprunt = emprunt;
+      return o;
+    });
+    fin();
+    ok(r.sonne && r.accroche && r.decroche, 'Les trois monstres font tous leurs moments (Bélier sonné, Grappin accroché puis décroché)');
+    ['elan', 'charge', 'sonne', 'saut', 'accroche', 'decroche', 'tir', 'impact'].forEach(k => {
+      ok((r.evts[k] || 0) >= 1, 'Moment « ' + k + ' » annoncé');
+      egal(r.sons[k] || 0, r.evts[k] || 0, 'Moment « ' + k + ' » : un son par moment (' + (r.sons[k] || 0) + ' pour ' + (r.evts[k] || 0) + ')');
+    });
+    ok(r.siffle >= 1, 'Sifflement de l’obus pendant le vol');
+    ok(r.voix >= 8, 'Chaque son joue dans une voix du budget : ' + r.voix);
+    egal(r.emprunt.join(','), '', 'Aucun son d’emprunt (tone, boom, rugissement) par-dessus');
+  });
+
+  test('Robot, sons : placés à gauche ou à droite selon le monstre, plus doux de loin ; grattement du Grappin fait une fois, coupé net', () => {
+    exigerM(); reset();
+    J(PREPM);
+    const r = sonActif(function(){
+      var R = __rsn.RSN, T = __rsnM, o = {}, i, M = __mech.MECH;
+      T.prep(5);
+      var y0 = yaw; yaw = 0;
+      o.droite = __rsn.rsnPlace(M.x + 6, MECH_CAM.z - 10); o.gauche = __rsn.rsnPlace(M.x - 6, MECH_CAM.z - 10);
+      o.loin = __rsn.rsnPlace(M.x, MECH_CAM.z - 70); o.pres = __rsn.rsnPlace(M.x, MECH_CAM.z - 8);
+      yaw = Math.PI / 2; o.tourne = __rsn.rsnPlace(M.x, MECH_CAM.z - 10);   // regard vers la gauche : la rue devant est à droite
+      yaw = y0;
+      // Grattement : une seule boucle tant qu'il est accroché
+      var c0 = R.grattes, s0 = R.grattesStop;
+      var g = spawnZombie('grappin'); g.g.position.set(0, 0, MECH_CAM.z - 14);
+      o.acc1 = T.accroche(g); T.pas(45);
+      o.boucle = !!R.gratte; o.une = R.grattes - c0;
+      o.decroche = T.secouer(g); T.pas(1); o.coupeDecroche = !R.gratte && R.grattesStop - s0 === 1;
+      // Pause et reprise
+      clearZombies(); T.pas(1);
+      var g2 = spawnZombie('grappin'); g2.g.position.set(0, 0, MECH_CAM.z - 14);
+      o.acc2 = T.accroche(g2); T.pas(2); var avant = !!R.gratte;
+      __mech.mechPause(); visuals(1 / 30); o.pause = avant && !R.gratte;
+      __mech.mechResume(); T.pas(2); o.reprise = !!R.gratte;
+      // Il lâche tout seul au bout de 10 s : coupé aussi (sans couinement)
+      var d0 = R.mons.decroche || 0; g2.mrT = 100; T.pas(2); o.lacheSeul = !R.gratte && (R.mons.decroche || 0) === d0;
+      // En quittant le robot
+      clearZombies(); T.pas(1);
+      var g3 = spawnZombie('grappin'); g3.g.position.set(0, 0, MECH_CAM.z - 14);
+      o.acc3 = T.accroche(g3); T.pas(2); var av3 = !!R.gratte;
+      __mech.mechQuit(); __rsn.rsnImage(1 / 30); o.quitte = av3 && !R.gratte;
+      o.crees = R.grattes - c0;
+      return o;
+    });
+    fin();
+    ok(r.droite.pan > .2 && r.gauche.pan < -.2, 'Monstre à droite : à droite (' + r.droite.pan.toFixed(2) + ') ; à gauche : à gauche (' + r.gauche.pan.toFixed(2) + ')');
+    ok(r.loin.k < r.pres.k && r.loin.k >= .3, 'Plus doux de loin : ' + r.pres.k.toFixed(2) + ' à 8 m, ' + r.loin.k.toFixed(2) + ' à 70 m');
+    ok(r.tourne.pan > .5, 'Torse tourné vers la gauche : la rue devant s’entend à droite (' + r.tourne.pan.toFixed(2) + ')');
+    ok(r.acc1 && r.boucle, 'Grappin accroché : il gratte la vitre'); egal(r.une, 1, 'Boucle faite une seule fois (45 images)');
+    ok(r.decroche && r.coupeDecroche, 'Décroché : grattement coupé net');
+    ok(r.acc2 && r.pause, 'Coupé en pause'); ok(r.reprise, 'Repart à la reprise s’il est encore là');
+    ok(r.lacheSeul, 'Il lâche tout seul : coupé, sans couinement');
+    ok(r.acc3 && r.quitte, 'Coupé en quittant le robot');
+    egal(r.crees, 4, 'Une boucle par accroche (et une à la reprise)');
+  });
+
+  test('Robot, sons : un seul son à la frappe du Titan ; crachat sur la vitre sans le souffle du toit (le toit garde le sien)', () => {
+    exigerM(); reset();
+    J(PREPM);
+    const r = sonActif(function(){
+      var R = __rsn.RSN, T = __rsnM, o = {}, i, booms = 0, bursts = 0, sv = { boom:Snd.boom, burst:Snd.burst }, M = __mech.MECH;
+      Snd.boom = function(){ if (!Snd._vg) booms++; return sv.boom.apply(Snd, arguments); };
+      Snd.burst = function(){ if (!Snd._vg) bursts++; return sv.burst.apply(Snd, arguments); }; // un appel du jeu (pas la reprise dans sa voix, js/01)
+      try {
+        T.prep(9);
+        var z = spawnZombie('titan'); z.g.position.set(0, 0, MECH_CAM.z - 20); T.pas(1);
+        var b0 = booms, f0 = R.frappes, s0 = __mb.MB.stomps;
+        z.stompT = 0; T.pas(1);
+        o.stomps = __mb.MB.stomps - s0; o.frappes = R.frappes - f0; o.booms = booms - b0;
+        clearZombies(); T.pas(1);
+        // Crachat qui touche la vitre dans le robot
+        var c0 = R.crachats; bursts = 0;
+        spitLaunch(M.x + 1, 3, MECH_CAM.z - 12, M.x, 3, MECH_CAM.z, 5);
+        for (i = 0; i < 60 && __types.spitsActifs; i++) T.pas(1);
+        o.crachats = R.crachats - c0; o.burstsRobot = bursts;
+        __mech.mechQuit(); __rsn.rsnImage(1 / 30);
+        // Sur le toit : le souffle du crachat joue comme avant
+        var bar = S.bar; bursts = 0;
+        spitLaunch(0, 3, BAR_Z - 12, 0, 1, BAR_Z - .1, 1);
+        for (i = 0; i < 60 && __types.spitsActifs; i++) __types.zkFrame(1 / 30);
+        o.burstsToit = bursts; S.bar = bar;
+      } finally { Snd.boom = sv.boom; Snd.burst = sv.burst; }
+      return o;
+    });
+    fin();
+    egal(r.stomps, 1, 'Le Titan frappe le sol'); egal(r.frappes, 1, 'Le son de frappe du robot joue'); egal(r.booms, 0, 'Plus d’explosion par-dessus');
+    egal(r.crachats, 1, 'Robot : « crachat sur la vitre »'); egal(r.burstsRobot, 0, 'Robot : plus le petit souffle du toit en dessous');
+    egal(r.burstsToit, 1, 'Toit : le souffle du crachat joue toujours');
+  });
+
   test('Robot, sons : mixage hors ligne (minigun, pas, alarmes, coque, salve, Titan) sans saturer', async () => {
     exiger();
     if (lire('typeof OfflineAudioContext === "function"') !== true) ignorer('Pas d’OfflineAudioContext');
@@ -215,8 +348,8 @@
       K.forEach(function(k){ etat[k] = Snd[k]; Snd[k] = save[k]; });
       off.suspend(.5).then(function(){
         var s2 = {}; K.forEach(function(k){ s2[k] = Snd[k]; Snd[k] = etat[k]; });
-        var on0 = __mech.MECH.on, st0 = state, f0 = R.fond, v0 = R.voix, m0 = HB.m, sal = P.mech.lv.salvo;
-        __mech.MECH.on = true; state = 'mech'; R.fond = null; R.voix = []; HB.m = 1; P.mech.lv.salvo = 2;
+        var on0 = __mech.MECH.on, st0 = state, f0 = R.fond, v0 = R.voix, m0 = HB.m, sal = P.mech.lv.salvo, gr0 = R.gratte;
+        __mech.MECH.on = true; state = 'mech'; R.fond = null; R.voix = []; HB.m = 1; P.mech.lv.salvo = 2; R.gratte = null;
         try {
           __rsn.rsnFondCreer(); __rsn.rsnFondRegler(0); Snd.mgTick(1, true);
           for (var i = 0; i < 4; i++) __rsn.rsnPas();
@@ -225,9 +358,11 @@
           Snd.shot('rocket'); Snd.shot('railgun');
           __rsn.rsnFrappe(true); Snd.boom(1.4); Snd.boom(1); __rsn.rsnTitan(); __rsn.rsnRenforts();
           for (var z = 0; z < 40; z++) Snd.zvoix('walker');
+          // Dossier 121 : monstres à parade en même temps (fracas du Bélier, impact d'obus, élan, Grappin qui gratte)
+          if (__rsn.rsnMonstre){ var fz = function(t, dz){ return { type:t, g:{ position:{ x:0, z:MECH_CAM.z - dz } } }; }; __rsn.rsnMonstre('sonne', fz('belier', 12)); __rsn.rsnMonstre('impact', fz('mortier', 60)); __rsn.rsnMonstre('elan', fz('belier', 15)); __rsn.rsnGratteCreer(); }
           vmax = Snd.voix.length;
         } finally {
-          __mech.MECH.on = on0; state = st0; R.fond = f0; R.voix = v0; HB.m = m0; P.mech.lv.salvo = sal;
+          __mech.MECH.on = on0; state = st0; R.fond = f0; R.voix = v0; HB.m = m0; P.mech.lv.salvo = sal; R.gratte = gr0;
           K.forEach(function(k){ Snd[k] = s2[k]; });
         }
         off.resume();

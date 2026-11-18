@@ -317,7 +317,8 @@ function zkFrame(dt){
       burst(o.b, 'acid', 9, 2.4); burst(o.b, 'wood', 2, 2);
       if (rate){ Snd.burst(900, .15, .1); continue; }
       if (S){ S.bar = Math.max(0, S.bar - o.dmg); }
-      shake = Math.max(shake, .12); Snd.burst(900, .2, .25);
+      shake = Math.max(shake, .12);
+      if (!(typeof MECH === 'object' && MECH.on && typeof rsnCrachat === 'function')) Snd.burst(900, .2, .25); // robot : « crachat sur la vitre » de js/70
       spitSplash();
     }
   }

@@ -20,7 +20,9 @@
 // Première rencontre : bandeau qui dit la parade, une fois par profil (P.mr2Vus). Moments annoncés par
 // Jeu.emit('monstre', quoi, z) : 'elan', 'charge', 'sonne', 'saut', 'accroche', 'decroche', 'tir', 'impact'.
 // Repères sans son : bande et cercle au sol, alerte au centre de l'écran avec une barre de temps, bords rouges pour l'obus.
-// Sons : tirés de Snd (tone, boom, _nz) et du rugissement des bibites (mbRoar) ; aucun fichier de son modifié.
+// Sons : chaque moment a son propre son dans js/70-robot-sons.js (dossier 121, il écoute Jeu.on('monstre')) ; les sons
+// d'emprunt de Snd (tone, boom, _nz, mbRoar) ne jouent que si ce fichier est absent (mr2Emprunt). Seul le coup du Bélier
+// sur le robot garde son boom (la coque sonne aussi, par hitBarricade).
 // Crochets : mechPlan et damage par réaffectation (calcul, comme js/40-robot-monstres.js et js/63-monstres-toit.js) ;
 // tout le reste par Jeu.on('image') et Jeu.on('tue').
 
@@ -39,7 +41,10 @@ const MR2_BEL = { elan:1.5, elanT:1.8, vit:18, vitT:15, rayon:2.6, rayonT:2.3, c
 // Grappin : portée du saut (m), durée du saut (s), dents (× ses dégâts toutes les tick s), lâche seul au bout de duree s,
 // secousses pour le décrocher, amplitude d'une secousse (radians) faite en moins de swingT s, part de sa vie perdue en tombant,
 // au sol sonné (s), lance-flammes sur la vitre pour le brûler (s), temps avant de ressauter (s)
-const MR2_GRA = { portee:13, saut:.75, ronge:.75, tick:.5, duree:10, secousses:3, secoussesT:2, amp:.4, swingT:.5, chute:.5, sonne:2, sonneT:2.5, flammes:.8, recharge:4 };
+// ampT (cell, dossier 121) : amplitude d'une secousse au doigt, 0,3 rad à la sensibilité 1 et moins en dessous (× sens) : un glissé
+// d'au moins 60 px quelle que soit la sensibilité. Avant : 0,4 rad, donc à la sensibilité 0,3 un va-et-vient d'un quart de
+// l'écran (0,15 rad au cell vertical, 0,34 couché) ne décrochait jamais le Grappin. La souris garde amp (0,4 rad).
+const MR2_GRA = { portee:13, saut:.75, ronge:.75, tick:.5, duree:10, secousses:3, secoussesT:2, amp:.4, ampT:.3, swingT:.5, chute:.5, sonne:2, sonneT:2.5, flammes:.8, recharge:4 };
 // Mortier : distance où il s'enracine (m), temps entre deux tirs (s), vol de l'obus (s), rayon (m), coup (× ses dégâts),
 // obus en vol à la fois (tous mortiers), pas de tir plus près que (m)
 const MR2_MOR = { plante:[55, 72], tir:4.5, vol:2, volT:2.3, rayon:3.2, rayonT:2.9, coup:2, max:2, pres:8 };
@@ -78,6 +83,8 @@ function mr2Annonce(type){
 }
 const mr2Evt = (quoi, z) => { MR2.evts[quoi] = (MR2.evts[quoi] || 0) + 1; if (typeof Jeu === 'object' && Jeu.emit) Jeu.emit('monstre', quoi, z); };
 function mr2Son(f){ if (typeof Snd !== 'object' || !Snd.ctx) return; try { f(Snd); } catch (e) { errNote(e); } }
+// Sons d'emprunt : seulement si js/70-robot-sons.js est absent (il donne à chaque moment son propre son, dossier 121)
+function mr2Emprunt(f){ if (typeof rsnMonstre !== 'function') mr2Son(f); }
 
 /* ---------- Bélier : masse basse et large, plaque frontale, deux cornes, bosse dorsale qui luit quand il est sonné ---------- */
 ZKINDS.belier = {
@@ -119,7 +126,7 @@ function mr2Belier(z, dt){
     z.g.rotation.y = 0; z.body.rotation.x = 0;
     if (dist > z.mrDist){ gp.z += z.speed * dt; mr2Pattes(z, z.speed * 3, dt); z.mrX = clamp(z.mrX + clamp(MECH.x - z.mrX, -1, 1) * dt, -9, 9); }
     else if (dist < 14){ z.mr = 'repli'; z.mrT = 0; }
-    else if (z.mrCd <= 0 && !mr2BelierActif()){ z.mr = 'elan'; z.mrT = 0; mr2Evt('elan', z); mr2Son(() => { if (typeof mbRoar === 'function') mbRoar(false); }); }
+    else if (z.mrCd <= 0 && !mr2BelierActif()){ z.mr = 'elan'; z.mrT = 0; mr2Evt('elan', z); mr2Emprunt(() => { if (typeof mbRoar === 'function') mbRoar(false); }); }
     else mr2Pattes(z, 2, dt);
   } else if (z.mr === 'elan'){
     // Il gratte le sol ; la bande rouge suit le robot (moins vite qu'un pas de côté)
@@ -127,7 +134,7 @@ function mr2Belier(z, dt){
     z.body.rotation.x = .18; z.phase += dt * 12;
     z.rig.legs[0].rotation.x = -.5 + Math.sin(z.phase) * .5; z.rig.legs[1].rotation.x = 0;
     z.mrDust = (z.mrDust || 0) - dt; if (z.mrDust <= 0){ z.mrDust = .22; mr2V.set(gp.x - .5, .2, gp.z + 1); burst(mr2V, 'dust', 4, 2.4); }
-    if (z.mrT >= mr2Rgl(B, 'elan')){ z.mr = 'charge'; z.mrT = 0; z.mrEsq = null; mr2Evt('charge', z); mr2Son(S2 => { S2.tone(70, .6, 'sawtooth', .07, 40); if (S2._nz) S2._nz(S2.ctx.currentTime, 'lowpass', 300, 1, .7, .12); }); }
+    if (z.mrT >= mr2Rgl(B, 'elan')){ z.mr = 'charge'; z.mrT = 0; z.mrEsq = null; mr2Evt('charge', z); mr2Emprunt(S2 => { S2.tone(70, .6, 'sawtooth', .07, 40); if (S2._nz) S2._nz(S2.ctx.currentTime, 'lowpass', 300, 1, .7, .12); }); }
   } else if (z.mr === 'charge'){
     gp.z += mr2Rgl(B, 'vit') * dt; z.body.rotation.x = .12; mr2Pattes(z, 26, dt);
     // Décision à 10 m du robot : hors de la bande, il le rate (il dévie vers la façade de son côté) ; dedans, il frappe
@@ -148,7 +155,7 @@ function mr2Belier(z, dt){
       z.mrX = z.mrSide * 11.2; z.g.rotation.y = z.mrSide * Math.PI / 2;
       z.mr = 'sonne'; z.mrT = 0; z.rig.bosse.visible = true; mr2Evt('sonne', z);
       shake = Math.max(shake, .5); mr2V.set(z.mrX + z.mrSide * .8, 1.2, gp.z); burst(mr2V, 'dust', 22, 5); burst(mr2V, 'wood', 6, 4);
-      mr2Son(S2 => { S2.boom(1.1); S2.tone(880, .5, 'triangle', .04, 660, .15); });
+      mr2Emprunt(S2 => { S2.boom(1.1); S2.tone(880, .5, 'triangle', .04, 660, .15); });
     }
   } else if (z.mr === 'sonne'){
     z.phase += dt * 5; z.body.rotation.z = Math.sin(z.phase) * .1; z.body.rotation.x = -.08;
@@ -202,7 +209,7 @@ function mr2Grappin(z, dt){
     if (gp.z < MZ - 3.5){ gp.z += z.speed * dt; gp.x = clamp(gp.x + Math.sin(z.phase * .15 + z.mrZig) * 3 * dt, -11, 11); }
     if (d < G.portee && gp.z < MZ - 2 && z.mrCd <= 0 && !mr2Accroche()){
       z.mr = 'saut'; z.mrT = 0; z.mrA = { x:gp.x, z:gp.z }; mr2Evt('saut', z);
-      mr2Son(S2 => S2.tone(900, .35, 'sawtooth', .05, 1800));
+      mr2Emprunt(S2 => S2.tone(900, .35, 'sawtooth', .05, 1800));
     } else if (d < 4.5){ // au pied du robot (un autre est déjà sur la vitre) : il griffe les jambes
       z.mrHit = (z.mrHit || 0) - dt; if (z.mrHit <= 0){ z.mrHit = rand(.9, 1.2); hitBarricade(z, z.dmg, .08, 1); }
     }
@@ -215,7 +222,7 @@ function mr2Grappin(z, dt){
   } else if (z.mr === 'accroche'){
     gp.set(MECH.x, 4.6, MZ - 1.6);
     z.mrTick = (z.mrTick || 0) - dt;
-    if (z.mrTick <= 0){ z.mrTick = G.tick; hitBarricade(z, z.dmg * G.ronge, .05, 1); mr2Son(S2 => { if (S2._nz) S2._nz(S2.ctx.currentTime, 'bandpass', 2600, 6, .12, .05); }); }
+    if (z.mrTick <= 0){ z.mrTick = G.tick; hitBarricade(z, z.dmg * G.ronge, .05, 1); mr2Emprunt(S2 => { if (S2._nz) S2._nz(S2.ctx.currentTime, 'bandpass', 2600, 6, .12, .05); }); }
     if (z.mrT >= G.duree) mr2Decrocher(z, false);
   } else if (z.mr === 'chute'){
     const k = clamp(z.mrT / .7, 0, 1);
@@ -237,7 +244,7 @@ function mr2Accrocher(z){
   Object.assign(MR2.secousse, { n:0, dir:0, amp:0, t:0, compte:false, repos:0, lastYaw:yaw });
   MR2.flammes = 0; MR2.vitreX = rand(.16, .36) * (z.uid % 2 ? 1 : -1); MR2.vitreY = rand(-.06, .06);
   mr2Evt('accroche', z); shake = Math.max(shake, .3);
-  mr2Son(S2 => { S2.tone(1400, .12, 'square', .05, 700); if (S2.thud) S2.thud(1.2); });
+  mr2Emprunt(S2 => { S2.tone(1400, .12, 'square', .05, 700); if (S2.thud) S2.thud(1.2); });
   if (typeof vib === 'function') vib([60, 30, 60], 20);
 }
 // Décroché (secousses, flammes : il perd une part de sa vie en tombant) ou lâché tout seul au bout de MR2_GRA.duree
@@ -247,7 +254,7 @@ function mr2Decrocher(z, perd){
   z.mrA = { x:MECH.x, z:MECH_CAM.z - 1.6 }; z.mrB = { x:clamp(MECH.x + s * rand(6, 8), -11, 11), z:MECH_CAM.z - rand(5, 8) };
   if (z.proxy && hitMeshes.indexOf(z.proxy) < 0) hitMeshes.push(z.proxy);
   if (perd){ MR2.decroches++; mr2Evt('decroche', z); }
-  mr2Son(S2 => S2.tone(500, .3, 'triangle', .05, 200));
+  mr2Emprunt(S2 => S2.tone(500, .3, 'triangle', .05, 200));
 }
 // Secousses du torse : une secousse compte quand le torse a tourné d'au moins MR2_GRA.amp dans un sens, vite, à l'inverse
 // de la précédente. Le mouvement d'une image est plafonné (un saut de visée d'un coup ne compte pas pour une secousse).
@@ -262,7 +269,8 @@ function mr2Secousses(z, dt){
   if (dir){ Q.amp += Math.abs(dy); }
   Q.t += dt;
   if (Q.t > G.swingT && !Q.compte){ Q.amp = 0; Q.t = 0; }      // trop lent : on recommence ce demi-tour
-  if (!Q.compte && Q.amp >= G.amp){ Q.compte = true; Q.n++; Q.repos = 0; MR2.vitreSec = .25; }
+  const seuil = mr2T() ? G.ampT * Math.min(1, typeof sens === 'number' && sens > 0 ? sens : 1) : G.amp;
+  if (!Q.compte && Q.amp >= seuil){ Q.compte = true; Q.n++; Q.repos = 0; MR2.vitreSec = .25; }
   Q.repos += dt; if (Q.repos > 1.5 && Q.n > 0){ Q.n--; Q.repos = 0; } // sans secousse, il se rattrape
   if (Q.n >= mr2Rgl(G, 'secousses')) mr2Decrocher(z, true);
 }
@@ -340,7 +348,7 @@ function mr2Tirer(z){
   o.c.scale.setScalar(o.r); o.c.position.set(o.x, .07, o.z);
   mr2Evt('tir', z);
   mr2V.set(gp.x, 3.6 * sc, gp.z); burst(mr2V, 'dust', 6, 3);
-  mr2Son(S2 => { if (S2._nz) S2._nz(S2.ctx.currentTime, 'lowpass', 180, 1, .35, .2); S2.tone(1500, o.T * .9, 'sine', .025, 500, .25); });
+  mr2Emprunt(S2 => { if (S2._nz) S2._nz(S2.ctx.currentTime, 'lowpass', 180, 1, .35, .2); S2.tone(1500, o.T * .9, 'sine', .025, 500, .25); });
   return o;
 }
 function mr2ObusPas(dt, dz){
@@ -359,7 +367,7 @@ function mr2ObusPas(dt, dz){
 function mr2Impact(o){
   o.actif = false; o.m.visible = o.c.visible = o.d.visible = false; MR2.impacts++;
   mr2V.set(o.x, .4, o.z); burst(mr2V, 'dust', 18, 5); burst(mr2V, 'ember', 10, 4);
-  mr2Son(S2 => S2.boom(1));
+  mr2Emprunt(S2 => S2.boom(1));
   const touche = Math.hypot(MECH.x - o.x, MECH_CAM.z - o.z) < o.r;
   if (touche){
     // Coup porté par l'obus là où il tombe (hitBarricade du robot ne compte que les coups près de lui)
@@ -388,15 +396,25 @@ const mr2Gueule = (function(){
   const b = vmNew(); vmBox(b, .14, .05, .03, [.1, .02, .02], 0, 0, 0, 0, 0, 0, 0); vmBox(b, .13, .015, .02, [.9, .88, .75], 0, .02, .01, 0, 0, 0, 0);
   const m = vmMesh(mr2Vitre, b); m.position.set(0, .12, .1); return m;
 })();
+// Place et taille sur la vitre selon la forme de l'écran (dossier 121, purement visuel) : il gêne sans couvrir plus d'environ
+// un tiers de la vue, ni le viseur au centre, ni les boutons tactiles, ni l'alerte « secoue le torse ».
+//   f : centre à f × la demi-largeur visible (à gauche ou à droite), y : hauteur en part de la demi-hauteur visible (+ en haut),
+//   l : largeur à l'écran au plus (part de la largeur). Avant : même place et même taille partout (au cell vertical, il
+//   débordait de l'écran et en couvrait près de la moitié).
+const MR2_VITRE = { ordi:{ f:.45, y:-.15, l:.26 }, couche:{ f:.3, y:-.17, l:.2 }, vertical:{ f:.56, y:0, l:.38 }, larg:.92, dist:.93 };
 function mr2VitreImage(dt, z){
   const on = !!z && (state === 'mech' || state === 'mechover') && MECH.on;
   mr2Vitre.visible = on; if (!on) return;
   MR2.vitreSec = Math.max(0, (MR2.vitreSec || 0) - dt);
-  const t = typeof time === 'number' ? time : 0, sec = MR2.vitreSec / .25;
+  const t = typeof time === 'number' ? time : 0, sec = MR2.vitreSec / .25, V = MR2_VITRE;
+  const forme = vmCam.aspect < 1 ? 'vertical' : (isTouch || (typeof HB === 'object' && HB.tactile)) ? 'couche' : 'ordi', D = V[forme];
+  const hv = V.dist * Math.tan(vmCam.fov * Math.PI / 360), hw = hv * vmCam.aspect;                 // demi-hauteur et demi-largeur visibles
+  const k = Math.min(.95, D.l * 2 * hw / V.larg), cote = (MR2.vitreX || 0) >= 0 ? 1 : -1;
+  const x = cote * (D.f + (Math.abs(MR2.vitreX || .26) - .26) * .15) * hw;                         // un peu de hasard d'une fois à l'autre
   mr2Vitre.rotation.x = typeof hbRoot === 'object' ? hbRoot.rotation.x : -pitch;
-  mr2Vitre.position.set((MR2.vitreX || 0) + Math.sin(t * 40) * .02 * sec, (MR2.vitreY || 0) + (typeof hbRoot === 'object' ? hbRoot.position.y : 0) - .12 * Math.sin(Math.min(1, z.mrT * 4) * Math.PI / 2) + .12, -.93);
+  mr2Vitre.position.set(x + Math.sin(t * 40) * .02 * sec, D.y * hv + (typeof hbRoot === 'object' ? hbRoot.position.y : 0) + (MR2.vitreY || 0) * k - .12 * k * Math.sin(Math.min(1, z.mrT * 4) * Math.PI / 2) + .12 * k, -V.dist);
   mr2Vitre.rotation.z = Math.sin(t * 3) * .05 + Math.sin(t * 40) * .15 * sec;
-  mr2Vitre.scale.setScalar(.95 + .03 * Math.sin(t * 7));
+  mr2Vitre.scale.setScalar(k * (1 + .03 * Math.sin(t * 7)));
   mr2Gueule.scale.y = 1 + 2.2 * Math.abs(Math.sin(t * 9));        // il ronge
 }
 
@@ -557,4 +575,4 @@ try { Jeu.on('tue', (z, was) => { if (was && z && MR2_TYPES.indexOf(z.type) >= 0
 
 // Accès pour les tests automatiques et le simulateur
 window.__mr2 = { MR2, MR2_TYPES, MR2_BEL, MR2_GRA, MR2_MOR, MR2_PLAN, MR2_ANNONCE, MR2_OBUS, MR2_LIGNES, mr2Compte, mr2Dominant, mr2Norm, mr2Annonce, mr2Filtre,
-  mr2Tirer, mr2Decrocher, mr2Accrocher, mr2Secousses, mr2Rgl, mr2ObusRien, mr2Vitre, mr2BelierActif, mr2Accroche };
+  mr2Tirer, mr2Decrocher, mr2Accrocher, mr2Secousses, mr2Rgl, mr2ObusRien, mr2Vitre, mr2BelierActif, mr2Accroche, MR2_VITRE };

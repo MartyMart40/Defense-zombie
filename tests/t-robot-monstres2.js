@@ -135,6 +135,81 @@
     ok(r.enVol && !r.vitre3, 'Abattu en plein saut : il n’arrive jamais sur la vitre');
   });
 
+  // Dossier 121 : un va-et-vient du doigt sur la zone de visée (vrais événements touch, comme au cell) décroche le Grappin.
+  // Un quart de la largeur de l'écran en 0,3 s par sens (9 images à 30 par seconde), cell vertical (412) et couché (915),
+  // sensibilité par défaut (1) et la plus basse du réglage (0,3). MECH.assist : les fenêtres du cell sur un ordi.
+  test('Robot monstres : Grappin, un va-et-vient du doigt le décroche (tactile, sensibilité 1 et 0,3), la souris ne change pas', () => {
+    exiger(); reset({ mr2Vus:{ belier:true, grappin:true, mortier:true } });
+    J(PREP);
+    const r = J(function(){
+      var o = { cas:[] }, M2 = __mr2, T = __mr2t, aim = document.getElementById('mkAim'), sens0 = sens, as0 = MECH.assist;
+      o.zone = !!aim;
+      if (!aim) return o;
+      var toucher = function(type, x, y){
+        var t, ev;
+        try { t = new Touch({ identifier:7, target:aim, clientX:x, clientY:y }); } catch (e) { t = { identifier:7, target:aim, clientX:x, clientY:y }; }
+        try { ev = new TouchEvent(type, { changedTouches:[t], touches:type === 'touchend' ? [] : [t], bubbles:true, cancelable:true }); }
+        catch (e) { ev = new Event(type, { bubbles:true, cancelable:true }); Object.defineProperty(ev, 'changedTouches', { value:[t] }); }
+        aim.dispatchEvent(ev);
+      };
+      var essai = function(largeur, s){
+        sens = s; MECH.assist = true; T.prep(5);
+        var g = spawnZombie('grappin'); g.g.position.set(0, 0, MECH_CAM.z - 12);
+        for (var i = 0; i < 120 && g.mr !== 'accroche'; i++) T.pas(1);
+        var acc = g.mr === 'accroche', d0 = M2.MR2.decroches, ymin = yaw, ymax = yaw, x = largeur * .6, y = 400, dx = largeur / 4, n = 9, k, a;
+        toucher('touchstart', x, y);
+        for (a = 0; a < 2 && g.mr === 'accroche'; a++){
+          for (k = 0; k < n; k++){ x += (a % 2 ? 1 : -1) * dx / n; toucher('touchmove', x, y); T.pas(1); ymin = Math.min(ymin, yaw); ymax = Math.max(ymax, yaw); }
+        }
+        toucher('touchend', x, y);
+        var res = { largeur:largeur, sens:s, accroche:acc, decroche:M2.MR2.decroches - d0 === 1 && g.mr !== 'accroche', amp:ymax - ymin };
+        mechQuit(); return res;
+      };
+      // Souris (fenêtres de l'ordi) : un va-et-vient de 0,3 rad ne compte pas, 0,45 rad oui (inchangé)
+      var souris = function(amp){
+        sens = 1; MECH.assist = false; T.prep(5);
+        var g = spawnZombie('grappin'); g.g.position.set(0, 0, MECH_CAM.z - 12);
+        for (var i = 0; i < 120 && g.mr !== 'accroche'; i++) T.pas(1);
+        for (var a = 0; a < 3 && g.mr === 'accroche'; a++) for (var k = 0; k < 9; k++){ yaw += (a % 2 ? 1 : -1) * amp / 9; T.pas(1); }
+        var dec = g.mr !== 'accroche'; mechQuit(); return dec;
+      };
+      try {
+        [412, 915].forEach(function(L){ [1, .3].forEach(function(s){ o.cas.push(essai(L, s)); }); });
+        o.souris03 = souris(.3); o.souris045 = souris(.45);
+      } finally { sens = sens0; MECH.assist = as0; }
+      o.amp = M2.MR2_GRA.amp;
+      return o;
+    });
+    fin();
+    ok(r.zone, 'Zone de visée tactile du robot (#mkAim)');
+    (r.cas || []).forEach(c => {
+      const nom = (c.largeur === 412 ? 'cell vertical' : 'cell couché') + ', sensibilité ' + String(c.sens).replace('.', ',');
+      ok(c.accroche, nom + ' : accroché');
+      ok(c.decroche, nom + ' : un aller-retour du doigt (un quart de l’écran, 0,3 s par sens) le décroche (torse tourné de ' + c.amp.toFixed(2) + ' rad)');
+    });
+    egal(r.amp, .4, 'Souris : amplitude d’une secousse inchangée (0,4 rad)');
+    ok(!r.souris03, 'Souris : des va-et-vient de 0,3 rad ne le décrochent pas'); ok(r.souris045, 'Souris : des va-et-vient de 0,45 rad le décrochent');
+  });
+
+  test('Robot monstres : les carrefours ne tirent que les villes du robot (jamais la Centrale), sans enrobage', () => {
+    exiger(); reset();
+    const r = J(function(){
+      var o = { ids:{} };
+      o.n = typeof MECH_VILLES === 'number' ? MECH_VILLES : -1;
+      o.src = String(__mb.mbRoutes); o.meme = __mb.mbRoutes === mbRoutes;
+      __t.graine(11, function(){ for (var k = 0; k < 300; k++) mbRoutes().forEach(function(x){ o.ids[x.loc.id] = (o.ids[x.loc.id] || 0) + 1; }); });
+      o.attendu = LOCS.slice(0, o.n > 0 ? o.n : 5).map(function(L){ return L.id; });
+      o.centrale = LOCS.some(function(L){ return L.id === 'centrale'; });
+      o.locs = LOCS.length;
+      return o;
+    });
+    egal(r.n, 5, 'Une seule constante : MECH_VILLES = 5');
+    ok(r.meme && /MECH_VILLES/.test(r.src) && !/splice/.test(r.src), 'mbRoutes est celle de js/40 (aucun enrobage qui retire la Centrale de LOCS)');
+    ok(!r.ids.centrale, 'Jamais la Centrale en 300 carrefours' + (r.centrale ? '' : ' (pas de Centrale dans LOCS)'));
+    egal(Object.keys(r.ids).sort().join(','), r.attendu.slice().sort().join(','), 'Les 5 villes du robot sortent toutes');
+    ok(r.locs >= 5, 'LOCS garde ses ' + r.locs + ' villes');
+  });
+
   test('Robot monstres : Grappin, le lance-flammes le fait lâcher', () => {
     exiger(); reset();
     J(PREP);

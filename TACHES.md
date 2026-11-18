@@ -8,6 +8,8 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
 | 117 | Toit : une sixième ville, « La Centrale » (décor, vagues, zombie propre à la ville, boss « le Cœur ») | En cours | Sous-agent, lancé le 2026-11-18 |
+| 118 | RTS : le style graphique Amélioré dans la vallée (sol texturé, ombres, éclat des tirs) | En cours | Sous-agent, lancé le 2026-11-18 |
+| 119 | Robot : trois nouveaux monstres avec chacun sa parade (Bélier, Grappin, Mortier vivant), à partir de la rue 4 | En cours | Sous-agent, lancé le 2026-11-18 |
 
 ## À faire
 

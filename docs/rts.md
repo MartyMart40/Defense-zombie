@@ -22,7 +22,8 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | `js/65-rts-ruche.js` | La Ruche (modèle, garde, ponte, victoire « Vallée libérée ! »), les vallées (choix sur l'écran titre), les sièges (annonce, bandeau, pastille sur la mini-carte). Réglages : `RTS_REGL` dans `js/41-rts.js` |
 | `js/72-rts-style.js` | Style graphique Amélioré dans le RTS (dossier 118) : sol dessiné (traces de chenilles, sol brûlé des nids), dalle de béton, usure des machines, ombres du soleil qui suivent la caméra, éclat et couleurs, barres de vie hors des effets, bouton « Style » dans la Pause. Seulement visuel (voir `docs/graphismes.md`) |
 | `js/69-rts-sons.js` | Sons du RTS : un son par famille d'arme, placés (distance, gauche ou droite), mixage par familles, moments (siège, Ruche, alerte...), moteur du véhicule piloté (tâche 115) |
-| `tests/t-rts.js`, `tests/t-rts-effets.js`, `tests/t-rts-sons.js`, `tests/t-rts-ruche.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js`, `tests/t-rts-style.js` | Tests |
+| `js/74-rts-monstres.js` | Trois monstres à parade (dossier 122) : sapeur, pilonneur, carapace ; seuils, plan d'apparition, repères au sol, mini-carte, annonces. Réglages : `RM_REGL` |
+| `tests/t-rts.js`, `tests/t-rts-effets.js`, `tests/t-rts-sons.js`, `tests/t-rts-ruche.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js`, `tests/t-rts-style.js`, `tests/t-rts-monstres.js` | Tests |
 
 ## Règles et chiffres actuels
 - Départ : 900 $, QG, usine de robots, 3 tourelles mitrailleuses, 3 fantassins.
@@ -282,8 +283,75 @@ Vallées 2 et 3 (graine 1, 50 min) : vallée 2 : mixte tombe à 50 min (Ruche so
 
 Ce qui reste loin de la cible : un bon joueur (mixte, blindés) a rarement chaud (QG touché dans 1 partie sur 4) ; la chute du QG peut encore être rapide (17 à 19 s dans les 2 dernières parties de « tourelles », 139 à 284 s dans les essais d'avant) ; une partie varie beaucoup d'une graine à l'autre (mixte gagne à 18,8 ou à 34,3 min). Écarté : Ruche à 90 000 sans blindage (blindés la rasait en 30 s), Ruche à 220 000 avec blindage 0,35 (assaut de 12 à 22 min), sièges sans dépasser le plafond (le plafond de 500 était déjà plein : le siège n'ajoutait presque rien), menace de départ +3 par vallée.
 
+## Trois monstres à parade (2026-11-18, dossier 122)
+Avant, le danger montait surtout par le nombre et la force des zombies ordinaires : on y répondait en ajoutant plus de la même chose. Trois monstres demandent chacun une réponse précise, avec les outils de toujours. Code : `js/74-rts-monstres.js` (réglages en haut : `RM_REGL`, textes `RM_ANNONCE`) ; tests : `tests/t-rts-monstres.js` ; banc : `node outils/mesure-monstres-rts.js [adresse] [graines] [monstre]`.
+
+| Monstre | Ce qu'il fait | Ce qu'on voit de haut | Parade | Sans la parade |
+|---|---|---|---|---|
+| Sapeur (80 de vie, rapide) | Ignore les unités, court droit sur la tourelle la plus proche (sinon le bâtiment le plus proche, pas les barricades) et saute au premier bâtiment touché : 420 × (dégâts de la menace)^0,6 aux bâtiments à 6 m (de quoi raser une tourelle neuve), 30 % de ça aux unités. Abattu, son sac saute là où il tombe et blesse les zombies autour (pas les bâtiments, pas les autres sapeurs) | Gros sac orange sur le dos, ligne rouge au sol jusqu'à sa tourelle, anneau rouge qui bat sous la tourelle visée | Des mitrailleurs (ou d'autres unités qui tirent vite) devant les tourelles ; une barricade (60 $) sur son chemin : il saute dessus | Il rase la tourelle (les tourelles seules n'y suffisent pas : elles visent le zombie le plus proche) |
+| Pilonneur (300 de vie, lent) | Marche vers la base, s'enracine à 36 m du bord du bâtiment le plus proche (hors de portée de toutes les tourelles sauf le mortier, même au niveau 6) et lance une boule d'acide en cloche toutes les 6 s : 100 × (dégâts de la menace)^0,6 au bâtiment visé (moitié aux unités à 3 m). Sa cible tombe et la suivante est trop loin : il se déracine et repart | Gueule verte qui luit, anneau vert sous lui quand il est enraciné, boule verte en vol, cercle rouge sur la cible pendant les 2,4 s du vol ; point vert (et anneau) sur la mini-carte | Aller le chercher : tireur d'élite (portée 42 m, il vise les plus gros), une troupe envoyée sur lui, ou piloter une unité ou le mortier (le mortier seul vise le zombie le plus proche, pas lui) | Il démolit les bâtiments un à un, sans fin |
+| Carapace (380 de vie, frappe comme un costaud) | Conduite d'un zombie ordinaire ; les balles et les rayons ricochent : 12 % des dégâts. Explosions, feu (et la brûlure) et éclairs Tesla : tout | Coque bleu acier à bande jaune, étincelles et « ting » à chaque ricochet ; carré bleu sur la mini-carte | Explosifs ou feu : lance-roquettes, mortier, tank, Hellfire, robot ou tourelle lance-flammes, Tesla | Les mitrailleurs et les tourelles mitrailleuses la grattent à peine pendant qu'elle démolit tout |
+
+- Ils remplacent un zombie du flot (nids, hordes, sièges, ponte de la Ruche) : le total ne change pas et le plafond de zombies (500 ordi, 300 cell) est respecté. Ils sont visés par l'IA alliée comme les autres, touchés en pilotant, et ont leur point sur la mini-carte. Les zombies en vie ne sont pas sauvés (comme avant) ; à la reprise, les seuils déjà franchis le sont encore.
+- Première rencontre : bandeau qui dit la parade, une fois par profil (`P.rmVus`) ; ensuite un petit message (au plus toutes les 35 s par monstre). Le pilonneur s'annonce quand il s'enracine.
+- Sons par les moyens de `js/69-rts-sons.js` (le mixage ne change pas) : explosion du sapeur (rtsSonBoom), crachat du pilonneur (rtsSonCrachat) et son impact, ricochet de la carapace (famille « mitrailleuse », au plus un toutes les 0,3 s par carapace). Moments annoncés par `Jeu.emit('monstre', quoi, z)` (`sapeur-cible`, `sapeur-boum`, `sapeur-abattu`, `pilonneur-plante`, `pilonneur-tir`, `pilonneur-impact`, `carapace-ricochet`) ; les écouteurs du toit et du robot les ignorent.
+- Style Amélioré : ce sont des zombies, leurs ombres viennent de `styleOmbresZombies` ; les repères au sol (lignes, anneaux, cercles) sont des matériaux simples, sans ombre.
+- Branchements : `rtsSpawnAt` (demande `rmChoix`), `rtsZombies` (`rmPas` mène le sapeur et le pilonneur), `rtsHit` (`rmBlinde`, la coque) dans `js/42-rts-combat.js` ; `rtsMiniDraw` (`rmMiniExtra`) dans `js/49-rts-commandement.js`. Tous protégés par `typeof`.
+
+### Seuils et plan (`RM_REGL.plan`)
+| Monstre | Seuil (vallée 1) : menace ET temps | Paquet | Toutes les | En vie au plus |
+|---|---|---|---|---|
+| Sapeur | 9 et 10 min | 2, +1 par 8 points de menace au-delà, 4 au plus | 50 s | 6 |
+| Pilonneur | 12 et 13 min | 1, +1 par 10 points, 2 au plus | 100 s | 2 |
+| Carapace | 15 et 16 min | 1, +1 par 8 points, 3 au plus | 70 s | 3 |
+
+- Les deux conditions sont exigées : le temps garde les dix premières minutes intactes, la menace attend qu'on ait l'armée pour répondre. Robot-joueur (simulateur) : menace 9,5 à 10 min pour un bon joueur (mixte, blindés), 7,5 pour « tourelles » (sapeurs vers 13 min pour lui). Vallée 2 : temps × 0,6 (6, 7,8 et 9,6 min) ; vallée 3 et plus : × 0,45.
+- Avant le seuil, le fichier ne tire jamais dans `Math.random` : une partie qui n'atteint pas le seuil est exactement la même qu'avant (voir les mesures).
+- Les parades demandent des unités qu'on a toujours à ce moment : usine de robots (dès le départ : mitrailleurs, tireurs d'élite, robots lance-flammes), barricades et tourelles (seulement de l'argent).
+
+### Mesures
+Banc ciblé (`node outils/mesure-monstres-rts.js`, partie calme, menace fixée : 10 pour le sapeur, 13 pour le pilonneur, 15 pour la carapace ; chaque vague arrive avec 24 zombies ordinaires que tourelles et unités visent aussi ; moyenne de 2 graines ; une ligne « témoin » donne ce que la même base encaisse sans les monstres) :
+
+| Situation | Monstres | Abattus | Encore en vie | Sapeurs sautés / obus tombés | Dégâts aux bâtiments | Tourelles perdues | Unités perdues | Tous morts à |
+|---|---|---|---|---|---|---|---|---|
+| Sapeurs, base : 3 tourelles canon. Escorte seule (témoin) | 0 | 0 | 0 | 0 | 884 | 0 / 3 | 0 | non, non |
+| Sapeurs contre la base seule | 6 | 0 | 0 | 6 | 11 905,5 | 3 / 3 | 0 | 41 s, 42 s |
+| Sapeurs : + 4 mitrailleurs devant (parade) | 6 | 6 | 0 | 0 | 349 | 0 / 3 | 1,5 | 39 s, 37 s |
+| Sapeurs : + 3 barricades devant (parade) | 6 | 1 | 0 | 5 | 7 354,5 | 0,5 / 3 | 0 | 39 s, 40 s |
+| Sapeurs : 3 tourelles mitrailleuses au lieu des canons | 6 | 2,5 | 0 | 3,5 | 8 770,5 | 3 / 3 | 0 | 39 s, 42 s |
+| Pilonneur, base : 3 tourelles mitrailleuses, 2 canon, 6 mitrailleurs. Escorte seule (témoin) | 0 | 0 | 0 | 0 | 0 | 0 / 5 | 0 | non, non |
+| Pilonneur contre la base seule | 1 | 0 | 1 | 10,5 | 4 840 | 2,5 / 5 | 1 | non, non |
+| Pilonneur : + 2 tireurs d’élite (parade) | 1 | 1 | 0 | 2 | 574 | 0 / 5 | 0 | 34 s, 30 s |
+| Pilonneur : + 1 tourelle mortier devant (seule, elle vise le plus proche) | 1 | 0 | 1 | 11 | 4 096 | 2 / 6 | 0 | non, non |
+| Pilonneur : les 6 mitrailleurs envoyés sur lui quand il s’enracine (parade) | 1 | 0,5 | 0,5 | 6,5 | 3 061 | 2 / 5 | 4,5 | 38 s, non |
+| Carapaces, base : 4 tourelles mitrailleuses, 8 mitrailleurs. Escorte seule (témoin) | 0 | 0 | 0 | 0 | 0 | 0 / 4 | 0 | non, non |
+| Carapaces contre la base seule | 2 | 1 | 1 | 0 | 7 421,5 | 3,5 / 4 | 6,5 | 79 s, non |
+| Carapaces : + 3 robots lance-flammes (parade) | 2 | 2 | 0 | 0 | 19 | 0 / 4 | 4,5 | 45 s, 35 s |
+| Carapaces : + 3 lance-roquettes (parade) | 2 | 2 | 0 | 0 | 0 | 0 / 4 | 1 | 36 s, 29 s |
+
+- « Tous morts à » compte aussi les sapeurs qui ont sauté ; les dégâts aux bâtiments comptent les barricades.
+- Sapeur : 4 mitrailleurs devant les tourelles les abattent tous (0 tourelle perdue sur 3) ; des barricades les font sauter dessus (0,5 tourelle perdue) ; les tourelles seules perdent tout, même des tourelles mitrailleuses (elles visent le plus proche, pas lui).
+- Pilonneur : 2 tireurs d'élite l'abattent en 30 à 34 s (2 obus tombés au lieu de 10 à 11) ; envoyer 6 mitrailleurs sur lui marche à moitié et coûte cher (4,5 unités perdues dans l'escorte) ; une tourelle mortier seule ne le vise pas.
+- Carapace : 3 robots lance-flammes ou 3 lance-roquettes l'abattent en 29 à 45 s sans perte de tourelle ; 8 mitrailleurs et 4 tourelles mitrailleuses perdent 3,5 tourelles et 6,5 unités et n'en abattent qu'une sur deux en 90 s.
+
+Robot-joueur, partie longue (`node outils/simulateur.js rts [stratégies] [graines] 45`, vallée 1, 45 min au plus). Il ne fait les parades qu'avec `SIM_PARADES=1` (barricade devant chaque tourelle une fois les sapeurs venus ; ses tireurs d'élite, lance-roquettes, mechs lourds et tanks envoyés sur un pilonneur enraciné, puis ramenés à leur poste). Sans ça, il ne connaît pas les monstres : ses tanks, lance-roquettes et tireurs d'élite répondent seulement quand ils se trouvent à portée.
+
+| Stratégie | Graine | Avant | Après, sans parade | Après, avec parades | Seuils franchis (sapeur, pilonneur, carapace) |
+|---|---|---|---|---|---|
+| tourelles | 1 | QG tombé à 17,9 min | QG tombé à 24,5 min | | 13, 18,8, 24,5 min |
+| mixte | 1 | victoire à 30,4 min (QG au plus bas 94 %) | QG tombé à 31,5 min (Ruche sortie à 19,1 min) | victoire à 26,9 min (QG au plus bas 84 %) | 10, 13,5, 17,6 min |
+| mixte | 2 | QG tombé à 21,1 min | QG tombé à 38,3 min | tient 45 min (QG au plus bas 57 %, Ruche pas détruite) | 10, 13, 16,3 min |
+| blindés | 1 | victoire à 28,4 min, 0 perte | victoire à 28,6 min, 3 pertes | | 10, 15,1, 16,5 min |
+| blindés | 2 | victoire à 17,6 min | victoire à 17,7 min | | 10,5, 14,9, 16,8 min |
+
+- Les 10 premières minutes sont identiques à la virgule près dans toutes les parties (courbe du simulateur, une photo toutes les 30 s : argent, tués, menace, unités, zombies) ; 13 min pour « tourelles », qui atteint la menace 9 plus tard. Ensuite le hasard diverge, d'où des écarts dans les deux sens (mixte graine 2 tient plus longtemps qu'avant).
+- Dégâts des monstres aux bâtiments, sans parade : mixte 27 000 à 36 000 (sapeurs) et 37 000 à 64 000 (pilonneurs) ; blindés 0 à 8 000 (les tanks, portée 38 m, les abattent en passant). Au QG, ils pèsent peu : 3 % pour le pilonneur dans mixte graine 1, rien ailleurs ; le reste reste aux zombies ordinaires (69 à 100 %) et aux boss. Ils usent la base (tourelles, usines, barricades) plus qu'ils ne frappent le QG.
+- Avec les parades (mixte graine 1), les pilonneurs ne font plus que 5 700 de dégâts (19 obus tombés au lieu de 123) et la partie redevient une victoire ; la carapace n'a pas besoin d'autre réponse que ce que mixte et blindés achètent déjà (lance-roquettes, tanks).
+- Pas mesuré : le cell (plafond de 300), les vallées 2 et 3, une vraie partie jouée par Martin.
+
 ## À équilibrer en jouant
 - Menace : voir la section de la tâche 101 (`RTS_REGL.menace`, `RTS_THREAT` en est un nom court). Avant la tâche 101 (tâche 67) : 1 + minutes / 4 + 0,5 par nid détruit + tués / 600.
 - Boss (tâche 91) : leurs dégâts montent moins vite que ceux des autres zombies (dégâts de base × multiplicateur de la menace à la puissance 0,6, `RTS_BOSS_DMG`). Avant, la partie finissait toujours de la même façon : un Titan arrivait (un toutes les 7 minutes environ) et rasait en 20 secondes une base dont le QG était à 100 %. Les tués comptent encore pour les deux tiers de la menace après 20 minutes : essayé à 900 et 1 200, mais la durée des parties dépendait surtout du Titan, donc laissé à 600. Avant : 1 + minutes / 2,5 + 0,4 par nid + tués / 160, qui s'emballait (mieux on se défendait, plus il en venait). Simulateur, même robot-joueur : la base tenait 6 à 8 min, elle tient maintenant 16 à 30 min.
 - Prix des véhicules et des avions, force des boss.
 - Pilotage au doigt sur un vrai cell, plafond de 300 zombies au cell.
+- Monstres à parade (dossier 122) : seuils et fréquences (`RM_REGL.plan`), force du pilonneur (`RM_REGL.pilonneur.coup`, `cadence`, `portee`) et du souffle du sapeur (`RM_REGL.sapeur.souffle`), part des balles sur la carapace (`RM_REGL.carapace.balles`). Le robot-joueur ne fait les parades qu'avec `SIM_PARADES=1` ; personne n'a encore joué contre eux.

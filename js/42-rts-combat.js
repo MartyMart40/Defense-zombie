@@ -10,7 +10,7 @@ function rtsPickType(){
 function rtsSpawnAt(x, z, n, spread, type, cap){
   let alive = zAliveCount(), k = 0; spread = spread || 3; const mx = cap || plan.maxAlive;
   for (let i = 0; i < n && (alive < mx || (type && !cap)); i++){
-    const t = type || rtsPickType(), zz = spawnZombie(t); if (!zz) continue;
+    const t = type || (typeof rmChoix === 'function' ? rmChoix(rtsPickType()) : rtsPickType()), zz = spawnZombie(t); if (!zz) continue; // rmChoix : un monstre à parade remplace ce zombie (js/74-rts-monstres.js)
     zz.g.position.set(x + rand(-spread, spread), zz.g.position.y, z + rand(-spread, spread)); zz.rtsT = 0; zz.wp = null; zz.useRoad = Math.random() < .3; alive++; k++; // 3 sur 10 suivent la vieille route, les autres coupent tout droit
     zz.rtsDm = plan.dmgMult || 1; // multiplicateur de dégâts à la naissance (dégâts contre les bâtiments, voir rtsZombies)
     if (RTS_BOSS.indexOf(t) >= 0){
@@ -99,6 +99,7 @@ function rtsZombies(dt){
     }
     if (z.burnT > 0){ z.burnT -= dt; z.burnTick = (z.burnTick || .25) - dt; if (z.burnTick <= 0){ z.burnTick = .25; damage(z, (z.burnDps || 20) * .25, false, z.g.position); if (z.dead) continue; } }
     if (z.rtsBoss){ rtsBossAbility(z, dt); if (state !== 'rts') return; }
+    if (z.rm && typeof rmPas === 'function' && rmPas(z, dt)){ if (state !== 'rts') return; continue; } // sapeur et pilonneur (js/74-rts-monstres.js)
     z.rtsT = (z.rtsT || 0) - dt;
     if (z.rtsT <= 0 || (z.rtsTgt && z.rtsTgt.dead)){ z.rtsT = rand(.3, .6); z.rtsTgt = rtsTargetOfZombie(z); }
     const gp = z.g.position, fly = !!RTS_FLY[z.type];
@@ -186,6 +187,7 @@ function rtsBeamOk(a, b){
 }
 // Un tir (robot, véhicule, avion ou tourelle) vers un zombie ('z'), un nid ('nest') ou un point du sol ('pt', { x, z })
 function rtsHit(from, tgt, kind, S2){
+  if (kind === 'z' && tgt && tgt.rm && typeof rmBlinde === 'function'){ const k = rmBlinde(tgt, S2); if (k !== 1) S2 = Object.assign({}, S2, { dmg:S2.dmg * k }); } // coque de la carapace (js/74-rts-monstres.js)
   const to = kind === 'nest' ? rtsV2.set(tgt.x, 3 + rand(-1, 2), tgt.z) : kind === 'pt' ? rtsV2.set(tgt.x, .5, tgt.z) : rtsV2.set(tgt.g.position.x, tgt.g.position.y + (tgt.aimY || 1.1), tgt.g.position.z);
   const clear = rtsBeamOk(from, to);
   const fx = typeof rtsFxShot === 'function';

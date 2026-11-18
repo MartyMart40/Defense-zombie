@@ -33,6 +33,13 @@
   }
   // Cause d'un coup sur le QG : un boss tout près dont les dégâts correspondent (coup, piétinement à 50 %, acide à 60 %), sinon les zombies
   function causeQG(T, dmg){
+    // Monstres à parade (js/74-rts-monstres.js) : le sapeur et le pilonneur se comptent eux-mêmes (RM.degatsQG) ;
+    // la carapace frappe comme un zombie ordinaire : une carapace collée au QG dont le coup correspond
+    if (typeof __rtsMonstres === 'object' && __rtsMonstres.RM.frappe) return __rtsMonstres.RM.frappe;
+    for (const z of zombies){
+      if (z.dead || z.type !== 'carapace' || Math.hypot(z.g.position.x - T.x, z.g.position.z - T.z) > T.r + 4) continue;
+      if (Math.abs(dmg / (z.dmg * Math.pow(z.rtsDm || 1, RTS_REGL.bat.batPow - 1)) - 1) < .01) return 'carapace';
+    }
     for (const z of zombies){
       if (z.dead || !z.rtsBoss) continue;
       const d = Math.hypot(z.g.position.x - T.x, z.g.position.z - T.z);
@@ -193,6 +200,33 @@
       const n = cibleAtt(force, cfg.seuil(nd)); if (n){ ordre(att, { nest:n }); CMD.att = { nid:n, units:att.slice(), f0:force, t:RTS.t }; CMD.nAtt = (CMD.nAtt || 0) + 1; CMD.journal.push({ min:min1(RTS.t), debut:att.length + ' unités', f0:Math.round(force), d:Math.round(Math.hypot(n.x, n.z)) }); }
     }
   }
+  // Parades aux monstres du dossier 122 (js/74-rts-monstres.js), seulement avec SIM.rts({ parades:true }) : comme un joueur
+  // attentif, il pose une barricade devant chaque tourelle quand les sapeurs sont là, et envoie ses unités à longue portée
+  // (tireurs d'élite, lance-roquettes, mechs lourds, tanks) sur un pilonneur enraciné, puis les ramène à leur poste.
+  // Contre la carapace, rien de plus : ses lance-roquettes et ses tanks sont déjà la bonne réponse.
+  const PAR = { on:false, murs:new Set(), envoi:null };
+  function parades(){
+    if (!PAR.on || typeof __rtsMonstres !== 'object') return;
+    const M = __rtsMonstres.RM;
+    if (M.ouvert.sapeur != null) for (const o of tourelles()){
+      if (PAR.murs.has(o) || S.money < RTS_BLD.wall.cost + 200) continue;
+      PAR.murs.add(o);
+      const d = Math.hypot(o.x, o.z) || 1, x = Math.round((o.x + o.x / d * 7) / 2) * 2, z = Math.round((o.z + o.z / d * 7) / 2) * 2;
+      if (!rtsBldOk('wall', x, z) && rtsBuild('wall', x, z, 0)){ ACH.bats.wall = (ACH.bats.wall || 0) + 1; ACH.depBats += RTS_BLD.wall.cost; }
+    }
+    const p = M.liste.find(z => !z.dead && z.rm === 'pilonneur' && z.rmEtat === 'plante');
+    if (PAR.envoi && (!p || PAR.envoi.cible !== p)){ // fini : chacun retourne à son poste
+      PAR.envoi.units.filter(u => !u.dead).forEach(u => { ordre([u], { x:u.simHx, z:u.simHz }); });
+      PAR.envoi = null;
+    }
+    if (p && !PAR.envoi){
+      const L = vivants().filter(u => u.U.kind === 'ground' && (LONGUE[u.type] || u.type === 'tank') && !u.simSoin && u.cmd !== 'attack');
+      if (L.length){
+        L.forEach(u => { u.simHx = u.hx; u.simHz = u.hz; if (u.hold) tenir([u], false); });
+        ordre(L, { x:p.g.position.x, z:p.g.position.z + 8 }); PAR.envoi = { cible:p, units:L }; PAR.n = (PAR.n || 0) + 1;
+      }
+    }
+  }
   const RUCHE_K = 1.15;
   // Cible du groupe d'attaque : la Ruche si elle est sortie (seulement quand le groupe est assez fort), sinon le nid le plus proche
   function cibleAtt(force, seuil){ const R = RTS.ruche; if (R && !R.dead) return force >= seuil * RUCHE_K ? R : null; return nidProche(); }
@@ -301,7 +335,7 @@
     const dt = 1 / 20, maxT = (opts.maxMin || 60) * 60, pas = [], courbe = [];
     const va = Math.max(1, opts.vallee || 1);
     if (typeof RTS_VAL === 'object'){ P.rtsVallee = Math.max(+P.rtsVallee || 1, va); RTS_VAL.choix = va; }
-    rtsStart(); suiviDebut(); achatsDebut(); CMD.att = null; CMD.repos = 0; CMD.nAtt = 0; CMD.journal = []; CMD.rucheVue = false; CMD.qgHp = null; CMD.qgT = null;
+    rtsStart(); suiviDebut(); achatsDebut(); PAR.on = !!opts.parades; PAR.murs.clear(); PAR.envoi = null; PAR.n = 0; CMD.att = null; CMD.repos = 0; CMD.nAtt = 0; CMD.journal = []; CMD.rucheVue = false; CMD.qgHp = null; CMD.qgT = null;
     if (st.cmd) rtsRallySet(CMD.ral.x, CMD.ral.z);
     let t = 0, n = 0, dec = 0, mark = 0, markC = 0, qgHaut = 0, qgMin = 100, qgMinT = 0;
     const pres = () => { let k = 0; for (const z of zombies) if (!z.dead && Math.hypot(z.g.position.x, z.g.position.z) < 45) k++; return k; };
@@ -310,7 +344,7 @@
       zombies:zAliveCount(), pres:pres(), boss:zombies.filter(z => !z.dead && z.rtsBoss).map(z => z.type).join(' '), tues:RTS.kills, perdues:RTS.lost, bossTues:RTS.bossKills });
     let siegeAv = null;
     while (t < maxT && state === 'rts' && !RTS.gagne){
-      dec -= dt; if (dec <= 0){ dec = 2; try { st.decider(); if (st.cmd) commander(st.cmd); } catch (e) { errNote(e); } }
+      dec -= dt; if (dec <= 0){ dec = 2; try { st.decider(); if (st.cmd) commander(st.cmd); parades(); } catch (e) { errNote(e); } }
       visuals(dt); t += dt; SIM.horloge(dt);
       if (RTS.base && RTS.base.hp >= RTS.base.maxHp * .9) qgHaut = RTS.t;
       if (RTS.base && !RTS.base.dead){ const q = 100 * RTS.base.hp / RTS.base.maxHp; if (q < qgMin){ qgMin = q; qgMinT = RTS.t; } }
@@ -341,7 +375,12 @@
       sieges:SUIVI.sieges.slice(),
       chute:{ partBoss2min:Math.round(100 * bossD / tot), partBoss:Math.round(100 * bossAll / totAll), avant:courbe.slice(-5) },
       pertesParType:SUIVI.pertes.reduce((o, p) => { o[p.type] = (o[p.type] || 0) + 1; return o; }, {}), batsPerdus:SUIVI.batsPerdus.length,
-      achats:JSON.parse(JSON.stringify(ACH)), attaques:CMD.nAtt || 0, journal:CMD.journal
+      achats:JSON.parse(JSON.stringify(ACH)), attaques:CMD.nAtt || 0, journal:CMD.journal, parades:PAR.on ? { murs:PAR.murs.size, envois:PAR.n || 0 } : null,
+      // Dégâts au QG par cause (zombies, boss, sapeur, pilonneur, carapace) et monstres à parade (js/74-rts-monstres.js)
+      qgParCause:SUIVI.coupsQG.reduce((o, c) => { o[c.c] = (o[c.c] || 0) + Math.round(c.d); return o; }, {}),
+      monstres:typeof __rtsMonstres === 'object' ? (M => ({ ouverts:Object.keys(M.ouvert).reduce((o, k) => { o[k] = M.ouvert[k] == null ? null : Math.round(M.ouvert[k]); return o; }, {}),
+        apparus:Object.assign({}, M.apparus), tues:Object.assign({}, M.tues), explosions:M.explosions, abattus:M.abattus, impacts:M.impacts,
+        degats:Object.keys(M.degats).reduce((o, k) => { o[k] = Math.round(M.degats[k]); return o; }, {}) }))(__rtsMonstres.RM) : null
     };
     try { if (RTS.on) rtsQuit(); } catch (e) { errNote(e); }
     return res;

@@ -44,6 +44,13 @@ Purement visuel : aucun chiffre de jeu, aucune collision, aucune cible de tir (`
 - Appels de dessin (mesurés, sans zombies) : +2 en regardant devant (fenêtres et décor), 5 ou 6 de moins en regardant vers le bas (les 18 sacs d'origine faisaient chacun un appel).
 - Tests : `tests/t-toit-decor.js`. Réglages : `TD_REGL` en haut du fichier.
 
+## La Centrale (dossier 117), tous les styles
+- Décor bâti dans `js/03-scene.js` (`centraleRue`, `centraleFond`) : chaque sorte de pièce (béton, métal peint, acier, tuyaux, porcelaine, grillage, panneaux, ampoules) est fusionnée en une seule géométrie, un appel de dessin par matériau. Bureaux en façades (`facadeMat` : `js/68-toit-decor.js` y allume de rares fenêtres), salles des machines en béton fusionné.
+- Le fond (mur, réacteur, cheminée, tours de refroidissement) est plus loin que le brouillard : matériaux sans brouillard (`CTR_LOIN`, `CTR_TOUR`, gardés), mêlés à chaque image à la couleur de la brume du moment par `ctrBrume` (`js/71-centrale.js`).
+- Effets (`js/71-centrale.js`, image seulement) : gyrophares (faisceaux en croix dans une seule géométrie, halo quand le faisceau regarde vers nous), vapeur des tours (points additifs), cendres, lueur qui pulse (fissures, halo du réacteur, murs du fond), flaques irradiées (une seule géométrie par instances), arcs du Cœur. Ciel peint : `ctrCielSil` et `ctrCielApres`, appelés par `gfxCielTex`.
+- Amélioré, Haute définition et Ultra : les matériaux fusionnés en Lambert reçoivent la crasse et les ombres comme le reste ; les matériaux gardés (fond, fissures, grillage, panneaux) restent tels quels. Image HDR : `night`.
+- Appels de dessin mesurés (swiftshader, 1600 x 900, regard devant, sans zombies) : Centrale 130 en Actuel et 131 en Amélioré ; Port 179 et 177, Banlieue Nord 194 et 196.
+
 ## Haute définition, séance 1 : la lumière (`js/58-graphismes-hd.js`)
 - Part de la rue d'Amélioré : chaque matériau détaillé devient un matériau physique (MeshStandardMaterial). Cartes de relief et de rugosité tirées des textures dessinées : fissures et gravier en creux, taches d'huile lisses qui reflètent comme des flaques, briques et planches en relief, cadres de fenêtres en saillie, vitres lisses qui reflètent le ciel. Rugosités : `HD_SORTES`.
 - Lumière d'ambiance et reflets : une vraie image HDR par ville (`hdri/`, Poly Haven, voir `hdri/LISEZMOI.md`), teintée à 60 % par la couleur du ciel de la ville, filtrée par PMREM. Le ciel peint de chaque ville reste affiché (il suit la météo et la brume) ; l'image HDR sert à la lumière et aux reflets.

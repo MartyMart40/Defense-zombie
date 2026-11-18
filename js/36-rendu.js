@@ -261,7 +261,8 @@ function gfxCielTex(grad, L, fogHex, soleil){
       [[loin, .7], [proche, 1]].forEach(([col, k], rang) => {
         const haut = haut0 * k;
         g.fillStyle = gfxCss(col); g.beginPath(); g.moveTo(0, HZ + 3);
-        if (L.style === 'houses'){
+        if (L.style === 'centrale' && typeof ctrCielSil === 'function') ctrCielSil(g, W, HZ, k, rang, rnd); // La Centrale (js/71-centrale.js)
+        else if (L.style === 'houses'){
           const a1 = 1 + Math.floor(rnd() * 3), a2 = 5 + Math.floor(rnd() * 5), f1 = rnd() * 6, f2 = rnd() * 6;
           for (let x = 0; x <= W; x += 4){
             let h = (3.2 + 2.2 * Math.sin(x / W * 6.283 * a1 + f1) + 1.3 * Math.sin(x / W * 6.283 * a2 + f2)) * k;
@@ -276,6 +277,7 @@ function gfxCielTex(grad, L, fogHex, soleil){
           }
         }
         g.lineTo(W, HZ + 3); g.closePath(); g.fill();
+        if (L.style === 'centrale' && typeof ctrCielApres === 'function') ctrCielApres(g, W, HZ, rang, rnd);
         // Quelques fenêtres allumées sur les tours lointaines
         if (L.style !== 'houses' && rang) for (let i = 0; i < 110; i++){ g.fillStyle = gfxCss(gfxRgb(L.win || '#ffb35a'), .25 + rnd() * .35); g.fillRect(rnd() * W, HZ - 2 - rnd() * haut * .45, 1, 1); }
       });

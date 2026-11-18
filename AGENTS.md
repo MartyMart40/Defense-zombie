@@ -4,7 +4,7 @@ Lire ce fichier au complet avant de toucher au code. Pour un gros ajout, lire au
 
 ## Le jeu
 Jeu de tir défensif 3D en navigateur (Three.js r128, copie locale dans `lib/`), en ligne sur GitHub Pages : https://martymart40.github.io/Defense-zombie/
-Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat, et le RTS « Guerre des robots ».
+Trois modes : le toit (campagne de 6 villes et mode infini), le robot de combat, et le RTS « Guerre des robots ».
 
 ## Documentation
 | Fichier | Quoi |
@@ -29,7 +29,7 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 |----------|------|
 | 00 base | Outils (`$`, `store`, `fmt`, `rand`, `clamp`), journal des erreurs cachées (`errNote`, `JOURNAL`), registre des modes `Jeu` |
 | 01 son | Sons et musique (`Snd`) |
-| 02 villes | Les 5 villes (`LOCS`) |
+| 02 villes | Les 6 villes (`LOCS`) ; la 6e, la Centrale, depuis le dossier 117 |
 | 03 scène | Scène, caméra, rendu, décor de la rue (`buildWorld`) |
 | 04 arme en main, modèles, anim | Arme tenue : base et mains (`04-arme-en-main`), les modèles (`04-arme-modeles` : pistolet, pompe, assaut, sniper ; `04-arme-modeles2` : arbalète, lance-flammes, minigun, lance-roquettes, canon électromagnétique, arc), douilles et animations (`04-arme-anim`) |
 | 05 particules | Particules |
@@ -78,6 +78,7 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 66 visée | Visée du toit : zoom selon l'optique (mires, point rouge, lunette ×4, lunette du sniper), cadre de lunette pour toute lunette ; réglages dans `VISEE` (`docs/conception.md`) |
 | 67 style du robot | Style Amélioré dans le robot : bouton « Style » de la Pause du robot, ombres des jambes ; le gros du travail est dans `js/57-graphismes.js` (`styleIci`, `styleRobot`, `styleSoleilPlacer`) |
 | 68 décor du toit | Décor vivant du toit : fenêtres qui s'allument et s'éteignent (une seule géométrie), bord du toit (sacs, caisse, cheminée), état visible de la barricade ; réglages `TD_REGL` ; les fenêtres allumées ne sont plus peintes par `03-scene` (`LIT = 0`) |
+| 71 Centrale | La 6e ville du toit (dossier 117) : irradié (flaque qui ronge la barricade), boss « le Cœur » et ses 3 transformateurs, gyrophares, vapeur, cendres, lueur ; réglages `CTR`. Décor : `centraleRue` et `centraleFond` dans `03-scene` ; robot, défi et déblocage de l'infini restent sur les 5 premières villes (`docs/conception.md`) |
 | 90 branchements | Branche le registre `Jeu` sur le jeu commun ; toujours le dernier |
 
 Les const, let et function de haut niveau sont partagés entre tous les fichiers (portée globale). Un fichier peut appeler une fonction d'un fichier plus loin **seulement à l'intérieur d'une fonction**, jamais au chargement. Chaque fichier commence par `'use strict';`.

@@ -179,6 +179,188 @@ function disposeWorld(){
   });
   world = null;
 }
+/* ---------- La Centrale (dossier 117) : décor fusionné, peu d'appels de dessin ---------- */
+// Chaque sorte de pièce (béton, métal peint, acier, tuyaux, porcelaine) est réunie dans une seule géométrie : un appel de
+// dessin par matériau. Les façades (facadeMat) restent des boîtes à part : js/68-toit-decor.js y pose ses fenêtres.
+// Le fond (mur, réacteur, tours de refroidissement) est loin dans la brume : matériaux sans brouillard, mêlés à la couleur
+// de la brume par js/71-centrale.js (ctrBrume), qui anime aussi gyrophares, vapeur, cendres, lueur et transformateurs.
+const CTRG = { box:new THREE.BoxGeometry(1, 1, 1), cyl:new THREE.CylinderGeometry(1, 1, 1, 14), dome:new THREE.SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2) };
+const _cM = new THREE.Matrix4(), _cQ = new THREE.Quaternion(), _cE = new THREE.Euler(), _cS = new THREE.Vector3(), _cP = new THREE.Vector3(), _cA = new THREE.Vector3(), _cU = new THREE.Vector3(0, 1, 0);
+function cPiece(list, geo, x, y, z, sx, sy, sz, rx, ry, rz){
+  const g = geo.index ? geo.toNonIndexed() : geo.clone();
+  _cE.set(rx || 0, ry || 0, rz || 0); _cQ.setFromEuler(_cE); _cS.set(sx, sy, sz); _cP.set(x, y, z);
+  g.applyMatrix4(_cM.compose(_cP, _cQ, _cS)); list.push(g); return g;
+}
+// Barre d'épaisseur t entre deux points (montants des pylônes, fissures)
+function cBarre(list, x1, y1, z1, x2, y2, z2, t, t2){
+  _cA.set(x2 - x1, y2 - y1, z2 - z1); const l = _cA.length(); if (l < 1e-4) return;
+  _cQ.setFromUnitVectors(_cU, _cA.multiplyScalar(1 / l)); _cS.set(t, l, t2 || t); _cP.set((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2);
+  const g = CTRG.box.toNonIndexed(); g.applyMatrix4(_cM.compose(_cP, _cQ, _cS)); list.push(g);
+}
+function cFusion(list){
+  let n = 0; list.forEach(g => n += g.attributes.position.count);
+  const P = new Float32Array(n * 3), N = new Float32Array(n * 3), U = new Float32Array(n * 2); let o = 0;
+  list.forEach(g => { P.set(g.attributes.position.array, o * 3); N.set(g.attributes.normal.array, o * 3); if (g.attributes.uv) U.set(g.attributes.uv.array, o * 2); o += g.attributes.position.count; g.dispose(); });
+  const m = new THREE.BufferGeometry();
+  m.setAttribute('position', new THREE.BufferAttribute(P, 3)); m.setAttribute('normal', new THREE.BufferAttribute(N, 3)); m.setAttribute('uv', new THREE.BufferAttribute(U, 2));
+  m.computeBoundingSphere(); return m;
+}
+function cMesh(list, mat){ if (!list.length) return null; const m = new THREE.Mesh(cFusion(list), mat); world.add(m); list.length = 0; return m; }
+// Matériaux partagés, jamais libérés (userData.keep) : grillage, panneaux, fond dans la brume, fissures, ampoules
+const ctrKeep = m => { m.userData.keep = true; return m; };
+const CTR_GRILLAGE = ctrKeep(new THREE.MeshLambertMaterial({ side:THREE.DoubleSide, alphaTest:.45, map:canvasTex(32, 32, (g) => {
+  g.strokeStyle = 'rgb(150,160,156)'; g.lineWidth = 2.2; g.beginPath(); g.moveTo(0, 0); g.lineTo(32, 32); g.moveTo(32, 0); g.lineTo(0, 32); g.stroke();
+}) }));
+CTR_GRILLAGE.map.wrapS = CTR_GRILLAGE.map.wrapT = THREE.RepeatWrapping;
+const CTR_PANNEAU = ctrKeep(new THREE.MeshLambertMaterial({ map:canvasTex(64, 64, (g) => { // danger : rayonnements
+  g.fillStyle = '#d8b624'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#16140c'; g.fillRect(0, 0, 64, 4); g.fillRect(0, 60, 64, 4);
+  g.beginPath(); g.arc(32, 32, 5, 0, 7); g.fill();
+  for (let i = 0; i < 3; i++){ const a = -Math.PI / 2 + i * Math.PI * 2 / 3; g.beginPath(); g.moveTo(32, 32); g.arc(32, 32, 22, a - .5, a + .5); g.closePath(); g.fill(); }
+  g.fillStyle = '#d8b624'; g.beginPath(); g.arc(32, 32, 8, 0, 7); g.fill(); g.fillStyle = '#16140c'; g.beginPath(); g.arc(32, 32, 5, 0, 7); g.fill();
+}) }));
+const CTR_LOIN = ctrKeep(new THREE.MeshLambertMaterial({ color:0x5a605c, fog:false }));
+const CTR_TOUR = ctrKeep(new THREE.MeshLambertMaterial({ color:0x8a8e86, fog:false, side:THREE.DoubleSide }));
+const CTR_FISSURE = ctrKeep(new THREE.MeshBasicMaterial({ color:0xa8ffd0, fog:false }));
+const CTR_AMPOULE = ctrKeep(new THREE.MeshBasicMaterial({ color:0xff5a14, fog:false }));
+const CTR_FIL = ctrKeep(new THREE.LineBasicMaterial({ color:0x101616 }));
+const CTR_VOYANT = ctrKeep(new THREE.MeshBasicMaterial({ color:0x6affc0, fog:false }));
+// Transformateur : cuve à ailettes, couvercle, réservoir couché, trois traversées en porcelaine
+function cTransfo(ME, PO, x, z, s, ry){
+  const c = Math.cos(ry || 0), sn = Math.sin(ry || 0), at = (dx, dz) => [x + dx * c + dz * sn, z - dx * sn + dz * c];
+  let p = at(0, 0); cPiece(ME, CTRG.box, p[0], 1.35 * s, p[1], 2.2 * s, 2.4 * s, 1.7 * s, 0, ry);
+  cPiece(ME, CTRG.box, p[0], 2.62 * s, p[1], 2.4 * s, .16 * s, 1.9 * s, 0, ry);
+  for (let k = -2; k <= 2; k++) [-1, 1].forEach(sd => { p = at(k * .42 * s, sd * 1.05 * s); cPiece(ME, CTRG.box, p[0], 1.3 * s, p[1], .08 * s, 2 * s, .45 * s, 0, ry); });
+  p = at(0, -.5 * s); cPiece(ME, CTRG.cyl, p[0], 3.1 * s, p[1], .38 * s, 1.9 * s, .38 * s, 0, ry, Math.PI / 2);
+  for (let k = -1; k <= 1; k++){
+    p = at(k * .62 * s, .35 * s); cPiece(PO, CTRG.cyl, p[0], 3.15 * s, p[1], .12 * s, 1 * s, .12 * s);
+    for (let j = 0; j < 3; j++) cPiece(PO, CTRG.cyl, p[0], (2.85 + j * .26) * s, p[1], .24 * s, .07 * s, .24 * s);
+  }
+}
+// Pylône en treillis (4 montants, croisillons, deux bras) ; rend les bouts des bras pour les fils
+function cPylone(AC, PO, x, z, h){
+  const b = 2.4, t = .55, pts = [];
+  [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(q => cBarre(AC, x + q[0] * b, 0, z + q[1] * b, x + q[0] * t, h, z + q[1] * t, .22));
+  for (let i = 0; i < 5; i++){
+    const y0 = h * i / 5, y1 = h * (i + 1) / 5, r0 = b + (t - b) * i / 5, r1 = b + (t - b) * (i + 1) / 5;
+    for (let f = 0; f < 4; f++){
+      const a = [[-1, -1], [1, -1], [1, 1], [-1, 1]][f], c2 = [[1, -1], [1, 1], [-1, 1], [-1, -1]][f];
+      cBarre(AC, x + a[0] * r0, y0, z + a[1] * r0, x + c2[0] * r1, y1, z + c2[1] * r1, .09);
+      cBarre(AC, x + c2[0] * r0, y0, z + c2[1] * r0, x + a[0] * r1, y1, z + a[1] * r1, .09);
+    }
+  }
+  [[h * .78, 5.2], [h * .93, 3.6]].forEach(([y, w]) => {
+    cPiece(AC, CTRG.box, x, y, z, w * 2, .3, .4);
+    [-1, 1].forEach(sd => { cPiece(PO, CTRG.cyl, x + sd * w, y - .7, z, .13, 1.2, .13); pts.push([x + sd * w, y - 1.3, z]); });
+  });
+  return pts;
+}
+function centraleRue(L, seed){
+  const M = { beton:lam(0x6b6f6b), metal:lam(0x4f5d58), acier:lam(0x2c3334), tuyau:lam(0x7d7466), porc:lam(0x7a4632), transfo:lam(0x5d6e5a) };
+  const BE = [], ME = [], AC = [], TU = [], PO = [], GR = [], PA = [], AMP = [];
+  const C = world.userData.centrale = { transfos:[], gyros:[], fils:[], tours:[], reacteur:null, fissures:null };
+  const gyro = (x, y, z) => { C.gyros.push([x, y, z]); cPiece(AC, CTRG.cyl, x, y - .25, z, .18, .3, .18); cPiece(AMP, CTRG.cyl, x, y, z, .2, .3, .2); };
+  [-1, 1].forEach(sd => {
+    // Clôture grillagée derrière le trottoir : poteaux, lisse, barbelés, panneaux « danger »
+    const x = sd * 19.6, z0 = -6, z1 = -172, len = z0 - z1, zm = (z0 + z1) / 2;
+    for (let z = z0; z >= z1; z -= 4){ cPiece(AC, CTRG.box, x, 1.35, z, .1, 2.7, .1); cPiece(AC, CTRG.box, x + sd * .16, 2.86, z, .05, .45, .05, 0, 0, -sd * .6); }
+    cPiece(AC, CTRG.box, x, 2.66, zm, .05, .05, len); cPiece(AC, CTRG.box, x + sd * .3, 3.02, zm, .03, .03, len); cPiece(AC, CTRG.box, x + sd * .18, 2.86, zm, .03, .03, len);
+    const pl = new THREE.PlaneGeometry(len, 2.5), uv = pl.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * len / 1.4, uv.getY(i) * 2.5 / 1.4);
+    pl.rotateY(-sd * Math.PI / 2); pl.translate(x, 1.3, zm); GR.push(pl.toNonIndexed()); pl.dispose();
+    for (let z = -14 - (sd > 0 ? 11 : 0); z > -165; z -= 22){ const s = new THREE.PlaneGeometry(.8, .8); s.rotateY(-sd * Math.PI / 2); s.translate(x - sd * .07, 1.7, z); PA.push(s.toNonIndexed()); s.dispose(); }
+    // Derrière la clôture : bâtiments techniques en béton et cours de transformateurs
+    for (let z = -8; z > -168; ){
+      if (Math.random() < .55){
+        const d = rand(14, 22), w = rand(10, 15), h = rand(L.bh[0], L.bh[1]), cx = sd * (22 + w / 2), cz = z - d / 2;
+        if (Math.random() < .5){ // bureaux (façade à fenêtres : js/68-toit-decor.js y allume quelques fenêtres)
+          const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), facadeMat(seed++, d, h)); m.position.set(cx, h / 2, cz); world.add(m);
+        } else { // salle des machines en béton : porte roulante, bandeau de petites fenêtres hautes
+          cPiece(BE, CTRG.box, cx, h / 2, cz, w, h, d);
+          cPiece(ME, CTRG.box, cx - sd * w / 2, 2.4, cz + rand(-2, 2), .25, 4.8, 5.2);
+          for (let k = 0; k < Math.floor(d / 2.6); k++) cPiece(AC, CTRG.box, cx - sd * w / 2, h - 1.6, cz - d / 2 + 1.3 + k * 2.6, .2, .9, 1.6);
+          cPiece(ME, CTRG.box, cx - sd * w / 2, 5.6, cz, .3, .25, d * .9);
+        }
+        cPiece(BE, CTRG.box, cx, h + .3, cz, w + .4, .6, d + .4);                                   // rebord du toit
+        cPiece(ME, CTRG.box, cx - sd * w * .2, h + 1.1, cz + d * .2, 1.8, 1.1, 1.8);                 // bouches d'aération
+        cPiece(ME, CTRG.cyl, cx + sd * w * .15, h + 1.4, cz - d * .25, .7, 1.6, .7);
+        if (Math.random() < .55) gyro(cx - sd * (w / 2 - 1), h + .9, cz + d / 2 - 1.2);
+        z -= d + rand(3, 6);
+      } else {
+        const d = rand(14, 20), cx = sd * rand(25, 28), cz = z - d / 2;
+        cPiece(BE, CTRG.box, cx, .12, cz, 9, .24, d - 2);                                             // dalle
+        for (let k = 0; k < 2; k++) cTransfo(ME, PO, cx + rand(-1.4, 1.4), z - d * (.3 + .4 * k), rand(.9, 1.2), rand(-.1, .1));
+        cPiece(AC, CTRG.box, cx - 3.6, 4.5, cz, .3, 9, .3); cPiece(AC, CTRG.box, cx + 3.6, 4.5, cz, .3, 9, .3); cPiece(AC, CTRG.box, cx, 9, cz, 7.6, .35, .35); // portique
+        z -= d + rand(2, 4);
+      }
+    }
+    // Pylônes à haute tension, loin derrière
+    let prev = null;
+    [-34, -96, -158].forEach(zp => { const pts = cPylone(AC, PO, sd * rand(34, 38), zp + rand(-4, 4), rand(26, 30)); if (prev) pts.forEach((p, i) => C.fils.push([prev[i], p])); if (zp === -96) C.fils.push(['x', pts]); prev = pts; });
+  });
+  // Fils qui traversent la rue entre les deux pylônes du milieu
+  const tr = C.fils.filter(f => f[0] === 'x'); C.fils = C.fils.filter(f => f[0] !== 'x');
+  if (tr.length === 2) tr[0][1].forEach((p, i) => C.fils.push([p, tr[1][1][i]]));
+  // Gros tuyaux : deux conduites sur le trottoir de gauche, une passerelle qui traverse la rue, puis à droite
+  [[.55, 1.3], [.36, 2.3]].forEach(([r, y], k) => {
+    cPiece(TU, CTRG.cyl, -17.6, y, -52, r, 80, r, Math.PI / 2); cPiece(TU, CTRG.cyl, 17.6, y, -130, r, 76, r, Math.PI / 2);
+    cPiece(TU, CTRG.cyl, -17.6, (y + 9.3 - k * 1.3) / 2, -92, r, 9.3 - k * 1.3 - y, r); cPiece(TU, CTRG.cyl, 17.6, (y + 9.3 - k * 1.3) / 2, -92, r, 9.3 - k * 1.3 - y, r);
+    cPiece(TU, CTRG.cyl, 0, 9.3 - k * 1.3, -92 - k * .2, r, 35.2, r, 0, 0, Math.PI / 2);
+  });
+  for (let z = -14; z > -168; z -= 6){ const sx = z > -92 ? -17.6 : 17.6; cPiece(AC, CTRG.box, sx, .9, z, .25, 1.8, 1.5); cPiece(TU, CTRG.cyl, sx, 1.3, z + 3, .66, .14, .66, Math.PI / 2); }
+  [-1, 1].forEach(sd => { cPiece(AC, CTRG.box, sd * 15.4, 4.3, -92, .5, 8.6, .5); cPiece(AC, CTRG.box, sd * 15.4, 4.3, -93.6, .5, 8.6, .5); });
+  cPiece(AC, CTRG.box, 0, 8.65, -92.8, 31.6, .4, 2);
+  gyro(-15.4, 9.2, -92.8); gyro(15.4, 9.2, -92.8);
+  // Blocs de béton au bord de la rue
+  [[-12.6, -24, .2], [12.4, -47, -.15], [-12.8, -82, .1], [12.7, -110, .3]].forEach(b => cPiece(BE, CTRG.box, b[0], .45, b[1], .7, .9, 3, 0, b[2]));
+  // Les trois transformateurs de la rue (le Cœur s'y recharge : js/71-centrale.js). Hors des emplacements de l'atelier.
+  [[-15.6, -30, .2], [15.6, -38, -.3], [-15.6, -68, .1]].forEach(([tx, tz, ry]) => {
+    const list = [], po = []; cTransfo(list, po, 0, 0, 1.15, ry); list.push(...po);
+    const g = new THREE.Group(); g.position.set(tx, 0, tz); world.add(g);
+    const m = cMesh(list, M.transfo); world.remove(m); g.add(m);
+    const v = new THREE.Mesh(CTRG.box, CTR_VOYANT); v.scale.set(.32, .32, .32); v.position.set(-Math.sign(tx) * 1.15, 2.2, 0); g.add(v);
+    C.transfos.push({ g, corps:m, voyant:v, x:tx, z:tz });
+  });
+  cMesh(BE, M.beton); cMesh(ME, M.metal); cMesh(AC, M.acier); cMesh(TU, M.tuyau); cMesh(PO, M.porc); cMesh(GR, CTR_GRILLAGE); cMesh(PA, CTR_PANNEAU);
+  C.ampoules = cMesh(AMP, CTR_AMPOULE);
+  // Fils électriques qui pendent entre les pylônes (un seul objet)
+  const fp = [];
+  C.fils.forEach(([a, b]) => { for (let i = 0; i < 8; i++){ const t0 = i / 8, t1 = (i + 1) / 8, s0 = 4 * t0 * (1 - t0) * 2.2, s1 = 4 * t1 * (1 - t1) * 2.2;
+    fp.push(a[0] + (b[0] - a[0]) * t0, a[1] + (b[1] - a[1]) * t0 - s0, a[2] + (b[2] - a[2]) * t0, a[0] + (b[0] - a[0]) * t1, a[1] + (b[1] - a[1]) * t1 - s1, a[2] + (b[2] - a[2]) * t1); } });
+  if (fp.length){ const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(fp, 3)); world.add(new THREE.LineSegments(g, CTR_FIL)); }
+  return seed;
+}
+// Bout de la rue : mur d'enceinte et sa porte, bâtiment du réacteur fissuré, cheminée, deux tours de refroidissement
+function centraleFond(L, seed){
+  const C = world.userData.centrale || (world.userData.centrale = { transfos:[], gyros:[], fils:[], tours:[] });
+  const LO = [], TO = [], FI = [], AMP = [];
+  cPiece(LO, CTRG.box, -21, 3, -172, 30, 6, 1.2); cPiece(LO, CTRG.box, 21, 3, -172, 30, 6, 1.2);
+  cPiece(LO, CTRG.box, -6.5, 4, -172, 1.4, 8, 1.6); cPiece(LO, CTRG.box, 6.5, 4, -172, 1.4, 8, 1.6); cPiece(LO, CTRG.box, 0, 8.3, -172, 15, 1, 1.4);
+  [-6.5, 6.5].forEach(x => { C.gyros.push([x, 9.1, -172]); cPiece(AMP, CTRG.cyl, x, 9.1, -172, .3, .4, .3); });
+  cPiece(LO, CTRG.box, 0, 6, -194, 46, 12, 22);                       // salle des machines
+  cPiece(LO, CTRG.cyl, 0, 18, -198, 13, 24, 13);                      // enceinte du réacteur
+  cPiece(LO, CTRG.dome, 0, 30, -198, 13, 10, 13);                     // dôme
+  cPiece(LO, CTRG.cyl, 17, 24, -204, 1.7, 48, 1.7);                   // cheminée
+  cPiece(LO, CTRG.box, -16, 15, -190, 8, 6, 10);
+  // Fissures qui luisent sur la face avant de l'enceinte et du dôme (zigzags)
+  const R = 13.08, zc = -198;
+  [[-.5, 36, 8], [.15, 34, 7], [.62, 30, 5]].forEach(([a0, y0, n]) => {
+    let a = a0, y = y0;
+    for (let i = 0; i < n; i++){
+      const a2 = a + rand(-.14, .14), y2 = y - rand(2.2, 3.6), rr = y > 30 ? R * Math.sqrt(Math.max(0, 1 - Math.pow((y - 30) / 10.2, 2))) + .05 : R, rr2 = y2 > 30 ? R * Math.sqrt(Math.max(0, 1 - Math.pow((y2 - 30) / 10.2, 2))) + .05 : R;
+      cBarre(FI, Math.sin(a) * rr, y, zc + Math.cos(a) * rr, Math.sin(a2) * rr2, y2, zc + Math.cos(a2) * rr2, .32, .12);
+      a = a2; y = y2;
+    }
+  });
+  cPiece(FI, CTRG.box, 0, 16, -186.9, 6, 2.2, .2); // porte du réacteur, ouverte sur la lueur
+  // Tours de refroidissement : hyperboloïdes (rayon 20 au pied, 12 à la taille, 62 m de haut)
+  const prof = []; for (let i = 0; i <= 14; i++){ const y = 62 * i / 14; prof.push(new THREE.Vector2(12 * Math.sqrt(1 + Math.pow((y - 46) / 34.5, 2)), y)); }
+  const lathe = new THREE.LatheGeometry(prof, 28);
+  [[-52, -230, 1], [48, -248, .92]].forEach(([x, z, s]) => { cPiece(TO, lathe, x, 0, z, s, s, s); C.tours.push([x, 62 * s, z, 12.6 * s]); });
+  lathe.dispose();
+  C.reacteur = [0, 22, -184];
+  cMesh(LO, CTR_LOIN); cMesh(TO, CTR_TOUR); C.fissures = cMesh(FI, CTR_FISSURE); C.ampoulesFond = cMesh(AMP, CTR_AMPOULE);
+  return seed;
+}
 const BAR_Z = -9;
 function buildWorld(L){
   disposeWorld(); fires.length = 0; treeStart(L);
@@ -215,6 +397,8 @@ function buildWorld(L){
         z -= d + rand(L.gap[0], L.gap[1]);
       }
     });
+  } else if (L.style === 'centrale'){
+    seed = centraleRue(L, seed); // La Centrale (dossier 117)
   } else if (L.style === 'port'){
     [-1, 1].forEach(side => {
       for (let z = -6; z > -175; ){
@@ -242,6 +426,8 @@ function buildWorld(L){
     roof(0, 10, -182, 14, 12, 4, 0x3a2a24);
     box(3.5, 14, 3.5, lam(0x857560), 0, 7, -174);
     roof(0, 14, -174, 3.5, 3.5, 7, 0x3a2a24);
+  } else if (L.end === 'reacteur'){
+    seed = centraleFond(L, seed);
   } else if (L.end === 'cranes'){
     const cm = lam(0xa07a1e);
     [-14, 12].forEach((x, i) => {

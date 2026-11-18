@@ -5,7 +5,10 @@
 // Usage :
 //   python3 -m http.server 8765      (à la racine du dépôt, dans un autre terminal)
 //   node outils/simulateur.js [quoi] [joueurs] [graine]
-//     quoi    : tout (défaut), duel, toit, infini, rts, rts-banc, robot
+//     quoi    : tout (défaut), duel, toit, infini, rts, rts-banc, robot, centrale
+//     centrale : chaque joueur joue les 5 premières villes (3 essais au plus chacune), puis la Centrale (SIM_ESSAIS essais,
+//                4 par défaut) avec le profil qu'il a en sortant du Port. SIM_PROFILS=dossier : garde ce profil
+//                (profil-joueur-graine.json) pour rejouer seulement la Centrale la fois suivante. Les joueurs jouent en même temps.
 //     joueurs : liste séparée par des virgules parmi debutant, moyen, bon (défaut : moyen,bon)
 //     graine  : nombre pour le hasard (défaut 1) ; même graine = mêmes parties
 //     strategie : achat des armes pour la campagne : malin (défaut), boutique, patient, pistolet ou pompe (voir outils/sim-bot.js)
@@ -61,7 +64,7 @@ function mdDuel(d){
   return h + '\n';
 }
 const pct = v => v + ' %';
-const LOCS_N = 5;
+const LOCS_N = 6; // villes de la campagne (la Centrale, 6e ville, depuis le dossier 117)
 function mdToit(c){
   let h = '| Ville | Essai | Résultat | Vagues | Barricade à la fin (plus bas) | Argent à la fin | Niveau | Arme | Pouvoirs lancés | Minutes de jeu |\n|---|---|---|---|---|---|---|---|---|---|\n';
   c.parties.forEach(r => {
@@ -365,6 +368,7 @@ async function simRobot(b){
       cmp.parties.forEach(r => console.log('  ' + r.strategie + ' : ' + (r.gagne ? 'libérée' : 'perdue') + ', ' + r.tenues + '/' + r.sur));
       console.log('Campagne, joueur ' + j + ', stratégie ' + strategie + '...');
       const c = await p.evaluate(o => SIM.campagne(o), { joueur: j, graine, essais: 3, maxMin: 40, strategie });
+      delete c.profilFin;
       out.toit[j] = c;
       md += '## Campagne : joueur ' + c.joueur.toLowerCase() + '\n\nAchat des armes : ' + NOM_STRAT[c.strategie] + '. Jusqu’à 3 essais par ville, le profil (niveau, talents, ferraille, défenses) est gardé d’une partie à l’autre.\n\n' + mdToit(c) + '\nFin : niveau ' + c.niveau + ', ' + c.ferraille + ' ferrailles.\n\n';
       c.parties.forEach(r => console.log('  ' + r.ville + ' essai ' + r.essai + ' : ' + (r.gagne ? 'libérée' : 'perdue') + ', ' + r.tenues + '/' + r.sur + ' vagues, barricade ' + r.bar + ' %'));
@@ -378,6 +382,36 @@ async function simRobot(b){
       }
       await p.close();
     }
+  }
+  if (quoi === 'centrale'){
+    const dir = process.env.SIM_PROFILS || '', essais = +process.env.SIM_ESSAIS || 4;
+    out.centrale = {};
+    md += '## La Centrale (6e ville)\n\nChaque joueur joue d’abord les 5 premières villes (3 essais au plus chacune, profil gardé), puis la Centrale avec ce qu’il a en sortant du Port : niveau, talents, ferraille, défenses et pouvoirs (l’argent repart de celui de la ville). Jusqu’à ' + essais + ' essais.\n\n';
+    const res = await Promise.all(joueurs.map(async j => {
+      const p = await page(b), log = [];
+      const f = dir ? path.join(dir, 'profil-' + j + '-' + graine + '.json') : '';
+      let prof = f && fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : null;
+      if (!prof){
+        const c = await p.evaluate(o => SIM.campagne(o), { joueur: j, graine, essais: 3, maxMin: 40, strategie, jusqua: 5 });
+        c.parties.forEach(r => log.push('  ' + j + ' : ' + r.ville + ' essai ' + r.essai + ' : ' + (r.gagne ? 'libérée' : 'perdue') + ', ' + r.tenues + '/' + r.sur));
+        if (c.parties.filter(r => r.gagne).length < 5){ await p.close(); return { j, log, rate: true }; }
+        prof = c.profilFin; if (f) fs.writeFileSync(f, prof);
+      }
+      // SIM_CTR (essais d'équilibrage) : JSON { loc:{ champs de LOCS[5] }, irr:{...}, coeur:{...}, boss:{ centrale:{...}, coeur:{...} } } appliqué avant de jouer la Centrale
+      if (process.env.SIM_CTR) await p.evaluate(s => { const o = JSON.parse(s), L = LOCS[5]; Object.assign(L, o.loc || {}); Object.assign(__centrale.CTR.irr, o.irr || {}); Object.assign(__centrale.CTR.coeur, o.coeur || {}); Object.keys(o.boss || {}).forEach(k => Object.assign(BOSS_VAR[k], o.boss[k])); }, process.env.SIM_CTR);
+      const c = await p.evaluate(o => SIM.campagne(o), { joueur: j, graine, essais, maxMin: 60, strategie, depuis: 5, profil: prof });
+      c.stats = await p.evaluate(() => JSON.parse(JSON.stringify(__centrale.CT.stats)));
+      delete c.profilFin; await p.close();
+      return { j, log, c };
+    }));
+    res.forEach(({ j, log, c, rate }) => {
+      log.forEach(l => console.log(l));
+      if (rate){ console.log('  ' + j + ' : le Port n’est pas libéré, pas de Centrale'); return; }
+      out.centrale[j] = c;
+      c.parties.forEach(r => console.log('  ' + j + ' : Centrale essai ' + r.essai + ' : ' + (r.gagne ? 'libérée' : 'perdue') + ', ' + r.tenues + '/' + r.sur + ' vagues, barricade ' + r.bar + ' % (au plus bas ' + r.barMin + ' %), ' + r.arme + ', niveau ' + r.niveau + ', ' + r.minutes + ' min'));
+      console.log('  ' + j + ' : ' + JSON.stringify(c.stats) + ' | vagues : ' + c.parties.map(r => r.vagues.map(v => v.bar).join(',')).join(' ; '));
+      md += '### Joueur ' + c.joueur.toLowerCase() + '\n\n' + mdToit(c) + '\n';
+    });
   }
   if (quoi === 'tout' || quoi === 'rts'){
     md += '## Guerre des robots (RTS)\n\nLe robot-joueur du RTS (`outils/sim-bot-rts.js`) passe par les vraies fonctions du jeu : pose sur le quadrillage, achat, améliorations, ordres de marche et d’attaque, « Tenir », point de ralliement. '
@@ -439,6 +473,7 @@ async function simRobot(b){
   await b.close();
   md += '\n_Simulation faite en ' + Math.round((Date.now() - t0) / 1000) + ' s._\n';
   // SIM_SORTIE=/chemin/nom : écrit nom.md et nom.json là, au lieu de docs/equilibrage.* (pour les essais)
+  if (quoi === 'centrale' && !process.env.SIM_SORTIE){ console.log(md); return; } // essai seulement : docs/equilibrage.md ne change pas
   const sortie = process.env.SIM_SORTIE || path.join(RACINE, 'docs', 'equilibrage');
   fs.writeFileSync(sortie + '.md', md);
   fs.writeFileSync(sortie + '.json', JSON.stringify(out, null, 1));

@@ -10,6 +10,7 @@
 // victory, gameOver, showEnd, showScreen, goMap, banner, updateHUD, defUpdate, defHUD, ambPick.
 // Sauvegarde : P.defi = { done, streak, record, wins, today:{ key, waves, won } } (valeurs par défaut au chargement).
 
+const DEFI_VILLES = 5;          // le décor est tiré parmi les 5 premières villes : la Centrale (dossier 117) ne change aucun défi
 const DEFI_LOC = { diff:1.25, off:1, xp:1.5 }; // même difficulté quelle que soit la ville du décor
 const DEFI_CASH = 600;          // argent de départ (+ talent Bas de laine)
 const DEFI_SCRAP = 150;         // ferraille de la prime, par vague du défi
@@ -71,7 +72,7 @@ function defiCompat(id, list){
 const defiSig = d => d.loc + '/' + d.waves + '/' + d.mods.join('+');
 function defiRaw(key, salt){
   const r = defiRng(defiHash('dernier-toit|defi|' + key + '|' + (salt || 0)));
-  const loc = Math.floor(r() * LOCS.length), waves = 3 + Math.floor(r() * 3);
+  const loc = Math.floor(r() * DEFI_VILLES), waves = 3 + Math.floor(r() * 3);
   const ids = DEFI_IDS.filter(defiAvail), mods = [];
   for (let g = 0; mods.length < 2 && g < 60; g++){ const id = ids[Math.floor(r() * ids.length)]; if (defiCompat(id, mods)) mods.push(id); }
   mods.sort((a, b) => DEFI_IDS.indexOf(a) - DEFI_IDS.indexOf(b));

@@ -30,7 +30,7 @@ function victory(){
   P.best[curLoc.id] = curLoc.waves; P.wins[curLoc.id] = (P.wins[curLoc.id] || 0) + 1;
   let extra = '';
   if (i + 1 < LOCS.length && P.unlocked < i + 2){ P.unlocked = i + 2; extra = 'Nouvelle ville débloquée : ' + LOCS[i + 1].name + ' !'; }
-  else if (i + 1 >= LOCS.length) extra = 'Tu as libéré la dernière ville. Bravo !';
+  else if (i + 1 >= LOCS.length) extra = curLoc.fin || 'Tu as libéré la dernière ville. Bravo !';
   saveP(); showEnd(true, extra);
 }
 function gameOver(){
@@ -86,7 +86,7 @@ function renderMap(){
       : won ? 'Libérée ✓ ' + (P.wins[L.id] > 1 ? '(' + P.wins[L.id] + ' fois)' : '') + ' · +' + Math.round(150 * (i + 1) * L.xp) + ' XP en la gagnant'
       : best ? 'Record : ' + best + ' / ' + L.waves + ' vagues' : (L.cash ? 'Argent de départ : ' + fmt(L.cash) : 'Commence ici');
     h += '<div class="loc' + (locked ? ' locked' : '') + (won ? ' won' : '') + '"><div class="sw" style="background:linear-gradient(' + L.sky[1] + ',' + L.sky[3] + ' 60%,' + L.sky[5] + ')"></div>'
-      + '<div class="info"><div class="nm">' + L.name + '</div><div class="ds">' + L.kind + ' · ' + L.waves + ' vagues · ' + cityTotal(L).toLocaleString('fr-CA') + ' zombies · Danger ' + pips(i + 1, 5) + '</div><div class="ds">' + L.desc + '</div><div class="meta">' + meta + '</div></div>'
+      + '<div class="info"><div class="nm">' + L.name + '</div><div class="ds">' + L.kind + ' · ' + L.waves + ' vagues · ' + cityTotal(L).toLocaleString('fr-CA') + ' zombies · Danger ' + pips(i + 1, LOCS.length) + '</div><div class="ds">' + L.desc + '</div><div class="meta">' + meta + '</div></div>'
       + '<button data-loc="' + i + '"' + (locked ? ' disabled aria-label="Verrouillée"' : '') + '>' + (locked ? '🔒' : won ? 'Rejouer' : 'Jouer') + '</button></div>';
   });
   $('mapList').innerHTML = h;

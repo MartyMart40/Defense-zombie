@@ -31,11 +31,20 @@ const LOCS = [
     ground:0x2a2422, walk:0x45403e, walls:['#3a3436','#2c2a2e','#45403e','#353a40'], lit:.1, win:'#ffb35a',
     bh:[28,60], gap:[0,1], lamps:true, fires:[[8,1.6,-42,1.3,1],[-11.5,1,-13,.6,0],[-7,1.6,-60,1.3,1],[9,1.2,-95,1.1,0]] },
   { dur:1.25, id:'port', name:'Port industriel', kind:'Zone portuaire', waves:10, diff:3.4, xp:4.8, cash:2000, off:4, style:'port', end:'cranes',
-    desc:'Conteneurs, grues et brume toxique. La dernière ville, la plus dure.',
+    desc:'Conteneurs, grues et brume toxique. Au bout des quais, la Centrale.',
     sky:['#0a100a','#18241a','#3a5a2a','#9ab040','#2a3a1e','#101408'], fog:0x2a3a20, fogNear:20, fogFar:105,
     hemi:[0xb0d070,0x101408,.7], sunCol:0xc0e060, sunI:.7, amb:0x203018, glow:0xe0ff90, glowY:12,
     ground:0x262822, walk:0x3c3e38, walls:['#4a4a44','#555048','#3e4240','#5a5248'], lit:.03, win:'#d0ff80',
-    cont:[0x8a2a1e,0x1e4a6a,0x3a6a2a,0xa07a1e,0x5a5a5a], bh:[8,13], lamps:false, fires:[[-11.5,1,-13,.6,0],[6,1.2,-50,1,0]] }
+    cont:[0x8a2a1e,0x1e4a6a,0x3a6a2a,0xa07a1e,0x5a5a5a], bh:[8,13], lamps:false, fires:[[-11.5,1,-13,.6,0],[6,1.2,-50,1,0]] },
+  // Dossier 117 : la 6e ville, après le Port. Décor (style 'centrale', bout 'reacteur') : js/03-scene.js ;
+  // irradié, boss « le Cœur », gyrophares et lueur : js/71-centrale.js. Le mode infini reste débloqué par les 5 premières.
+  { dur:1, id:'centrale', name:'La Centrale', kind:'Centrale électrique', waves:12, diff:4.2, xp:6.4, cash:6000, off:5, style:'centrale', end:'reacteur',
+    desc:'La centrale abandonnée d’où vient la contamination. Transformateurs, tuyaux et tours qui fument : la dernière ville, la plus dure.',
+    fin:'Tu as arrêté le Cœur de la Centrale : la contamination s’éteint. Bravo !',
+    sky:['#02070a','#061418','#0e2a2e','#3a6a64','#0e2224','#04090a'], fog:0x0f2326, fogNear:20, fogFar:100,
+    hemi:[0x86c8c0,0x080e10,.62], sunCol:0xa0e0d4, sunI:.5, amb:0x162a2c, glow:0xc0fff0, glowY:22,
+    ground:0x24292a, walk:0x3b4041, walls:['#5c605d','#4f5553','#63635b','#484e4e'], lit:.02, win:'#b8ffe4',
+    bh:[7,12], lamps:false, fires:[[-11.5,1,-13,.6,0],[8,1.2,-58,.9,0]] }
 ];
 const TALENTS = {
   marksman:  { name:'Tireur aguerri',     desc:'+6 % de dégâts',                       max:10 },

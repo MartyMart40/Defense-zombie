@@ -311,7 +311,7 @@ function rtsA2Texte(txt, classe){
 function rtsArme2Flash(u){
   rtsA2Texte('🚀 ' + rtsArme2Nom(u).toUpperCase() + ' !', 'tir'); PT.a2tir = PT.clk || 0;
   shake = Math.max(shake, .3);
-  try { if (typeof Snd === 'object' && Snd.shot && !u.U.gunship) Snd.shot('rocket'); } catch (e) { errNote(e); }
+  try { if (typeof Snd === 'object' && Snd.shot && !u.U.gunship && typeof rtsSonTir !== 'function') Snd.shot('rocket'); } catch (e) { errNote(e); } // avec js/69-rts-sons.js, le tir (rtsHit) a déjà son son
 }
 // On appuie sur la 2e arme alors qu'elle n'est pas prête : on le dit (sinon on croit que le bouton ne marche pas)
 function rtsArme2Appui(){

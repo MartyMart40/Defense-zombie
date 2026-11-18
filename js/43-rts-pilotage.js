@@ -61,10 +61,11 @@ function rtsTurretStep(dt){
     const sp = rtsMortarSpot(o); RTS.mortSpot = sp;
     if (RTS.mortRing){ RTS.mortRing.position.set(sp.x, .15, sp.z); RTS.mortRing.scale.setScalar(S2.splash); RTS.mortRing.material.opacity = .55 + .35 * Math.sin(RTS.t * 8); }
     if (firing && o.cd <= 0){
-      o.cd = 1 / rtsTStat(o, 'rate'); rtsShotSnd('gl'); burst(rtsV.set(o.x, 3, o.z), 'dust', 6, 3);
+      o.cd = 1 / rtsTStat(o, 'rate'); if (typeof rtsSonMortier !== 'function') rtsShotSnd('gl'); burst(rtsV.set(o.x, 3, o.z), 'dust', 6, 3);
       const tv = 1 + Math.hypot(sp.x - o.x, sp.z - o.z) / 40;
       RTS.shells.push({ x:sp.x, z:sp.z, t:tv, S2 }); // l'obus met un peu de temps à retomber
       if (typeof rtsFxMortar === 'function') rtsFxMortar(o.x, o.z, sp.x, sp.z, tv, S2); // on le voit monter et retomber (js/55-rts-effets.js)
+      if (typeof rtsSonMortier === 'function') rtsSonMortier(o.x, o.z, sp.x, sp.z, tv); // « toump », puis il siffle en tombant (js/69-rts-sons.js)
     }
     return;
   }
@@ -145,7 +146,7 @@ function rtsPilotStep(dt){
   if (U.big){ // minigun : elle monte en régime avant de tirer, avec le vrai son continu du mode robot
     RTS.spin = clamp(RTS.spin + (firing ? dt / .35 : -dt / .8), 0, 1);
     try { if (typeof Snd === 'object' && Snd.mgTick) Snd.mgTick(RTS.spin, firing && RTS.spin >= 1); } catch (e) { errNote(e); }
-    if (P2.fire2 && u.cd2 <= 0){ u.cd2 = 1 / rtsRate2(u); rtsPilotShot(u, rtsS2b(u), 1.8); if (typeof rtsArme2Flash === 'function') rtsArme2Flash(u); try { Snd.shot('rocket'); } catch (e) { errNote(e); } if (typeof mechFlashR !== 'undefined'){ mechFlashR.visible = true; setTimeout(() => { mechFlashR.visible = false; }, 70); } }
+    if (P2.fire2 && u.cd2 <= 0){ u.cd2 = 1 / rtsRate2(u); rtsPilotShot(u, rtsS2b(u), 1.8); if (typeof rtsArme2Flash === 'function') rtsArme2Flash(u); if (typeof rtsSonTir !== 'function') try { Snd.shot('rocket'); } catch (e) { errNote(e); } /* sinon le tir (rtsHit) a déjà son son */ if (typeof mechFlashR !== 'undefined'){ mechFlashR.visible = true; setTimeout(() => { mechFlashR.visible = false; }, 70); } }
     if (firing && RTS.spin < 1) return;
   }
   if (!firing || u.cd > 0) return;

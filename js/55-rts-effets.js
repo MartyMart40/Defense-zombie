@@ -275,8 +275,11 @@ function rfxBoom(x, y, z, R, T, o){
 function rfxBoomFx(x, z, S2, T){
   const big = !!S2.big;
   if (RTS.pilot){ const d = Math.hypot(camera.position.x - x, camera.position.z - z), near = clamp(1 - d / (big ? 60 : 28), 0, 1); if (near > 0) shake = Math.max(shake, (big ? .9 : .35) * near * (.6 + .4 * T)); }
-  if (big){ shake = Math.max(shake, (RTS.pilot ? .25 : .12) + (RTS.pilot ? .75 : .4) * T); if (typeof Snd === 'object' && Snd.boom) Snd.boom(.6 + 2 * T); }
-  else if (typeof Snd === 'object' && Snd.boom && rfxRand(0, 1) < .5) Snd.boom(S2.bomb ? 1 : .25 + .6 * T);
+  if (big) shake = Math.max(shake, (RTS.pilot ? .25 : .12) + (RTS.pilot ? .75 : .4) * T);
+  const r = big ? 0 : rfxRand(0, 1); // tiré même sans son : la suite du hasard des effets ne change pas
+  if (typeof rtsSonBoom === 'function'){ rtsSonBoom(x, z, S2.splash || 3, { big, k:T }); return; } // explosion à la taille du rayon réel, placée (js/69-rts-sons.js)
+  if (big){ if (typeof Snd === 'object' && Snd.boom) Snd.boom(.6 + 2 * T); }
+  else if (typeof Snd === 'object' && Snd.boom && r < .5) Snd.boom(S2.bomb ? 1 : .25 + .6 * T);
 }
 function rfxBlastNow(x, z, S2){
   const T = rfxT(S2), fam = rfxFam(S2);

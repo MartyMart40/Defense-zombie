@@ -138,7 +138,8 @@ function rtsAlertShow(k, o, txt){
   if (!actif && k === 'bat' && RTS_AL.cd > 0) return false;
   RTS_AL.pcd[k] = P2.cd; RTS_AL.n = P2.n; RTS_AL.t = P2.dur; RTS_AL.o = o; if (k === 'bat') RTS_AL.cd = 8;
   rtsAlert.textContent = txt; rtsAlert.dataset.p = P2.n; rtsAlert.classList.remove('hide');
-  if (typeof Snd === 'object' && Snd.tone){
+  if (typeof rtsSonAlerte === 'function') rtsSonAlerte(P2.n); // deux notes qui montent, plus graves pour le QG (js/69-rts-sons.js)
+  else if (typeof Snd === 'object' && Snd.tone){
     const f = 520 + 60 * P2.n, n = P2.n >= 4 ? 3 : 2;
     Snd.tone(f, .12, 'square', .06, f * .73);
     for (let i = 1; i < n; i++) setTimeout(() => { try { Snd.tone(f, .12, 'square', .06, f * .73); } catch (e) { errNote(e); } }, 180 * i);

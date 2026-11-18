@@ -108,7 +108,8 @@ function rtsRucheCheck(){
   rtsRucheGarde(o, C.garde + 6 * rtsRucheV(), null, cap);
   const bt = RTS_BOSS[rtsRucheV() % RTS_BOSS.length]; if (ZTYPES[bt]) rtsRucheGarde(o, 1, bt);
   rtsV.set(o.x, 4, o.z); burst(rtsV, 'dust', 40, 12); if (typeof rueBoom === 'function') rueBoom(o.x, 3, o.z, 20);
-  if (typeof Snd === 'object'){ if (Snd.boom) Snd.boom(2.4); if (Snd.groan) Snd.groan(); }
+  if (typeof rtsSonRuche === 'function') rtsSonRuche(o.x, o.z); // cri grave et long (js/69-rts-sons.js)
+  else if (typeof Snd === 'object'){ if (Snd.boom) Snd.boom(2.4); if (Snd.groan) Snd.groan(); }
   setTimeout(() => { if (state === 'rts') banner('👑 La Ruche est sortie !', 'Au fond de la vallée, gardée par une horde et un boss. Détruis-la pour libérer la vallée (elle est sur la mini-carte).', 4200); }, 2700);
   return o;
 }
@@ -139,7 +140,7 @@ function rtsRucheDie(o){
   rtsV.set(o.x, 6, o.z);
   if (typeof rueBoom === 'function'){ rueBoom(o.x, 5, o.z, 40); rueBoom(o.x, 12, o.z, 26); }
   burst(rtsV, 'dust', 50, 14); burst(rtsV, 'blood', 40, 10); shake = Math.max(shake, 1);
-  if (typeof Snd === 'object' && Snd.boom) Snd.boom(3);
+  if (typeof rtsSonRucheMort === 'function') rtsSonRucheMort(o.x, o.z); else if (typeof Snd === 'object' && Snd.boom) Snd.boom(3);
   o.g.scale.y = .2; o.g.position.y = -1; o.hpb.bg.visible = o.hpb.fg.visible = false;
   for (const z of zombies) if (z.rtsGarde === o) z.rtsGarde = null; // la garde se disperse
   if (RTS.gagne || RTS.libre) return;
@@ -156,6 +157,7 @@ function rtsRucheDie(o){
 function rtsVictoire(){
   const W = RTS.victoire; if (!W || state !== 'rts' || !RTS.on) return false;
   rtsUnpilot(); rtsCancelPlace(); RTS.paused = true; if (typeof unlockPointer === 'function') unlockPointer();
+  if (typeof rtsSonLiberee === 'function') rtsSonLiberee(); // accord de cors et cloches (js/69-rts-sons.js)
   const min = Math.floor(W.t / 60), sec = Math.floor(W.t % 60);
   rtsShowPanel('<h2 class="title sm">Vallée libérée !</h2><p class="lead">La Ruche de la vallée ' + W.v + ' est détruite.' + (W.neuve ? ' La vallée ' + (W.v + 1) + ' est débloquée.' : '') + '</p><div class="stats">'
     + '<span>Temps : <strong>' + min + ' min ' + String(sec).padStart(2, '0') + ' s</strong></span>'
@@ -202,7 +204,8 @@ function rtsSiegeAnnonce(muet){
   RTS.siege = { phase:'annonce', t:RTS_REGL.siege.annonce, a, x:p.x, z:p.z, f:0 };
   if (muet) return RTS.siege;
   banner('⚠ Siège dans ' + Math.ceil(RTS.hordeT) + ' secondes !', 'Une grosse horde va attaquer ' + rtsSiegeCote() + ' : renforce ce côté', 3000);
-  if (typeof Snd === 'object' && Snd.tone){
+  if (typeof rtsSonSiege === 'function') rtsSonSiege(); // sirène d'alerte aérienne (js/69-rts-sons.js)
+  else if (typeof Snd === 'object' && Snd.tone){
     for (let i = 0; i < 3; i++) setTimeout(() => { try { Snd.tone(420, .4, 'sawtooth', .06, 640); } catch (e) { errNote(e); } }, i * 450);
   }
   return RTS.siege;
@@ -215,7 +218,7 @@ function rtsSiegeGo(){
   S.phase = 'siege'; S.t = C.duree; S.f = C.flotT;
   const p = rtsSiegePoint(S.a); S.x = p.x; S.z = p.z;
   rtsSiegeSpawn(S.x, S.z, Math.round((10 + RTS.threat * 5) * C.coup), 12);
-  if (typeof Snd === 'object' && Snd.groan) Snd.groan();
+  if (typeof rtsSonSiegeDebut === 'function') rtsSonSiegeDebut(); else if (typeof Snd === 'object' && Snd.groan) Snd.groan();
   return [S.x, S.z];
 }
 // Zombies du siège : plus solides et plus forts (RTS_REGL.siege.force), ils coupent tout droit vers la base

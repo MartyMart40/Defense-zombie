@@ -284,6 +284,9 @@
     const r = J(function(){
       var o = {}, M2 = __mr2, T = __mr2t;
       mechStart(); __mb.MB.waveT = 1e9; S.bar = S.barMax = 1e7;
+      // Chaque météo fait ses objets (flocons, tornade...) la première fois qu'elle sort : on les fait tous avant de compter (sinon
+      // une météo tirée au hasard pendant les 5 rues comptait comme une fuite, avant comme après le dossier 125)
+      if (typeof __amb === 'object' && __amb.WEATHERS) Object.keys(__amb.WEATHERS).forEach(function(w){ __amb.set(w, true); });
       // Le décor tiré au hasard fait varier le compte d'une rue à l'autre : base = le plus gros de 4 rues 9, fin = le plus petit de 4 rues 9
       var n0 = 0, v0 = vmCam.children.length, h0 = hitMeshes.length, q;
       for (q = 0; q < 4; q++){ MECH.street = 9; mechStreet(false); T.pas(2); n0 = Math.max(n0, scene.children.length); }

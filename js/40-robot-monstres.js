@@ -141,11 +141,18 @@ ZKINDS.titan = {
     const R = buildHumanoid(T, 'foreur'), dark = zmat(ZC.noir);
     zkWeak(zkMesh(R.body, ZKG.box, ZKM.core, .3, .3, .06, 0, 1.3, .2, R.parts), MB_WEAK.coeur);               // cœur qui brille
     [-1, 1].forEach(s => { for (let i = 0; i < 3; i++) zkMesh(R.body, ZKG.box, dark, .08, .3, .08, s * (.3 + i * .08), 1.75, -.05).rotation.z = s * -.5; }); // pointes des épaules
+    // Couronne qui luit, montrée seulement sur le Titan roi (dossier 125, image seulement ; après la boîte de tir, hasard à part)
+    if (typeof mr2Deco === 'function' && typeof mr2Lueur === 'function' && R.head) mr2Deco('titan', R.g, () => {
+      const c = [mr2Lueur(R.g, R.head, 'box', .46, .07, .46, 0, .25, 0)];
+      for (let i = 0; i < 5; i++){ const a = i / 5 * Math.PI * 2; c.push(mr2Lueur(R.g, R.head, 'box', .07, .17, .07, Math.sin(a) * .2, .36, Math.cos(a) * .2)); }
+      c.forEach(m => { m.visible = false; }); R.g.userData.couronne = c;
+    });
     return R;
   },
   init(z){ z.boss = true; z.stompT = rand(3, 5); mbBossIntro(z); },
   onWeak(z, m, amt, pt, wk){ return wk.effet === 'coeur' ? { txt:'Cœur' } : null; },
   update(z, dt){
+    const cour = z.g.userData.couronne; if (cour && cour[0].visible !== !!z.finalBoss) cour.forEach(m => { m.visible = !!z.finalBoss; });
     z.stompT -= dt;
     if (z.stompT <= 0 && z.g.position.z > z.stopZ - 30){
       z.stompT = rand(4.5, 6.5); MB.stomps++;

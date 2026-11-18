@@ -20,11 +20,14 @@
 // Première rencontre : bandeau qui dit la parade, une fois par profil (P.mr2Vus). Moments annoncés par
 // Jeu.emit('monstre', quoi, z) : 'elan', 'charge', 'sonne', 'saut', 'accroche', 'decroche', 'tir', 'impact'.
 // Repères sans son : bande et cercle au sol, alerte au centre de l'écran avec une barre de temps, bords rouges pour l'obus.
-// Sons : chaque moment a son propre son dans js/70-robot-sons.js (dossier 121, il écoute Jeu.on('monstre')) ; les sons
+// Sons : chaque moment a son propre son dans js/70-robot-sons-monstres.js (dossier 121, il écoute Jeu.on('monstre')) ; les sons
 // d'emprunt de Snd (tone, boom, _nz, mbRoar) ne jouent que si ce fichier est absent (mr2Emprunt). Seul le coup du Bélier
 // sur le robot garde son boom (la coque sonne aussi, par hitBarricade).
 // Crochets : mechPlan et damage par réaffectation (calcul, comme js/40-robot-monstres.js et js/63-monstres-toit.js) ;
 // tout le reste par Jeu.on('image') et Jeu.on('tue').
+// Image (dossier 125) : détails des modèles ici (mr2Deco : cornes, épaules et visière du Bélier, griffes et pattes du Grappin,
+// gorge qui gonfle et bouche du tube plus large du Mortier) ; effets (poussière, briques, traînées, fissures, acide, anneau qui se
+// resserre sur le cercle) dans js/78-robot-monstres-fx.js.
 
 /* ---------- Données ---------- */
 Object.assign(ZTYPES, {
@@ -66,6 +69,35 @@ const mr2T = () => isTouch || !!MECH.assist;   // fenêtres du cell (MECH.assist
 const mr2Rgl = (o, k) => mr2T() && o[k + 'T'] != null ? o[k + 'T'] : o[k];
 const mr2Actif = () => typeof MECH === 'object' && MECH.on && state === 'mech';
 
+// Détails des modèles (dossier 125, purement visuel) : ajoutés APRÈS la boîte de tir (zBoxFor), jamais dans parts (cibles),
+// créés avec un hasard à part (Three.js tire 4 nombres de Math.random par objet créé : le hasard du jeu reste le même).
+// MR2_DECO.on = false : modèles d'avant (tests qui comparent les boîtes de tir).
+const MR2_DECO = { on:true };
+let mr2CalmeS = 1250;
+const mr2CalmeH = () => { mr2CalmeS = mr2CalmeS * 16807 % 2147483647; return (mr2CalmeS - 1) / 2147483646; };
+function mr2Calme(fn){ const R = Math.random; Math.random = mr2CalmeH; try { return fn(); } finally { Math.random = R; } }
+function mr2Deco(type, g, fn){
+  if (typeof zBoxFor === 'function') zBoxFor(type, g); // boîte de tir comptée sans les ajouts (rien si elle existe déjà)
+  if (MR2_DECO.on) mr2Calme(fn);
+}
+// Géométries des détails : à part de celles des zombies, pour que leurs lots d'instances (js/07) soient à eux, faits ici au
+// chargement et assez grands (256) : un lot créé ou agrandi en jeu tirerait dans Math.random, et des détails dans les lots
+// communs les feraient grandir à d'autres moments qu'avant. Aucun matériau de plus (borne de js/27 : __zperf.mats).
+const MR2G = {};
+mr2Calme(() => {
+  MR2G.box = new THREE.BoxGeometry(1, 1, 1); MR2G.sph = new THREE.SphereGeometry(1, 10, 8);
+  if (typeof zBatch !== 'function' || typeof zGrow !== 'function') return;
+  const col = { userData:{ zshared:true }, map:null };
+  [MR2G.box, MR2G.sph].forEach(geo => { const b = zBatch(geo, col); while (b.cap < 256) zGrow(b); });
+});
+// Lueurs (yeux du Bélier, gorge du Mortier, couronne du Titan roi) : de simples repères dans le modèle (pas des maillages : ni
+// cible, ni instances des zombies) ; js/78-robot-monstres-fx.js les dessine avec sa propre matière orange sans brouillard.
+// forme : 'box' ou 'sph' ; visible faux : pas dessinée.
+function mr2Lueur(g, parent, forme, sx, sy, sz, x, y, z){
+  const o = new THREE.Object3D(); o.scale.set(sx, sy, sz); o.position.set(x, y, z); o.userData.forme = forme; parent.add(o);
+  (g.userData.lueurs || (g.userData.lueurs = [])).push(o); return o;
+}
+
 // Profil : monstres déjà annoncés (valeur par défaut, règle 5)
 function mr2Norm(){
   if (typeof P !== 'object' || !P) return {};
@@ -83,7 +115,7 @@ function mr2Annonce(type){
 }
 const mr2Evt = (quoi, z) => { MR2.evts[quoi] = (MR2.evts[quoi] || 0) + 1; if (typeof Jeu === 'object' && Jeu.emit) Jeu.emit('monstre', quoi, z); };
 function mr2Son(f){ if (typeof Snd !== 'object' || !Snd.ctx) return; try { f(Snd); } catch (e) { errNote(e); } }
-// Sons d'emprunt : seulement si js/70-robot-sons.js est absent (il donne à chaque moment son propre son, dossier 121)
+// Sons d'emprunt : seulement si js/70-robot-sons-monstres.js est absent (il donne à chaque moment son propre son, dossier 121)
 function mr2Emprunt(f){ if (typeof rsnMonstre !== 'function') mr2Son(f); }
 
 /* ---------- Bélier : masse basse et large, plaque frontale, deux cornes, bosse dorsale qui luit quand il est sonné ---------- */
@@ -106,6 +138,18 @@ ZKINDS.belier = {
     const legs = [];
     [[-.55, .6], [.55, .6], [-.55, -.8], [.55, -.8]].forEach(p => { const l = zkGroup(body, p[0], .95, p[1]); zkMesh(l, ZKG.top, skin, .38, .95, .42, 0, 0, 0, PT); legs.push(l); });
     g.scale.setScalar(T.scale); g.userData.rig = { legs, bosse };
+    // Dossier 125 : plaque d’os sur le bouclier (il restait un carré noir la nuit), fente de visière et yeux qui luisent en orange,
+    // épaules massives au-dessus du bouclier, cornes de bélier qui partent de côté puis pointent vers l'avant
+    mr2Deco('belier', g, () => {
+      zkMesh(body, MR2G.box, corne, 1.46, 1.04, .06, 0, 1.3, 1.6);
+      zkMesh(body, MR2G.box, zmat(ZC.noir), 1.04, .17, .03, 0, 1.45, 1.635);
+      zkMesh(body, MR2G.box, skin, 1.95, .55, .85, 0, 2.1, .55);
+      [-1, 1].forEach(s => {
+        mr2Lueur(g, body, 'box', .22, .085, .02, s * .3, 1.45, 1.655);
+        const c1 = zkMesh(body, MR2G.box, corne, .3, .3, .8, s * .78, 2.15, 1.25); c1.rotation.set(-.2, s * -.75, 0);
+        const c2 = zkMesh(body, MR2G.box, corne, .22, .22, .9, s * 1.12, 2.02, 1.85); c2.rotation.set(.32, s * .22, 0);
+      });
+    });
     return { g, body, head, parts:PT, mats:[skin, plaque, dos], aimY:1.3 * T.scale };
   },
   init(z){ z.rig = z.g.userData.rig; z.mr = 'approche'; z.mrT = 0; z.mrCd = rand(1, 3); z.mrX = z.g.position.x; z.mrDist = rand(MR2_BEL.dist[0], MR2_BEL.dist[1]); },
@@ -191,6 +235,13 @@ ZKINDS.grappin = {
     const legs = [];
     [-.22, .22].forEach(x => { const l = zkGroup(body, x, .55, -.05); zkMesh(l, ZKG.top, crochet, .12, .55, .14, 0, 0, 0, PT); legs.push(l); });
     g.scale.setScalar(T.scale); g.userData.rig = { legs };
+    // Dossier 125 : trois griffes à chaque crochet, ergots aux pieds, deux pattes arrière d'insecte, épines du dos
+    mr2Deco('grappin', g, () => {
+      [armL, armR].forEach(a => [-1, 1].forEach(s => { const h = zkMesh(a, MR2G.box, crochet, .05, .28, .05, s * .07, -.9, .1); h.rotation.set(.6, 0, s * .4); }));
+      legs.forEach(l => zkMesh(l, MR2G.box, crochet, .07, .05, .24, 0, -.56, .08));
+      g.userData.rig.pattes = [-1, 1].map(s => { const p = zkGroup(body, s * .3, .72, -.18); p.rotation.set(-.6, 0, s * .9); zkMesh(p, MR2G.box, crochet, .07, .62, .07, 0, -.31, 0); return p; });
+      for (let i = 0; i < 3; i++) zkMesh(body, MR2G.box, crochet, .05, .16, .05, 0, 1.02 - i * .14, -.32 - i * .05).rotation.x = -.7;
+    });
     return { g, body, head, armL, armR, parts:PT, mats:[skin, ventre], aimY:.8 * T.scale };
   },
   init(z){ z.rig = z.g.userData.rig; z.mr = 'course'; z.mrT = 0; z.mrCd = 0; z.mrZig = rand(0, 6); },
@@ -206,6 +257,7 @@ function mr2Grappin(z, dt){
     z.phase += dt * 16; z.g.rotation.y = 0; gp.y = 0;
     z.rig.legs[0].rotation.x = Math.sin(z.phase) * .8; z.rig.legs[1].rotation.x = -Math.sin(z.phase) * .8;
     z.body.position.y = Math.abs(Math.sin(z.phase)) * .1;
+    if (z.rig.pattes) z.rig.pattes.forEach((p, i) => { p.rotation.x = -.6 + Math.sin(z.phase + i * Math.PI) * .5; });
     if (gp.z < MZ - 3.5){ gp.z += z.speed * dt; gp.x = clamp(gp.x + Math.sin(z.phase * .15 + z.mrZig) * 3 * dt, -11, 11); }
     if (d < G.portee && gp.z < MZ - 2 && z.mrCd <= 0 && !mr2Accroche()){
       z.mr = 'saut'; z.mrT = 0; z.mrA = { x:gp.x, z:gp.z }; mr2Evt('saut', z);
@@ -284,12 +336,19 @@ ZKINDS.mortier = {
     const head = zkMesh(body, ZKG.sph, pust, .45, .4, .45, 0, 2.1, .1, PT);
     const tube = zkGroup(body, 0, 2.3, -.1); tube.rotation.x = -.35;
     zkMesh(tube, ZKG.box, racine, .42, 1.0, .42, 0, .5, 0, PT);                      // tube
-    zkMesh(tube, ZKG.box, ZKM.core, .3, .08, .3, 0, 1.02, 0);                        // bouche du tube qui luit (se voit de loin)
+    const bouche = zkMesh(tube, ZKG.box, ZKM.core, .3, .08, .3, 0, 1.02, 0);         // bouche du tube qui luit (se voit de loin)
     zkEyes(body, 1.75, .78, .16, 1.4);
     [[.55, 1.6, .4], [-.5, 1.1, .55], [.2, .8, .7], [-.6, 1.7, -.3]].forEach(p => zkMesh(body, ZKG.sph, pust, .16, .16, .16, p[0], p[1], p[2])); // pustules
     const legs = [];
     for (let i = 0; i < 5; i++){ const a = i / 5 * Math.PI * 2, l = zkGroup(body, Math.cos(a) * .5, .6, Math.sin(a) * .5); l.rotation.set(Math.sin(a) * .7, 0, -Math.cos(a) * .7); zkMesh(l, ZKG.top, racine, .16, .75, .16, 0, 0, 0, PT); legs.push(l); } // racines
     g.scale.setScalar(T.scale); g.userData.rig = { legs, tube };
+    // Dossier 125 : bouche du tube plus large (lueur sans brouillard : on le voit la nuit au bout de la rue),
+    // gorge sous le tube qui gonfle et s'allume avant le tir (mr2Mortier)
+    mr2Deco('mortier', g, () => {
+      bouche.scale.set(.5, .13, .5);
+      const sac = zkMesh(body, MR2G.sph, pust, .34, .3, .3, 0, 1.36, .7), feu = mr2Lueur(g, body, 'sph', .2, .2, .2, 0, 1.36, .95);
+      feu.visible = false; g.userData.rig.gorge = { sac, feu };
+    });
     return { g, body, head, parts:PT, mats:[skin, racine, pust], aimY:1.4 * T.scale };
   },
   init(z){ z.rig = z.g.userData.rig; z.mr = 'marche'; z.mrT = 0; z.mrCd = rand(1, 2.5); z.mrPlante = rand(MR2_MOR.plante[0], MR2_MOR.plante[1]); },
@@ -310,6 +369,8 @@ function mr2Mortier(z, dt){
   z.mrCd -= dt;
   const k = z.mrCd < .6 ? clamp(1 - z.mrCd / .6, 0, 1) : 0;                      // il se gonfle avant de tirer
   z.body.scale.set(1 + .12 * k, 1 - .08 * k, 1 + .12 * k); z.rig.tube.rotation.x = -.35 - .25 * k;
+  const go = z.rig.gorge; // la gorge gonfle et s'allume (dossier 125, image seulement)
+  if (go){ go.sac.scale.set(.34 * (1 + .55 * k), .3 * (1 + .6 * k), .3 * (1 + .45 * k)); go.feu.visible = k > 0; if (k > 0) go.feu.scale.setScalar(.06 + .24 * k); }
   const d = MZ - gp.z;
   if (z.mrCd <= 0){
     if (d > M.pres && d < 100 && mr2ObusVol() < M.max){ mr2Tirer(z); z.mrCd = M.tir * rand(.85, 1.15); }
@@ -367,6 +428,7 @@ function mr2ObusPas(dt, dz){
 function mr2Impact(o){
   o.actif = false; o.m.visible = o.c.visible = o.d.visible = false; MR2.impacts++;
   mr2V.set(o.x, .4, o.z); burst(mr2V, 'dust', 18, 5); burst(mr2V, 'ember', 10, 4);
+  if (typeof mfxImpact === 'function') mfxImpact(o); // éclaboussure d'acide (js/78-robot-monstres-fx.js)
   mr2Emprunt(S2 => S2.boom(1));
   const touche = Math.hypot(MECH.x - o.x, MECH_CAM.z - o.z) < o.r;
   if (touche){
@@ -575,4 +637,4 @@ try { Jeu.on('tue', (z, was) => { if (was && z && MR2_TYPES.indexOf(z.type) >= 0
 
 // Accès pour les tests automatiques et le simulateur
 window.__mr2 = { MR2, MR2_TYPES, MR2_BEL, MR2_GRA, MR2_MOR, MR2_PLAN, MR2_ANNONCE, MR2_OBUS, MR2_LIGNES, mr2Compte, mr2Dominant, mr2Norm, mr2Annonce, mr2Filtre,
-  mr2Tirer, mr2Decrocher, mr2Accrocher, mr2Secousses, mr2Rgl, mr2ObusRien, mr2Vitre, mr2BelierActif, mr2Accroche, MR2_VITRE };
+  mr2Tirer, mr2Decrocher, mr2Accrocher, mr2Secousses, mr2Rgl, mr2ObusRien, mr2Vitre, mr2VitreM, mr2Gueule, mr2BelierActif, mr2Accroche, MR2_VITRE, MR2_DECO, mr2Calme };

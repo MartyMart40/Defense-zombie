@@ -20,7 +20,8 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | `js/48-rts-liste.js` | Choisir les unités une par une : rangée « Unités » repliable (fermée : une pastille « 👥 Unités · N » et les groupes ; ouverte : une pastille par unité avec sa vie ; choix gardé dans `dt_rts_liste`), Tab pour la suivante, double-clic pour le même type ; groupes enregistrés (5 au plus) |
 | `js/49-rts-commandement.js` | Mini-carte (toucher pour y aller), point de ralliement, alerte « Base attaquée » à paliers, « ✋ Tenir » (u.hold), mode photo (dans la pause) |
 | `js/65-rts-ruche.js` | La Ruche (modèle, garde, ponte, victoire « Vallée libérée ! »), les vallées (choix sur l'écran titre), les sièges (annonce, bandeau, pastille sur la mini-carte). Réglages : `RTS_REGL` dans `js/41-rts.js` |
-| `tests/t-rts.js`, `tests/t-rts-effets.js`, `tests/t-rts-ruche.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js` | Tests |
+| `js/69-rts-sons.js` | Sons du RTS : un son par famille d'arme, placés (distance, gauche ou droite), mixage par familles, moments (siège, Ruche, alerte...), moteur du véhicule piloté (tâche 115) |
+| `tests/t-rts.js`, `tests/t-rts-effets.js`, `tests/t-rts-sons.js`, `tests/t-rts-ruche.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js` | Tests |
 
 ## Règles et chiffres actuels
 - Départ : 900 $, QG, usine de robots, 3 tourelles mitrailleuses, 3 fantassins.
@@ -91,6 +92,75 @@ Le plancher monte : dès l'achat, chaque arme a un tir qui se lit de la caméra 
 - Mesures (banc : 30 unités mixtes et 5 tourelles contre 300 zombies gardés à 300, hasard fixé, 120 images de 1/30 s, Chromium sans carte graphique, donc dessin fait par le processeur) : appels de dessin 243 avant, 227 après au niveau 0 (264 puis 228 avec tout amélioré) ; temps du code par image pareil (13 ms au niveau 0, 20 à 23 ms au maximum, avant comme après) ; temps total par image pareil au niveau 0 et au cell, environ 10 à 15 % de plus à l'ordi avec tout amélioré (fumée et boules de feu qui se superposent ; mesure qui varie de 15 % d'une fois à l'autre). Effets en vie : environ 650 en moyenne au niveau 0 et 1 150 au maximum à l'ordi, 410 et 630 au cell.
 - Les effets ont leur propre hasard : ils ne puisent pas dans `Math.random` (le simulateur à graine fixée garde presque la même partie).
 - Sans `js/55-rts-effets.js`, `js/42-rts-combat.js` retombe sur les anciens traits (`js/55-rts-niveaux.js`).
+
+## Sons (2026-11-18, tâche 115)
+But : reconnaître à l'oreille ce qui se passe dans la vallée, en vue de haut comme en pilotant. Avant, tout le mode n'utilisait que 6 sons du toit (`Snd.boom` pour presque tout). Seulement sonore : aucun chiffre ni visuel ne change. Code : `js/69-rts-sons.js` ; réglages en haut du fichier (`RSON_FAM`, `RSON_MAX`, `RSON_MIX`) ; tests : `tests/t-rts-sons.js` ; mesures : `node outils/mesure-sons-rts.js [adresse]`.
+
+### Un son par famille d'arme
+| Famille | Armes | Son |
+|---|---|---|
+| fusil | fantassin | coup sec, petite note électronique |
+| mitrailleuse | mitrailleur, tourelle mitrailleuse, coaxiale du tank | claquement court et vif |
+| minigun | Mech de combat (vu de loin), 25 mm de l'AC-130 | vrombissement déchiré, 55 coups par seconde |
+| brrrt | chasseur, Warthog, canon de l'Apache (vus de loin) | rugissement grave à 65 coups par seconde, puis l'écho qui roule |
+| élite | tireur d'élite | claquement très sec, longs échos |
+| canon | tank 120 mm (tourelle canon : plus petit) | coup sec et grave, culasse qui sonne, queue qui roule |
+| canon40 | 40 mm de l'AC-130 | « pom » rond |
+| roquette | lance-roquettes, roquettes de l'Apache et du Mech | allumage, départ sifflant qui monte |
+| missile | Hellfire | départ, moteur qui gronde, sifflement qui monte, plus long |
+| mortier | tourelle mortier (aussi pilotée) | « toump » au départ, sifflement qui descend là où il tombe, juste avant l'impact |
+| obus105 | 105 mm de l'AC-130 | coup très grave et lointain au départ (puis la grosse explosion) |
+| laser | Mech lourd | bourdonnement de deux dents de scie, « zap » qui tombe |
+| tesla | tourelle Tesla | claquements électriques irréguliers, bourdonnement à 60 Hz |
+| feu | robot et tourelle lance-flammes | souffle qui gronde, crépitements |
+| crachat | Béhémoth | gargouillis mouillé, l'acide qui grésille à l'arrivée |
+| onde | piétinement du Titan | la terre frappe, grondement, cailloux |
+| explosion | toutes les explosions (au moment où on la voit) | selon le rayon réel des dégâts : 3,5 m courte et sèche, 11 m longue, très grave, avec un sous-grave |
+
+En pilotant, le minigun du Mech et le canon de l'Apache gardent le son continu du mode robot (`Snd.mgTick`).
+
+### Placés dans l'espace
+- Vue de haut : distance au point visé au centre de l'écran, la hauteur de la caméra compte (× 0,45) ; côté gauche ou droit selon l'écart en x (le bord de l'écran est à environ 0,75 × la hauteur). En pilotage : distance et direction depuis la caméra.
+- Volume : plein en deçà de la portée de la famille (16 à 60 m), puis (portée / distance) à la puissance 1,4. Filtre : 16 000 Hz × e^(−distance / 90), au moins 600 Hz (loin = sourd). Sous 0,04 de volume : rien n'est créé.
+- Explosions, canons et onde du Titan arrivent en retard de loin (distance − 25 m) / 340 m/s, au plus 0,8 s.
+
+### Mixage
+- Plafond de voix par famille (`RSON_FAM` : 2 à 5 à l'ordi, 1 à 3 au cell) et plafond total de 18 voix (10 au cell). Quand c'est plein, la voix la moins audible (volume × importance) est coupée en 20 ms, ou le nouveau son est laissé tomber s'il est moins audible.
+- Au même endroit (case de 12 m), une famille ne repart pas avant son délai (0,03 s pour les explosions, 0,34 s pour le brrrt, 1 s pour une horde).
+- Plus il y a de voix, plus chaque nouvelle part un peu plus douce (÷ √(1 + 0,06 × voix)), fixé au départ : aucune voix ne change de volume en jouant, donc pas de pompage.
+- Les moments (alerte, sirène, Ruche...) passent par les voix « ui » de `Snd` (non placés) ; les armes, explosions et moteurs par le bus « arme » (explosions et canons avec la réverbération).
+
+### Moments
+Alerte « Base attaquée » (deux notes qui montent ; trois, et un coup grave pour le QG), annonce du siège (sirène d'alerte aérienne qui monte et descend deux fois, 3,8 s ; le toit a des tambours et un cor), début du siège (cor grave et trois tambours lents), horde (rumeur de foule du côté où elle arrive), sortie de la Ruche (cri très grave et long, 3,7 s, deux voix, la terre qui gronde, et l'éclatement), nid détruit (éclatement mouillé et cri), Ruche détruite (cri qui tombe), « Vallée libérée » (cors do, mi, sol et cloches, quand le panneau s'affiche), bâtiment posé (claquements de métal et une note), unité produite (robot : servo et deux bips ; véhicule : moteur qui démarre ; avion : souffle), ordre et choix (petit bip, au plus un toutes les 0,3 s et 0,2 s), unité perdue (explosion et note qui descend, au plus toutes les 1,5 s), QG tombé (grosse explosion, notes graves). Les achats d'améliorations gardent le son d'achat. Chaque moment a déjà un repère visuel (bandeau, alerte, mini-carte, panneau).
+
+### Moteur du véhicule piloté
+Tank (diesel grave, chenilles qui claquent), Apache (pales qui battent, turbine), chasseur et Warthog (réacteur), AC-130 (quatre turbopropulseurs qui battent entre eux), Mech de combat (hydraulique, servos en marchant), petits robots (moteur électrique). Le régime suit les commandes (avancer, tourner) ; coupé en sortant, à la pause et quand le son est coupé. Pas de moteur dans une tourelle.
+
+### Mesures (rendu hors ligne, volume au maximum, dBFS)
+Même méthode que la table de `js/01-son.js` : OfflineAudioContext avec toute la chaîne de sortie (limiteur compris), « court » = RMS le plus fort sur 50 ms, « cell » = la même chose après un passe-haut à 300 Hz. Sons du RTS joués de près (en vue de haut au centre de l'écran, les petites armes sont environ 3 dB plus bas). Le hasard de chaque son fait bouger les chiffres de 1 à 2 dB.
+
+| Son | Crête | Court | Cell |
+|---|---|---|---|
+| Toit : fusil / fusil à pompe / grenade | −8 / −4 / −2 | −24 / −15 / −10 | −29 / −25 / −20 |
+| Fusil, mitrailleuse | −11 / −12 | −28 / −29 | −32 / −34 |
+| Minigun, brrrt | −13 / −13 | −27 / −25 | −28 / −29 |
+| Tir d'élite | −6 | −17 | −26 |
+| Canon du tank, tourelle canon, 40 mm | −3 / −6 / −8 | −12 / −16 / −19 | −25 / −28 / −30 |
+| Roquette, Hellfire | −16 / −19 | −26 / −29 | −32 / −30 |
+| Mortier : départ, chute | −10 / −26 | −20 / −33 | −28 / −33 |
+| 105 mm (départ) | −8 | −13 | −35 |
+| Laser, Tesla, lance-flammes | −16 / −11 / −18 | −27 / −27 / −29 | −27 / −27 / −31 |
+| Crachat du Béhémoth, onde du Titan | −14 / −5 | −27 / −10 | −29 / −32 |
+| Explosion 3,5 m / 6,5 m / 11 m | −6 / −3 / −2 | −14 / −11 / −10 | −25 / −23 / −24 |
+| Alerte bâtiment / QG sous 25 % | −19 / −12 | −28 / −21 | −28 / −29 |
+| Sirène du siège, début du siège | −18 / −5 | −24 / −13 | −25 / −26 |
+| Sortie de la Ruche, vallée libérée, nid détruit | −6 / −12 / −3 | −15 / −22 / −11 | −25 / −23 / −22 |
+| Bâtiment posé, unité produite, ordre | −17 / −23 / −25 | −26 / −31 / −38 | −31 / −34 / −38 |
+| Moteurs : tank, Apache, chasseur, AC-130, Mech, robot | −14 à −22 | −24 à −27 | −27 à −36 |
+
+Scénario chargé (40 unités mixtes et 4 tourelles autour du centre de l'écran, vue de haut, 6 s, explosions et 2 nids) : crête −3 à −5 dBFS (jamais saturé), court −12 dBFS, cell −25 dBFS, limiteur actif 2 à 3 % du temps, 18 voix du RTS au pire moment (le plafond).
+
+Pas vérifié : l'écoute (personne n'a écouté, tout est réglé par mesures), le cell réel (seulement le passe-haut à 300 Hz), le rendu sur un vrai téléphone (coût des nœuds audio).
 
 ## Petits robots (2026-11-04, demande de Martin)
 - Les jambes sont des pièces à part (`rtsLegGeo`) : elles font des pas pendant la marche (une devant, l'autre derrière) et reviennent droites à l'arrêt.

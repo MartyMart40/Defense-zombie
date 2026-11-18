@@ -66,7 +66,7 @@ function rtsBossAbility(z, dt){
   const gp = z.g.position;
   if (z.type === 'titan'){                        // piétinement : tout ce qui est au sol autour
     z.abT = rand(4.5, 6);
-    shake = Math.max(shake, .5); rtsV.set(gp.x, .3, gp.z); burst(rtsV, 'dust', 26, 8); if (typeof rtsFxStomp === 'function') rtsFxStomp(gp.x, gp.z, 12); /* onde au sol (js/55-rts-effets.js) */ if (typeof Snd === 'object' && Snd.boom) Snd.boom(1.2);
+    shake = Math.max(shake, .5); rtsV.set(gp.x, .3, gp.z); burst(rtsV, 'dust', 26, 8); if (typeof rtsFxStomp === 'function') rtsFxStomp(gp.x, gp.z, 12); /* onde au sol (js/55-rts-effets.js) */ if (typeof rtsSonOnde === 'function') rtsSonOnde(gp.x, gp.z); /* son (js/69-rts-sons.js) */ else if (typeof Snd === 'object' && Snd.boom) Snd.boom(1.2);
     RTS.units.slice().forEach(u => { if (!u.dead && !rtsIsAir(u) && Math.hypot(u.g.position.x - gp.x, u.g.position.z - gp.z) < 12) rtsDmgTarget(u, z.dmg * .5); });
     RTS.blds.slice().forEach(o => { if (!o.dead && Math.hypot(o.x - gp.x, o.z - gp.z) < 12 + o.r) rtsDmgTarget(o, z.dmg * .5); });
   } else if (z.type === 'broodmother'){           // elle pond des araignées ou des rampants
@@ -78,6 +78,7 @@ function rtsBossAbility(z, dt){
     RTS.blds.forEach(o => { if (o.dead) return; const d = (o.x - gp.x) ** 2 + (o.z - gp.z) ** 2; if (d < bd){ bd = d; best = o; } });
     if (best){
       const tp = rtsPos(best), to = new THREE.Vector3(tp.x, best.B ? 2 : best.g.position.y + 1, tp.z);
+      if (typeof rtsSonCrachat === 'function') rtsSonCrachat(gp.x, gp.z); // son du crachat (js/69-rts-sons.js)
       if (typeof rtsFxAcid === 'function') rtsFxAcid(rtsV.set(gp.x, gp.y + 2, gp.z), to); // crachat en arc (js/55-rts-effets.js)
       else if (typeof arsBeam === 'function') arsBeam(rtsV.set(gp.x, gp.y + 2, gp.z), to, 0x8aff40, .35, .25);
       burst(to, PMATS.acid ? 'acid' : 'dust', 9, 2.4);
@@ -146,14 +147,14 @@ function rtsUnitDie(u){
   if (u.dead) return; u.dead = true; RTS.lost++;
   rtsV.copy(u.g.position); rtsV.y = Math.max(1.5, rtsV.y);
   if (typeof rueBoom === 'function') rueBoom(rtsV.x, rtsV.y, rtsV.z, rtsIsAir(u) ? 12 : 7);
-  burst(rtsV, 'dust', 12, 4); if (typeof Snd === 'object' && Snd.boom) Snd.boom(rtsIsAir(u) ? 1 : .6);
+  burst(rtsV, 'dust', 12, 4); if (typeof rtsSonPerte === 'function') rtsSonPerte(u); else if (typeof Snd === 'object' && Snd.boom) Snd.boom(rtsIsAir(u) ? 1 : .6);
   rtsRoot.remove(u.g); const i = RTS.sel.indexOf(u); if (i >= 0) RTS.sel.splice(i, 1);
   if (RTS.pilot === u){ rtsUnpilot(); if (typeof toast === 'function') toast('Ton unité est détruite : retour à la carte'); }
 }
 function rtsBldDie(o, sold){
   if (o.dead) return; o.dead = true;
   rtsV.set(o.x, 2, o.z);
-  if (!sold){ if (typeof rueBoom === 'function') rueBoom(o.x, 2.5, o.z, o.r * 4); if (typeof Snd === 'object' && Snd.boom) Snd.boom(1); burst(rtsV, 'dust', 20, 6); }
+  if (!sold){ if (typeof rueBoom === 'function') rueBoom(o.x, 2.5, o.z, o.r * 4); if (typeof rtsSonBatPerdu === 'function') rtsSonBatPerdu(o); else if (typeof Snd === 'object' && Snd.boom) Snd.boom(1); burst(rtsV, 'dust', 20, 6); }
   if (RTS.pilot === o) rtsUnpilot();
   rtsRoot.remove(o.g); if (RTS.bsel === o){ RTS.bsel = null; rtsInfoShow(); }
   if (!sold && typeof rtsAlertLost === 'function') rtsAlertLost(o); // palier d'alerte (js/49-rts-commandement.js)
@@ -193,7 +194,7 @@ function rtsHit(from, tgt, kind, S2){
   else if (S2.beam && clear && typeof arsBeam === 'function') arsBeam(from, to, S2.beam, S2.pierce ? .14 : .05, S2.pierce ? .12 : .05);
   if (S2.chain && !fx && typeof arsBolt === 'function') arsBolt(from, to);
   if (typeof rtsTierBeam !== 'function' && !S2.beam && !S2.chain && !S2.flame && clear && typeof arsBeam === 'function') arsBeam(from, to, 0xffa040, .12, .08); // traînée de roquette, d'obus ou de bombe
-  if (S2.snd !== null || S2.tsnd) rtsShotSnd(S2.tsnd || S2.snd); // son plus lourd en montant de niveau
+  if (S2.snd !== null || S2.tsnd){ if (typeof rtsSonTir === 'function') rtsSonTir(from, to, S2, kind); /* un son par famille d'arme, placé (js/69-rts-sons.js) */ else rtsShotSnd(S2.tsnd || S2.snd); } // son plus lourd en montant de niveau
   if (kind === 'nest'){
     tgt.hp -= S2.dmg * (S2.splash ? (tgt.ruche ? 1.6 * RTS_REGL.ruche.blindage : 1.6) : 1); rtsHpSet(tgt.hpb, tgt.hp / tgt.maxHp); // la Ruche résiste aux explosions burst(to, 'dust', 2, 2);
     if (S2.splash && !fx && typeof rueBoom === 'function') rueBoom(to.x, to.y, to.z, 6);
@@ -241,7 +242,7 @@ function rtsNestDie(n){
   rtsV.set(n.x, 4, n.z);
   if (typeof rueBoom === 'function'){ rueBoom(n.x, 4, n.z, 26); rueBoom(n.x, 8, n.z, 16); }
   burst(rtsV, 'dust', 30, 8); burst(rtsV, 'blood', 20, 6);
-  if (typeof Snd === 'object' && Snd.boom) Snd.boom(2);
+  if (typeof rtsSonNid === 'function') rtsSonNid(n.x, n.z); else if (typeof Snd === 'object' && Snd.boom) Snd.boom(2);
   shake = Math.max(shake, .6);
   n.g.scale.y = .25; n.g.position.y = -.5; n.hpb.bg.visible = n.hpb.fg.visible = false;
   RTS.baseR = Math.min(70, RTS.baseR + RTS_CFG.baseRStep); rtsBaseSize();
@@ -498,12 +499,12 @@ function rtsStep(dt){
     if (siege){ E = siege; titre = 'Siège ! (horde n° ' + RTS.hordeN + ')'; sub = 'Une grosse horde attaque ' + rtsSiegeCote() + ' : tiens bon 40 secondes'; }
     if (RTS.hordeN % RTS_CFG.bossEvery === 0){ const bt = RTS_BOSS[RTS.bossN++ % RTS_BOSS.length]; if (ZTYPES[bt] && rtsSpawnAt(E[0], E[1] + 6, 1, 2, bt)) sub = (siege ? sub + ' · ' : '') + 'Un boss arrive : ' + ZTYPES[bt].name + ' !'; }
     banner(titre, sub, 2400);
-    if (typeof Snd === 'object' && Snd.groan) Snd.groan();
+    if (typeof rtsSonHorde === 'function'){ if (E) rtsSonHorde(E[0], E[1]); } else if (typeof Snd === 'object' && Snd.groan) Snd.groan();
   }
   for (let i = RTS.shells.length - 1; i >= 0; i--){ const sh = RTS.shells[i]; sh.t -= dt; if (sh.t <= 0){ RTS.shells.splice(i, 1); rtsBlast(sh.x, sh.z, sh.S2); } }
   rtsUnits(dt); rtsBuildings(dt); rtsZombies(dt);
   if (RTS.pilot && state === 'rts') rtsPilotStep(dt);
-  groanT -= dt; if (groanT <= 0){ groanT = rand(1.5, 3.5); if (zAliveCount() > 0 && typeof Snd === 'object') Snd.groan(); }
+  groanT -= dt; if (groanT <= 0){ groanT = rand(1.5, 3.5); if (zAliveCount() > 0 && typeof Snd === 'object'){ if (typeof rtsSonGrogne === 'function') rtsSonGrogne(); else Snd.groan(); } }
 }
 function rtsCamStep(dt){
   const C = RTS.cam, k = RTS.keys, sp = C.h * .9 * dt;

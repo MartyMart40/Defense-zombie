@@ -61,7 +61,7 @@ function rtsBuild(type, x, z, rot){
   S.money -= B.cost;
   const o = rtsPlaceBld(type, x, z, false, rot);
   rtsV.set(x, .5, z); burst(rtsV, 'dust', 12, 3);
-  if (typeof Snd === 'object' && Snd.buy) Snd.buy();
+  if (typeof rtsSonBatiment === 'function') rtsSonBatiment(); else if (typeof Snd === 'object' && Snd.buy) Snd.buy();
   return o;
 }
 function rtsFactoryFor(type){
@@ -84,7 +84,7 @@ function rtsBuy(type){
   u.tx = u.hx = f.x + Math.cos(a) * (out + 4); u.tz = u.hz = f.z + Math.sin(a) * (out + 4); u.cmd = U.kind === 'air' ? 'idle' : 'move';
   if (U.kind === 'air') u.head = Math.PI; // décolle vers le nord
   if (typeof rtsRallyApply === 'function') rtsRallyApply(u); // point de ralliement (js/49-rts-commandement.js)
-  if (typeof Snd === 'object' && Snd.buy) Snd.buy();
+  if (typeof rtsSonUnite === 'function') rtsSonUnite(u); else if (typeof Snd === 'object' && Snd.buy) Snd.buy();
   return u;
 }
 const rtsUpgCost = (type, k) => Math.round(RTS_UNITS[type].cost * .8 * Math.pow(1.6, rtsLv(type, k)) * (RTS_UPG[k] ? 1 : 1.25));
@@ -208,7 +208,7 @@ function rtsEnd(won){
   if (typeof rtsSaveClear === 'function') rtsSaveClear(); // partie finie : plus rien à reprendre
   const min = Math.floor(RTS.t / 60), sec = Math.floor(RTS.t % 60), nd = rtsNestsDead();
   const rec = nd > RTS.best; if (rec){ RTS.best = nd; store.set('dt_rts_bestN', nd); }
-  if (typeof Snd === 'object' && Snd.boom) Snd.boom(2.2);
+  if (typeof rtsSonFin === 'function') rtsSonFin(won); else if (typeof Snd === 'object' && Snd.boom) Snd.boom(2.2);
   if (typeof saveP === 'function') saveP();
   const xp = Math.max(0, Math.round((P.xp || 0) - RTS.xp0)), scr = Math.max(0, Math.round((P.scrap || 0) - RTS.scr0));
   setTimeout(() => rtsShowPanel('<h2 class="title sm">' + (won ? 'Fin de la partie' : 'Le QG est tombé') + '</h2><div class="stats">'

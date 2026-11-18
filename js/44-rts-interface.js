@@ -221,7 +221,7 @@ function rtsPick(cx, cy){
 function rtsSelect(list, add){
   if (!add) RTS.sel.length = 0;
   list.forEach(u => { if (!u.dead && RTS.sel.indexOf(u) < 0) RTS.sel.push(u); });
-  if (list.length){ RTS.bsel = null; if (typeof Snd === 'object' && Snd.tone) Snd.tone(900, .05, 'square', .04, 1200); }
+  if (list.length){ RTS.bsel = null; if (typeof rtsSonChoix === 'function') rtsSonChoix(); else if (typeof Snd === 'object' && Snd.tone) Snd.tone(900, .05, 'square', .04, 1200); }
   rtsInfoShow();
 }
 function rtsOrder(p){
@@ -232,7 +232,7 @@ function rtsOrder(p){
     RTS.sel.forEach((u, i) => { u.nest = null; u.cmd = 'move'; u.retreat = false; u.tx = p.x + ((i % cols) - (cols - 1) / 2) * 2.8; u.tz = p.z + (Math.floor(i / cols) - (cols - 1) / 2) * 2.8; });
     rtsMarker(p.x, p.z);
   } else return false;
-  if (typeof Snd === 'object' && Snd.tone) Snd.tone(600, .06, 'triangle', .05, 800);
+  if (typeof rtsSonOrdre === 'function') rtsSonOrdre(); else if (typeof Snd === 'object' && Snd.tone) Snd.tone(600, .06, 'triangle', .05, 800);
   return true;
 }
 // Toucher (ou cliquer) : une unité est choisie SEULE ; au doigt, un appui long (long) l'ajoute au groupe ou l'en retire.

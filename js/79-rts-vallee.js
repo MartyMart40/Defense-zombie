@@ -526,7 +526,7 @@ function rvNids(dt){
 const RV_FL = { nx:7, ny:4, larg:2.6, haut:1.5 };
 function rvAnimCouleurs(){
   const C = RV.anim.geometry.attributes.color.array, nf = RV_FL.nx * RV_FL.ny * 2 * 3;
-  const bleu = [.16, .26, .42], jaune = [.85, .7, .2], mat = [.55, .55, .58], oiseau = [.12, .1, .09];
+  const bleu = [.16, .26, .42], jaune = [.85, .7, .2], mat = [.55, .55, .58], oiseau = [.24, .19, .15];
   let v = 0;
   for (let j = 0; j < RV_FL.ny; j++) for (let i = 0; i < RV_FL.nx; i++) for (let k = 0; k < 6; k++){ const c = j === 1 || j === 2 ? (i < 2 ? jaune : bleu) : bleu; C[v * 3] = c[0]; C[v * 3 + 1] = c[1]; C[v * 3 + 2] = c[2]; v++; }
   for (let k = 0; k < 24; k++){ C[v * 3] = mat[0]; C[v * 3 + 1] = mat[1]; C[v * 3 + 2] = mat[2]; v++; }
@@ -562,7 +562,7 @@ function rvAnim(){
     for (let k = 0; k < nb; k++, ib++){
       const s = (n.idx || 0) * 1.7 + k * 2.1, r = (n.ruche ? 20 : 12) + k * 3.5, w = (k % 2 ? -1 : 1) * (.32 - k * .04), ang = t * w + s;
       const x = n.x + Math.cos(ang) * r, z = n.z + Math.sin(ang) * r, y = (n.ruche ? 25 : 21) + k * 2 + Math.sin(t * .4 + s) * 1.5;
-      const hx = -Math.sin(ang) * Math.sign(w), hz = Math.cos(ang) * Math.sign(w), lx = hz, lz = -hx, bat = Math.sin(t * 7 + s) > .55 ? Math.sin(t * 14 + s) * .5 : .18, S = 1.25;
+      const hx = -Math.sin(ang) * Math.sign(w), hz = Math.cos(ang) * Math.sign(w), lx = hz, lz = -hx, bat = Math.sin(t * 7 + s) > .55 ? Math.sin(t * 14 + s) * .5 : .18, S = .75;
       const N = [x + hx * .6 * S, y, z + hz * .6 * S], Tq = [x - hx * .45 * S, y, z - hz * .45 * S];
       tri(N, [x + lx * 1.3 * S - hx * .25 * S, y + bat, z + lz * 1.3 * S - hz * .25 * S], Tq);
       tri(N, Tq, [x - lx * 1.3 * S - hx * .25 * S, y + bat, z - lz * 1.3 * S - hz * .25 * S]);

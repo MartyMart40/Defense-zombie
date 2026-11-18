@@ -119,17 +119,22 @@
       return { depart:c0, total:c, vit:typeof __rtsVallee === 'object' ? __rtsVallee.RV.actif : null };
     } finally { Math.random = M; if (son !== null) Snd.on = son; try { localStorage.removeItem('dt_rts_partie'); } catch (e) {} }
   };
+  // Même stockage au départ des deux pages (astuces vues, records... changent le jeu d'une partie à l'autre)
+  let stock = null;
+  const stockPrendre = () => { stock = {}; for (let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); stock[k] = localStorage.getItem(k); } };
+  const stockRemettre = () => { if (!stock) return; Object.keys(localStorage).forEach(k => { if (!(k in stock)) localStorage.removeItem(k); }); Object.keys(stock).forEach(k => localStorage.setItem(k, stock[k])); };
   let sansFichier = null;
   test('RTS vallée : tirages de Math.random dans une page neuve, sans le fichier (rtsStart et 200 images)', async () => {
-    exiger(); sansFichier = null;
+    exiger(); sansFichier = null; stockPrendre();
     const P = await pageNeuve();
-    try { sansFichier = P.w.eval('(' + COMPTE.toString() + ')(false)'); } finally { P.f.remove(); }
+    try { sansFichier = P.w.eval('(' + COMPTE.toString() + ')(false)'); } finally { P.f.remove(); stockRemettre(); }
     ok(sansFichier.total > 1000 && sansFichier.vit === false, 'Bataille jouée sans la vallée vivante : ' + JSON.stringify(sansFichier));
   });
   test('RTS vallée : mêmes tirages de Math.random avec le fichier actif (page neuve, même graine)', async () => {
     exiger(); if (!sansFichier) ignorer('Mesure sans le fichier absente');
+    stockRemettre();
     const P = await pageNeuve();
-    let avec; try { avec = P.w.eval('(' + COMPTE.toString() + ')(true)'); } finally { P.f.remove(); }
+    let avec; try { avec = P.w.eval('(' + COMPTE.toString() + ')(true)'); } finally { P.f.remove(); stockRemettre(); }
     ok(avec.vit === true, 'La vallée vivante a bien tourné');
     egal(avec.depart, sansFichier.depart, 'Même nombre de tirages pendant rtsStart');
     egal(avec.total, sansFichier.total, 'Même nombre de tirages après 200 images de bataille');

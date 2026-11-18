@@ -7,6 +7,9 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
+| 112 | Outils : simulateur reproductible (même duel, même résultat d’un lancement à l’autre) | En cours | Sous-agent, lancé le 2026-11-18 |
+| 113 | Toit : fenêtres qui s’allument et s’éteignent, barricade et bord du toit visibles en jouant | En cours | Sous-agent, lancé le 2026-11-18 |
+| 114 | Robot : le style graphique Amélioré marche aussi dans le robot | En cours | Sous-agent, lancé le 2026-11-18 |
 
 ## À faire
 

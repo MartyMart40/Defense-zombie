@@ -25,6 +25,7 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | `js/74-rts-monstres.js` | Trois monstres à parade (dossier 122) : sapeur, pilonneur, carapace ; seuils, plan d'apparition, repères au sol, mini-carte, annonces. Réglages : `RM_REGL` |
 | `js/79-rts-vallee.js` | Une vallée vivante (dossier 126), seulement visuel : décor fixe dans les tronçons (rochers, buissons, cactus, os, épaves, poteaux et fils, panneaux), traces de la bataille (cratères, acide, chenilles, gravats, carcasses), fumée des bâtiments abîmés, poussière, tourbillons, lueur des nids, gyrophare et drapeau du QG, charognards. Réglages : `RV_REGL` |
 | `js/84-rts-anim.js`, `js/84-rts-anim-bat.js` | Des unités et des bâtiments qui vivent (dossier 129), seulement visuel : jambes et torse séparés, tourelle du tank, jambes du Mech de combat, recul, penche, posture d’attente et « Tenir », Apache penché, sélection, unité abîmée qui fume et boite, sortie d’usine, morts ; construction dans un échafaudage, porte de l’usine, recul des tourelles, radar du QG, écroulement. Réglages : `RA_REGL`, `RA_BAT` |
+| `js/86-rts-zombies-anim.js`, `js/86-rts-nids-anim.js` | Des zombies, des nids et une Ruche qui vivent (dossier 131), seulement visuel : allure selon le type, frappe (bras levés puis abattus au coup), sursaut au coup reçu, Carapace qui encaisse, Pilonneur qui se cale et recule au crachat, sortie de terre, morts selon l’arme (tombe, éclate en morceaux sous un explosif, brûle sous le feu, se fige sous la Tesla) ; nids qui respirent, crachent une bouffée à la ponte, s’abîment à vue et crèvent ; Ruche qui sort de terre et s’ouvre. Réglages : `RZ_REGL` |
 | `tests/t-rts.js`, `tests/t-rts-effets.js`, `tests/t-rts-sons.js`, `tests/t-rts-ruche.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js`, `tests/t-rts-style.js`, `tests/t-rts-monstres.js`, `tests/t-rts-vallee.js`, `tests/t-rts-anim.js` | Tests |
 
 ## Règles et chiffres actuels
@@ -444,6 +445,54 @@ Jambes des petits robots qui se balancent en marchant, corps qui sautille ; roto
 - Chenilles qui défilent : il faudrait une texture (rien en Actuel) ou une pièce par galet (10 appels de dessin par tank). Les traces de chenilles de `js/79` disent déjà qu'il roule.
 - Jambes des petits robots calées au pas près sur la distance : leur balancement est écrit par le jeu (`rtsLegsStep`), qui lit sa propre valeur ; y toucher aurait mêlé deux animations. Laissé tel quel.
 - Échafaudage et étincelles pendant un vrai temps de construction : le jeu n'en a pas ; l'animation dure 1,6 s par-dessus un bâtiment qui marche déjà.
+- Pas vérifié : un vrai téléphone, la lecture de près par un vrai joueur, la nuit.
+
+## Des zombies, des nids et une Ruche qui vivent (2026-11-18, dossier 131)
+Suite du dossier 129, du côté de l'ennemi. Seulement visuel : aucune position réelle, aucune vie, aucune cible, aucune vitesse, aucun moment de frappe ni de ponte, aucun argent ne change, et les fichiers ne tirent jamais dans `Math.random`. Code : `js/86-rts-zombies-anim.js` (zombies, morceaux, réglages `RZ_REGL`, `on:false` remet tout comme avant, même en pleine partie) et `js/86-rts-nids-anim.js` (nids et Ruche, réglages `RZ_REGL.nid` et `RZ_REGL.ruche`) ; tests : `tests/t-rts-zombies-anim.js`.
+
+### Ce qui bougeait déjà
+Jambes et bras des zombies qui se balancent (pose écrite par `rtsZombies`), ailes des volants, pattes des araignées ; le Sapeur penché qui court bras ballants, le Pilonneur qui rampe sur ses racines et se gonfle avant de cracher ; la chute du jeu (tous en arrière, en 0,45 s, puis ils s'enfoncent) ; flash rouge au coup (couleur d'instance) ; nids et Ruche qui battent à peine (1,5 % et 2,5 %), Ruche qui tourne lentement ; lueur et spores des nids, charognards, sol brûlé et carcasse du nid détruit (`js/79`) ; restes écrasés du nid (le jeu l'aplatit d'un coup).
+
+### Ce qui bouge maintenant
+- Allure selon le type (`RZ_REGL.allure`) : le marcheur se dandine, le coureur fonce penché en avant, le costaud roule des épaules, le gonflé tangue et respire, l'araignée sautille, le volant pique du nez, le Sapeur court tête baissée (en plus de sa pente), la Carapace avance basse. Penche, roulis, rebond et tangage suivent la phase des jambes du jeu (`z.phase`) et s'effacent à l'arrêt.
+- Frappe : contre un bâtiment ou une unité, il lève les bras pendant les 0,35 s avant le coup, puis les abat au moment exact où le jeu frappe (`z.atkT` remonte), avec un élan du corps vers l'avant. Les créatures sans bras font seulement l'élan.
+- Coup reçu : petit sursaut en arrière, plus fort si le coup a fait mal ; la Carapace encaisse (elle se tasse et tremble au ricochet, `Jeu.on('monstre')`) ; le Pilonneur se cale (il s'enfonce un peu) une fois enraciné et recule à chaque crachat.
+- Sortie de terre : un zombie qui apparaît en cours de partie (ponte, horde, siège, garde de la Ruche) monte du sol en 0,5 s dans un peu de poussière.
+- Morts (cause notée au moment du coup fatal, `Jeu.on('tue')`) : balle ou rayon : il tombe en arrière (comme avant), en avant ou sur le côté, selon son numéro ; explosif (le tir avait un rayon d'explosion) : il reste debout jusqu'à l'arrivée de l'obus ou de la roquette, puis éclate en morceaux à ses couleurs (au plus 12 éclatements par seconde, 6 au cell ; au-delà, il tombe) ; sac du Sapeur abattu : pareil ; feu (lance-flammes, brûlure) : il noircit, flambe et s'affaisse en avant ; Tesla : il reste figé debout une demi-seconde dans un éclair violet qui crépite, puis tombe tout raide, carbonisé.
+- Nids : ils respirent (gonflent et se tassent de 4,5 %), crachent une bouffée de poussière et de spores devant leur bouche et se gonflent à chaque ponte (`n.spawnT` remonte), tremblent sous les coups, penchent et s'affaissent à mesure qu'ils perdent leur vie, fument sous 50 %, tressaillent et suintent du vert sous 25 %, puis crèvent en 0,9 s (ils se gonflent, s'écrasent, des morceaux de chair et d'os partent) avant que les restes écrasés du jeu reprennent.
+- Ruche : quand elle sort (8 nids détruits), elle monte de 16 m sous terre en 3,2 s en tremblant dans un anneau de poussière, puis s'ouvre (grande inspiration, gerbe de spores) ; elle respire, crache une bouffée à chaque ponte, crève comme un nid en plus gros. Une Ruche déjà là au départ (partie reprise) ne ressort pas.
+
+### Comment, sans toucher au jeu
+- Les zombies sont dessinés par instances : le jeu recopie chaque image la pose de tous les zombies dans ses lots (`zInstSync`, à la fin de `visuals`). L'écouteur `Jeu.on('image')`, qui passe juste après, corrige ces copies-là (matrices et couleurs d'instance), qui ne servent qu'au dessin. Les objets des zombies (position, rotation, membres, boîte des tirs) ne sont jamais touchés : le pilotage, qui vise les vrais maillages, touche exactement comme avant.
+- Les places dans les lots sont retrouvées en refaisant le parcours de `zInstSync` (mêmes zombies, mêmes morceaux sautés : cachés, ou petits au loin) ; si le compte ne tombe pas juste avec celui du jeu, rien n'est corrigé cette image-là (compteur `RZ.decale`, toujours 0 dans les tests).
+- Une correction est une transformation du monde autour du pied du zombie (penche, roulis, tassement, décalage), plus une rotation des bras autour de l'épaule pour la frappe. Pour les chutes de près, la chute du jeu est remplacée par la mienne : G·Rx(la mienne)·Rx(celle du jeu)⁻¹·G⁻¹ (G : repère du zombie). Au loin (plus de 55 m de la caméra), le jeu fige déjà la pose et oublie le lacet : seules l'allure, le sursaut, les couleurs et l'éclatement s'appliquent, la chute reste celle du jeu.
+- La cause de la mort : `RFX.last` porte le tir explosif en cours (`js/55`, posé avant `rtsBlast`), un éclair de Tesla tout juste parti sur lui est dans `RFX_BEAMS`, le feu est posé juste après le coup (`z.burnT`), la mort par brûlure se reconnaît à `z.burnTick` (remis à 0,25 juste avant le coup). Rien n'est écrit dans ces objets.
+- Nids et Ruche : le modèle du jeu (`n.m`) est caché (le rayon des tirs le touche quand même : Three.js ne regarde pas la visibilité) et une copie à moi, même géométrie, même matériau (style compris), même ombre, est dessinée à sa place. Rien d'autre n'est changé sur l'objet du jeu ; `n.m.visible` revient à `true` dès que la copie part (crevaison finie, interrupteur coupé, partie quittée).
+- Morceaux : une réserve fixe (160, 70 au cell), un maillage instancié, un appel de dessin (et son ombre en Amélioré). Fumées, flammes, spores et poussières : les nuages de points de `js/79`. Boss (vrais objets dans la scène) : leur conduite ne change pas.
+- Hors de la vue (plus de 130 m du centre, ou hors du cadre) : rien n'est corrigé ; au plus 300 zombies corrigés par image (100 au cell), les plus vieux d’abord. Pause, mode photo, écran de fin : tout est figé. Rien sur le toit ni dans le robot.
+
+### Hasard et identité du jeu
+- Tout objet Three.js est créé dans `rzCalme` (`Math.random` prêté à un générateur à part), les effets tirent dans `rzHasard`, la variété (chute, sens) vient du numéro du zombie.
+- Test (pages neuves, même graine, boucle arrêtée, son coupé) : `rtsStart`, 10 unités, tourelles lance-flammes, Tesla et canon, 150 zombies et les 3 monstres, nids qui pondent, 600 images, sans puis avec les fichiers : mêmes tirages, même partie image par image (zombies vivants et morts, cibles, temps de frappe, nids, unités, bâtiments, argent, tués).
+- Banc du simulateur (`node outils/simulateur.js rts-banc 8 1 90 tank`) avant et après : référence 610 tués, 10 016 dégâts à la base, 5 pertes ; tanks 1 371 tués, 0 dégât, 0 perte. Identique. `node outils/mesure-monstres-rts.js` : même tableau avant et après.
+
+### Coût
+`node outils/mesure-style-rts.js` au cell (bataille de 30 unités et 5 tourelles contre 300 zombies), même version, interrupteur coupé puis allumé (`AVANT='RZ_REGL.on = false'`, option ajoutée à l'outil pour ce dossier), machine chargée par d'autres agents :
+
+| Cas | Appels de dessin sans → avec |
+|---|---|
+| Cell, Actuel, vue de haut | 236 → 237 (+0,4 %) |
+| Cell, Actuel, tank piloté | 121 → 122 (+0,8 %) |
+| Cell, Amélioré, vue de haut | 369 → 369 |
+| Cell, Amélioré, tank piloté | 273 → 281 (+2,9 %) |
+
+- D'où viennent les appels : les morceaux (un maillage instancié, et son ombre en Amélioré) seulement quand il y en a ; les copies des nids remplacent les modèles cachés (aucun de plus).
+- Temps du code, mesure directe au cell (915 x 412, tactile, rendu logiciel) avec 300 zombies gardés à 300 et 12 unités : 0,38 ms par image (moyenne sans les 10 % d'images les plus lentes, 120 images) avec 100 zombies corrigés (`RZ_REGL.max` au cell), 0,25 ms sans aucun zombie corrigé (le parcours des places, les nids, les morceaux) ; dans les mêmes images, le code de `js/84-rts-anim.js` prenait 0,17 à 0,45 ms (machine chargée). Le parcours des places est court pour les zombies qu'on ne corrige pas (seulement le compte par lot), l'état n'est suivi que pour les zombies vus, et les champs des zombies (de formes variées, donc lents à lire) sont lus une fois à leur naissance.
+- Leviers : `RZ_REGL.max` (zombies corrigés par image), `RZ_REGL.morceaux.cap`, `RZ_REGL.mort.eclats`.
+
+### Abandonné
+- Morts « soufflées » dans le sens de l'explosion pour ceux qui n'éclatent pas, et zombies qui brûlent en courant : il faudrait toucher à leur conduite.
+- Corps des boss : ce sont de vrais objets de la scène, que le jeu anime et dont les tirs visent les maillages ; les corriger voudrait dire toucher l'objet du jeu.
 - Pas vérifié : un vrai téléphone, la lecture de près par un vrai joueur, la nuit.
 
 ## À équilibrer en jouant

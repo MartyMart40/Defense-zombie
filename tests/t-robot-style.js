@@ -111,7 +111,7 @@
     ok(g[10] - g[5] <= 15, 'Géométries stables d\'un tour de villes à l\'autre : ' + g.join(', '));
   });
 
-  test('Style Amélioré : rien ne change dans le RTS (pas d\'ombres ni d\'effets) ; le toit garde son style après', () => {
+  test('Style Amélioré dans le RTS (dossier 118, js/72-rts-style.js) ; le toit garde son style après', () => {
     exiger(); if (lire('typeof __rts === "object" && typeof __rts.rtsStart === "function"') !== true) ignorer('RTS absent'); reset();
     let r;
     try {
@@ -124,7 +124,7 @@
         return o;
       });
     } finally { J(function(){ if (__rts.RTS.on) __rts.rtsQuit(); __style.styleSet('actuel'); }); }
-    ok(!r.ici && r.rendu === false && !r.moteur, 'RTS sans style : ' + JSON.stringify(r));
+    ok(r.ici && r.rendu === true && r.moteur, 'RTS avec le style (dossier 118) : ' + JSON.stringify(r));
     ok(r.toit && r.rendu2 === true && r.moteur2, 'De retour au toit : Amélioré');
   });
 })();

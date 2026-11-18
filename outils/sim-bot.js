@@ -20,7 +20,8 @@
   const pause = () => new Promise(r => ST0(r, 0));
   let simT = 0, simQ = [], simId = 1e9;
   function horloge(dt){
-    simT += dt; if (!simQ.length) return;
+    simT += dt; window.__SIM_T = simT; // l'heure du jeu (outils/sim-horloge.js) suit le temps simulé
+    if (!simQ.length) return;
     const du = simQ.filter(o => o.t <= simT); if (!du.length) return;
     simQ = simQ.filter(o => o.t > simT);
     du.forEach(o => { try { o.f(); } catch (e) {} });

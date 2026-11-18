@@ -10,6 +10,11 @@
 //     graine  : nombre pour le hasard (défaut 1) ; même graine = mêmes parties
 //     strategie : achat des armes pour la campagne : malin (défaut), boutique, patient, pistolet ou pompe (voir outils/sim-bot.js)
 // Durée : quelques minutes par joueur. Le jeu n'est pas modifié.
+// Reproductible : chaque page a son contexte de navigateur, l'heure, l'horloge audio et le hasard du chargement sont
+//   fixés avant le jeu, la boucle du jeu ne part jamais seule (outils/sim-page.js, outils/sim-horloge.js).
+//   Même graine = même résultat, même sur une machine chargée ; autre graine = autres parties.
+// SIM_DUELS=1,3 : seulement ces situations du duel (numéros dans DUELS, à partir de 0). La ligne « Empreinte du duel »
+//   résume tous les chiffres du duel pour comparer deux lancements.
 // RTS (robot-joueur : outils/sim-bot-rts.js) :
 //   node outils/simulateur.js rts [stratégies] [graines] [minutes] [vallées]
 //     stratégies : tourelles, blindes, air, mixte, séparées par des virgules (défaut : les quatre)
@@ -30,15 +35,11 @@ const graine = +process.argv[4] || 1;
 const strategie = process.argv[5] || 'malin';
 const NOM_STRAT = { malin:'selon le besoin : les armes de horde d’abord (fusil d’assaut, lance-flammes, minigun), le sniper pour les boss', boutique:'l’arme suivante dès qu’on peut', patient:'l’arme suivante avec deux fois son prix en poche, sans les armes de près', pistolet:'le pistolet seulement, et des améliorations', pompe:'le fusil à pompe dès qu’on peut, puis des améliorations' };
 
+// Une page du jeu avec le robot-joueur : contexte de navigateur à part, heure et hasard fixés (outils/sim-page.js)
+const { nouvellePage } = require('./sim-page.js');
 async function page(b){
-  const p = await b.newPage();
-  p.on('pageerror', e => console.log('  (erreur dans la page : ' + e.message + ')'));
-  await p.goto(BASE);
-  await p.waitForFunction(() => typeof startLocation === 'function' && typeof rtsStart === 'function');
-  await p.addScriptTag({ path: path.join(__dirname, 'sim-bot.js') });
-  await p.addScriptTag({ path: path.join(__dirname, 'sim-bot-robot.js') }); // mode robot (SIM.robot)
+  const p = await nouvellePage(b, BASE, ['sim-bot.js', 'sim-bot-robot.js']); // sim-bot-robot.js : mode robot (SIM.robot)
   await p.evaluate(() => SIM.preparer());
-  await new Promise(r => setTimeout(r, 200));
   return p;
 }
 // Duel à budget égal : les situations mesurées (ville, vague, budget que le joueur a eu jusque-là, talents à ce moment)
@@ -339,15 +340,19 @@ async function simRobot(b){
     + 'Ces chiffres servent à comparer avant et après un changement d’équilibrage, pas à remplacer les essais de Martin.\n\n'
     + '- Débutant : erreur de visée d’environ 0,6° (à chaque coup), 10 % des tirs visés à la tête, 0,6 s pour changer de cible.\n- Moyen : environ 0,35°, 30 % à la tête, 0,4 s.\n- Bon : environ 0,17°, 60 % à la tête, 0,25 s.\n\n';
   if (quoi === 'tout' || quoi === 'duel'){
-    console.log('Duel à budget égal (' + DUELS.length + ' situations, 4 à la fois)...');
+    // SIM_DUELS=0,3 : seulement ces situations (numéros dans DUELS, à partir de 0)
+    const DS = process.env.SIM_DUELS ? process.env.SIM_DUELS.split(',').map(Number).map(k => DUELS[k]).filter(Boolean) : DUELS;
+    console.log('Duel à budget égal (' + DS.length + ' situations, 4 à la fois)...');
     out.duel = [];
-    for (let i = 0; i < DUELS.length; i += 4){
-      const rs = await Promise.all(DUELS.slice(i, i + 4).map(async d => { const p = await page(b); const r = await p.evaluate(o => SIM.duel(o), Object.assign({ joueur:'moyen', graines:[graine, graine + 1] }, d)); await p.close(); return r; }));
+    for (let i = 0; i < DS.length; i += 4){
+      const rs = await Promise.all(DS.slice(i, i + 4).map(async d => { const p = await page(b); const r = await p.evaluate(o => SIM.duel(o), Object.assign({ joueur:'moyen', graines:[graine, graine + 1] }, d)); await p.close(); return r; }));
       rs.forEach(r => { out.duel.push(r); console.log('  ' + r.ville + ' vague ' + r.vague + ' : ' + r.lots.map(l => l.armes.slice(1).join('+') || 'pistolet' ).map((n, k) => n + ' ' + r.lots[k].horde).join(' | ')); });
     }
     md += '## Duel à budget égal : est-ce que l’arme vaut son prix ?\n\nLa mesure la plus fiable de ce rapport. À une vague donnée, avec l’argent qu’un joueur a eu jusque-là, chaque ligne achète ses armes puis met tout le reste en améliorations (la moins chère d’abord). '
       + 'Joueur moyen, barricade infinie, sans pouvoirs ni défenses, moyenne de 2 parties. On mesure les dégâts que la barricade encaisse pendant la vague sans son boss (plus bas = mieux, le meilleur est en gras), et le temps pour tuer le boss seul. '
       + 'Règle visée : une arme plus chère doit faire au moins aussi bien que « garder l’arme d’avant et l’améliorer », ou être nettement meilleure contre le boss.\n\n' + out.duel.map(mdDuel).join('');
+    // Résumé d'une ligne par lot (pour comparer deux lancements d'un coup d'œil)
+    console.log('Empreinte du duel : ' + out.duel.map(r => r.lots.map(l => l.horde + '/' + l.boss).join(',')).join(' ; '));
   }
   for (const j of joueurs){
     if (quoi === 'tout' || quoi === 'toit' || quoi === 'infini'){

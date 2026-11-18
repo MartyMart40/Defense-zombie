@@ -19,6 +19,36 @@
     egal(r.vagues[0] && r.vagues[0].bar, 100, 'Barricade intacte après la vague 1');
   });
 
+  // outils/sim-horloge.js (injecté avant le jeu par outils/sim-page.js) : l'heure suit le temps simulé, le hasard est fixé.
+  // Essayé dans une page vide à part, jamais dans le jeu.
+  test('Simulateur : heure et hasard fixés (même graine, même partie)', async () => {
+    const rep = await fetch('../outils/sim-horloge.js', { cache:'no-store' });
+    if (!rep.ok) ignorer('outils/sim-horloge.js absent');
+    const code = await rep.text();
+    const essai = () => new Promise((fin, rate) => {
+      const f = document.createElement('iframe'); f.style.display = 'none'; f.srcdoc = '<!doctype html><title>h</title>';
+      f.onload = () => {
+        try {
+          const w = f.contentWindow; w.eval(code);
+          const r = { h: [w.Math.random(), w.Math.random()], p0: w.performance.now(), d0: w.Date.now(), raf: w.requestAnimationFrame(() => {}) };
+          w.__SIM_T = 2.5;
+          r.p1 = w.performance.now(); r.d1 = w.Date.now(); r.nd = +new w.Date(); r.vieux = new w.Date(2020, 0, 1).getFullYear();
+          f.remove(); fin(r);
+        } catch (e) { f.remove(); rate(e); }
+      };
+      document.body.appendChild(f);
+    });
+    const a = await essai(), b = await essai();
+    egal(JSON.stringify(a.h), JSON.stringify(b.h), 'Même hasard au chargement d’une page à l’autre');
+    ok(a.h[0] !== a.h[1] && a.h[0] >= 0 && a.h[0] < 1, 'Le hasard reste un hasard (entre 0 et 1, change à chaque tirage)');
+    egal(a.p1 - a.p0, 2500, 'performance.now suit le temps simulé');
+    egal(a.d1 - a.d0, 2500, 'Date.now suit le temps simulé');
+    egal(a.nd, a.d1, 'new Date() sans argument donne l’heure simulée');
+    egal(a.vieux, 2020, 'new Date(année, mois, jour) marche toujours');
+    egal(a.d0, b.d0, 'Même date de départ d’une page à l’autre');
+    egal(a.raf, 0, 'La boucle du jeu ne part pas toute seule');
+  });
+
   test('Simulateur : le robot-joueur du mode robot avance, tire et mesure les dégâts encaissés', async () => {
     if (lire('typeof __mech === "object" && typeof __mb === "object"') !== true) ignorer('Mode robot absent');
     const codes = [];

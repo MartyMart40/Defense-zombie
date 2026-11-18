@@ -202,7 +202,7 @@ function buildWorld(L){
   for (let z = -12; z > -170; z -= 7) box(0.25, 0.02, 3, lineMat, 0, 0.01, z);
   const walkMat = lam(L.walk);
   box(6, 0.2, 200, walkMat, -16, 0.1, -100); box(6, 0.2, 200, walkMat, 16, 0.1, -100);
-  WALLS = L.walls; LIT = L.lit; WIN = L.win;
+  WALLS = L.walls; LIT = 0; WIN = L.win; // fenêtres allumées : js/68-toit-decor.js (elles s'allument et s'éteignent)
   let seed = 0;
   // Bâtiments le long de la rue
   if (L.style === 'houses'){
@@ -272,7 +272,7 @@ function buildWorld(L){
   // Feux (certains sur des carcasses d'autos)
   L.fires.forEach(f => { if (f[4]) car(f[0], f[2], rand(0, 3), null, true); else box(.7, 1, .7, lam(0x3b2a20), f[0], .5, f[2]); makeFire(f[0], f[1], f[2], f[3]); });
   // Barricade
-  const barricade = new THREE.Group(); world.add(barricade);
+  const barricade = new THREE.Group(); barricade.userData.barricade = true; world.add(barricade); // état visible : js/68-toit-decor.js
   const woodMat = lam(0x6b4a2c), wood2 = lam(0x55391f), concMat = lam(0x77736c);
   for (let x = -13; x <= 13; x += 3.2){
     box(.25, 1.6, .25, wood2, x, .8, BAR_Z, barricade);

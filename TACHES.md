@@ -7,6 +7,8 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
+| 124 | Toit : des zombies moins pareils (carrures, vêtements par ville, accessoires, démarches), visuel seulement (js/77-zombies-variete.js) | En cours | Sous-agent, lancé le 2026-11-18 |
+| 125 | Robot : l’image des monstres et de leurs effets en Actuel et en Amélioré (visuel seulement), js/70-robot-sons.js coupé en deux | En cours | Sous-agent, lancé le 2026-11-18 |
 
 ## À faire
 

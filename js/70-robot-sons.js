@@ -34,6 +34,9 @@ const RSN_REGL = {
   // Niveau de chaque famille de sons (gain de la voix), réglé par mesures hors ligne (docs/robot.md, « Sons »)
   niv: { arme:{ rocket:1.5, gl:1.4, railgun:.7, flamer:1, laser:1, arc:1 }, bipChaud:1.6, bipBas:1.4, crachat:2.5, pret:2, rue:1.4, choix:1.5, renforts:1.6, frappe:1 }
 };
+// Hasard propre aux sons (ne pioche pas dans Math.random : le hasard du jeu et du simulateur reste pareil)
+let rsnGr = 7;
+const rsnHasard = () => { rsnGr = (rsnGr * 16807) % 2147483647; return (rsnGr - 1) / 2147483646; };
 const RSN = { pas:0, grinces:0, alarmesChaud:0, bipsChaud:0, coupures:0, alertesBas:0, bipsBas:0, coques:0, crachats:0, prets:0,
   carrefours:0, choix:0, rues:0, renforts:0, titans:0, frappes:0, appels:0, victoires:0, extinctions:0, tirs:0, fondCrees:0,
   fond:null, voix:[], p:{ state:'' }, poses:[0, 0], pied:0, q:0, chaudArme:false, bipT:0, basArme:false, basT:0, coqueT:-9, coqueK:0,
@@ -410,7 +413,7 @@ function rsnImage(dt){
   // Grincement de vérin au milieu de chaque pas
   if (typeof HB === 'object'){
     const q = Math.floor((HB.phi + Math.PI / 2) / Math.PI);
-    if (q !== RSN.q){ RSN.q = q; if (HB.m > .25 && Math.random() < RSN_REGL.grince.chance) rsnGrince(-RSN.dernierPan * .8); }
+    if (q !== RSN.q){ RSN.q = q; if (HB.m > .25 && rsnHasard() < RSN_REGL.grince.chance) rsnGrince(-RSN.dernierPan * .8); }
   }
   // Moments
   if (MECH.street !== p.street){ p.street = MECH.street; p.renf = MECH.renf || 0; rsnRue(MECH.street, false); }

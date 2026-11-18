@@ -81,6 +81,7 @@ Trois modes : le toit (campagne de 6 villes et mode infini), le robot de combat,
 | 69 sons du RTS | Un son par famille d'arme du RTS, placé selon la distance, plafond de voix, moments (siège, Ruche, base attaquée), moteur en pilotant ; mesure : `node outils/mesure-sons-rts.js` |
 | 70 sons du robot | Pas calés sur les vrais pieds, fond de machine, armes vues de l'habitacle, alarmes de surchauffe et de blindage, Titan roi ; réglages `RSN_REGL` |
 | 71 Centrale | La 6e ville du toit (dossier 117) : irradié (flaque qui ronge la barricade), boss « le Cœur » et ses 3 transformateurs, gyrophares, vapeur, cendres, lueur ; réglages `CTR`. Décor : `centraleRue` et `centraleFond` dans `03-scene` ; robot, défi et déblocage de l'infini restent sur les 5 premières villes (`docs/conception.md`) |
+| 73 monstres du robot | Bélier (pas de côté), Grappin (secouer le torse), Mortier vivant (bouger) : 3 monstres du robot à parade, dès la rue 4 du tour 1 ; réglages `MR2_BEL`, `MR2_GRA`, `MR2_MOR`, `MR2_PLAN` (`docs/robot.md`) |
 | 90 branchements | Branche le registre `Jeu` sur le jeu commun ; toujours le dernier |
 
 Les const, let et function de haut niveau sont partagés entre tous les fichiers (portée globale). Un fichier peut appeler une fonction d'un fichier plus loin **seulement à l'intérieur d'une fonction**, jamais au chargement. Chaque fichier commence par `'use strict';`.

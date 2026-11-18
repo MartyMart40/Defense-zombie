@@ -42,17 +42,18 @@
     exiger(); reset();
     const r = J(function(){
       startLocation(1); renderer.render(scene, camera);
-      buildWorld(curLoc); renderer.render(scene, camera);
-      var g1 = renderer.info.memory.geometries, t1 = renderer.info.memory.textures;
-      buildWorld(curLoc); renderer.render(scene, camera);
-      buildWorld(curLoc); renderer.render(scene, camera);
+      // Le décor tiré au hasard change le compte d'une rue à l'autre (sans fuite) : base = le plus haut de 4 rues,
+      // puis 8 rues de plus ; une vraie fuite monte à chaque rue, donc même le plus bas des 4 dernières dépasserait la base.
+      var g1 = 0, t1 = 0, gF = 1e9, tF = 1e9, k;
+      for (k = 0; k < 4; k++){ buildWorld(curLoc); renderer.render(scene, camera); g1 = Math.max(g1, renderer.info.memory.geometries); t1 = Math.max(t1, renderer.info.memory.textures); }
+      for (k = 0; k < 8; k++){ buildWorld(curLoc); renderer.render(scene, camera); if (k >= 4){ gF = Math.min(gF, renderer.info.memory.geometries); tF = Math.min(tF, renderer.info.memory.textures); } }
       var deco = 0, fen = 0; world.traverse(function(m){ if (m.name === 'toitDecor') deco++; if (m.name === 'toitFenetres') fen++; });
-      return { g1: g1, t1: t1, g2: renderer.info.memory.geometries, t2: renderer.info.memory.textures, deco: deco, fen: fen };
+      return { g1: g1, t1: t1, g2: gF, t2: tF, deco: deco, fen: fen };
     });
     egal(r.deco, 1, 'Un seul décor de toit dans la rue');
     egal(r.fen, 1, 'Une seule géométrie de fenêtres dans la rue');
-    ok(r.g2 <= r.g1 + 3, 'Géométries après deux rues de plus : ' + r.g1 + ' puis ' + r.g2);
-    ok(r.t2 <= r.t1 + 2, 'Textures après deux rues de plus : ' + r.t1 + ' puis ' + r.t2);
+    ok(r.g2 <= r.g1 + 3, 'Géométries après 8 rues de plus : ' + r.g1 + ' puis ' + r.g2);
+    ok(r.t2 <= r.t1 + 2, 'Textures après 8 rues de plus : ' + r.t1 + ' puis ' + r.t2);
   });
 
   test('Décor du toit : bord du toit, objets et sacs fusionnés ; rien du toit dans le robot ; pas une cible de tir', () => {

@@ -88,14 +88,14 @@
     egal(r.btnToit, 'Style : Haute définition', 'Bouton du toit sans la mention du robot');
   });
 
-  test('Robot, style Amélioré : pas de fuite de mémoire sur 5 rues de suite', () => {
+  test('Robot, style Amélioré : pas de fuite de mémoire sur 10 rues de suite', () => {
     exiger(); reset();
     let r;
     try {
       r = J(new Function(depart + '; return (' + function(){
         __style.styleSet('ameliore'); depart();
         var M = __mech.MECH, m = [];
-        for (var k = 0; k < 6; k++){
+        for (var k = 0; k < 11; k++){
           if (k){ M.street++; S.wave = M.street; __mech.mechStreet(false); }
           for (var i = 0; i < 2; i++) visuals(1 / 30);
           __style.styleRendu(); renderer.render(scene, camera);
@@ -105,8 +105,10 @@
       } + ')();'));
     } finally { fin(); }
     const t = r.map(x => x[0]), g = r.map(x => x[1]);
-    ok(t[5] - t[1] <= 3, 'Textures stables d\'une rue à l\'autre : ' + t.join(', '));
-    ok(g[5] - g[1] <= 15, 'Géométries stables d\'une rue à l\'autre : ' + g.join(', '));
+    // Les rues tournent sur 5 villes et les monstres créent leurs textures à leur première sortie : on compare la même
+    // ville à un tour d'écart (rues 6 et 11), une fois tout créé. Une vraie fuite ajouterait une rue entière à chaque rue.
+    ok(t[10] - t[5] <= 8, 'Textures stables d\'un tour de villes à l\'autre : ' + t.join(', '));
+    ok(g[10] - g[5] <= 15, 'Géométries stables d\'un tour de villes à l\'autre : ' + g.join(', '));
   });
 
   test('Style Amélioré : rien ne change dans le RTS (pas d\'ombres ni d\'effets) ; le toit garde son style après', () => {

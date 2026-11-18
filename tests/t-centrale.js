@@ -50,14 +50,15 @@
     exiger(); reset();
     const r = J(function(){
       startLocation(__centrale.idx); renderer.render(scene, camera);
-      buildWorld(curLoc); renderer.render(scene, camera);
-      var g1 = renderer.info.memory.geometries, t1 = renderer.info.memory.textures;
-      buildWorld(curLoc); renderer.render(scene, camera);
-      buildWorld(curLoc); renderer.render(scene, camera);
-      return { g1: g1, t1: t1, g2: renderer.info.memory.geometries, t2: renderer.info.memory.textures, n: scene.children.length };
+      // Le décor tiré au hasard change le compte d'une rue à l'autre (sans fuite) : base = le plus haut de 4 rues,
+      // puis 8 rues de plus ; une vraie fuite monte à chaque rue, donc même le plus bas des 4 dernières dépasserait la base.
+      var g1 = 0, t1 = 0, gF = 1e9, tF = 1e9, k;
+      for (k = 0; k < 4; k++){ buildWorld(curLoc); renderer.render(scene, camera); g1 = Math.max(g1, renderer.info.memory.geometries); t1 = Math.max(t1, renderer.info.memory.textures); }
+      for (k = 0; k < 8; k++){ buildWorld(curLoc); renderer.render(scene, camera); if (k >= 4){ gF = Math.min(gF, renderer.info.memory.geometries); tF = Math.min(tF, renderer.info.memory.textures); } }
+      return { g1: g1, t1: t1, g2: gF, t2: tF, n: scene.children.length };
     });
-    ok(r.g2 <= r.g1 + 3, 'Géométries après deux rues de plus : ' + r.g1 + ' puis ' + r.g2);
-    ok(r.t2 <= r.t1 + 2, 'Textures après deux rues de plus : ' + r.t1 + ' puis ' + r.t2);
+    ok(r.g2 <= r.g1 + 3, 'Géométries après 8 rues de plus : ' + r.g1 + ' puis ' + r.g2);
+    ok(r.t2 <= r.t1 + 2, 'Textures après 8 rues de plus : ' + r.t1 + ' puis ' + r.t2);
   });
 
   test('Centrale : débloquée en libérant le Port ; l’infini reste débloqué par les 5 premières villes', () => {

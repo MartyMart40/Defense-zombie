@@ -59,7 +59,7 @@ let cielGr = 127;
 const cielRnd = () => { cielGr = cielGr * 16807 % 2147483647; return (cielGr - 1) / 2147483646; };
 function cielCalme(fn){ const R = Math.random; Math.random = cielRnd; try { return fn(); } finally { Math.random = R; } }
 
-const CIEL = { t:0, d1:new THREE.Vector2(3.1, 7.7), d2:new THREE.Vector2(11.3, 2.9), strikes:0, actif:false, pluiePatch:false, flocPatch:false, cuit:false, cuissons:0, rt:null,
+const CIEL = { t:0, d1:new THREE.Vector2(3.1, 7.7), d2:new THREE.Vector2(11.3, 2.9), strikes:0, actif:false, pluiePatch:false, flocPatch:false, cuit:false, cuissons:0, rt:null, versions:0, haut:new THREE.Vector3(0, 1, 0),
   cols:{}, v:new THREE.Vector3(), c:new THREE.Color(), c2:new THREE.Color(), c3:new THREE.Color(), eclairOp:0 };
 const cielU = {
   uTemps:{ value:0 }, uPx:{ value:600 }, uOp:{ value:1 },
@@ -68,6 +68,7 @@ const cielU = {
   uZenith:{ value:new THREE.Color() }, uZenA:{ value:.5 },
   uSoleilDir:{ value:new THREE.Vector3(0, .1, -1) }, uSoleil:{ value:0 }, uSoleilCol:{ value:new THREE.Color(1, .9, .7) },
   uLuneDir:{ value:new THREE.Vector3(0, .3, -1) }, uLune:{ value:0 }, uPhase:{ value:.5 },
+  uLuneT:{ value:new THREE.Vector3(1, 0, 0) }, uLuneB:{ value:new THREE.Vector3(0, 1, 0) }, uLuneL:{ value:new THREE.Vector3(0, 0, -1) },
   uEtoiles:{ value:0 }, uEtR:{ value:.15 }, uVoie:{ value:0 },
   uRideaux:{ value:0 }, uEclair:{ value:0 }, uEclairDir:{ value:new THREE.Vector3(0, .3, -1) },
   uBruit:{ value:null }
@@ -78,13 +79,13 @@ const CIEL_VERT = `
 varying vec3 vDir;
 void main(){
   vec4 wp = modelMatrix * vec4(position, 1.0);
-  vDir = wp.xyz - cameraPosition;
+  vDir = (wp.xyz - cameraPosition) * (1.0 / RAYON); // presque de longueur 1 (les triangles sont plats) : pas de normalize par pixel
   gl_Position = projectionMatrix * viewMatrix * wp;
 }`;
 const CIEL_FRAG = `
 uniform float uTemps, uPx, uOp, uCouv, uDens, uEch, uSombre, uZenA, uSoleil, uLune, uPhase, uEtoiles, uEtR, uVoie, uRideaux, uEclair;
 uniform vec2 uDep1, uDep2;
-uniform vec3 uNuageB, uNuageL, uZenith, uSoleilDir, uSoleilCol, uLuneDir, uEclairDir;
+uniform vec3 uNuageB, uNuageL, uZenith, uSoleilDir, uSoleilCol, uLuneDir, uLuneT, uLuneB, uLuneL, uEclairDir;
 varying vec3 vDir;
 float h1(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float h3(vec3 p){ p = fract(p * .3183099 + .1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
@@ -96,8 +97,10 @@ float vn(vec2 p){
 uniform sampler2D uBruit;
 float fbm(vec2 q){ vec4 t = texture2D(uBruit, q * (1.0 / PER)); return t.r + t.g * (1.0 / 255.0); }
 void over(inout vec3 C, inout float A, vec3 c, float a){ C = c * a + C * (1.0 - a); A = a + A * (1.0 - a); }
+// Chaque partie coûteuse n'est compilée que si la météo s'en sert (ETOILES, VOIE, LUNE, SOLEIL, RIDEAUX, ECLAIR,
+// choisis par cielDefines) : un « if » sur un uniform coûtait presque autant que la partie elle-même en rendu logiciel.
 void main(){
-  vec3 d = normalize(vDir);
+  vec3 d = vDir;
   float h = d.y;
   if (h < -.01) discard;
   float hz = smoothstep(-.01, .09, h);
@@ -114,68 +117,80 @@ void main(){
   float coeur = smoothstep(thr, thr + .32, n);
   float cA = cov * uDens * mix(.3, 1.0, smoothstep(.0, .28, h)) * hz;
   // Étoiles et voie lactée (derrière les nuages)
-  if (uEtoiles > 0.0 && h > .04){
-    vec3 q = d * 150.0, ce = floor(q), f = fract(q);
+#if defined(ETOILES) || defined(LUNE) || defined(SOLEIL)
+  vec3 dn = normalize(d);
+#endif
+#ifdef ETOILES
+  // Une cellule du ciel sur sept a son étoile ; place, éclat et teinte tirés d'un seul nombre (en rendu logiciel, chaque
+  // tirage coûte à tous les pixels, même ceux sans étoile)
+  {
+    vec3 q = dn * 150.0, ce = floor(q), f = fract(q);
     float hs = h3(ce);
-    if (hs > .86){
-      vec3 sp = vec3(h3(ce + 1.7), h3(ce + 3.1), h3(ce + 5.3)) * .6 + .2;
-      float s = smoothstep(uEtR, 0.0, length(f - sp)) * (.55 + .45 * sin(uTemps * (1.5 + hs * 6.0) + hs * 91.0));
-      s *= smoothstep(.04, .2, h) * (hs > .985 ? 1.0 : .6) * uEtoiles * (1.0 - cA);
-      over(C, A, mix(vec3(.85, .9, 1.0), vec3(1.0, .9, .78), step(.95, h3(ce + 9.1))), clamp(s, 0.0, 1.0));
-    }
+    vec3 sp = fract(vec3(hs * 37.13, hs * 71.37, hs * 113.71)) * .6 + .2;
+    float s = smoothstep(uEtR, 0.0, length(f - sp)) * (.55 + .45 * sin(uTemps * (1.5 + hs * 6.0) + hs * 91.0));
+    s *= step(.86, hs) * smoothstep(.04, .2, h) * (hs > .985 ? 1.0 : .6) * uEtoiles * (1.0 - cA);
+    over(C, A, mix(vec3(.85, .9, 1.0), vec3(1.0, .9, .78), step(.95, fract(hs * 251.3))), clamp(s, 0.0, 1.0));
   }
-  if (uVoie > 0.0){
+#endif
+#ifdef VOIE
+  {
     vec3 nv = normalize(vec3(.42, .55, .72));
     float b = dot(d, nv), bande = exp(-b * b * 26.0);
     float m = bande * (.35 + .65 * fbm(vec2(d.x * 4.0 + d.y * 9.0, d.z * 4.0 - d.y * 7.0))) * smoothstep(.05, .35, h); // sans couture (atan en faisait une)
     over(C, A, vec3(.72, .78, .95), .16 * m * uVoie * (1.0 - cA));
   }
+#endif
   // Lune : disque avec sa phase, lueur cendrée, mers, halo
-  float cl = dot(d, uLuneDir);
-  if (uLune > 0.0 && cl > .76){ // au-delà de 0,7 rad, le halo vaut moins d'un millième
-    float R = .026;
-    float ang = acos(clamp(cl, -1.0, 1.0));
+#ifdef LUNE
+  {
+    float cl = dot(dn, uLuneDir), R = .026;
+    float ang = sqrt(max(0.0, 2.0 - 2.0 * cl)); // angle (assez juste sous 0,7 rad, et le halo est nul au-delà)
     float halo = exp(-ang * 9.0) * .32 + exp(-ang * 40.0) * .3;
     over(C, A, vec3(.62, .72, 1.0), clamp(halo * uLune * (1.0 - cA * .6), 0.0, 1.0));
-    if (ang < R * 1.15){
-      vec3 T = normalize(cross(uLuneDir, vec3(0.0, 1.0, 0.0))), B = cross(T, uLuneDir);
-      vec2 xy = vec2(dot(d, T), dot(d, B)) / R;
-      float r2 = dot(xy, xy);
-      float bord = smoothstep(1.0, .9, sqrt(r2));
-      vec3 nm = vec3(xy, sqrt(max(0.0, 1.0 - r2)));
-      float ph = uPhase * 6.2832;
-      vec3 Ld = vec3(sin(ph), 0.0, -cos(ph));
-      float lit = smoothstep(-.06, .12, dot(nm, Ld));
-      float mer = .82 + .18 * vn(xy * 3.2 + 4.0) - .14 * smoothstep(.55, .7, vn(xy * 1.7 + 9.0));
-      vec3 c = mix(vec3(.13, .15, .2), vec3(.98, .97, .9) * mer, lit);
-      over(C, A, c, bord * uLune * (1.0 - cA * .85));
-    }
+    vec2 xy = vec2(dot(dn, uLuneT), dot(dn, uLuneB)) / R;
+    float r2 = dot(xy, xy);
+    float bord = smoothstep(1.0, .9, sqrt(r2)) * step(0.0, cl);
+    vec3 nm = vec3(xy, sqrt(max(0.0, 1.0 - r2)));
+    float lit = smoothstep(-.06, .12, dot(nm, uLuneL));
+    float mo = fbm(xy * .45 + vec2(3.3, 7.1));
+    float mer = .82 + .18 * mo - .14 * smoothstep(.55, .7, mo);
+    vec3 c = mix(vec3(.13, .15, .2), vec3(.98, .97, .9) * mer, lit);
+    over(C, A, c, bord * uLune * (1.0 - cA * .85));
   }
+#endif
   // Soleil haut dans le ciel : petit disque et couronne (le soleil bas reste la lueur de la ville)
   float cs = dot(d, uSoleilDir);
-  if (uSoleil > 0.0 && cs > .95){ // au-delà de 0,3 rad, la couronne vaut moins d'un millième
-    float ang = acos(clamp(cs, -1.0, 1.0));
+#ifdef SOLEIL
+  {
+    float ang = sqrt(max(0.0, 2.0 - 2.0 * dot(dn, uSoleilDir))); // angle (assez juste là où la couronne se voit)
     float s = (smoothstep(.022, .016, ang) + exp(-ang * 22.0) * .35) * smoothstep(.04, .1, h);
     over(C, A, mix(uSoleilCol, vec3(1.0), .6), clamp(s * uSoleil * (1.0 - cA * .92), 0.0, 1.0));
   }
+#endif
   // Couleur des nuages : base sombre au cœur, bords éclairés, côté du soleil doré, lueur de l'éclair
   float face = pow(max(cs, 0.0), 5.0);
   vec3 nc = mix(uNuageL, uNuageB, coeur * (.55 + .4 * uSombre));
   nc += uSoleilCol * face * (1.0 - coeur) * .55 * (1.0 - uSombre);
+#ifdef ECLAIR
   float fl = uEclair * (.25 + 1.6 * exp(-(1.0 - dot(d, uEclairDir)) * 25.0));
   nc += vec3(.72, .78, 1.0) * fl * (.35 + .65 * cov);
+#endif
   nc = min(nc, vec3(.82)); // sous le seuil de l'éclat d'Amélioré : pas de taches brûlées dans les nuages
   over(C, A, nc, cA);
   // Rideaux de pluie au loin : traînées verticales grises sous les nuages, par plaques
-  if (uRideaux > 0.0 && h < .32){
+#ifdef RIDEAUX
+  if (h < .32){
     float az = atan(d.x, -d.z);
     float tr = vn(vec2(az * 140.0, h * 2.5 + uTemps * 1.8));
     float pl = smoothstep(.35, .75, vn(vec2(az * 2.6 + uTemps * .03, 3.7)));
     float ra = uRideaux * pl * smoothstep(.32, .04, h) * hz * (.55 + .45 * tr) * .5;
     over(C, A, uNuageB * 1.15 + vec3(.04), ra);
   }
+#endif
+#ifdef ECLAIR
   // Lueur de l'éclair sur tout le ciel (même s'il est dégagé)
   over(C, A, vec3(.75, .8, 1.0), clamp(uEclair * .18 * hz, 0.0, 1.0));
+#endif
   A *= uOp;
   gl_FragColor = vec4(A > .001 ? C / max(A / uOp, .001) : vec3(0.0), A);
 }`;
@@ -184,7 +199,7 @@ void main(){
 const cielRoot = cielCalme(() => { const g = new THREE.Group(); g.name = 'ciel127'; scene.add(g); return g; }); // hors de world : disposeWorld n'y touche pas
 const cielDome = cielCalme(() => {
   const m = new THREE.ShaderMaterial({ uniforms:cielU, vertexShader:CIEL_VERT, fragmentShader:CIEL_FRAG, transparent:true, depthWrite:false, side:THREE.BackSide, fog:false,
-    defines:{ PER:CIEL_REGL.bruit.per.toFixed(1) } });
+    defines:{ PER:CIEL_REGL.bruit.per.toFixed(1), RAYON:'280.0' } });
   m.userData.keep = true;
   // Demi-sphère seulement (jusqu'à un peu sous l'horizon) : les pixels de la rue ne passent plus du tout dans le shader
   // (avec la sphère entière, ils y passaient tous avant d'être jetés par discard)
@@ -353,6 +368,14 @@ function cielEclairRefaire(){
 }
 
 /* ---------- Chaque image ---------- */
+// Parties du shader compilées selon la météo : une version par mélange (gardée par Three.js, compilée une seule fois)
+const CIEL_PARTIES = ['ETOILES', 'VOIE', 'LUNE', 'SOLEIL', 'RIDEAUX', 'ECLAIR'];
+function cielDefines(...on){
+  const D = cielDome.material.defines;
+  let change = false;
+  CIEL_PARTIES.forEach((k, i) => { if (!!on[i] !== (k in D)){ change = true; if (on[i]) D[k] = ''; else delete D[k]; } });
+  if (change){ cielDome.material.needsUpdate = true; CIEL.versions++; }
+}
 function cielCol(hex){ if (!CIEL.cols[hex]) CIEL.cols[hex] = new THREE.Color(hex); return CIEL.cols[hex]; }
 const cielLum = c => c.r * .299 + c.g * .587 + c.b * .114;
 function cielActif(){
@@ -416,11 +439,16 @@ function cielImage(dt){
   } else if (nuit && !W.skyGrad && L && cielLum(cielCol(L.sky[2])) < .2 && spr && couv < .7){ U.uLuneDir.value.copy(U.uSoleilDir.value); lune = .85; }
   U.uLune.value = lune;
   U.uPhase.value = cielPhase();
+  if (lune > 0){ // repère du disque de la lune et côté éclairé, calculés ici une fois plutôt qu'à chaque pixel
+    const ld = U.uLuneDir.value, T = U.uLuneT.value.crossVectors(ld, CIEL.haut).normalize(), ph = U.uPhase.value * Math.PI * 2;
+    U.uLuneB.value.crossVectors(T, ld); U.uLuneL.value.set(Math.sin(ph), 0, -Math.cos(ph));
+  }
   if (typeof AMB_X === 'object' && AMB_X.sky) AMB_X.sky.g.children.forEach(o => { o.visible = false; }); // le dôme dessine lune, halo et étoiles
   // Étoiles et voie lactée
   U.uEtoiles.value = M.etoiles || (nuit && !W.skyGrad ? R.etoilesNuitVille : 0);
   U.uVoie.value = M.voie;
   U.uRideaux.value = M.rid;
+  cielDefines(U.uEtoiles.value > 0, M.voie > 0, lune > 0, U.uSoleil.value > 0, M.rid > 0, !!W.storm || (typeof AMB === 'object' && AMB.flash > 0));
   // Éclair (lumière de js/22, lue seulement) : un ruban dans le ciel à chaque coup de tonnerre
   const fl = typeof AMB === 'object' ? Math.max(0, AMB.flash || 0) : 0, doux = (typeof RS === 'object' && RS.on === false) ? R.eclair.doux : 1;
   if (typeof AMB === 'object' && AMB.strikes !== CIEL.strikes){ CIEL.strikes = AMB.strikes; cielEclairRefaire(); }

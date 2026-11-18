@@ -8,13 +8,14 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
 | 118 | RTS : le style graphique Amélioré dans la vallée (sol texturé, ombres, éclat des tirs) | En cours | Sous-agent, lancé le 2026-11-18 |
+| 120 | Toit : performance au cell, décor fusionné pour moins d’appels de dessin, boucle allégée, image identique | En cours | Sous-agent, lancé le 2026-11-18 |
+| 121 | Robot : finitions (sons propres des 3 monstres, sons en double, Grappin au cell vertical, geste tactile, nettoyage) | En cours | Sous-agent, lancé le 2026-11-18 |
 
 ## À faire
 
 | # | Tâche | Priorité |
 |---|-------|----------|
 | - | Équilibrage après essais de Martin | Après essais |
-| - | Dossier performance au cell : mesurer la boucle du jeu (`tests/perf.html`) et alléger ce qui coûte | À choisir par Martin |
 
 Écarté par Martin : choisir 1 bonus parmi 3.
 

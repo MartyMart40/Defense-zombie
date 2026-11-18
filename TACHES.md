@@ -8,6 +8,7 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
 | 122 | RTS : trois monstres à parade, après la menace 8 à 10 seulement (js/74-rts-monstres.js) | En cours | Sous-agent, lancé le 2026-11-18 |
+| 123 | Toit : la Centrale, ses sons (fond électrique, irradié, le Cœur) et son image vérifiée en Haute définition et Ultra (js/76-centrale-sons.js) | En cours | Sous-agent, lancé le 2026-11-18 |
 
 ## À faire
 

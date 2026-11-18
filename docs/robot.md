@@ -12,8 +12,9 @@ On pilote un mech à deux pattes, vue du cockpit : minigun au bras gauche, lance
 | `js/40-robot-monstres.js` | Bibites monstrueuses (rôdeur, araignée, abomination), 3 boss avec barre de vie, vagues du bout de la rue et des ruelles, carrefours pour choisir la rue suivante |
 | `js/40-robot-fin.js` | Course de 9 rues : boss final, victoire, tours (force, ferraille, prime), choix du tour au garage, progression affichée (`MECH_FIN`, profil `P.mechFin`) |
 | `js/40-robot-habitacle.js` | Habitacle complet (vitre, tableau de bord, écrans, manettes et mains du pilote), jambes qui marchent, balancement des pas, réglage « Habitacle » de la Pause (dossier 105). Seulement visuel |
+| `js/67-robot-style.js` | Style graphique Amélioré dans le robot (dossier 114) : ombres des jambes, bouton « Style » dans la Pause du robot. Le reste est dans `js/57-graphismes.js`. Seulement visuel |
 | `js/50-robot-sauvegarde.js` | Course gardée au début de chaque rue ; « ▶ Continuer le robot » sur l'écran titre reprend au début de la rue |
-| `tests/t-robot.js`, `tests/t-robot2.js`, `tests/t-robot-sauvegarde.js`, `tests/t-robot-fin.js`, `tests/t-robot-habitacle.js` | Tests |
+| `tests/t-robot.js`, `tests/t-robot2.js`, `tests/t-robot-sauvegarde.js`, `tests/t-robot-fin.js`, `tests/t-robot-habitacle.js`, `tests/t-robot-style.js` | Tests |
 
 ## Chiffres actuels
 - Rue de 140 m (`MECH_LEN`). Course de 9 rues. Boss aux rues 3 et 6, boss final à la rue 9.
@@ -85,6 +86,20 @@ Martin : « Le robot dans la ville a encore des zombies qui spawn en arrière, i
 - Test : `tests/t-robot-habitacle.js` vérifie, pour chaque forme d'écran, où se voient le haut des manettes et l'écran du blindage.
 
 **Coût.** Appels de dessin à l'ordi (rue 1, à l'arrêt) : 175 avant, 180 après (186 au tir) ; en regardant en bas : 98 avant, 53 à 125 après. 9 objets dans l'habitacle, 7 pour les jambes, matériau de l'arme en main partagé (une copie pour la rue), une texture d'écrans, aucune lumière de plus.
+
+## Dossier 114 (2026-11-18) : style Amélioré dans le robot
+Le réglage « Style » (`dt_style`) marche maintenant dans le robot : textures de la rue et des façades, vraies ombres du soleil, éclat, couleurs, comme sur le toit. Haute définition et Ultra donnent Amélioré dans le robot ; le bouton « Style » est aussi dans la Pause du robot et le dit (« Style : Haute définition (Amélioré dans le robot) »). Actuel : rien ne change. Aucun chiffre de jeu ne change.
+- La zone d'ombre du soleil suit la caméra pendant que la rue défile (140 m), recalée sur les texels (pas de scintillement).
+- Les jambes projettent et reçoivent des ombres. L'habitacle, les manettes et les bras sont dessinés par-dessus, sans effets.
+- Pas de fuite : textures et géométries stables sur 6 rues de suite (`tests/t-robot-style.js`).
+- Coût (rendu logiciel swiftshader, une vague d'environ 100 zombies devant, Actuel et Amélioré en alternance ; les temps bougent beaucoup, d'autres programmes tournaient) :
+  | | Appels de dessin Actuel → Amélioré | Temps par image Actuel → Amélioré (médiane) |
+  |---|---|---|
+  | Robot, cell 915 x 412 | 205 → 412 | 133 → 267 ms (+133) ; autre passage 133 → 300 |
+  | Toit, cell 915 x 412 | 245 → 470 | 67 → 200 ms (+133) ; autre passage 50 → 150 |
+  | Robot, ordi 1280 x 720 | 209 → 412 | 617 → 1 150 ms (+533) |
+  | Toit, ordi 1280 x 720 | 75 → 300 | 300 → 800 ms (+500) |
+  Amélioré ajoute environ 200 appels (le dessin de la carte d'ombre) dans le robot comme sur le toit, et à peu près le même temps. Rien n'a été allégé de plus. Une zone d'ombre plus courte derrière le robot a été essayée : aucun appel de moins, donc pas gardée. À mesurer pour de vrai sur le cell de Martin.
 
 ## Succès
 Briseur de rues (5, 15, 30 rues en une course) et Broyeur (500, 5 000, 25 000 zombies), cachés tant que le robot est verrouillé (`js/51-succes-modes.js`). Dossier 102 : Course réussie (1, 5, 20 courses) et Grimpeur de tours (tours 3, 6, 10), repris de `P.mechFin` au chargement.

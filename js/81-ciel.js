@@ -46,7 +46,12 @@ const CIEL_REGL = {
   etoilesNuitVille: .8, // étoiles quand la ville est de nuit (Banlieue Nord, Centrale) et que la météo n'a pas son ciel
   eclair: { vu:.35, doux:.55, larg:1.1 }, // l'éclair se voit tant que AMB.flash > vu ; doux : force si Secousses est coupé
   eclab: { n:300, nCell:120, taille:.32 }, // éclaboussures
-  octaves: 5, octavesCell: 4
+  // Bruit des nuages (dossier 132) : calculé une seule fois dans une texture qui se répète (période per, en unités du
+  // bruit), puis lu deux fois par pixel au lieu de deux bruits de 4 ou 5 octaves calculés à chaque pixel et chaque image.
+  // tex : côté de la texture en pixels (per x 2^(octaves - 1) x 4 : 4 pixels par onde de la plus fine octave)
+  bruit: { per:16, octaves:5, tex:1024, octavesCell:4, texCell:512 },
+  // Dôme : demi-sphère qui descend de sousHorizon (rad) sous l'horizon, en anneaux (le shader ne dessine rien sous -0,01)
+  anneaux: 9, sousHorizon: .03
 };
 
 // Générateur à part : le jeu ne voit aucun tirage de plus
@@ -54,7 +59,7 @@ let cielGr = 127;
 const cielRnd = () => { cielGr = cielGr * 16807 % 2147483647; return (cielGr - 1) / 2147483646; };
 function cielCalme(fn){ const R = Math.random; Math.random = cielRnd; try { return fn(); } finally { Math.random = R; } }
 
-const CIEL = { t:0, d1:new THREE.Vector2(3.1, 7.7), d2:new THREE.Vector2(11.3, 2.9), strikes:0, actif:false, pluiePatch:false, flocPatch:false,
+const CIEL = { t:0, d1:new THREE.Vector2(3.1, 7.7), d2:new THREE.Vector2(11.3, 2.9), strikes:0, actif:false, pluiePatch:false, flocPatch:false, cuit:false, cuissons:0, rt:null,
   cols:{}, v:new THREE.Vector3(), c:new THREE.Color(), c2:new THREE.Color(), c3:new THREE.Color(), eclairOp:0 };
 const cielU = {
   uTemps:{ value:0 }, uPx:{ value:600 }, uOp:{ value:1 },
@@ -64,7 +69,8 @@ const cielU = {
   uSoleilDir:{ value:new THREE.Vector3(0, .1, -1) }, uSoleil:{ value:0 }, uSoleilCol:{ value:new THREE.Color(1, .9, .7) },
   uLuneDir:{ value:new THREE.Vector3(0, .3, -1) }, uLune:{ value:0 }, uPhase:{ value:.5 },
   uEtoiles:{ value:0 }, uEtR:{ value:.15 }, uVoie:{ value:0 },
-  uRideaux:{ value:0 }, uEclair:{ value:0 }, uEclairDir:{ value:new THREE.Vector3(0, .3, -1) }
+  uRideaux:{ value:0 }, uEclair:{ value:0 }, uEclairDir:{ value:new THREE.Vector3(0, .3, -1) },
+  uBruit:{ value:null }
 };
 const cielOn = { value:0 }, cielVent = { value:0 }, cielLong = { value:0 }; // pluie et flocons (js/22) : 0 = comme avant
 
@@ -86,11 +92,9 @@ float vn(vec2 p){
   vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
   return mix(mix(h1(i), h1(i + vec2(1.0, 0.0)), f.x), mix(h1(i + vec2(0.0, 1.0)), h1(i + vec2(1.0, 1.0)), f.x), f.y);
 }
-float fbm(vec2 p){
-  float s = 0.0, a = .5;
-  for (int i = 0; i < OCT; i++){ s += a * vn(p); p = p * 2.03 + vec2(17.1, 9.2); a *= .5; }
-  return s / (1.0 - pow(.5, float(OCT)));
-}
+// Bruit des nuages lu dans la texture cuite une fois (cielCuire) : deux octets par valeur, filtrés en ligne droite
+uniform sampler2D uBruit;
+float fbm(vec2 q){ vec4 t = texture2D(uBruit, q * (1.0 / PER)); return t.r + t.g * (1.0 / 255.0); }
 void over(inout vec3 C, inout float A, vec3 c, float a){ C = c * a + C * (1.0 - a); A = a + A * (1.0 - a); }
 void main(){
   vec3 d = normalize(vDir);
@@ -123,12 +127,13 @@ void main(){
   if (uVoie > 0.0){
     vec3 nv = normalize(vec3(.42, .55, .72));
     float b = dot(d, nv), bande = exp(-b * b * 26.0);
-    float m = bande * (.35 + .65 * fbm(vec2(atan(d.x, d.z) * 4.0, d.y * 9.0))) * smoothstep(.05, .35, h);
+    float m = bande * (.35 + .65 * fbm(vec2(d.x * 4.0 + d.y * 9.0, d.z * 4.0 - d.y * 7.0))) * smoothstep(.05, .35, h); // sans couture (atan en faisait une)
     over(C, A, vec3(.72, .78, .95), .16 * m * uVoie * (1.0 - cA));
   }
   // Lune : disque avec sa phase, lueur cendrée, mers, halo
-  if (uLune > 0.0){
-    float cl = dot(d, uLuneDir), R = .026;
+  float cl = dot(d, uLuneDir);
+  if (uLune > 0.0 && cl > .76){ // au-delà de 0,7 rad, le halo vaut moins d'un millième
+    float R = .026;
     float ang = acos(clamp(cl, -1.0, 1.0));
     float halo = exp(-ang * 9.0) * .32 + exp(-ang * 40.0) * .3;
     over(C, A, vec3(.62, .72, 1.0), clamp(halo * uLune * (1.0 - cA * .6), 0.0, 1.0));
@@ -147,13 +152,14 @@ void main(){
     }
   }
   // Soleil haut dans le ciel : petit disque et couronne (le soleil bas reste la lueur de la ville)
-  if (uSoleil > 0.0){
-    float cs = dot(d, uSoleilDir), ang = acos(clamp(cs, -1.0, 1.0));
+  float cs = dot(d, uSoleilDir);
+  if (uSoleil > 0.0 && cs > .95){ // au-delà de 0,3 rad, la couronne vaut moins d'un millième
+    float ang = acos(clamp(cs, -1.0, 1.0));
     float s = (smoothstep(.022, .016, ang) + exp(-ang * 22.0) * .35) * smoothstep(.04, .1, h);
     over(C, A, mix(uSoleilCol, vec3(1.0), .6), clamp(s * uSoleil * (1.0 - cA * .92), 0.0, 1.0));
   }
   // Couleur des nuages : base sombre au cœur, bords éclairés, côté du soleil doré, lueur de l'éclair
-  float face = pow(max(dot(d, uSoleilDir), 0.0), 5.0);
+  float face = pow(max(cs, 0.0), 5.0);
   vec3 nc = mix(uNuageL, uNuageB, coeur * (.55 + .4 * uSombre));
   nc += uSoleilCol * face * (1.0 - coeur) * .55 * (1.0 - uSombre);
   float fl = uEclair * (.25 + 1.6 * exp(-(1.0 - dot(d, uEclairDir)) * 25.0));
@@ -178,11 +184,54 @@ void main(){
 const cielRoot = cielCalme(() => { const g = new THREE.Group(); g.name = 'ciel127'; scene.add(g); return g; }); // hors de world : disposeWorld n'y touche pas
 const cielDome = cielCalme(() => {
   const m = new THREE.ShaderMaterial({ uniforms:cielU, vertexShader:CIEL_VERT, fragmentShader:CIEL_FRAG, transparent:true, depthWrite:false, side:THREE.BackSide, fog:false,
-    defines:{ OCT:isTouch ? CIEL_REGL.octavesCell : CIEL_REGL.octaves } });
+    defines:{ PER:CIEL_REGL.bruit.per.toFixed(1) } });
   m.userData.keep = true;
-  const o = new THREE.Mesh(new THREE.SphereGeometry(280, 32, 16), m);
+  // Demi-sphère seulement (jusqu'à un peu sous l'horizon) : les pixels de la rue ne passent plus du tout dans le shader
+  // (avec la sphère entière, ils y passaient tous avant d'être jetés par discard)
+  const o = new THREE.Mesh(new THREE.SphereGeometry(280, 32, CIEL_REGL.anneaux, 0, Math.PI * 2, 0, Math.PI / 2 + CIEL_REGL.sousHorizon), m);
   o.frustumCulled = false; o.renderOrder = -10; o.visible = false; cielRoot.add(o); return o;
 });
+// Bruit des nuages : un fbm qui se répète (chaque octave est tirée modulo sa période), peint une seule fois dans une
+// texture avec ses mipmaps, à la première image du ciel (un seul rendu hors écran, compté dans CIEL.cuissons), puis de
+// nouveau seulement si le contexte WebGL est perdu et rendu. Valeur sur deux octets (rouge + vert / 255) : le filtrage en
+// ligne droite et les mipmaps restent justes (somme pondérée), sans bandes dans les bords des nuages.
+const CIEL_CUIRE_FRAG = `
+uniform float uP;
+varying vec2 vUv;
+float h1(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float vnp(vec2 p, float P){
+  vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  vec2 a = mod(i, P), b = mod(i + 1.0, P);
+  return mix(mix(h1(a), h1(vec2(b.x, a.y)), f.x), mix(h1(vec2(a.x, b.y)), h1(b), f.x), f.y);
+}
+void main(){
+  vec2 p = vUv * uP; float s = 0.0, a = .5, P = uP;
+  for (int i = 0; i < OCT; i++){ s += a * vnp(p, P); p = p * 2.0 + vec2(17.1, 9.2); P *= 2.0; a *= .5; }
+  float v = clamp(s / (1.0 - pow(.5, float(OCT))), 0.0, 1.0);
+  float hi = floor(v * 255.0) / 255.0;
+  gl_FragColor = vec4(hi, (v - hi) * 255.0, 0.0, 1.0);
+}`;
+function cielCuire(){
+  if (CIEL.cuit) return;
+  const B = CIEL_REGL.bruit, S = isTouch ? B.texCell : B.tex, oct = isTouch ? B.octavesCell : B.octaves;
+  cielCalme(() => {
+    if (CIEL.rt) CIEL.rt.dispose();
+    const rt = CIEL.rt = new THREE.WebGLRenderTarget(S, S, { wrapS:THREE.RepeatWrapping, wrapT:THREE.RepeatWrapping, magFilter:THREE.LinearFilter,
+      minFilter:THREE.LinearMipmapLinearFilter, generateMipmaps:true, depthBuffer:false, stencilBuffer:false });
+    const m = new THREE.ShaderMaterial({ uniforms:{ uP:{ value:B.per } }, defines:{ OCT:oct }, depthTest:false, depthWrite:false,
+      vertexShader:'varying vec2 vUv;\nvoid main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }', fragmentShader:CIEL_CUIRE_FRAG });
+    const sc = new THREE.Scene(), q = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), m), cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    q.frustumCulled = false; sc.add(q);
+    const avant = renderer.getRenderTarget(), xr = renderer.xr && renderer.xr.enabled;
+    if (renderer.xr) renderer.xr.enabled = false;
+    renderer.setRenderTarget(rt); renderer.render(sc, cam); renderer.setRenderTarget(avant);
+    if (renderer.xr) renderer.xr.enabled = xr;
+    q.geometry.dispose(); m.dispose();
+    cielU.uBruit.value = rt.texture;
+  });
+  CIEL.cuit = true; CIEL.cuissons++;
+}
+try { renderer.domElement.addEventListener('webglcontextrestored', () => { CIEL.cuit = false; }); } catch (e) { errNote(e); }
 // Éclair : ruban en zigzag (branches comprises), refait à chaque coup avec le générateur à part
 const CIEL_ECL_Q = 64;
 const cielEclair = cielCalme(() => {
@@ -322,7 +371,7 @@ function cielCacher(){
 function cielImage(dt){
   if (!cielActif()){ cielCacher(); return; }
   CIEL.actif = true; cielOn.value = 1;
-  cielPluiePatch(); cielFlocPatch();
+  cielPluiePatch(); cielFlocPatch(); cielCuire();
   const nom = (typeof AMB === 'object' && AMB.weather) || 'clair', W = (typeof WEATHERS === 'object' && WEATHERS[nom]) || {}, R = CIEL_REGL;
   const M = Object.assign({ couv:.3, dens:.7, ech:.55, vit:1, sombre:.2, rid:0, vent:0, long:0, etoiles:0, voie:0 }, R.meteo[nom] || R.meteo.clair);
   const L = typeof curLoc === 'object' ? curLoc : null, V = (L && R.villes[L.id]) || {};
@@ -400,5 +449,5 @@ function cielPhase(){
 Jeu.on('image', dt => { try { cielImage(dt || 0); } catch (e) { errNote(e); } });
 
 // Accès pour les tests automatiques
-window.__ciel = { CIEL_REGL, CIEL, cielU, cielDome, cielEclair, cielEclab, cielActif, cielImage, cielPhase, cielRnd, cielOn,
+window.__ciel = { CIEL_REGL, CIEL, cielU, cielDome, cielEclair, cielEclab, cielActif, cielImage, cielPhase, cielRnd, cielOn, cielCuire,
   get pluiePatch(){ return CIEL.pluiePatch; }, get flocPatch(){ return CIEL.flocPatch; } };

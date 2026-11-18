@@ -13,10 +13,12 @@ On pilote un mech à deux pattes, vue du cockpit : minigun au bras gauche, lance
 | `js/40-robot-fin.js` | Course de 9 rues : boss final, victoire, tours (force, ferraille, prime), choix du tour au garage, progression affichée (`MECH_FIN`, profil `P.mechFin`) |
 | `js/40-robot-habitacle.js` | Habitacle complet (vitre, tableau de bord, écrans, manettes et mains du pilote), jambes qui marchent, balancement des pas, réglage « Habitacle » de la Pause (dossier 105). Seulement visuel |
 | `js/67-robot-style.js` | Style graphique Amélioré dans le robot (dossier 114) : ombres des jambes, bouton « Style » dans la Pause du robot. Le reste est dans `js/57-graphismes.js`. Seulement visuel |
-| `js/70-robot-sons.js` | Sons de la machine (dossier 116) : pas sur le vrai pied, fond du moteur, armes vues de l'intérieur, tableau de bord, moments ; sons des trois monstres à parade (dossier 121). Seulement sonore |
-| `js/73-robot-monstres2.js` | Trois monstres à la taille du robot, chacun avec sa parade (dossier 119) : Bélier, Grappin, Mortier vivant ; annonce à la première rencontre (`P.mr2Vus`), alertes sans son, monstre de la rue suivante au carrefour, « Monstres rencontrés » au garage |
+| `js/70-robot-sons.js` | Sons de la machine (dossier 116) : pas sur le vrai pied, fond du moteur, armes vues de l'intérieur, tableau de bord, moments. Seulement sonore |
+| `js/70-robot-sons-monstres.js` | Sons des trois monstres à parade (dossier 121), coupés de `js/70-robot-sons.js` au dossier 125 sans changer un son |
+| `js/73-robot-monstres2.js` | Trois monstres à la taille du robot, chacun avec sa parade (dossier 119) : Bélier, Grappin, Mortier vivant ; annonce à la première rencontre (`P.mr2Vus`), alertes sans son, monstre de la rue suivante au carrefour, « Monstres rencontrés » au garage ; détails des modèles (dossier 125, `mr2Deco`) |
+| `js/78-robot-monstres-fx.js` | Effets des trois monstres à parade (dossier 125) : poussière, briques, traînées, fissures et bave sur la vitre, acide, anneau qui se resserre sur le cercle de l'obus. Seulement visuel |
 | `js/50-robot-sauvegarde.js` | Course gardée au début de chaque rue ; « ▶ Continuer le robot » sur l'écran titre reprend au début de la rue |
-| `tests/t-robot.js`, `tests/t-robot2.js`, `tests/t-robot-sauvegarde.js`, `tests/t-robot-fin.js`, `tests/t-robot-habitacle.js`, `tests/t-robot-style.js`, `tests/t-robot-sons.js`, `tests/t-robot-monstres2.js` | Tests |
+| `tests/t-robot.js`, `tests/t-robot2.js`, `tests/t-robot-sauvegarde.js`, `tests/t-robot-fin.js`, `tests/t-robot-habitacle.js`, `tests/t-robot-style.js`, `tests/t-robot-sons.js`, `tests/t-robot-monstres2.js`, `tests/t-robot-monstres-fx.js` | Tests |
 
 ## Chiffres actuels
 - Rue de 140 m (`MECH_LEN`). Course de 9 rues. Boss aux rues 3 et 6, boss final à la rue 9.
@@ -208,6 +210,38 @@ Même méthode que la table du dossier 116 (les sons de référence redonnent se
 - Après (`ampT` = 0,3 rad × la sensibilité si elle est sous 1) : décroché dans les 4 cas. La souris ne change pas (0,4 rad : des va-et-vient de 0,3 rad ne le décrochent pas, de 0,45 rad oui).
 
 **Enrobage retiré** : `js/71-centrale.js` ne réaffecte plus `mbRoutes`. Une seule constante, `MECH_VILLES = 5` (`js/39-robot.js`) : la rue du robot (`LOCS[(rue - 1) % MECH_VILLES]`) et le tirage des carrefours (`LOCS.slice(0, MECH_VILLES)` dans `mbRoutes`), même tirage qu'avant.
+
+## Dossier 125 (2026-11-18) : l'image des monstres du robot
+Seulement visuel : aucun chiffre de jeu (vie, dégâts, vitesses, temps des parades, rayon de l'obus, boîtes de tir, hasard) ne change. Simulateur du robot (`SIM_ROBOT=neuf SIM_COURSES=2 node outils/simulateur.js robot moyen`) : rapport identique avant et après (profil neuf 4,63 et 3 rues ; garage 7 500 ⚙ : ✔ et 7,92 ; 20 000 ⚙ : ✔ ✔).
+
+**Ce qui clochait** (captures depuis l'habitacle, Actuel et Amélioré, ordi 1600 x 900, cell couché 915 x 412 et vertical 412 x 915, de jour et de nuit à Banlieue Nord) :
+- Bélier : son bouclier gris foncé couvrait tout l'avant ; de face, une boîte sombre avec deux points rouges, un carré noir la nuit.
+- Mortier vivant : planté à 55 à 72 m, il disparaissait dans la brume de jour et dans le noir la nuit (seule une petite lueur au bout du tube).
+- Obus : un petit point orange ; il sort de la vue par le haut peu après le départ, sa traînée (une braise toutes les 0,06 s) ne se voyait pas.
+- Cercle de l'obus : il est sous le robot (là où il était au départ du tir) ; depuis l'habitacle, le tableau de bord le cache tant qu'on ne regarde pas vers le bas. L'alerte « Obus : bouge ! » et les bords rouges le disaient déjà.
+- Grappin en plein saut : petit, sans traînée, dur à suivre sur le ciel et la nuit.
+- Rien de propre à Amélioré : les monstres projettent leur ombre comme sur le toit (pas d'ombre reçue, comme les zombies du toit), bande et cercle (matériaux sans éclairage) ne sont ni délavés ni brûlés par l'éclat, le Grappin de la vitre est dans la scène de l'habitacle (sans effets d'image). Rien ne clignote ni ne se traverse. `js/57-graphismes.js` n'est pas modifié.
+
+**Ajouté** (`js/73-robot-monstres2.js` pour les modèles, `js/78-robot-monstres-fx.js` pour les effets) :
+- Bélier : plaque d'os sur le bouclier sombre, fente de visière et yeux qui luisent en orange (on le voit la nuit), épaules massives au-dessus du bouclier, cornes de bélier qui partent de côté puis pointent vers l'avant ; la bosse du dos qui luit quand il est sonné ne change pas. Poussière sous le sabot qui gratte pendant l'élan, nuage derrière lui pendant la charge ; éclats de briques et poussière quand il s'écrase contre la façade.
+- Grappin : trois griffes à chaque crochet, ergots aux pieds, deux pattes arrière d'insecte qui bougent en courant, épines du dos ; traînée qui luit pendant le saut. Sur la vitre : fissures en étoile qui s'étendent et bave qui coule, dans le cadre du Grappin (même place et même taille, `MR2_VITRE` inchangé : il ne cache pas plus d'écran) ; morceaux qui glissent sur la vitre quand on le décroche.
+- Mortier vivant : bouche du tube plus large (lueur sans brouillard : on le voit la nuit au bout de la rue), gorge sous le tube qui gonfle et s'allume en orange pendant les 0,6 s avant le tir ; lueur et fumée au départ ; traînée de l'obus (lueur sans brouillard et fumée claire) ; éclaboussure d'acide à l'impact (gouttes et flaque verte qui s'efface en 1,6 s). Anneau orange qui se resserre sur le cercle rouge pendant le vol : 1,7 × le rayon au départ, exactement le rayon (la zone touchée) à l'impact ; le cercle rouge et le disque qui se remplit ne changent pas. Il ne règle pas le cercle caché sous le robot : même à 1,7 × le rayon (4,9 m), il reste sous le tableau de bord en regardant devant (vérifié en capture) ; on le voit en regardant vers le bas ou quand on s'est écarté du cercle.
+- Titan roi : couronne qui luit (le Titan des rues n'en a pas).
+
+**Règles suivies pour le hasard et les boîtes de tir** (à garder pour tout futur détail sur un zombie) :
+- Les détails sont ajoutés après le calcul de la boîte de tir (`zBoxFor`, appelé par `mr2Deco` avant les ajouts) et ne sont jamais dans `parts` : boîtes de tir identiques (test qui compare les boîtes avec et sans les détails, `MR2_DECO.on`).
+- Three.js tire 4 nombres de `Math.random` par objet créé : les détails sont créés par `mr2Calme` (hasard à part, comme `fusionCalme`). Ils ont leurs propres géométries (`MR2G`) et aucun matériau de plus (`__zperf.mats` de `js/27` borne les matériaux de zombies à 40, et la suite y était déjà : des pustules d'acide qui luisaient et des couleurs de plus ont été retirées). Les lueurs (yeux du Bélier, gorge du Mortier, couronne du Titan roi) sont de simples repères dans le modèle (`mr2Lueur`), dessinés par `js/78` avec sa propre matière orange sans brouillard (deux instances, un appel de dessin chacune quand une lueur se voit) et donc leurs propres lots d'instances, faits au chargement à 256 places : un premier essai les mettait dans les lots communs des zombies, qui grandissaient alors à d'autres moments (un lot agrandi en jeu crée un objet) et le rapport du simulateur changeait (garage 7 500 ⚙ : 8 et 8,99 au lieu de ✔ et 7,92).
+- Effets : réserves de taille fixe créées au chargement (poussière et fumée translucides, briques et gouttes, lueur additive sans brouillard, morceaux sur la vitre), hasard propre (`mfxHasard`), rien de créé en jeu. `burst` de `js/05-particules.js` tire dans `Math.random` : il n'est pas utilisé pour les nouveaux effets.
+
+**Coût** (appels de dessin, rue 3 avec un Bélier, un Grappin, un Mortier et 60 zombies, robot à l'arrêt, rendu logiciel) : cell couché Actuel 117 → 120 (+2,6 %), Amélioré 246 → 251 (+2 %) ; ordi Actuel 120 → 123, Amélioré 246 → 251. Deux lots d'instances de plus pour les détails et un pour les lueurs (et leur ombre en Amélioré) ; pendant un effet, un à trois de plus le temps qu'il dure.
+
+**Coupe de `js/70-robot-sons.js`** (712 lignes) : la section 6 (sons des monstres à parade) passe dans `js/70-robot-sons-monstres.js` (200 lignes), chargé juste après ; `js/70-robot-sons.js` garde la base, les pas, le fond, les armes, le tableau de bord et les moments (522 lignes). Aucun son ne change : même code, même ordre des écouteurs ; `tests/t-robot-sons.js` passe tel quel (`window.__rsn` garde les mêmes noms).
+
+**Test** : `tests/t-robot-monstres-fx.js` (boîtes de tir et tirages du hasard avec et sans les détails, effets de chaque monstre, anneau exactement sur le cercle à l'impact, couronne du Titan roi, rien de créé en jeu). `tests/t-robot-monstres2.js`, « rien ne fuit » : les objets de chaque météo sont faits avant de compter (une météo tirée pour la première fois pendant les 5 rues comptait comme une fuite, avant comme après ce dossier).
+
+**Pas réglé** : le cercle sous le robot reste caché par le tableau de bord en regardant devant (l'alerte et les bords rouges le disent). Le montrer demanderait un autre repère (à décider avec Martin).
+
+**À regarder en jouant** : la poussière de la charge (discrète, surtout derrière lui), la taille de l'anneau qui se resserre, le Mortier de nuit quand il ne tire pas (seule la bouche du tube luit).
 
 ## Succès
 Briseur de rues (5, 15, 30 rues en une course) et Broyeur (500, 5 000, 25 000 zombies), cachés tant que le robot est verrouillé (`js/51-succes-modes.js`). Dossier 102 : Course réussie (1, 5, 20 courses) et Grimpeur de tours (tours 3, 6, 10), repris de `P.mechFin` au chargement.

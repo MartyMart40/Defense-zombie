@@ -27,7 +27,8 @@
   test('Rendu : nuages, brume, flaques à la pluie, ombres sous les zombies, fumée des explosions', () => {
     exGfx(); reset(); J('startLocation(0)');
     const r = J(function(){
-      var o = {}, p0 = __gfx.GFX.pref;
+      var o = {}, p0 = __gfx.GFX.pref, ciel0 = typeof CIEL_REGL === 'object' ? CIEL_REGL.on : null;
+      if (ciel0 !== null) CIEL_REGL.on = false; // le ciel du dossier 127 (js/81-ciel.js) remplace les nuages en sprites : t-ciel.js
       __t.geler(); clearZombies();
       __gfx.gfxSet('haut'); __amb.set('soleil'); __gfx.GFX.wet = 0;
       for (var i = 0; i < 5; i++) visuals(1 / 30);
@@ -42,6 +43,7 @@
       o.bas = { n: vis(__gfx.gfxClouds), b: vis(__gfx.gfxMist), o: __gfx.gfxShadows.visible };
       var s1 = __gfx.GFX.smokeN; __gfx.gfxPuff(0, 1, -30, 2, 2); o.basFumee = __gfx.GFX.smokeN - s1;
       __gfx.gfxSet(p0); __amb.set('clair'); clearZombies();
+      if (ciel0 !== null) CIEL_REGL.on = ciel0;
       return o;
     });
     egal(r.nuages, 12, 'Nuages au grand soleil (qualité haute)');

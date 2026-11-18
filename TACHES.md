@@ -8,6 +8,8 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
 | 125 | Robot : l’image des monstres et de leurs effets en Actuel et en Amélioré (visuel seulement), js/70-robot-sons.js coupé en deux | En cours | Sous-agent, lancé le 2026-11-18 |
+| 126 | RTS : une vallée vivante (décor fixe, cratères et traces de la bataille, fumée des bâtiments abîmés), visuel seulement (js/79-rts-vallee.js) | En cours | Sous-agent, lancé le 2026-11-18 |
+| 127 | Toit : le ciel et la météo plus beaux (ciel selon l’heure, lune, étoiles, nuages, pluie, éclairs), visuel et sonore seulement (js/81-ciel.js) | En cours | Sous-agent, lancé le 2026-11-18 |
 
 ## À faire
 

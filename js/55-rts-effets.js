@@ -241,6 +241,7 @@ function rfxImpact(p, kind, fam, T){
 function rfxBoom(x, y, z, R, T, o){
   o = o || {};
   RFX.booms++;
+  if (typeof rvBoom === 'function') rvBoom(x, z, R, o); // cratère ou flaque d'acide qui reste (js/79-rts-vallee.js)
   const plein = rfxTok('boom'), big = !!o.big, k = .6 + .8 * T;
   const fy = Math.max(.6, y < 3 ? .6 + R * .15 : y);
   // Éclair et onde : toujours (lisibles de loin, peu coûteux)

@@ -23,7 +23,8 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | `js/72-rts-style.js` | Style graphique Amélioré dans le RTS (dossier 118) : sol dessiné (traces de chenilles, sol brûlé des nids), dalle de béton, usure des machines, ombres du soleil qui suivent la caméra, éclat et couleurs, barres de vie hors des effets, bouton « Style » dans la Pause. Seulement visuel (voir `docs/graphismes.md`) |
 | `js/69-rts-sons.js` | Sons du RTS : un son par famille d'arme, placés (distance, gauche ou droite), mixage par familles, moments (siège, Ruche, alerte...), moteur du véhicule piloté (tâche 115) |
 | `js/74-rts-monstres.js` | Trois monstres à parade (dossier 122) : sapeur, pilonneur, carapace ; seuils, plan d'apparition, repères au sol, mini-carte, annonces. Réglages : `RM_REGL` |
-| `tests/t-rts.js`, `tests/t-rts-effets.js`, `tests/t-rts-sons.js`, `tests/t-rts-ruche.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js`, `tests/t-rts-style.js`, `tests/t-rts-monstres.js` | Tests |
+| `js/79-rts-vallee.js` | Une vallée vivante (dossier 126), seulement visuel : décor fixe dans les tronçons (rochers, buissons, cactus, os, épaves, poteaux et fils, panneaux), traces de la bataille (cratères, acide, chenilles, gravats, carcasses), fumée des bâtiments abîmés, poussière, tourbillons, lueur des nids, gyrophare et drapeau du QG, charognards. Réglages : `RV_REGL` |
+| `tests/t-rts.js`, `tests/t-rts-effets.js`, `tests/t-rts-sons.js`, `tests/t-rts-ruche.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js`, `tests/t-rts-style.js`, `tests/t-rts-monstres.js`, `tests/t-rts-vallee.js` | Tests |
 
 ## Règles et chiffres actuels
 - Départ : 900 $, QG, usine de robots, 3 tourelles mitrailleuses, 3 fantassins.
@@ -348,6 +349,43 @@ Robot-joueur, partie longue (`node outils/simulateur.js rts [stratégies] [grain
 - Dégâts des monstres aux bâtiments, sans parade : mixte 27 000 à 36 000 (sapeurs) et 37 000 à 64 000 (pilonneurs) ; blindés 0 à 8 000 (les tanks, portée 38 m, les abattent en passant). Au QG, ils pèsent peu : 3 % pour le pilonneur dans mixte graine 1, rien ailleurs ; le reste reste aux zombies ordinaires (69 à 100 %) et aux boss. Ils usent la base (tourelles, usines, barricades) plus qu'ils ne frappent le QG.
 - Avec les parades (mixte graine 1), les pilonneurs ne font plus que 5 700 de dégâts (19 obus tombés au lieu de 123) et la partie redevient une victoire ; la carapace n'a pas besoin d'autre réponse que ce que mixte et blindés achètent déjà (lance-roquettes, tanks).
 - Pas mesuré : le cell (plafond de 300), les vallées 2 et 3, une vraie partie jouée par Martin.
+
+## Une vallée vivante (2026-11-18, dossier 126)
+Avant, la vallée n'était qu'un sol, des montagnes, quelques ruines et la route. Elle devient vivante et garde les marques de la bataille. Seulement visuel : aucun chiffre, aucun obstacle, aucun chemin ne change, et le fichier ne tire jamais dans `Math.random`. Code : `js/79-rts-vallee.js` (réglages en haut : `RV_REGL`, `on:false` coupe tout) ; tests : `tests/t-rts-vallee.js`.
+
+### Ce qui est ajouté
+- Décor fixe, posé avec chaque tronçon de 100 m, dans la géométrie du tronçon lui-même (matériau `rtsMat` : aucun appel de dessin de plus ; en Amélioré, `js/72` lui donne le grain de roche et des ombres) : rochers et éboulis au pied des montagnes, buissons secs, cactus, ossements, épaves d'autos au bord de la route (à l'endroit, sur le côté ou sur le toit), poteaux électriques tous les 26 m le long de la route (debout, penchés ou tombés) avec leurs deux fils qui pendent jusqu'au sol quand un poteau est tombé, un panneau criblé de balles de temps en temps. Rien à moins de 80 m du centre (la base va jusqu'à 70 m) ni à moins de 7 m de la route ; aucune collision. Par tronçon, à l'ordi / au cell : 32 / 26 rochers, 26 / 20 buissons, 6 / 4 cactus, 5 / 3 os, 2 épaves (essais : ceux qui tombent sur la route ou dans la base sont sautés).
+- Hasard du décor : un générateur semé sur la vallée et le numéro du tronçon (chaque vallée a le sien, toujours le même). Il ne dépend que de la route telle que la sauvegarde la garde (au décimètre) : une partie reprise retrouve exactement le même décor. Les ruines (tirées au hasard du jeu, pas gardées) n'entrent pas en compte.
+- Traces de la bataille, décalques au sol dans une réserve fixe qui recycle les plus vieux (80 / 40 traces, 72 / 36 bouts de chenilles) : cratère à chaque explosion de 2,5 m ou plus (rayon × 0,55 ; 45 s, × 1,5 pour le 105 mm ; une explosion tout près d'un cratère le rafraîchit au lieu d'en ajouter un), flaque d'acide des crachats (20 s), traces de chenilles derrière les tanks (24 s), gravats d'un bâtiment tombé (90 s), sol brûlé d'un nid détruit (120 s), tache d'huile sous une carcasse (60 s). Ils suivent le sable et passent au-dessus de la dalle et de la route.
+- Carcasses : une unité détruite laisse une carcasse noircie qui fume 25 s et brûle 8 s (petite pour un robot), un bâtiment tombé un tas de gravats couleur béton, un nid détruit un tas de chair ; elles restent 70 s puis s'enfoncent dans le sable (20 / 10 au plus, en instances).
+- Vie : les bâtiments fument sous 60 % de vie (grise, de plus en plus sombre et épaisse), fumée noire et flammes sous 25 % : l'état de la base se lit d'un coup d'œil ; poussière derrière les tanks et le Mech qui roulent ; sable que le vent pousse au ras du sol (plus fort par temps de vent ou de poussière, jamais sur la dalle) ; tourbillon de poussière au loin toutes les 30 s environ (12 s) ; lueur verte qui bat sur chaque nid et sur la Ruche (avec quelques spores) ; gyrophare orange au bout de l'antenne du QG et drapeau qui flotte sur son toit ; charognards qui tournent au-dessus des nids les plus proches de la vue (12 / 6 au plus). Rien de rouge au sol : les lignes et cercles rouges des monstres, les anneaux de sélection et le point de ralliement restent seuls de leur couleur.
+- Pause et mode photo : tout est figé. Mini-carte : rien de plus. Les traces ne sont pas gardées dans la sauvegarde (la partie reprend propre).
+
+### Branchements
+- `js/41-rts.js`, `rtsChunk` : `rvChunk(b, k, z0, z1)` ajoute le décor au maillage du tronçon (protégé par `typeof`).
+- `js/55-rts-effets.js`, `rfxBoom` : `rvBoom(x, z, R, o)` pose le cratère ou la flaque au moment où on voit l'explosion (protégé par `typeof`).
+- Le reste (morts, chenilles, vie des bâtiments, nids) est lu à chaque image par `Jeu.on('image')`. La fumée et les lueurs passent par la machinerie de nuages de points de `js/55-rts-effets.js` (réserves à part : 300 / 150 bouffées, 180 / 90 lueurs).
+
+### Hasard
+- Three.js tire 4 nombres de `Math.random` par objet créé : les objets de la vallée sont créés une fois (première partie), avec `Math.random` prêté à un générateur à part (`rvCalme`, comme `fusionCalme`), puis gardés ; leur mémoire graphique est rendue en quittant le RTS.
+- Test : dans deux pages neuves, même graine, `rtsStart` puis 200 images de bataille, sans puis avec le fichier : exactement le même nombre de tirages. (Une page qui a déjà joué garde un état qui change la suite du hasard d'une partie à l'autre, avec ou sans ce fichier : la comparaison se fait donc en pages neuves, boucle du jeu arrêtée, son coupé.)
+- Banc du simulateur (`node outils/simulateur.js rts-banc 8 1 90 tank`) avant et après : référence 610 tués, 10 016 dégâts à la base, 5 pertes ; tanks 1 371 tués, 0 dégât, 0 perte. Identique.
+
+### Coût (`node outils/mesure-style-rts.js`, même bataille ; comparaison avec et sans le fichier dans la même version, en alternance, machine chargée par d'autres agents)
+| Cas | Appels de dessin sans → avec | Triangles sans → avec | Temps par image sans → avec |
+|---|---|---|---|
+| Cell, Actuel, vue de haut | 225 → 229 | 132 000 → 145 000 | 272 et 277 → 293 et 299 ms |
+| Cell, Actuel, tank piloté | 112 → 114 à 116 | 121 000 → 138 000 | 280 et 190 → 325 et 324 ms |
+| Cell, Amélioré, vue de haut | 351 → 355 | 169 000 → 195 000 | 657 et 688 → 691 et 621 ms |
+| Cell, Amélioré, tank piloté | 235 → 239 | 148 000 → 173 000 | 732 et 812 → 591 et 778 ms |
+| Ordi, Actuel, vue de haut | 228 → 232 | 131 000 → 147 000 | 408 et 621 → 428 et 610 ms |
+| Ordi, Actuel, tank piloté | 107 → 110 | 117 000 → 139 000 | trop variable (500 à 2 100 ms dans les deux cas) |
+| Ordi, Amélioré, vue de haut | 364 → 368 | 250 000 → 290 000 (avant l'allègement du décor de l'ordi) | 1 231 et 1 205 → 1 145 et 1 134 ms |
+
+- Appels de dessin : + 2 à 5 (au plus 4 %, la limite était 8 %) : décalques, carcasses (et leur ombre en Amélioré), fumée, lueurs, drapeau et oiseaux. Le décor fixe n'en ajoute aucun.
+- Temps du code : la vallée prend 0,14 ms par image au cell et 0,18 ms à l'ordi (bataille de 30 unités, bâtiments abîmés), contre 2 à 20 ms pour le reste du code : pas mesurable dans le bruit.
+- Le décor ajoute 10 à 15 % de triangles. Au cell en vue de haut, le temps de dessin monte d'environ 8 % en rendu logiciel ; à l'ordi, rien de visible dans le bruit. Une première version (44 rochers, 42 buissons par tronçon) ajoutait 20 % de triangles au cell : allégée au cell (26 rochers, 20 buissons de 3 ou 4 brins) et à l'ordi (32, 26). Si le cell de Martin rame, baisser `RV_REGL.decor.rochers` et `buissons`.
+- Pas vérifié : un vrai téléphone, la lecture des traces de près par un vrai joueur, la nuit (gyrophare et lueurs plus forts, pas capturé).
 
 ## À équilibrer en jouant
 - Menace : voir la section de la tâche 101 (`RTS_REGL.menace`, `RTS_THREAT` en est un nom court). Avant la tâche 101 (tâche 67) : 1 + minutes / 4 + 0,5 par nid détruit + tués / 600.

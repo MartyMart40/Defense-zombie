@@ -438,6 +438,7 @@ function rtsChunk(k){
     vmPop(b);
     if (i % 2 && k < 4) makeFire(x, 1.6, z, 1.1);
   }
+  if (typeof rvChunk === 'function') try { rvChunk(b, k, z0, z1); } catch (e) { errNote(e); } // décor fixe dans le même maillage (js/79-rts-vallee.js)
   world.add(new THREE.Mesh(vmGeo(b), rtsMat));
 }
 function rtsBaseSize(){ if (!RTS.pad) return; RTS.pad.scale.set(RTS.baseR, RTS.baseR, 1); RTS.edge.scale.set(RTS.baseR, RTS.baseR, 1); }

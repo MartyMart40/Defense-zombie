@@ -10,6 +10,8 @@ Ces chiffres servent à comparer avant et après un changement d’équilibrage,
 - Moyen : environ 0,35°, 30 % à la tête, 0,4 s.
 - Bon : environ 0,17°, 60 % à la tête, 0,25 s.
 
+> **Reproductibilité (dossier 112, 2026-11-18).** Les chiffres de ce rapport ont été faits avant ce dossier : le même duel donnait alors des résultats très différents d’un lancement à l’autre (ex. Val-des-Cendres au pistolet : 1 061, 2 524, 2 524). Cause : la boucle du jeu tournait en temps réel entre le chargement de la page et le début du robot-joueur (un nombre d’images variable, qui pioche dans le hasard), et le hasard du chargement n’avait pas de graine. Depuis, le simulateur fixe l’heure, l’horloge audio et le hasard du chargement avant le jeu et arrête sa boucle (`outils/sim-horloge.js`, `outils/sim-page.js`) : même graine, même résultat au chiffre près, même sur une machine chargée (duel, banc et parties du RTS vérifiés ; le robot l’était déjà). Les chiffres d’un nouveau rapport ne se comparent donc pas un à un avec ceux-ci : relancer l’avant et l’après avec le simulateur actuel.
+
 ## Duel à budget égal : est-ce que l’arme vaut son prix ?
 
 La mesure la plus fiable de ce rapport. À une vague donnée, avec l’argent qu’un joueur a eu jusque-là, chaque ligne achète ses armes puis met tout le reste en améliorations (la moins chère d’abord). Joueur moyen, barricade infinie, sans pouvoirs ni défenses, moyenne de 2 parties. On mesure les dégâts que la barricade encaisse pendant la vague sans son boss (plus bas = mieux, le meilleur est en gras), et le temps pour tuer le boss seul. Règle visée : une arme plus chère doit faire au moins aussi bien que « garder l’arme d’avant et l’améliorer », ou être nettement meilleure contre le boss.

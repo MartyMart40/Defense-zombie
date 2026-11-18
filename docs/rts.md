@@ -24,7 +24,8 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | `js/69-rts-sons.js` | Sons du RTS : un son par famille d'arme, placés (distance, gauche ou droite), mixage par familles, moments (siège, Ruche, alerte...), moteur du véhicule piloté (tâche 115) |
 | `js/74-rts-monstres.js` | Trois monstres à parade (dossier 122) : sapeur, pilonneur, carapace ; seuils, plan d'apparition, repères au sol, mini-carte, annonces. Réglages : `RM_REGL` |
 | `js/79-rts-vallee.js` | Une vallée vivante (dossier 126), seulement visuel : décor fixe dans les tronçons (rochers, buissons, cactus, os, épaves, poteaux et fils, panneaux), traces de la bataille (cratères, acide, chenilles, gravats, carcasses), fumée des bâtiments abîmés, poussière, tourbillons, lueur des nids, gyrophare et drapeau du QG, charognards. Réglages : `RV_REGL` |
-| `tests/t-rts.js`, `tests/t-rts-effets.js`, `tests/t-rts-sons.js`, `tests/t-rts-ruche.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js`, `tests/t-rts-style.js`, `tests/t-rts-monstres.js`, `tests/t-rts-vallee.js` | Tests |
+| `js/84-rts-anim.js`, `js/84-rts-anim-bat.js` | Des unités et des bâtiments qui vivent (dossier 129), seulement visuel : jambes et torse séparés, tourelle du tank, jambes du Mech de combat, recul, penche, posture d’attente et « Tenir », Apache penché, sélection, unité abîmée qui fume et boite, sortie d’usine, morts ; construction dans un échafaudage, porte de l’usine, recul des tourelles, radar du QG, écroulement. Réglages : `RA_REGL`, `RA_BAT` |
+| `tests/t-rts.js`, `tests/t-rts-effets.js`, `tests/t-rts-sons.js`, `tests/t-rts-ruche.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js`, `tests/t-rts-style.js`, `tests/t-rts-monstres.js`, `tests/t-rts-vallee.js`, `tests/t-rts-anim.js` | Tests |
 
 ## Règles et chiffres actuels
 - Départ : 900 $, QG, usine de robots, 3 tourelles mitrailleuses, 3 fantassins.
@@ -386,6 +387,64 @@ Avant, la vallée n'était qu'un sol, des montagnes, quelques ruines et la route
 - Temps du code : la vallée prend 0,14 ms par image au cell et 0,18 ms à l'ordi (bataille de 30 unités, bâtiments abîmés), contre 2 à 20 ms pour le reste du code : pas mesurable dans le bruit.
 - Le décor ajoute 10 à 15 % de triangles. Au cell en vue de haut, le temps de dessin monte d'environ 8 % en rendu logiciel ; à l'ordi, rien de visible dans le bruit. Une première version (44 rochers, 42 buissons par tronçon) ajoutait 20 % de triangles au cell : allégée au cell (26 rochers, 20 buissons de 3 ou 4 brins) et à l'ordi (32, 26). Si le cell de Martin rame, baisser `RV_REGL.decor.rochers` et `buissons`.
 - Pas vérifié : un vrai téléphone, la lecture des traces de près par un vrai joueur, la nuit (gyrophare et lueurs plus forts, pas capturé).
+
+## Des unités et des bâtiments qui vivent (2026-11-18, dossier 129)
+Avant, les unités glissaient sur le sol et pivotaient d'un coup vers leur cible au moment du tir, les bâtiments apparaissaient et disparaissaient d'un coup. Seulement visuel : aucun chiffre, aucune vitesse, aucune portée, aucune position réelle, aucun moment de tir ne change, et les fichiers ne tirent jamais dans `Math.random`. Code : `js/84-rts-anim.js` (unités, réglages `RA_REGL`, `on:false` remet tout comme avant, même en pleine partie) et `js/84-rts-anim-bat.js` (bâtiments, réglages `RA_BAT`) ; tests : `tests/t-rts-anim.js`.
+
+### Ce qui bougeait déjà (captures avant)
+Jambes des petits robots qui se balancent en marchant, corps qui sautille ; rotors de l'Apache, hélices de l'AC-130 ; Apache qui flotte sur place ; avions qui s'inclinent en virant ; têtes des tourelles qui suivent leur cible ; poussière, traces de chenilles, fumée des bâtiments abîmés et carcasses de `js/79`. Tout le reste pivotait d'un bloc (l'objet racine tourné vers la cible au tir) ou apparaissait d'un coup.
+
+### Ce qui bouge maintenant
+- Petits robots : jambes et torse séparés. Les jambes suivent la marche (à reculons quand le robot recule en tirant), le torse se tourne vers la cible dès qu'elle est à portée + 6 m, donc avant le tir ; recul du buste à chaque tir ; le corps part en avant au freinage et en arrière en repartant ; à l'arrêt sans rien à faire, le regard balaie ; « Tenir la position » : jambes écartées, buste penché en avant.
+- Mech de combat : vraies jambes qui marchent, au rythme de ses pas lourds (le pied se pose quand la terre tremble), torse qui pivote vers la cible, recul.
+- Tank : tourelle à part qui suit la cible pendant que la caisse garde sa route ; au coup de canon, la tourelle recule et la caisse se cabre ; le nez plonge au freinage.
+- Apache : penché dans le sens où il va, roulis dans les virages, nez vers la cible avant de tirer.
+- Avions : rien de plus (ils s'inclinaient déjà), sauf le décollage.
+- Sélection : petit saut et anneau qui se resserre. Marqueur d'ordre au sol (il existait) : il se resserre maintenant sur le point en s'effaçant.
+- Unité sous 30 % de vie : elle fume ; un robot boite (sa vitesse réelle ne change pas).
+- Sortie d'usine : l'unité sort par la porte de l'usine (robots, usine lourde, garage) quand la porte est de son côté, sinon elle s'assemble sur place dans des étincelles ; l'Apache décolle de l'héliport, l'avion de l'aérodrome. Le moment et l'endroit où elle devient jouable ne changent pas (seul le modèle part de la porte et rejoint sa vraie place en 0,85 s, 1,9 s pour l'Apache, 2,4 s pour un avion).
+- Morts : le robot bascule en arrière, le tank saute et s'affaisse, l'appareil tombe en vrille avec une traînée de fumée ; la carcasse de `js/79` prend le relais.
+- Construction : le bâtiment monte en 1,6 s dans un échafaudage à sa taille, étincelles en haut, poussière au pied, puis l'échafaudage redescend. Il n'y a pas de temps de construction dans le jeu : le bâtiment marche dès la pose, comme avant.
+- Production : la porte roulante de l'usine se lève, un voyant orange clignote, la cheminée fume, puis la porte se referme (1,9 s).
+- Tourelles : la tête recule à chaque tir (fort pour le canon, peu pour la mitrailleuse, presque rien pour le lance-flammes, rien pour la Tesla), le mortier s'enfonce.
+- QG : un radar qui tourne sur son toit (posé sur le disque qui y était).
+- Destruction : le bâtiment s'écroule en s'enfonçant et en penchant, dans la poussière (1,4 s) ; la tête d'une tourelle saute et retombe à côté ; les gravats et la carcasse de `js/79` prennent le relais. Vendu : il disparaît comme avant.
+
+### Comment, sans toucher au jeu
+- Toutes les pièces visibles d'une unité (modèle, jambes, rotor, hélices) passent dans un groupe à moi posé à l'origine de l'objet racine `u.g` ; l'anneau de sélection et la barre de vie restent sur l'objet racine. Le jeu lit et déplace `u.g` comme avant ; je ne touche qu'à ce groupe, à des propriétés que le jeu n'écrit jamais (`u.m.rotation.x` et `y`, `u.m.position.x` et `z`, `rotation.z` des jambes, échelle de l'anneau, `o.m.scale` le temps de la construction, `o.head.position` : le jeu ne lit que sa rotation pour viser) et à mes pièces. Le pilotage et les postes (`js/43`, `js/54`, `js/56`) ne lisent rien de tout cela.
+- Le tank reçoit une caisse sans tourelle et une tourelle à part, le Mech de combat un corps sans jambes et deux jambes : géométries faites ici (mêmes pièces que `rtsUnitGeo`), jamais demandées au cache du jeu (`RTS_GEO`), sinon le jeu sauterait ses propres tirages à leur création. La porte, le radar et les échafaudages sont aussi à moi.
+- Un tir se voit sans branchement : le jeu remonte le temps de recharge (`u.cd`, `cd2`, `cd3`, `cd4`, `o.cd`) au moment du tir.
+- Aucun branchement dans les fichiers du jeu : tout est lu à chaque image par `Jeu.on('image')`. Hors de la vue (plus de 120 m du centre, ou hors du cadre de la caméra) : rien n'est animé, seuls les temps (sortie d'usine, construction) avancent. Pause et mode photo : tout est figé. Piloté : rien n'est animé, la tourelle et les jambes ajoutées se cachent avec le modèle.
+- Ce qui est déjà là au départ d'une partie (ou d'une partie reprise) n'a ni sortie d'usine ni construction.
+
+### Hasard et identité du jeu
+- Tout objet Three.js est créé dans `raCalme` (`Math.random` prêté à un générateur à part, comme `fusionCalme`), les effets tirent dans `raHasard`, les fumées et étincelles passent par les nuages de points de `js/79`.
+- Test (pages neuves, même graine, boucle arrêtée, son coupé, même stockage) : `rtsStart`, construction d'une usine lourde, production de deux unités, puis 600 images de bataille, sans puis avec les fichiers : mêmes tirages à chaque étape (et après 300 images), et même partie image par image (positions, vies, cibles, temps de recharge des unités et des tourelles, zombies, argent).
+- Banc du simulateur (`node outils/simulateur.js rts-banc 8 1 90 tank`) avant et après : référence 610 tués, 10 016 dégâts à la base, 5 pertes ; tanks 1 371 tués, 0 dégât, 0 perte. Identique.
+
+### Coût
+`node outils/mesure-style-rts.js` (bataille de 30 unités et 5 tourelles contre 300 zombies), même version, interrupteur coupé puis allumé, en alternance, machine chargée par d'autres agents :
+
+| Cas | Appels de dessin sans → avec |
+|---|---|
+| Cell, Actuel, vue de haut | 229 → 234 à 236 (+2 à 3 %) |
+| Cell, Actuel, tank piloté | 115 et 116 → 119 (+3 %) |
+| Cell, Amélioré, vue de haut | 355 → 368 (+3,7 %) |
+| Cell, Amélioré, tank piloté | 239 → 246 (+2,9 %) |
+| Ordi, Actuel, vue de haut | 232 → 239 (+3 %) |
+| Ordi, Actuel, tank piloté | 111 → 113 (+1,8 %) |
+| Ordi, Amélioré, vue de haut | 368 → 381 (+3,5 %) |
+| Ordi, Amélioré, tank piloté | 255 → 264 (+3,5 %) |
+
+- D'où viennent les appels : une tourelle par tank, deux jambes par Mech de combat, la porte de chaque usine, le radar du QG (et l'ombre de la tourelle et des jambes en Amélioré ; la porte et le radar ne projettent pas d'ombre, un premier essai en donnait 383 à l'ordi en Amélioré, + 4,1 %). Échafaudages et fantômes : seulement le temps qu'ils durent.
+- Temps du code, mesure directe au cell (915 x 412, tactile) avec 40 unités, 5 tourelles et 300 zombies : 0,12 à 0,16 ms par image en Actuel, 0,18 à 0,20 ms en Amélioré (rendu logiciel). Dans la mesure de `mesure-style-rts.js`, qui compte aussi la mise en route et les morts du début de la bataille : 0,18 à 0,63 ms au cell, 0,14 à 0,45 ms à l'ordi (la minuterie du navigateur est au dixième de milliseconde et la machine était chargée). Le temps par image du reste ne bouge pas dans le bruit.
+- Triangles : + 1 à 3 % (tourelles, jambes, radar, portes).
+
+### Abandonné
+- Chenilles qui défilent : il faudrait une texture (rien en Actuel) ou une pièce par galet (10 appels de dessin par tank). Les traces de chenilles de `js/79` disent déjà qu'il roule.
+- Jambes des petits robots calées au pas près sur la distance : leur balancement est écrit par le jeu (`rtsLegsStep`), qui lit sa propre valeur ; y toucher aurait mêlé deux animations. Laissé tel quel.
+- Échafaudage et étincelles pendant un vrai temps de construction : le jeu n'en a pas ; l'animation dure 1,6 s par-dessus un bâtiment qui marche déjà.
+- Pas vérifié : un vrai téléphone, la lecture de près par un vrai joueur, la nuit.
 
 ## À équilibrer en jouant
 - Menace : voir la section de la tâche 101 (`RTS_REGL.menace`, `RTS_THREAT` en est un nom court). Avant la tâche 101 (tâche 67) : 1 + minutes / 4 + 0,5 par nid détruit + tués / 600.

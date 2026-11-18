@@ -6,7 +6,7 @@ Demande de Martin (2026-11-04) : des « degrés » de graphismes au choix, du je
 | Niveau | Visée | Où | Statut |
 |--------|-------|----|--------|
 | Actuel | Le jeu tel qu'il était : couleurs unies, formes simples | Partout | Fait |
-| Amélioré | Jeu 3D des années 2005 à 2010 (genre Half-Life 2, en plus simple) : textures, vraies ombres, éclat lumineux | Toit (cell récent et ordi) | Phase 1 faite (tâche 80) |
+| Amélioré | Jeu 3D des années 2005 à 2010 (genre Half-Life 2, en plus simple) : textures, vraies ombres, éclat lumineux | Toit et robot (cell récent et ordi) | Phase 1 faite (tâche 80), robot fait (dossier 114) |
 | Haute définition | Visée Modern Warfare : matériaux réalistes (rugosité, reflets), lumière HDR, ombres de contact, zombies plus détaillés, modèles téléchargés | Toit, ordi surtout | Séance 1 faite (tâche 82), séances 2 et 3 sans téléchargement faites (tâches 84 à 86) |
 | Ultra | Ce qu'un ordi puissant peut donner : ombres douces partout, reflets, brume volumétrique | Ordi seulement | Séance 1 faite (tâche 87) |
 
@@ -17,7 +17,7 @@ Le choix : bouton « Style » dans Pause (clé `dt_style` : `actuel`, `ameliore`
 - Textures dessinées par le code, une fois : asphalte (rapiéçages, taches d'huile, fissures, gravier), trottoir en dalles, gazon, bois, « crasse » pour le reste. Les façades sont redessinées en 256 x 512 à partir de l'originale : briques (ville, port) ou planches à clin (maisons), cadres, croisillons, allèges, coulures, saleté au pied des murs, les mêmes fenêtres allumées.
 - Ombres : le soleil (bas, au fond de la rue) projette de vraies ombres sur les 100 premiers mètres. Carte d'ombre de 2048 sur ordi, 1024 au cell. Les zombies projettent leur ombre ; les taches sous eux (`js/36-rendu.js`) sont cachées.
 - Effets d'image (copie de Three.js r128 dans `lib/three-effets.js`) : éclat lumineux (UnrealBloom : fenêtres, feux, soleil), lissage des bords (FXAA), couleurs (saturation 0,9, contraste 1,1, ombres un peu froides, lumières un peu chaudes), coins assombris et grain de film. La boucle (`js/15-boucle.js`) appelle `styleRendu()` ; l'arme en main est dessinée par-dessus, sans effets.
-- Le style ne touche ni le robot ni le RTS pour l'instant.
+- Le robot reçoit Amélioré depuis le dossier 114 (voir plus bas). Le RTS : pas encore.
 
 ## Actuel et Amélioré plus beaux (2026-11-13, ce que Martin voit au cell)
 - Ciel peint, tous les styles (`js/36-rendu.js`, `gfxCielTex`) : le petit dégradé de chaque ville (et de chaque météo à dégradé, par `ambSkyTex` de `js/22-ambiance.js`, sans toucher à ce fichier) devient un ciel de 1024 x 512 dessiné une fois : longs nuages étirés, étoiles la nuit, grande lueur autour du soleil, bande de brume sous l'horizon (plus de ligne entre le sol et le ciel), silhouettes au loin (collines et arbres au village et en banlieue, tours avec quelques fenêtres en ville, grues au port), lueurs d'incendie et colonnes de fumée au Centre-ville (un peu à Val-des-Cendres). Même sphère, aucun coût par image. Seuls les ciels de la ville en cours sont gardés (`GFX_CIEL`).
@@ -54,6 +54,15 @@ Le choix : bouton « Style » dans Pause (clé `dt_style` : `actuel`, `ameliore`
 - Ombres de contact en pleine résolution (au lieu de la moitié).
 - Coût : une scène de plus à dessiner (le miroir), plus le reste. Si ça lague, revenir à Haute définition.
 
+## Le robot en Amélioré (dossier 114)
+- Pourquoi c'était coupé : rien de précis n'était écrit. Le style est né pour le toit (tâche 80, « pour l'instant ») et `styleToit()` valait `styleOn() && !Jeu.actif()`. Les textures étaient déjà posées sur la rue du robot (l'événement `monde` part de `buildWorld` dans tous les modes), mais sans ombres ni effets d'image. Et en Haute définition, les matériaux physiques étaient posés dans le robot sans leur lumière HDR.
+- Maintenant (`js/57-graphismes.js`) : `styleIci()` = le style tourne sur le toit ou dans le robot (pas dans le RTS). Il sert au rendu avec effets (`styleRendu`) et aux ombres. `styleHD()` et `styleUltra()` ne sont vrais que sur le toit : quand Haute définition ou Ultra est choisi, le robot reçoit Amélioré (`styleHDPref()` garde le choix du joueur).
+- Ombres : la rue défile vers le robot (`world.position.z`, jusqu'à 140 m). La zone d'ombre du soleil suit la caméra à chaque image, à la même distance que sur le toit (`styleSoleilPlacer`), recalée sur les texels de la carte d'ombre pour que le bord des ombres ne scintille pas pendant la marche. Mêmes cartes que sur le toit (512, 1024 au cell, 2048 sur ordi en qualité haute).
+- `js/67-robot-style.js` : les jambes du robot (scène de la rue) projettent et reçoivent des ombres (7 morceaux) ; bouton « Style » dans la Pause du robot, avant « Quitter le robot ». Il dit ce qu'on voit : « Style : Haute définition (Amélioré dans le robot) ».
+- L'habitacle, les manettes, les mains et les bras sont dans la scène de l'arme en main, dessinée par-dessus sans effets : pas d'étalonnage, pas d'éclat, rien de brûlé. Les monstres et le boss du robot sont des zombies : ils projettent leur ombre comme sur le toit.
+- En Actuel : rien ne change dans le robot.
+- Coût mesuré : voir `docs/robot.md`.
+
 ## Ressources téléchargées
 Le réseau de la session ne laisse passer que GitHub et npm : les sites de textures et de modèles libres (polyhaven.com, ambientcg.com, kenney.nl, quaternius.com) sont encore bloqués (vérifié le 2026-11-04, séance 1). Les images HDR de Poly Haven viennent d'une copie sur npm (`@pmndrs/assets`, CC0). Pour les ajouter : réglages de l'environnement Claude Code, « Network access », ajouter ces domaines aux domaines permis. En attendant, tout est dessiné par le code.
 
@@ -66,7 +75,7 @@ Niveau « Haute définition » (nouveau choix dans le bouton Style, ordi d'abord
 1. Séance 1, la lumière (faite, tâche 82) : matériaux physiques (MeshStandardMaterial : rugosité, métal, cartes de relief), ciel et lumière d'ambiance tirés d'une image HDR (Poly Haven), rendu en couleurs étendues avec réglage d'exposition (tone mapping ACES), ombres de contact (SSAO, `SSAOPass` de r128), carte d'ombre 4096.
 2. Séance 2, le décor (tâches 84 et 85 : lampadaires de nuit, autos détaillées, fils, débris ; textures photo en attente du réseau) : textures photo (asphalte, briques, béton, rouille) d'ambientCG, avec relief et rugosité ; débris, poteaux, fils, autos plus détaillées ; nuit : lampadaires et feux qui éclairent vraiment et projettent des ombres.
 3. Séance 3, les zombies et les effets (tâche 86, sans téléchargement : zombies détaillés par le code, sang au sol, flou en visant ; modèles glTF, fumée et brume en attente) : modèles téléchargés (glTF, GLTFLoader de r128) avec animations, sang et impacts collés aux murs, fumée et feu plus épais, brume qui prend la lumière, profondeur de champ en visant.
-4. Ultra, séance 1 (faite, tâche 87) : reflets de la rue mouillée, rayons de soleil, ombres douces, ombres de contact pleines. Ensuite : le même style pour le robot et le RTS.
+4. Ultra, séance 1 (faite, tâche 87) : reflets de la rue mouillée, rayons de soleil, ombres douces, ombres de contact pleines. Ensuite : le même style pour le robot (Amélioré fait, dossier 114) et le RTS.
 
 Règles : Actuel et Amélioré ne changent pas ; Haute définition se choisit dans le même bouton ; on garde Three.js r128 (le changer toucherait tout le jeu) ; images par seconde à mesurer sur l'ordi de Martin après chaque séance.
 

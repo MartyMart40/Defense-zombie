@@ -9,19 +9,25 @@
 //     - effets d'image : éclat lumineux (fenêtres, feux, soleil), lissage des bords (FXAA), couleurs plus
 //       contrastées (ombres froides, lumières chaudes), coins assombris et grain de film.
 //   Haute définition : par-dessus Amélioré, voir js/58-graphismes-hd.js (matériaux physiques, lumière HDR, ACES, SSAO).
-// Ne s'applique qu'au toit pour l'instant (pas au robot ni au RTS). Revenir à « Actuel » remet les matériaux d'origine.
+// S'applique au toit et au robot (dossier 114 : le robot marche dans les rues de buildWorld ; il reçoit Amélioré même si
+// Haute définition ou Ultra est choisi, ces deux-là restent pour le toit). Pas au RTS. Revenir à « Actuel » remet les matériaux d'origine.
 // Branché : Jeu.on('monde') (fin de buildWorld) pour habiller chaque nouvelle rue, styleRendu() appelé par la boucle
 // (js/15-boucle.js) pour dessiner la scène avec les effets, Jeu.on('image') pour les ombres des zombies.
 
 const STYLES = ['actuel', 'ameliore', 'hd', 'ultra'];
 const STYLE_NOM = { actuel:'Actuel', ameliore:'Amélioré', hd:'Haute définition', ultra:'Ultra' };
-const STY = { pref: store.get('dt_style', 'actuel'), L:null, orig:[], neufs:[], leger:new Map(), legerListe:[], legerOn:false, comp:null, bloom:null, grade:null, fxaa:null, w:0, h:0, t:0, ombreT:0, ombres:false, casse:false, v2:new THREE.Vector2() };
+const STY = { pref: store.get('dt_style', 'actuel'), L:null, orig:[], neufs:[], leger:new Map(), legerListe:[], legerOn:false, comp:null, bloom:null, grade:null, fxaa:null, w:0, h:0, t:0, ombreT:0, ombres:false, casse:false, sol:null, v2:new THREE.Vector2() };
 if (STYLES.indexOf(STY.pref) < 0) STY.pref = 'actuel';
 const styleOn = () => STY.pref === 'ameliore' || STY.pref === 'hd' || STY.pref === 'ultra'; // Haute définition part de la rue d'Amélioré
-const styleHD = () => STY.pref === 'hd' || STY.pref === 'ultra'; // Ultra part de la Haute définition (js/61)
-const styleUltra = () => STY.pref === 'ultra';
+const styleHDPref = () => STY.pref === 'hd' || STY.pref === 'ultra'; // ce que le joueur a choisi (texte du bouton)
+// Haute définition et Ultra pour de vrai : seulement sur le toit (dans le robot, la rue reste en Amélioré ; RTS : rien)
+const styleHD = () => styleHDPref() && !Jeu.actif(); // Ultra part de la Haute définition (js/61)
+const styleUltra = () => STY.pref === 'ultra' && !Jeu.actif();
 const styleHDMajSur = () => { if (typeof styleHDMaj === 'function') styleHDMaj(); }; // js/58-graphismes-hd.js
 const styleToit = () => styleOn() && !Jeu.actif();
+const styleRobot = () => { const m = Jeu.actif(); return !!m && m === Jeu.modes.robot; };
+// Où les ombres et les effets d'image d'Amélioré tournent : le toit et le robot (le RTS garde son rendu)
+const styleIci = () => styleOn() && (!Jeu.actif() || styleRobot());
 
 /* ---------- Hasard propre (ne touche pas Math.random : les tests à graine restent pareils) ---------- */
 let styleGr = 1;
@@ -180,15 +186,30 @@ function styleOmbreSoleil(on){
   if (!sun.userData.pos0) sun.userData.pos0 = sun.position.clone();
   sun.castShadow = !!on;
   if (!on){ sun.position.copy(sun.userData.pos0); return; }
-  // Le soleil vient du fond de la rue : la zone d'ombre couvre le toit et les 100 premiers mètres
-  const cible = new THREE.Vector3(0, 0, -45), dir = sun.userData.pos0.clone().normalize();
-  sun.target.position.copy(cible); if (!sun.target.parent) world.add(sun.target);
-  sun.position.copy(cible).addScaledVector(dir, 150);
   const niv = typeof gfxLevel === 'function' ? gfxLevel() : 'haut';
   const S2 = sun.shadow, cam = S2.camera, n = niv === 'bas' ? 512 : (niv === 'haut' && !isTouch) ? (styleHD() ? 4096 : 2048) : 1024; // suit le réglage Graphismes (4096 en Haute définition)
   cam.left = -48; cam.right = 48; cam.top = 32; cam.bottom = -32; cam.near = 40; cam.far = 270; cam.updateProjectionMatrix();
   if (S2.mapSize.x !== n){ S2.mapSize.set(n, n); if (S2.map){ S2.map.dispose(); S2.map = null; } }
   S2.bias = -.0006; S2.normalBias = .04; S2.radius = 2;
+  styleSoleilPlacer(sun);
+}
+// Le soleil vient du fond de la rue : la zone d'ombre couvre le toit et les 100 premiers mètres.
+// Robot : la rue défile vers lui (world.position.z monte jusqu'à 140 m) ; la zone suit la caméra, à la même distance que
+// sur le toit, recalée sur les texels de la carte d'ombre (sinon le bord des ombres scintille quand le robot marche).
+const STY_SOL = { c:new THREE.Vector3(), d:new THREE.Vector3(), x:new THREE.Vector3(), y:new THREE.Vector3(), haut:new THREE.Vector3(0, 1, 0) };
+function styleSoleilPlacer(sun){
+  if (!world || !sun || !sun.userData.pos0) return;
+  const P = STY_SOL, d = P.d.copy(sun.userData.pos0).normalize();
+  P.c.set(0, 0, -45);
+  if (styleRobot()){
+    P.c.z += camera.position.z - EYE.z - world.position.z;
+    const cam = sun.shadow.camera, n = sun.shadow.mapSize.x || 1024;
+    P.x.crossVectors(P.haut, d).normalize(); P.y.crossVectors(d, P.x); // axes de la caméra d'ombre (comme lookAt)
+    const tx = (cam.right - cam.left) / n, ty = (cam.top - cam.bottom) / n, a = P.c.dot(P.x), b = P.c.dot(P.y);
+    P.c.addScaledVector(P.x, Math.round(a / tx) * tx - a).addScaledVector(P.y, Math.round(b / ty) * ty - b);
+  }
+  sun.target.position.copy(P.c); if (!sun.target.parent) world.add(sun.target);
+  sun.position.copy(P.c).addScaledVector(d, 150);
 }
 function styleAppliquer(){
   if (!world || !STY.L || STY.orig.length) return;
@@ -247,6 +268,7 @@ function styleMonde(L){
   STY.L = L;
   if (styleOn()) styleAppliquer(); else styleLegerAppliquer();
   styleHDMajSur();
+  styleBtn(); // le texte change entre le toit et le robot
 }
 
 /* ---------- Ombres (le moteur) : seulement sur le toit en style Amélioré ---------- */
@@ -297,7 +319,7 @@ function styleComposer(){
 }
 // Appelée par la boucle (js/15-boucle.js) : vrai si la scène a été dessinée ici, avec les effets
 function styleRendu(){
-  if (!styleToit() || STY.casse) return false;
+  if (!styleIci() || STY.casse) return false;
   if (styleHD() && typeof styleHDRendu === 'function'){ const r = styleHDRendu(); if (r !== null) return r; } // null : pas encore prêt, on dessine en Amélioré
   try {
     const c = styleComposer(); if (!c) return false;
@@ -316,12 +338,17 @@ function styleRendu(){
 /* ---------- Chaque image ---------- */
 Jeu.on('image', dt => {
   STY.t += dt || 0;
-  const on = styleToit();
+  const on = styleIci();
   styleOmbres(on);
   if (!on) return;
   if (typeof gfxShadows !== 'undefined') gfxShadows.visible = false; // les vraies ombres remplacent les taches
   STY.ombreT -= dt || 0;
   if (STY.ombreT <= 0){ STY.ombreT = .25; styleOmbresZombies(); if (STY.orig.length) styleOmbreSoleil(true); }
+  else if (STY.orig.length && styleRobot()){ // robot : la zone d'ombre suit à chaque image (sans tout refaire)
+    if (STY.sol && STY.sol.parent !== world) STY.sol = null;
+    if (!STY.sol) STY.sol = world && world.children.find(o => o.isDirectionalLight);
+    if (STY.sol && STY.sol.castShadow) styleSoleilPlacer(STY.sol);
+  }
 });
 Jeu.on('monde', L => styleMonde(L));
 
@@ -332,14 +359,18 @@ function styleSet(p){
   if (avant !== p){ if (styleOn()){ styleLegerRetirer(); styleAppliquer(); } else { styleRetirer(); styleLegerAppliquer(); } styleOmbreSoleil(styleOn() && STY.orig.length > 0); styleHDMajSur(); }
   styleBtn();
 }
-function styleBtn(){ const b = $('btnStyle'); if (b) b.textContent = 'Style : ' + STYLE_NOM[STY.pref]; }
+// Dans le robot, le bouton dit ce qu'on voit vraiment : Haute définition et Ultra y donnent Amélioré
+const styleTexte = () => 'Style : ' + STYLE_NOM[STY.pref] + (styleRobot() && styleHDPref() ? ' (Amélioré dans le robot)' : '');
+function styleBtn(){ ['btnStyle', 'mkStyle'].forEach(id => { const b = $(id); if (b) b.textContent = styleTexte(); }); }
+// Un clic : style suivant (Ultra : ordi seulement)
+function styleSuivant(){ let n = STYLES[(STYLES.indexOf(STY.pref) + 1) % STYLES.length]; if (n === 'ultra' && isTouch) n = 'actuel'; styleSet(n); }
 (function(){
   // En haut de la pause, juste sous le titre : visible sans faire défiler (la liste est longue au cell couché)
   const pan = document.querySelector('#scrPause .panel'), titre = pan && pan.querySelector('h2');
   if (pan && !$('btnStyle')){
     const b = document.createElement('button'); b.className = 'ghost'; b.id = 'btnStyle'; b.type = 'button';
     pan.insertBefore(b, titre ? titre.nextSibling : pan.firstChild);
-    b.addEventListener('click', () => { let n = STYLES[(STYLES.indexOf(STY.pref) + 1) % STYLES.length]; if (n === 'ultra' && isTouch) n = 'actuel'; styleSet(n); }); // Ultra : ordi seulement
+    b.addEventListener('click', styleSuivant);
   }
   styleBtn();
   // La rue du titre est déjà bâtie (js/15-boucle.js) : on l'habille tout de suite
@@ -347,4 +378,4 @@ function styleBtn(){ const b = $('btnStyle'); if (b) b.textContent = 'Style : ' 
 })();
 
 // Accès pour les tests automatiques
-window.__style = { STY, STYLE_TEX_LEGER, styleLegerAppliquer, styleLegerRetirer, STYLES, styleOn, styleHD, styleUltra, styleToit, styleSet, styleRendu, styleTex, styleMonde };
+window.__style = { STY, STYLE_TEX_LEGER, styleLegerAppliquer, styleLegerRetirer, STYLES, styleOn, styleHD, styleHDPref, styleUltra, styleToit, styleRobot, styleIci, styleTexte, styleSuivant, styleSoleilPlacer, styleSet, styleRendu, styleTex, styleMonde };

@@ -447,7 +447,8 @@ function mechStep(dt){
 }
 function mechStomp(){
   shake = Math.max(shake, .14);
-  if (typeof Snd === 'object' && Snd.ctx && Snd._nz){
+  if (typeof rsnPas === 'function'){ try { rsnPas(); } catch (e) { errNote(e); } } // pas lourd, pied gauche ou droit (js/70-robot-sons.js)
+  else if (typeof Snd === 'object' && Snd.ctx && Snd._nz){
     try { const t = Snd.ctx.currentTime; Snd._nz(t, 'lowpass', 260, 1, .3, .35); Snd._osc(t, 'sine', 62, 34, .28, .45); Snd._nz(t + .05, 'bandpass', 1400, 4, .06, .05); } catch (e) { errNote(e); }
   }
   if (typeof vib === 'function') vib(28, 2);

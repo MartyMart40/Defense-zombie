@@ -8,6 +8,7 @@
 //   python3 -m http.server 8766        (à la racine du dépôt, dans un autre terminal)
 //   node outils/mesure-style-rts.js [adresse] [dossier des captures] [cell|ordi]
 //   MESURE=0 : seulement les captures ; STYLES=actuel,ameliore ; PILOTE0=10 PILOTE=20 : images en pilotant (mise en route, mesure) ; SUIVI=1
+//   AVANT='code' : du code lancé dans la page avant chaque bataille (ex. AVANT='RZ_REGL.on = false' pour couper un interrupteur)
 // Le rendu se fait sans carte graphique (Chromium, SwiftShader) : comparer les cas entre eux, pas avec un vrai téléphone.
 const { chromium } = require('playwright');
 const path = require('path');
@@ -28,6 +29,7 @@ async function page(b, f){
   const ctx = await b.newContext({ viewport:f.viewport, hasTouch:f.hasTouch, isMobile:f.isMobile, deviceScaleFactor:f.deviceScaleFactor });
   const p = await ctx.newPage();
   await p.addInitScript(INIT);
+  if (process.env.AVANT) await p.addInitScript('window.__avant = ' + JSON.stringify(process.env.AVANT) + ';');
   const fermer = p.close.bind(p); p.close = async () => { await fermer().catch(() => {}); await ctx.close().catch(() => {}); };
   p.on('pageerror', e => console.log('  (erreur dans la page : ' + e.message + ')'));
   await p.goto(URL, { waitUntil:'networkidle', timeout:120000 });
@@ -42,6 +44,7 @@ async function page(b, f){
     };
     // Bataille : 30 unités, 5 tourelles, 300 zombies devant la base
     window.__bataille = function(style){
+      if (window.__avant) (new Function(window.__avant))();
       __style.styleSet(style);
       __rts.rtsStart(); if (typeof __amb === 'object') __amb.set('clair'); // même météo partout (comparaison)
       const R = __rts.RTS; S.money = 1e8; plan.maxAlive = 500;

@@ -20,8 +20,9 @@ Vue de dessus d'une base militaire au fond d'une vallée du désert. Montagnes a
 | `js/48-rts-liste.js` | Choisir les unités une par une : rangée « Unités » repliable (fermée : une pastille « 👥 Unités · N » et les groupes ; ouverte : une pastille par unité avec sa vie ; choix gardé dans `dt_rts_liste`), Tab pour la suivante, double-clic pour le même type ; groupes enregistrés (5 au plus) |
 | `js/49-rts-commandement.js` | Mini-carte (toucher pour y aller), point de ralliement, alerte « Base attaquée » à paliers, « ✋ Tenir » (u.hold), mode photo (dans la pause) |
 | `js/65-rts-ruche.js` | La Ruche (modèle, garde, ponte, victoire « Vallée libérée ! »), les vallées (choix sur l'écran titre), les sièges (annonce, bandeau, pastille sur la mini-carte). Réglages : `RTS_REGL` dans `js/41-rts.js` |
+| `js/72-rts-style.js` | Style graphique Amélioré dans le RTS (dossier 118) : sol dessiné (traces de chenilles, sol brûlé des nids), dalle de béton, usure des machines, ombres du soleil qui suivent la caméra, éclat et couleurs, barres de vie hors des effets, bouton « Style » dans la Pause. Seulement visuel (voir `docs/graphismes.md`) |
 | `js/69-rts-sons.js` | Sons du RTS : un son par famille d'arme, placés (distance, gauche ou droite), mixage par familles, moments (siège, Ruche, alerte...), moteur du véhicule piloté (tâche 115) |
-| `tests/t-rts.js`, `tests/t-rts-effets.js`, `tests/t-rts-sons.js`, `tests/t-rts-ruche.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js` | Tests |
+| `tests/t-rts.js`, `tests/t-rts-effets.js`, `tests/t-rts-sons.js`, `tests/t-rts-ruche.js`, `tests/t-cell.js`, `tests/t-rts-sauvegarde.js`, `tests/t-rts-astuces.js`, `tests/t-rts-selection.js`, `tests/t-rts-commandement.js`, `tests/t-rts-style.js` | Tests |
 
 ## Règles et chiffres actuels
 - Départ : 900 $, QG, usine de robots, 3 tourelles mitrailleuses, 3 fantassins.
@@ -161,6 +162,24 @@ Même méthode que la table de `js/01-son.js` : OfflineAudioContext avec toute l
 Scénario chargé (40 unités mixtes et 4 tourelles autour du centre de l'écran, vue de haut, 6 s, explosions et 2 nids) : crête −3 à −5 dBFS (jamais saturé), court −12 dBFS, cell −25 dBFS, limiteur actif 2 à 3 % du temps, 18 voix du RTS au pire moment (le plafond).
 
 Pas vérifié : l'écoute (personne n'a écouté, tout est réglé par mesures), le cell réel (seulement le passe-haut à 300 Hz), le rendu sur un vrai téléphone (coût des nœuds audio).
+
+## Style Amélioré (2026-11-18, dossier 118)
+Le réglage « Style » de la Pause marche maintenant dans le RTS (bouton aussi dans la Pause du RTS, juste après « Reprendre ») : Amélioré, et Haute définition ou Ultra donnent Amélioré dans le RTS. Ce qui est fait et les réglages : `docs/graphismes.md`, section « Le RTS en Amélioré ». Actuel : rien ne change. Aucun chiffre de jeu ne change ; le banc du simulateur (`node outils/simulateur.js rts-banc 8 1 90 tank`) donne les mêmes chiffres avant et après (référence : 610 tués, 10 016 dégâts à la base, pertes 5 ; tanks : 1 409 tués, 0 dégât, pertes 0).
+
+Coût (`node outils/mesure-style-rts.js`, bataille de 30 unités mélangées et 5 tourelles contre 300 zombies gardés à 300, hasard fixé, rendu logiciel SwiftShader sur une machine où d'autres agents roulaient en même temps : les temps bougent de 30 % d'une fois à l'autre, comparer les rapports, pas les millisecondes) :
+
+| Cas (deux passages, Actuel et Amélioré en alternance) | Appels de dessin Actuel → Amélioré | Temps par image Actuel → Amélioré |
+|---|---|---|
+| Cell 915 x 412, vue de haut | 225 → 352 | 246 et 254 → 449 et 443 ms (× 1,8) |
+| Cell 915 x 412, tank piloté | 104 → 239 | 235 et 252 → 489 et 439 ms (× 1,8) |
+| Ordi 1600 x 900, vue de haut | 226 → 363 | 410 et 332 → 1 055 et 843 ms (× 2,5) |
+| Ordi 1600 x 900, tank piloté | 117 → 247 | 954 et 679 → 1 390 et 1 849 ms (× 1,5 à 2,7) |
+
+Le temps du code (JavaScript) ne bouge pas (8 à 20 ms par image, Actuel comme Amélioré) : tout le surcoût est dans le dessin. Pour comparer : le toit et le robot passent de × 2 à × 3 en Amélioré dans le même rendu logiciel (`docs/robot.md`). Une première version coûtait × 4 à l'ordi vue de haut et × 6 en pilotant : allégée par des ombres en PCF simple (au lieu de PCF doux), l'éclat à demi-résolution aussi à l'ordi, le sol à 3 ou 4 lectures de texture (6 avant) avec la carte du sol brûlé au lieu d'une boucle sur les nids, l'usure des machines en une seule lecture (3 avant).
+
+- Appels de dessin : environ +130 vue de haut et en pilotant (la carte d'ombre redessine unités, bâtiments, montagnes et, à l'ordi, la foule), contre +200 sur le toit et dans le robot. Le sol, la dalle et l'usure n'ajoutent aucun appel (mêmes objets, 2 matériaux de plus en tout).
+- Au cell : carte d'ombre de 1024, foule sans vraie ombre (taches rondes), éclat à demi-résolution. Le surcoût reste du même ordre que celui du toit (environ ×2 à ×3 au cell en rendu logiciel). Si le cell de Martin rame : « Graphismes : basse » coupe l'éclat et passe la carte à 512.
+- En pilotant, la mémoire de la page grossit de 10 à 30 Mo par image sous SwiftShader, en Actuel comme en Amélioré (déjà là avant le dossier 118, cause non trouvée) : à surveiller sur un vrai appareil.
 
 ## Petits robots (2026-11-04, demande de Martin)
 - Les jambes sont des pièces à part (`rtsLegGeo`) : elles font des pas pendant la marche (une devant, l'autre derrière) et reviennent droites à l'arrêt.

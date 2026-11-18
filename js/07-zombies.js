@@ -407,7 +407,8 @@ function spawnZombie(type){
     hp: T.hp * plan.hpMult, maxHp: T.hp * plan.hpMult, speed: T.speed * plan.spdMult * rand(.85, 1.15), dmg: T.dmg * plan.dmgMult, reward: T.reward * plan.cashMult * ECO, xp: xp * plan.xp * ECO,
     phase: rand(0, 6.28), st:'walk', atkT: rand(.2, 1), stopZ: BAR_Z - .7 - rand(0, .9) - (T.stopOff || 0), flashT: 0, deadT: 0, sway: rand(.3, .9), headGone:false, meshes:[], uid: zUid++, inst:null };
   // Rendu : par instances si possible (aucun objet ajouté à la scène), sinon vrai groupe dans la scène
-  if (zInstOk(g)) zInstPrep(z, z.mats); else scene.add(g);
+  if (typeof zvHabiller === 'function') zvHabiller(z, R); // allure variée de la foule du toit (77-zombies-variete.js), après zBoxFor
+  if (zInstOk(g)){ zInstPrep(z, z.mats); if (typeof zvTeindre === 'function') zvTeindre(z); } else scene.add(g);
   const parts = (R.parts || []).slice(); if (z.head && parts.indexOf(z.head) < 0) parts.push(z.head);
   parts.forEach(m => { m.userData.z = z; m.userData.head = (m === z.head); z.meshes.push(m); });
   const px = new THREE.Object3D(); px.userData.z = z; px.raycast = zProxyRaycast; z.proxy = px; hitMeshes.push(px);

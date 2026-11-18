@@ -45,7 +45,8 @@
     r.out.forEach(o => {
       egal(o.transfos, 3, o.st + ' : transformateurs de la rue'); ok(o.gyros >= 4, o.st + ' : gyrophares ' + o.gyros); egal(o.tours, 2, o.st + ' : tours de refroidissement');
       ok(o.fx && o.ici, o.st + ' : effets posés');
-      ok(o.appels <= 185 && o.appels <= r.port + 15, o.st + ' : ' + o.appels + ' appels de dessin (Port : ' + r.port + ')');
+      ok(o.appels <= 185 && o.appels <= r.port + 30, // depuis la fusion du décor (dossier 120), le Port est descendu plus que la Centrale : écart de 7 à 16 selon le tirage ; le plafond par ville est dans t-fusion.js
+         o.st + ' : ' + o.appels + ' appels de dessin (Port : ' + r.port + ')');
     });
     ok(!r.portIci, 'Les effets de la Centrale ne restent pas au Port');
   });

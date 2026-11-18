@@ -11,6 +11,7 @@
 // Échap ou P pause. Cell : manette à gauche, glisser à droite pour viser, boutons Minigun et Roquettes.
 
 const MECH_LEN = 140;          // longueur d'une rue (m)
+const MECH_VILLES = 5;         // villes du robot : les 5 premières de LOCS (la Centrale, 6e ville du toit, n'est pas une rue du robot)
 const MECH_WALK = 5.5;         // vitesse de marche (m/s)
 const MECH_STRAFE = 4;         // pas de côté (m/s)
 const MECH_CAM = { y:5.4, z:-5.5 };
@@ -252,7 +253,7 @@ function mechPlan(){
 function mechStreet(first){
   // MECH.route : rue choisie au carrefour (40-robot-monstres.js) ; sinon la ville suivante
   const RT = !first && MECH.route ? MECH.route : null;
-  const L = (RT && RT.loc) || LOCS[(MECH.street - 1) % 5]; // les 5 premières villes seulement (la Centrale, dossier 117, n'est pas une rue du robot)
+  const L = (RT && RT.loc) || LOCS[(MECH.street - 1) % MECH_VILLES]; // les 5 premières villes seulement (MECH_VILLES)
   curLoc = L;
   buildWorld(L);
   try { if (typeof __amb === 'object') __amb.set(RT && RT.weather ? RT.weather : first ? 'soleil' : __amb.pick(L, MECH.street + 1)); } catch (e) { errNote(e); }

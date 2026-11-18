@@ -297,18 +297,7 @@ function ctrCibleBot(){
   return best.pourBot || (best.pourBot = { type:'transfo', g:best.g, head:null, meshes:[best.cible], get hp(){ return Math.max(1, best.hp); }, get dead(){ return !best.vivant; } });
 }
 
-/* ---------- Robot : ses carrefours tirent toujours parmi les 5 premières villes ---------- */
-// mbRoutes (js/40-robot-monstres.js) mêle LOCS au hasard : avec 6 villes, le tirage (et toute la course) changerait.
-// La Centrale est retirée de LOCS le temps de l'appel, puis remise à sa place (rien d'autre ne change pour le robot).
-try {
-  if (typeof mbRoutes === 'function'){
-    const _mr = mbRoutes;
-    mbRoutes = function(){
-      const i = LOCS.findIndex(L => L.id === 'centrale'), hors = i >= 0 ? LOCS.splice(i, 1) : [];
-      try { return _mr.apply(this, arguments); } finally { if (hors.length) LOCS.splice(i, 0, hors[0]); }
-    };
-  }
-} catch (e) { errNote(e); }
+/* ---------- Robot : ses carrefours tirent parmi les 5 premières villes (MECH_VILLES, dans mbRoutes de js/40-robot-monstres.js) ---------- */
 
 /* ---------- Succès ---------- */
 try {

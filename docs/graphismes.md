@@ -67,6 +67,15 @@ Captures dans les 4 styles (ordi 1600 x 900 : rue de nuit, rue de jour, tours de
 - Temps JavaScript du rendu de la scène (processeur ralenti ×4) : 15 à 38 % de moins. `update` et `visuals` ne changent pas de façon mesurable sur cette machine partagée (bruit de ±50 %).
 - Ce qui reste à part : façades (une texture chacune, fenêtres de `js/68`), sol, trottoirs, gazon, sacs, cônes des feux, carrosseries, barils et caisses (cibles), nuages et brume (sprites de `js/36`).
 
+## Une foule moins pareille sur le toit (dossier 124, `js/77-zombies-variete.js`, tous les styles)
+Déjà là avant : 12 tenues selon la ville, nuance de peau et de vêtements par zombie, petites proportions, pose des bras (`js/07-zombies.js`). Ajouté aux zombies ordinaires (marcheur, coureur, costaud) du toit seulement ; les spéciaux, le robot et le RTS ne changent pas.
+- Palette de la tenue « Civil » par ville (`ZV_VILLES`) : terre au village, pyjamas en banlieue de nuit, complets gris au centre-ville, bleu de travail et cirés jaunes au port, combinaisons de travail à la Centrale (surtout orange, aussi jaune, blanc sale, gris-bleu), avec mains et parfois un masque respiratoire sous les yeux.
+- Têtes nues : cheveux (6 couleurs, épaisseur variable) ou tuque ; taches de sang ou de crasse sur le devant ; bedaine chez quelques marcheurs et costauds.
+- Réglages : `ZV_REGL` (parts de chaque ajout, `on` pour comparer avant et après).
+- Rien ne change au jeu : les morceaux ajoutés ne sont pas des cibles et sont posés après la boîte de tir du type ; les couleurs passent par la couleur d'instance (aucun matériau de plus) ; aucun tirage dans `Math.random` (générateur semé sur le numéro du zombie, et `Math.random` prêté pendant la création des morceaux) ; le lot d'instances des morceaux est créé au chargement et grandit à l'apparition, jamais au rendu (les lots de `js/07` tirent 4 nombres à leur création). Empreinte du duel (`SIM_DUELS=1,3`) identique avant et après.
+- Coût (cell, 150 zombies) : 1 appel de dessin de plus en Actuel, 2 en Amélioré (ombres), soit environ 1 % ; environ 5 % de morceaux d'instances en plus.
+- Abandonné : démarches propres (boiter, bras ballants, pas plus ou moins amples). Bras et jambes sont des cibles : les bouger autrement change quels tirs touchent (l'empreinte du duel a changé). Aussi abandonné : bras manquant (un bras caché resterait une cible) et carrures par échelle des membres (cibles).
+
 ## Haute définition, séance 1 : la lumière (`js/58-graphismes-hd.js`)
 - Part de la rue d'Amélioré : chaque matériau détaillé devient un matériau physique (MeshStandardMaterial). Cartes de relief et de rugosité tirées des textures dessinées : fissures et gravier en creux, taches d'huile lisses qui reflètent comme des flaques, briques et planches en relief, cadres de fenêtres en saillie, vitres lisses qui reflètent le ciel. Rugosités : `HD_SORTES`.
 - Lumière d'ambiance et reflets : une vraie image HDR par ville (`hdri/`, Poly Haven, voir `hdri/LISEZMOI.md`), teintée à 60 % par la couleur du ciel de la ville, filtrée par PMREM. Le ciel peint de chaque ville reste affiché (il suit la météo et la brume) ; l'image HDR sert à la lumière et aux reflets.
@@ -133,6 +142,7 @@ Règles : Actuel et Amélioré ne changent pas ; Haute définition se choisit da
 - Décor du toit : part de fenêtres allumées (5 à 12 % la nuit), éclat (0,85 la nuit), rythme (1,2 à 3,6 s), bougies et télés ; seuils de la barricade (60 % et 30 %) : `TD_REGL` dans `js/68-toit-decor.js`.
 - Ultra : force des reflets (0,5, +0,4 sous la pluie), rayons (0,5), flou des ombres (5), taille du miroir (moitié de l'écran) : `ULT.regl` dans `js/61-graphismes-ultra.js`.
 - Zombies, tous les styles : force des nuances (`ZTEINT`), taille des yeux au loin (`ZYEUX`), part de bras qui pendent (`zBras`) dans `js/07-zombies.js`.
+- Foule du toit : parts de cheveux (72 % des têtes nues), tuques (12 %), taches (50 %), bedaines (18 %), combinaisons à la Centrale (70 % des « Civil » repeints), masques (35 %) et palettes par ville : `ZV_REGL` et `ZV_VILLES` dans `js/77-zombies-variete.js`.
 - Haute définition, zombies : force du flou en visant (5), couleur et taille des flaques de sang : `ZHD` dans `js/60-graphismes-zombies.js`.
 - Haute définition, nuit : force des lampadaires (4,5), portée (30 m), cône de brume (0,16) : `HD_NUIT`.
 - Haute définition : exposition (1,15), force de la lumière HDR (`env` 0,55), teinte de la ville (0,6), SSAO (rayon 0,7 m), éclat (0,5, seuil 0,92), lueurs et ciel (`sansOmbre`) : `HD_REGL` dans `js/58-graphismes-hd.js`. Images par seconde à mesurer sur l'ordi de Martin.

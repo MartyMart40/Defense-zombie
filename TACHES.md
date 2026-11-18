@@ -7,6 +7,8 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
+| 128 | Toit : la mise en scène des boss (arrivée, présence, mort), visuel et sonore seulement (js/82-boss-scene.js) | En cours | Sous-agent, lancé le 2026-11-18 |
+| 129 | RTS : des unités et des bâtiments qui vivent (marche, tourelles qui suivent, rotors, construction et destruction visibles), visuel seulement (js/84-rts-anim.js) | En cours | Sous-agent, lancé le 2026-11-18 |
 
 ## À faire
 

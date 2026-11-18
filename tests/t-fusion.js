@@ -30,7 +30,7 @@
       __style.styleSet('actuel');
       for (var i = 0; i < LOCS.length; i++){
         FUSION.on = false; var sans = __tfus.appels(i);
-        FUSION.on = true; var avec = __tfus.appels(i);
+        FUSION.on = true; var avec = Math.min(__tfus.appels(i), __tfus.appels(i), __tfus.appels(i)); // le décor tiré au hasard fait varier le compte : le plus petit de 3 rues
         out.push({ ville: LOCS[i].name, sans: sans, avec: avec });
       }
       __style.styleSet(avantSt); FUSION.on = true; state = 'menu';

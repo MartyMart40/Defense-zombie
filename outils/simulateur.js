@@ -23,6 +23,7 @@
 //     stratégies : tourelles, blindes, air, mixte, séparées par des virgules (défaut : les quatre)
 //     graines : ex. 1,2 (défaut 1,2) ; minutes : durée de jeu au plus (défaut 60) ; vallées : ex. 1,2,3 (défaut 1)
 //     Une partie s'arrête à la victoire (Ruche détruite) ou quand le QG tombe.
+//     SIM_PARADES=1 : le robot-joueur répond aux monstres à parade (js/74-rts-monstres.js, voir outils/sim-bot-rts.js)
 //   node outils/simulateur.js rts-banc [menaces] [graines] [secondes] [unités]
 //     banc des appuis : une armée au sol fixe plus 9 000 $ d'un seul type, menaces ex. 5,8,14 (défaut), graines 1,2, 150 s
 //     [unités] : seulement les lots qui contiennent ces unités, ex. jet,warthog (sans le banc des améliorations)
@@ -423,7 +424,7 @@ async function simRobot(b){
     for (const va of RTS_SIM.vallees) for (const g of RTS_SIM.graines) for (const st of RTS_SIM.strategies){
       const p2 = await pageRts(b);
       console.log('RTS, stratégie ' + st + ', vallée ' + va + ', graine ' + g + ' (' + RTS_SIM.maxMin + ' min de jeu au plus)...');
-      const r = await p2.evaluate(o => SIM.rts(o), { strategie: st, graine: g, maxMin: RTS_SIM.maxMin, vallee: va });
+      const r = await p2.evaluate(o => SIM.rts(o), { strategie: st, graine: g, maxMin: RTS_SIM.maxMin, vallee: va, parades: !!process.env.SIM_PARADES });
       parties.push(r);
       const C = r.cles, m1 = x => x == null ? '-' : (Math.round(x / 6) / 10);
       console.log('  fin : ' + r.fin.min + ' min, ' + (r.fin.gagne ? 'VICTOIRE, ' : '') + r.fin.nids + ' nids, ' + r.fin.tues + ' tués, ' + r.fin.perdues + ' perdues, QG ' + r.fin.qg + ' %' + (r.fin.tombe ? ' (tombé, de 90 % à 0 en ' + C.chute + ' s, 1re tourelle perdue ' + m1(C.tourAChute) + ' min avant)' : '')

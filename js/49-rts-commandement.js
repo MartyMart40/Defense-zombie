@@ -52,6 +52,7 @@ function rtsMiniDraw(){
   for (const z of zombies){ if (z.dead || !z.g) continue; if (++k > 400) break; const q = P2(z.g.position.x, z.g.position.z); g.fillRect(q[0] - .8, q[1] - .8, 1.6, 1.6); }
   RTS.units.forEach(u => { if (u.dead) return; const q = P2(u.g.position.x, u.g.position.z), on = RTS.sel.indexOf(u) >= 0; g.fillStyle = on ? '#ffffff' : '#7ee05a'; g.fillRect(q[0] - (on ? 2 : 1.5), q[1] - (on ? 2 : 1.5), on ? 4 : 3, on ? 4 : 3); });
   if (typeof rtsMiniExtra === 'function') rtsMiniExtra(g, P2); // la Ruche et le côté du siège (js/65-rts-ruche.js)
+  if (typeof rmMiniExtra === 'function') rmMiniExtra(g, P2); // monstres à parade (js/74-rts-monstres.js)
   if (RTS.rally){ const q = P2(RTS.rally.x, RTS.rally.z); g.fillStyle = '#ffd040'; g.beginPath(); g.moveTo(q[0], q[1] - 5); g.lineTo(q[0] + 4, q[1] - 3); g.lineTo(q[0], q[1] - 1); g.fill(); g.fillRect(q[0] - .5, q[1] - 5, 1, 6); }
   // Ce que la caméra montre
   g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = 1; g.beginPath();

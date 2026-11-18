@@ -9,6 +9,7 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 |---|-------|--------|------|
 | 113 | Toit : fenêtres qui s’allument et s’éteignent, barricade et bord du toit visibles en jouant | En cours | Sous-agent, lancé le 2026-11-18 |
 | 115 | RTS : un son par famille d’arme, sons placés selon la distance, moments du jeu (siège, Ruche, base attaquée), moteur en pilotant | En cours | Sous-agent, lancé le 2026-11-18 |
+| 116 | Robot : sons de la machine (pas, moteur, alarmes du tableau de bord, armes vues de l’habitacle, Titan roi) | En cours | Sous-agent, lancé le 2026-11-18 |
 
 ## À faire
 

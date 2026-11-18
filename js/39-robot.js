@@ -252,7 +252,7 @@ function mechPlan(){
 function mechStreet(first){
   // MECH.route : rue choisie au carrefour (40-robot-monstres.js) ; sinon la ville suivante
   const RT = !first && MECH.route ? MECH.route : null;
-  const L = (RT && RT.loc) || LOCS[(MECH.street - 1) % LOCS.length];
+  const L = (RT && RT.loc) || LOCS[(MECH.street - 1) % 5]; // les 5 premières villes seulement (la Centrale, dossier 117, n'est pas une rue du robot)
   curLoc = L;
   buildWorld(L);
   try { if (typeof __amb === 'object') __amb.set(RT && RT.weather ? RT.weather : first ? 'soleil' : __amb.pick(L, MECH.street + 1)); } catch (e) { errNote(e); }

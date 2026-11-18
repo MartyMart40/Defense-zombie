@@ -32,8 +32,10 @@ function infNorm(){
 infNorm();
 function IP(){ return P.inf && typeof P.inf === 'object' && P.inf.best ? P.inf : infNorm(); }
 const infBest = id => IP().best[id] || 0;
-const infWonCount = () => LOCS.filter(L => (P.wins && P.wins[L.id]) > 0).length;
-const infUnlocked = () => infWonCount() >= LOCS.length;
+// Les 5 premières villes débloquent le mode infini (la Centrale, 6e ville du dossier 117, s'y ajoute comme décor)
+const INF_VILLES = 5;
+const infWonCount = () => LOCS.slice(0, INF_VILLES).filter(L => (P.wins && P.wins[L.id]) > 0).length;
+const infUnlocked = () => infWonCount() >= INF_VILLES;
 
 /* ---------- État de la partie infinie ---------- */
 const INF = { run:null, starting:false, mix:false, render:false };
@@ -249,7 +251,7 @@ renderMap = function(){
       const best = infBest(L.id), d = document.createElement('div');
       d.className = 'inf-row' + (open ? '' : ' locked');
       d.innerHTML = '<span class="inf-txt">' + (open ? 'Mode infini · ' + (best ? 'record : ' + best + ' vague' + (best > 1 ? 's' : '') : 'pas encore de record')
-        : 'Mode infini : libère les 5 villes pour le débloquer (' + n + ' / ' + LOCS.length + ')') + '</span>'
+        : 'Mode infini : libère les 5 villes pour le débloquer (' + n + ' / ' + INF_VILLES + ')') + '</span>'
         + '<button class="inf-btn" data-inf="' + i + '"' + (open ? '' : ' aria-disabled="true" aria-label="Mode infini verrouillé"') + '>' + (open ? 'Mode infini' : '🔒 Mode infini') + '</button>';
       info.appendChild(d);
     });
@@ -263,7 +265,7 @@ function infLabels(){
   LOCS.forEach(L => { const v = infBest(L.id); if (v > top){ top = v; where = L.name; } });
   b.disabled = !open;
   b.classList.toggle('locked', !open);
-  b.textContent = open ? 'Mode infini' + (top ? ' · record : vague ' + top + ' (' + where + ')' : ' débloqué') : '🔒 Mode infini : libère les 5 villes (' + infWonCount() + ' / ' + LOCS.length + ')';
+  b.textContent = open ? 'Mode infini' + (top ? ' · record : vague ' + top + ' (' + where + ')' : ' débloqué') : '🔒 Mode infini : libère les 5 villes (' + infWonCount() + ' / ' + INF_VILLES + ')';
 }
 const _infShowScreen = showScreen;
 showScreen = function(id){

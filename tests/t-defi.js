@@ -176,7 +176,7 @@
       egal(r.d.titre, 'Défi échoué', 'Titre de la défaite'); egal(r.d.jour, 3, 'Meilleur résultat du jour (vagues)');
       egal(r.sauve.unlocked, 1, 'Sauvegarde : villes'); egal(r.sauve.best, '{}', 'Sauvegarde : P.best'); egal(r.sauve.wins, '{}', 'Sauvegarde : P.wins');
       ok(r.carte, 'La carte garde la copie de la ville du défi');
-      egal(r.verrou, 4, 'Villes verrouillées sur la carte');
+      egal(r.verrou, J('LOCS.length') - 1, 'Villes verrouillées sur la carte');
     } finally { finir(); }
   });
 

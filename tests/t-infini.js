@@ -20,8 +20,8 @@
       var r = __inf.infStart(0);
       return { n: bs.length, dis: dis, txt: txt, open: __inf.infUnlocked(), titre: t ? { dis: t.disabled, txt: t.textContent } : null, start: r, inf: !!curLoc.inf || clicLance };
     });
-    egal(a.n, 5, 'Un bouton Mode infini par ville');
-    egal(a.dis, 5, 'Boutons verrouillés avant la fin de la campagne');
+    egal(a.n, J('LOCS.length'), 'Un bouton Mode infini par ville (la Centrale comprise)');
+    egal(a.dis, J('LOCS.length'), 'Boutons verrouillés avant la fin de la campagne');
     ok(/libère les 5 villes/i.test(a.txt), 'Explication du verrou : ' + a.txt);
     ok(!a.open, 'Pas débloqué avec 4 villes');
     ok(a.titre && a.titre.dis, 'Rappel sur l’écran titre verrouillé');

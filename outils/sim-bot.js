@@ -78,6 +78,9 @@
       if (z.type === 'spitter' && p.z >= z.stopZ - .5 && p.z > cz){ cz = p.z; crach = z; }
     }
     if (best && bz >= BAR_Z - BOT.zone) return best;
+    // La Centrale : pendant le combat du Cœur, un transformateur qui tient (le bandeau dit de les détruire d'abord)
+    const tr = typeof __centrale === 'object' && __centrale.cibleBot ? __centrale.cibleBot() : null;
+    if (tr) return tr;
     return crach || boss || best;
   }
   // Pouvoirs : au plus un lancer toutes les 0,7 s, dans le groupe le plus serré (grenade ≥ 5 zombies, Molotov ≥ 6 près de la barricade, frappe ≥ 12)
@@ -236,15 +239,18 @@
       minutes:Math.round(t / 6) / 10, pouvoirs:POUV.n, niveau:P.level, ferraille:Math.round(P.scrap), arme:WEAPONS[S.cur].name, finTemps:t >= maxT, vagues };
   }
   // Campagne complète : chaque ville jusqu'à la victoire (essais au plus), en gardant le profil comme un vrai joueur
+  // Options (La Centrale, dossier 117) : jusqua = nombre de villes à jouer (toutes par défaut), depuis = première ville,
+  // profil = profil gardé (texte JSON de P, rendu dans profilFin) à reprendre au lieu d'un profil neuf
+  function profilDe(s){ Object.keys(P).forEach(k => delete P[k]); Object.assign(P, JSON.parse(s)); try { defRebuild(); } catch (e) {} saveP(); }
   async function campagne(opts){
-    preparer(); hasard(opts.graine || 1); profilNeuf(); if (opts.strategie) BOT.strategie = opts.strategie;
-    const J = JOUEURS[opts.joueur] || JOUEURS.moyen, res = [];
-    for (let i = 0; i < LOCS.length; i++){
+    preparer(); hasard(opts.graine || 1); if (opts.profil) profilDe(opts.profil); else profilNeuf(); if (opts.strategie) BOT.strategie = opts.strategie;
+    const J = JOUEURS[opts.joueur] || JOUEURS.moyen, res = [], fin = Math.min(LOCS.length, opts.jusqua || LOCS.length);
+    for (let i = opts.depuis || 0; i < fin; i++){
       let essai = 0, r;
       do { essai++; r = await partieToit(i, J, false, opts.maxMin); r.essai = essai; res.push(r); } while (!r.gagne && essai < (opts.essais || 3));
       if (!r.gagne) break;
     }
-    return { joueur:J.nom, strategie:BOT.strategie, parties:res, niveau:P.level, ferraille:Math.round(P.scrap) };
+    return { joueur:J.nom, strategie:BOT.strategie, parties:res, niveau:P.level, ferraille:Math.round(P.scrap), profilFin:JSON.stringify(P) };
   }
   // Mode infini dans chaque ville, avec le profil de fin de campagne
   async function infini(opts){

@@ -9,11 +9,11 @@ Je suis dans ma fenêtre de bunker ou sur un toit d'immeuble barricadé et je ti
 - Position fixe, vue vers la rue (pas de 360 degrés).
 - La barricade a des points de vie : si elle cède, la partie est finie.
 - Argent par zombie (tête +50 %), boutique entre les vagues.
-- Campagne de 5 villes, chaque ville débloque la suivante.
+- Campagne de 6 villes (5 jusqu'au dossier 117, puis la Centrale), chaque ville débloque la suivante.
 - Expérience gardée même à la défaite, talents permanents.
 
 ## Campagne (2026-11-02)
-- Pas de choix au départ : « Jouer » lance la prochaine ville à libérer, dans l'ordre Saint-Clou, Val-des-Cendres, Banlieue Nord, Centre-ville, Port industriel.
+- Pas de choix au départ : « Jouer » lance la prochaine ville à libérer, dans l'ordre Saint-Clou, Val-des-Cendres, Banlieue Nord, Centre-ville, Port industriel, la Centrale.
 - Vague 1 : 30 zombies, puis +30 par vague. Chaque ville : +15 % de zombies.
 - Argent et XP par zombie réduits (×0,35) pour compenser le nombre.
 - La carte reste disponible pour rejouer une ville libérée.
@@ -23,7 +23,7 @@ Je suis dans ma fenêtre de bunker ou sur un toit d'immeuble barricadé et je ti
 - Défenses : tourelle 250, mortier 900, laser 2 500, missiles 6 000, ogive nucléaire 40 000 (toutes les 30 s, compte à rebours).
 - 4 lignes d'amélioration infinies par défense (dégâts, cadence, portée ou zone, spéciale). Chaque niveau coûte 15 % de plus et donne +10 %. Dégâts sans limite, cadence et recharge plafonnent doucement.
 - Monnaie des défenses : ferraille, permanente, gagnée sur chaque zombie (même ceux tués par les défenses).
-- Mode infini : débloqué dans les 5 villes après la campagne. Difficulté identique partout, seul le décor change. Départ avec 1 000 $, plafonds de dégâts et barricade retirés, record par ville. Depuis la tâche 47 : vie +18 % et dégâts +14 % par vague, argent +10 %.
+- Mode infini : débloqué en libérant les 5 premières villes (la Centrale n'est pas demandée, voir plus bas), jouable dans les 6. Difficulté identique partout, seul le décor change. Départ avec 1 000 $, plafonds de dégâts et barricade retirés, record par ville. Depuis la tâche 47 : vie +18 % et dégâts +14 % par vague, argent +10 %.
 - ANNULÉ (2026-11-02) : pas de Niveau de horde ni de choix du nombre de zombies. Le joueur ne choisit pas la difficulté : elle monte avec les vagues, et il y répond en achetant des améliorations.
 
 ## Zombies (2026-11-02)
@@ -117,3 +117,14 @@ Martin : « certaines armes comme le scope sur le laser ne change rien quand tu 
 - Zooms changés (champ en visée, au repos 70°) : lunette ×4 sur le fusil d'assaut 27,5° → 17,5°, arbalète 18,7° → 17,5°, .50 24,2° → 17,5°, laser 22° → 17,5°, canon électromagnétique 11° → 17,5° ; sans optique : arbalète 34° → 42°, canon électromagnétique 20° → 42°, laser 40° → 42° ; point rouge : arbalète 30° → 37°, laser 35,2° → 37°. Les autres ne bougent pas. Aucun chiffre de dégâts, cadence ou dispersion n'a changé.
 - Armes en main : chaque pièce a sa matière (métal qui brille, polymère satiné, bois et gants mats, verre), sans appel de dessin de plus ; les pièces d'énergie (laser, canon électromagnétique, arc) s'illuminent au tir et faiblissent puis remontent pendant la recharge. Lumières plus neutres. Fusil laser refait ; point rouge et lunette ×4 refaits ; détails ajoutés à la .50 et au lance-grenades. Tests : `tests/t-visee.js`.
 - Deuxième ronde (tâche 108) : tous les modèles refaits (pistolet, fusil à pompe, fusil d'assaut, sniper, arbalète, lance-flammes, minigun, lance-roquettes à garde de bois, canon électromagnétique, arc), coupés en `js/04-arme-modeles.js` et `js/04-arme-modeles2.js`. L'arme au repos est plus grande et plus près du centre (`VM_POS` de (0,22 ; -0,22 ; -0,48) à (0,19 ; -0,19 ; -0,42), échelle 0,8 inchangée ; la visée ne bouge pas). Le rayon du laser et du canon électromagnétique part fin du canon (cône) au lieu d'une grande vitre. Le coup de caméra se calme dans toute lunette (`js/62-ressenti.js`, par `viseeLunette`). Aucun chiffre d'équilibrage ni de zoom n'a changé.
+
+## La Centrale, 6e ville (dossier 117, 2026-11-18)
+Martin : plus de contenu. Une 6e ville après le Port : la centrale électrique abandonnée d'où vient la contamination. Code : `LOCS` (`js/02-villes.js`), décor `centraleRue` et `centraleFond` (`js/03-scene.js`), le reste dans `js/71-centrale.js` (réglages `CTR` en haut).
+- Chiffres : 12 vagues, `diff` 4,2, `off` 5 (+75 % de zombies, 4 101 en tout), `dur` 1 (pas de durcissement à part : le Port a 1,25), argent de départ 6 000 $, XP ×6,4. Par zombie, 1,15 fois la vie et les dégâts du Port à la même vague (le test de difficulté demande ×1,12 pour elle, ×1,26 pour les autres).
+- Décor : route de service entre deux clôtures grillagées (panneaux « danger »), salles des machines en béton et bureaux, cours de transformateurs, pylônes à haute tension et fils, gros tuyaux et passerelle qui traverse la rue, gyrophares qui tournent ; au bout, mur d'enceinte, bâtiment du réacteur fissuré qui luit, cheminée et deux tours de refroidissement qui fument. Nuit bleu-vert, cendres qui tombent. Météo : surtout nuit claire, cendres, neige.
+- L'irradié (95 de vie, vitesse 1,25, dégâts 7) : ouvrier en combinaison, peau à vif qui luit en vert. En mourant, il laisse une flaque 6 s ; à moins de 3,2 m de la barricade, elle la ronge (0,8 × ses dégâts par seconde, par coups de 0,5 s). Parade : l'abattre loin. Seulement à la Centrale (campagne) : de 3,5 % des zombies à la vague 1 jusqu'à 10 % (vague 12 : 63), à la place de marcheurs et de coureurs. Bandeau à la première rencontre, sous-titre sans son.
+- Boss : « le Liquidateur » aux vagues 5 et 10 (boss ordinaire, vie ×1,25) ; « le Cœur » à la vague 12 (vie ×1,8, taille 9, torse fissuré qui luit). Tant qu'un des 3 transformateurs de la rue tient (arcs électriques jusqu'à lui), il ne prend que 30 % des dégâts et regagne 0,6 % de sa vie par seconde et par transformateur. Les transformateurs ne sont des cibles que pendant ce combat (8 % de la vie du Cœur chacun ; balles, carreaux et roquettes). Les trois détruits : « à nu », son corps prend tous les dégâts (ses plaques ne servent plus). Il lance toujours des autos.
+- Mesures (duel à budget égal, joueur moyen, 45 000 $) : le Cœur tombe en 12 s (.50, sniper + .50), 15 s (canon électromagnétique + minigun), 19 s (minigun), 33 s (lance-roquettes), dont environ 5 s pour les transformateurs. Les boss du Port tombent en 8 à 14 s.
+- Simulateur (`node outils/simulateur.js centrale debutant,moyen,bon G`, graines 1 à 3, profil de sortie du Port) : bon libère la Centrale au 2e, 1er et 2e essai (35 à 67 % de barricade, souvent après une brèche) ; moyen au 2e, 3e et 2e ; débutant pas en 4 essais (graine 1, jusqu'à la vague 11), et ne libère pas le Port en 3 essais aux graines 2 et 3.
+- Ce qui ne change pas : le mode infini reste débloqué par les 5 premières villes (`INF_VILLES`, `js/28-infini.js`) ; la Centrale s'y ajoute comme décor (pas d'irradié ni de Cœur). Le robot garde ses 5 décors : rue `(rue - 1) % 5` (`js/39-robot.js`) et carrefours tirés sans la Centrale (`mbRoutes`, enveloppé dans `js/71-centrale.js`). Le défi du jour tire toujours sa ville parmi les 5 premières (`DEFI_VILLES`) : aucun défi ne change. Un joueur qui avait déjà libéré le Port voit la Centrale débloquée.
+- Succès : « Courant coupé » (libérer la Centrale, 1 500 ⚙) et « Arrêt du cœur » (abattre le Cœur, 800 ⚙).

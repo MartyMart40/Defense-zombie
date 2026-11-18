@@ -39,7 +39,7 @@
   test('Foule : plafonds par appareil et règle de maxAlive', () => {
     exiger();
     const r = J(function(){
-      var L0 = LOCS[0], L4 = LOCS[LOCS.length - 1];
+      var L0 = LOCS[0], L4 = LOCS[4]; // le Port (la Centrale, 6e ville, est testée dans t-centrale.js)
       return { cap: DEV_CAP, base: BASE_ALIVE, touch: isTouch, w1: wavePlan(1, L0).maxAlive, w5: wavePlan(5, L0).maxAlive, w1d: wavePlan(1, L4).maxAlive, w10d: wavePlan(10, L4).maxAlive,
         tot1: wavePlan(1, L0).total, tot10: wavePlan(10, L4).total, monte: [1, 2, 3, 4, 5].every(function(w){ return aliveCap(w + 1, L0) >= aliveCap(w, L0); }),
         borne: LOCS.every(function(L){ for (var w = 1; w <= 40; w++) if (aliveCap(w, L) > DEV_CAP) return false; return true; }) };

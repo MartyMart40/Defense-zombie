@@ -14,6 +14,10 @@
 //   - entre deux courses, dépense sa ferraille au garage selon une stratégie ; après une victoire, il part au tour suivant,
 //     après une défaite il refait le même tour (le jeu garde le tour choisi : P.mechFin.choix).
 // Il ne touche jamais aux dégâts ni au blindage : il les mesure seulement (d'où viennent les dégâts encaissés).
+//   - parades des monstres du robot (js/73-robot-monstres2.js, dossier 119), selon son niveau (parade : part des fois où il
+//     fait le bon geste) : pas de côté quand un Bélier charge sur lui, puis il tire dans le dos du Bélier sonné ; secoue le
+//     torse quand un Grappin s'accroche à la vitre (le bon le tire aussi en plein saut) ; sort du cercle d'un obus de mortier
+//     et vise les mortiers en priorité. Il décide une fois par charge, par Grappin accroché et par obus.
 // Limites face à un vrai joueur : il ne recule pas pour se dégager, ne vise pas les points faibles exprès,
 // ne se sert pas du décor et voit les crachats sans les chercher des yeux.
 
@@ -30,10 +34,10 @@
   //   la gâchette à cette chaleur et reprend à celle-là (1 : il tient jusqu'au blocage) ; arret : zombies qui le
   //   frappent pour qu'il arrête d'avancer ; avance : il tient compte de la vitesse de la cible pour les roquettes
   const NIV = {
-    parfait:  { voitDerriere:60, esquive:1,   roqSeuil:4, chaleur:.85, reprise:.5,  arret:4,  avance:true,  carrefour:'malin' },
-    debutant: { voitDerriere:4,  esquive:.3,  roqSeuil:1, chaleur:1,   reprise:0,   arret:7,  avance:false, carrefour:'hasard' },
-    moyen:    { voitDerriere:15, esquive:.65, roqSeuil:3, chaleur:.92, reprise:.55, arret:5,  avance:true,  carrefour:'malin' },
-    bon:      { voitDerriere:35, esquive:.9,  roqSeuil:4, chaleur:.86, reprise:.5,  arret:4,  avance:true,  carrefour:'malin' }
+    parfait:  { voitDerriere:60, esquive:1,   roqSeuil:4, chaleur:.85, reprise:.5,  arret:4,  avance:true,  carrefour:'malin', parade:1 },
+    debutant: { voitDerriere:4,  esquive:.3,  roqSeuil:1, chaleur:1,   reprise:0,   arret:7,  avance:false, carrefour:'hasard', parade:.2 },
+    moyen:    { voitDerriere:15, esquive:.65, roqSeuil:3, chaleur:.92, reprise:.55, arret:5,  avance:true,  carrefour:'malin', parade:.5 },
+    bon:      { voitDerriere:35, esquive:.9,  roqSeuil:4, chaleur:.86, reprise:.5,  arret:4,  avance:true,  carrefour:'malin', parade:.9 }
   };
   const BOSS_R = { titan:1, broodmother:1, behemoth:1, boss:1 };
 
@@ -89,6 +93,10 @@
       if (z.dead || !z.g || !visible(z, J)) continue;
       const p = z.g.position, d = Math.hypot(p.x - MECH.x, p.z - MZ); if (d > 95) continue;
       let s = -d;
+      if (z.mr === 'accroche') continue; // Grappin sur la vitre : hors d'atteinte des bras
+      if (z.type === 'belier') s += z.mr === 'sonne' ? 70 * J.parade : -20 * J.parade; // dos offert, ou blindé de face
+      if (z.type === 'grappin' && z.mr === 'saut') s += 80 * J.parade;                  // en plein saut
+      if (z.type === 'mortier' && d < 95) s += 30 * J.parade;
       if (zoneCoups(p)) s += 60;
       if (z.type === 'spitter' && d < 70) s += 30;
       if (BOSS_R[z.type]) s += 20;
@@ -144,6 +152,9 @@
         viserPoint(q.x, q.y, q.z, J); MECH.rocket = true; tirD = true; SR.roq++;
       }
     }
+    // Grappin sur la vitre : il secoue le torse (s'il a décidé de parer), à la place de viser
+    const gr = mr2Secousse(J, dt);
+    if (gr){ MECH.rocket = false; tirD = true; }
     if (!tirD && z) viserPoint(pv.x, pv.y, pv.z, J);
     // 3. Bras gauche : la gâchette selon la chaleur
     let tirG = !!z;
@@ -169,6 +180,7 @@
       menaces.forEach(bx => { cands.push(bx - marge, bx + marge); });
       cands.filter(x => x >= -9 && x <= 9 && menaces.every(bx => Math.abs(x - bx) >= marge - .01)).forEach(x => { if (but === null || Math.abs(x - MECH.x) < Math.abs(but - MECH.x)) but = x; });
     }
+    const but2 = mr2Esquive(J); if (but2 !== null) but = but2;
     if (but !== null) vxW = clamp((but - MECH.x) * 6, -1, 1) * MECH_STRAFE;
     else if (Math.abs(MECH.x) > 5) vxW = -Math.sign(MECH.x) * MECH_STRAFE * .5; // revient vers le milieu, pour avoir de la place
     let frappent = 0; for (const o of zombies) if (!o.dead && o.g && zoneCoups(o.g.position)) frappent++;
@@ -177,13 +189,45 @@
     // lui dit « Avance ! ») ou quand son blindage passe sous la moitié : rester sur place, c'est mourir
     const presse = (MECH.renf || 0) > 0 || S.bar < S.barMax * .5;
     const avance = style === 'fonce' || (style !== 'reste' && (frappent < J.arret || presse));
-    if (avance) vzW = -MECH_WALK * (1 + .08 * mUp('legs'));
+    if (avance && but2 === null) vzW = -MECH_WALK * (1 + .08 * mUp('legs')); // il esquive : il s'arrête pour faire son pas de côté
     // Monde → commandes du robot (elles suivent la direction du regard)
     const sy = Math.sin(yaw), cy = Math.cos(yaw), spd = MECH_WALK * (1 + .08 * mUp('legs'));
     const fw = -sy * vxW - cy * vzW, st = cy * vxW - sy * vzW;
     MECH.joy.dy = -clamp(fw / (fw > 0 ? spd : spd * .6), -1, 1); MECH.joy.dx = clamp(st / MECH_STRAFE, -1, 1);
     // Vitesse des zombies (pour viser devant eux)
     if (J.avance) for (const o of zombies){ if (o.dead || !o.g) continue; const p = o.g.position, pr = E.prec.get(o); if (pr){ pr.vx = (p.x - pr.x) / dt; pr.vz = (p.z - pr.z) / dt; pr.x = p.x; pr.z = p.z; } else E.prec.set(o, { x:p.x, z:p.z, vx:0, vz:0 }); }
+  }
+
+  /* ---------- Parades des monstres du robot (js/73-robot-monstres2.js) ---------- */
+  // Une décision par événement : charge du Bélier, Grappin accroché, obus (clé : l'objet et le numéro de l'événement)
+  const PAR = { dec:new Map(), dir:1, t:0 };
+  function decide(cle, J){ if (!PAR.dec.has(cle)) PAR.dec.set(cle, Math.random() < J.parade); return PAR.dec.get(cle); }
+  // Où aller pour sortir d'une bande de charge ou d'un cercle d'obus (le plus près, dans la rue) ; null : rien à esquiver
+  function mr2Esquive(J){
+    if (typeof __mr2 !== 'object') return null;
+    const M2 = __mr2, R = M2.mr2Rgl(M2.MR2_BEL, 'rayon');
+    const sortir = (cx, r) => { const a = cx - r - .7, b = cx + r + .7, ok = x => x >= -9 && x <= 9; return ok(a) && ok(b) ? (Math.abs(a - MECH.x) < Math.abs(b - MECH.x) ? a : b) : ok(a) ? a : b; };
+    for (const z of zombies){
+      if (z.dead || z.type !== 'belier' || z.mr !== 'charge' || z.mrT < J.reflexe * .5) continue;
+      const ecart = Math.abs(z.mrX - MECH.x); if (ecart >= R + 2.5) continue;
+      // Dans la bande : il en sort ; tout près : il ne bouge plus (sinon il y revient en se recentrant)
+      if (decide('b' + z.uid + ':' + (M2.MR2.evts.charge || 0), J)) return ecart < R + .4 ? sortir(z.mrX, R) : MECH.x;
+    }
+    for (let i = 0; i < M2.MR2_OBUS.length; i++){
+      const o = M2.MR2_OBUS[i];
+      if (!o.actif || o.t < J.reflexe || Math.hypot(MECH.x - o.x, MZ - o.z) >= o.r + .3) continue;
+      if (decide('o' + o.id, J)) return sortir(o.x, o.r);
+    }
+    return null;
+  }
+  // Grappin accroché : secousses de 5 rad/s, demi-tour toutes les 0,16 s, après le temps de réaction
+  function mr2Secousse(J, dt){
+    if (typeof __mr2 !== 'object') return null;
+    let g = null; for (const z of zombies) if (!z.dead && z.type === 'grappin' && z.mr === 'accroche'){ g = z; break; }
+    if (!g || g.mrT < J.reflexe || !decide('g' + g.uid + ':' + (__mr2.MR2.evts.accroche || 0), J)) return null;
+    PAR.t += dt; if (PAR.t > .16){ PAR.t = 0; PAR.dir = -PAR.dir; }
+    yaw += PAR.dir * 5 * dt;
+    return g;
   }
 
   /* ---------- Carrefour ---------- */
@@ -223,6 +267,8 @@
     const scr0 = P.scrap || 0, xp0 = P.xp || 0;
     Object.assign(SR, { actif:true, deg:{}, esq:0, crach:0, bossTues:0, roq:0 });
     Object.assign(E, { z:null, t:0, chaud:false, rueVue:0, vus:new WeakSet(), prec:new WeakMap() });
+    PAR.dec.clear(); PAR.t = 0; PAR.dir = 1;
+    const mr0 = typeof __mr2 === 'object' ? Object.assign({}, __mr2.MR2, { tues:Object.assign({}, __mr2.MR2.tues) }) : null;
     if (o.tour){ const F = mechFinNorm(); F.tour = Math.max(F.tour, o.tour - 1); F.choix = o.tour; }
     mechStart();
     let t = 0, n = 0, rue = MECH.street, t0 = 0, d0 = 0; const rues = [];
@@ -239,6 +285,7 @@
     const res = { joueur:J.nom, rue:MECH.street, tour:MECH.tour || 1, gagne, meilleurTour:mechFinNorm().tour, rues:gagne ? MECH_FIN.rues : Math.round(100 * ((MECH.street - 1) + Math.min(1, MECH.dist / MECH_LEN))) / 100, mort,
       minutes:Math.round(t / 6) / 10, tues:MECH.kills, ferraille:Math.round((P.scrap || 0) - scr0), xp:Math.round((P.xp || 0) - xp0),
       deg:Object.fromEntries(Object.keys(SR.deg).map(k => [k, Math.round(SR.deg[k])])), degTotal:Math.round(deg()), blindage:Math.round(S.barMax),
+      mr2:mr0 ? ['coups', 'esquives', 'decroches', 'impacts', 'rates', 'annonces'].reduce((o, k) => { o[k] = (__mr2.MR2[k] || 0) - (mr0[k] || 0); return o; }, { tues:Object.fromEntries(__mr2.MR2_TYPES.map(t => [t, (__mr2.MR2.tues[t] || 0) - (mr0.tues[t] || 0)])) }) : null,
       crachats:SR.crach, esquives:SR.esq, bossTues:SR.bossTues, routes:Object.assign({}, BOT_R.routes), parRue:rues.concat([{ rue, s:Math.round(t - t0), deg:Math.round(deg() - d0), fin:true }]) };
     SR.actif = false;
     SIM.horloge(10); // vide les minuteries en attente (panneau de fin)

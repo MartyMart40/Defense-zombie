@@ -14,8 +14,9 @@ On pilote un mech à deux pattes, vue du cockpit : minigun au bras gauche, lance
 | `js/40-robot-habitacle.js` | Habitacle complet (vitre, tableau de bord, écrans, manettes et mains du pilote), jambes qui marchent, balancement des pas, réglage « Habitacle » de la Pause (dossier 105). Seulement visuel |
 | `js/67-robot-style.js` | Style graphique Amélioré dans le robot (dossier 114) : ombres des jambes, bouton « Style » dans la Pause du robot. Le reste est dans `js/57-graphismes.js`. Seulement visuel |
 | `js/70-robot-sons.js` | Sons de la machine (dossier 116) : pas sur le vrai pied, fond du moteur, armes vues de l'intérieur, tableau de bord, moments. Seulement sonore |
+| `js/73-robot-monstres2.js` | Trois monstres à la taille du robot, chacun avec sa parade (dossier 119) : Bélier, Grappin, Mortier vivant ; annonce à la première rencontre (`P.mr2Vus`), alertes sans son, monstre de la rue suivante au carrefour, « Monstres rencontrés » au garage |
 | `js/50-robot-sauvegarde.js` | Course gardée au début de chaque rue ; « ▶ Continuer le robot » sur l'écran titre reprend au début de la rue |
-| `tests/t-robot.js`, `tests/t-robot2.js`, `tests/t-robot-sauvegarde.js`, `tests/t-robot-fin.js`, `tests/t-robot-habitacle.js`, `tests/t-robot-style.js`, `tests/t-robot-sons.js` | Tests |
+| `tests/t-robot.js`, `tests/t-robot2.js`, `tests/t-robot-sauvegarde.js`, `tests/t-robot-fin.js`, `tests/t-robot-habitacle.js`, `tests/t-robot-style.js`, `tests/t-robot-sons.js`, `tests/t-robot-monstres2.js` | Tests |
 
 ## Chiffres actuels
 - Rue de 140 m (`MECH_LEN`). Course de 9 rues. Boss aux rues 3 et 6, boss final à la rue 9.
@@ -59,7 +60,7 @@ Simulateur, 3 graines par ligne, mêmes graines avant et après.
 - Course après course (12 courses, garage « toujours le moins cher ») : le moyen gagne le tour 1 à la course 4 (4, 4, 4), le tour 2 à la course 5, le tour 3 aux courses 6 à 8, le tour 4 à la course 10 (2 graines sur 3). Le bon : tour 1 aux courses 3 ou 4, tour 4 aux courses 6 à 8. Améliorations toutes au maximum aux courses 7 à 9 (avant : 7 à 9 aussi). Une course rapporte 1 400 à 3 500 ⚙ au début, 9 000 à 12 500 au moment des victoires.
 - Plafond avec tout le garage : moyen tour 2,7 (minigun et roquettes) ou 4,3 (minigun et canon) ; bon 3,7 ou 4 ; débutant 2 ou 3,7.
 - Avant (course sans fin, même joueur) : 9 rues atteintes pour la première fois aux courses 4 à 6, puis 13 à 27 rues ; rien à viser une fois le garage payé.
-- Ce qui ne marche pas encore : l'adresse compte peu (le bon dépasse le moyen d'environ un tour au mieux, le débutant suit à un tour) ; le boss final est le principal mur (beaucoup de défaites à 8,99 rues) ; le canon électromagnétique reste l'arme la plus forte une fois le garage payé.
+- Ce qui ne marche pas encore : l'adresse compte peu (dossier 119 : trois monstres à parade, voir plus bas) (le bon dépasse le moyen d'environ un tour au mieux, le débutant suit à un tour) ; le boss final est le principal mur (beaucoup de défaites à 8,99 rues) ; le canon électromagnétique reste l'arme la plus forte une fois le garage payé.
 
 ## Dossier 105 (2026-11-13) : tout vient de devant, habitacle, jambes
 Martin : « Le robot dans la ville a encore des zombies qui spawn en arrière, il faut que ça vienne de la zone opposée. Aussi ce même robot j'aimerais des jambes visibles et un habitat complet avec joystick qui bouge à mesure que tu bouges. »
@@ -141,6 +142,42 @@ Pire cas sans budget de voix : crête -0,6 dB, jamais au-dessus de 0,95 (limiteu
 **Coût** : 60 s simulées (marche, minigun qui surchauffe, blindage bas) : fond fait une fois, au plus 10 voix à la fois, environ 24 nœuds audio créés par seconde (pas, grincements, bips ; chacun s'arrête seul à la fin de son son). Son coupé : aucun nœud créé.
 
 **À écouter en jouant** : le volume des pas au casque (un peu forts en courant ?) et au cell (ils passent surtout par le médium) ; le bip du blindage bas sur la durée ; le cor du Titan roi.
+
+## Dossier 119 (2026-11-18) : trois monstres qui demandent un geste
+Diagnostic : l'adresse comptait peu (le robot-joueur « bon » ne faisait pas mieux que le « moyen »), tout se réglait en tirant dans le tas. Trois monstres propres au robot, chacun avec une parade qui se sert du déplacement, du torse ou du choix de l'arme. Tout est dans `js/73-robot-monstres2.js` (réglages en haut : `MR2_BEL`, `MR2_GRA`, `MR2_MOR`, `MR2_PLAN`). Crochets : `mechPlan` et `damage` (calcul, comme js/40 et js/63), le reste par `Jeu.on('image')` et `Jeu.on('tue')`. Aucun autre fichier du jeu n'est modifié (une ligne dans `index.html`).
+
+| Monstre | Vie, vitesse, dégâts (avant la force de la rue) | Ferraille, argent, XP | Ce qu'il fait | Parade |
+|---|---|---|---|---|
+| Bélier (masse brune, plaque frontale grise, cornes) | 900, 2,2, 45 | 8, 140, 40 | À 34 à 46 m, il gratte le sol 1,5 s (bande rouge pâle au sol qui suit le robot à 3 m/s), puis charge à 18 m/s, bande pleine. À 10 m du robot : robot dans la bande (2,6 m de rayon) = coup de 2 × ses dégâts, il recule et recommence 6 s plus tard ; hors de la bande = il dévie et s'écrase contre la façade de son côté, sonné 4 s, la bosse du dos luit | Un pas de côté quand il fonce, puis tirer pendant qu'il est sonné. De face (pas sonné), il ne prend que 20 % des dégâts ; sonné, 100 % et le dos ×3 |
+| Grappin (petit, jaune, deux bras à crochets levés) | 140, 7, 10 | 1,5, 30, 8 | Il court en zigzag ; à 13 m, bond en cloche de 0,75 s sur la vitre. Accroché : visible de l'intérieur (habitacle complet et vue dégagée), il cache une partie de la vue, intouchable par les armes, ronge 0,75 × ses dégâts toutes les 0,5 s, lâche seul au bout de 10 s. Un seul accroché à la fois (les autres griffent les jambes) | Secouer le torse : 3 demi-tours rapides (au moins 0,4 rad en moins de 0,5 s, chacun à l'inverse du précédent ; le mouvement d'une image est plafonné, un saut de visée ne compte pas) ; ou 0,8 s de lance-flammes. Décroché, il tombe à côté, perd la moitié de sa vie, reste 2 s au sol. Ou l'abattre en plein saut |
+| Mortier vivant (gros sac violet sur des racines, tube orange qui luit) | 650, 0,9, 40 | 6, 100, 30 | Il s'enracine à 55 à 72 m devant le robot, puis tire toutes les 4,5 s (pas plus près que 8 m, pas derrière le robot, 2 obus en vol au plus pour tous) : obus en cloche de 2 s vers l'endroit où est le robot au départ du tir, cercle rouge de 3,2 m au sol pendant tout le vol (collé à la rue qui défile). Touché : 2 × ses dégâts | Ne pas rester planté : avancer, reculer ou un pas de côté. Roquettes ou canon pour l'abattre de loin |
+
+- Au cell (ou `MECH.assist`), fenêtres plus généreuses : élan 1,8 s, charge à 15 m/s, bande de 2,3 m, sonné 5 s ; 2 secousses suffisent, sonné 2,5 s au sol ; obus en vol 2,3 s, cercle de 2,9 m.
+- Où ils sortent (`MR2_PLAN`, nombre dans la file de la rue : Bélier, Grappin, Mortier) : tour 1, rues 1 à 3 : aucun (début de course inchangé) ; rue 4 : 2 Béliers ; rue 5 : 4 Grappins ; rue 6 : 2 Mortiers ; rue 7 : 2, 3, 1 ; rue 8 : 2, 3, 2 ; rue 9 : 1, 2, 1. Tour 2 : rue 2 : 0, 1, 0 ; rue 3 : 1, 1, 0 ; rue 4 : 2, 1, 0 ; rue 5 : 1, 4, 0 ; rue 6 : 1, 1, 2 ; rue 7 : 2, 3, 1 ; rue 8 : 2, 3, 2 ; rue 9 : 1, 3, 1. Tours 3 et plus : +25 % par tour. Ils remplacent des marcheurs (au plus la moitié) : le total de la rue ne change pas. Les renforts en ont autant ; la horde qui se reforme pendant le combat contre le Titan roi n'en a pas. Ni le toit, ni le RTS.
+- Repères sans son : bande et cercle au sol, alerte au centre de l'écran avec une barre de temps (élan, charge, sonné, Grappin avec le compte des secousses, obus), bords rouges sous un obus. Moments : `Jeu.emit('monstre', quoi, z)` avec `elan`, `charge`, `sonne`, `saut`, `accroche`, `decroche`, `tir`, `impact` (js/29 et js/37 n'y répondent que sur le toit).
+- Annonce à la première rencontre (à 80 m) : bandeau qui dit la parade, une fois par profil (`P.mr2Vus`, `{}` par défaut). Carrefour : « ⚠ Rue 5 : des Grappins (secoue le torse s'ils s'accrochent). » Garage : « Monstres rencontrés », avec leur parade.
+- Sons : seulement des sons de `Snd` (tone, boom, _nz) et le rugissement des bibites. À faire dans `js/70-robot-sons.js` si on veut mieux : un raclement de sabot pour l'élan, un cri aigu pour le saut du Grappin, un sifflement d'obus qui descend.
+- Coût : 2 bandes, 3 obus, 3 cercles et 3 disques réservés au départ (aucun créé en jeu), un objet dans l'habitacle ; les monstres passent par le rendu par instances (matériaux `zmat`).
+
+**Robot-joueur** (`outils/sim-bot-robot.js`) : nouveau champ `parade` (débutant 0,2, moyen 0,5, bon 0,9), une décision par charge, par Grappin accroché et par obus. Il sort de la bande ou du cercle (et s'arrête d'avancer le temps du pas de côté), ne s'y remet pas en se recentrant, secoue le torse (5 rad/s, demi-tour toutes les 0,16 s), vise en priorité le Bélier sonné, le Grappin en plein saut et les Mortiers, et ne gaspille plus ses tirs sur un Grappin accroché.
+
+**Mesures** (simulateur, graines 1, 2, 3, mêmes graines avant et après ; « avant » : le jeu sans ce fichier ; « après » : le jeu et le robot-joueur qui pare) :
+
+| | Avant | Après |
+|---|---|---|
+| Débutant, profil neuf : rues traversées | 2,85 · 3,7 · 2,91 (3,15) | 2,85 · 3,72 · 2,91 (3,16) |
+| Moyen, profil neuf | 3,94 · 3,83 · 2,99 (3,59) | 5,74 · 3 · 4,62 (4,45) |
+| Bon, profil neuf | 4,68 · 3,91 · 3,81 (4,13) | 4,99 · 4,57 · 3,6 (4,39) |
+| Garage de 7 500 ⚙ : débutant, moyen, bon | 7,72 · 8,99 · ✔ ; 8,99 × 3 ; ✔ × 3 | 8,99 × 3 ; ✔ · 8,99 · ✔ ; 7,92 · ✔ · ✔ |
+| Moyen, 12 courses : tour 1 gagné à la course | 3, 5, 3 | 4, 4, 4 |
+| Moyen : tour 2, tour 3 gagnés à la course | 4, 6, 4 ; 5, 10, 5 | 5, 5, 5 ; 8, 8, 10 |
+| Moyen : meilleur tour après 12 courses | 4, 3, 4 | 3, 3, 3 |
+| Bon, 12 courses : tour 1 gagné à la course | 4, 3, 4 | 3, 4, 3 |
+| Bon : tour 2, tour 3 gagnés à la course | 5, 4, 5 ; 7, 5, 6 | 4, 5, 4 ; 5, 6, 6 |
+| Bon : tour 4 gagné à la course ; meilleur tour après 12 | 8, 7, 7 ; 4, 4, 4 | 9, -, 10 ; 4, 3, 4 |
+
+Lecture : le moyen gagne le tour 1 à une course près comme avant ; le débutant ne bouge pas (les rues 1 à 3 sont les mêmes). L'écart grandit : avant, le bon arrivait au tour 3 à la même course que le moyen (6 contre 6,7 en moyenne) ; après, 5,7 contre 8,7. Le moyen monte plus lentement à partir du tour 2 (meilleur tour après 12 courses : 3 au lieu de 3,7). Deux premiers réglages essayés et écartés : charge à 24 m/s depuis 30 à 42 m avec un coup de 3 × (le bon encaissait presque autant que le moyen : moins d'une seconde pour réagir et faire 2,6 m de côté) ; puis tableau du tour 2 plus chargé (dès la rue 1, +30 % par tour) avec coups de 2,5 × : le moyen ne gagnait plus le tour 3 en 12 courses sur une graine sur trois.
+- À regarder en jouant : la bande du Bélier assez visible de nuit ? le Grappin sur la vitre au cell vertical (il cache peut-être trop) ; secouer le torse à la manette virtuelle (2 glissés rapides gauche-droite d'environ 80 px).
 
 ## Succès
 Briseur de rues (5, 15, 30 rues en une course) et Broyeur (500, 5 000, 25 000 zombies), cachés tant que le robot est verrouillé (`js/51-succes-modes.js`). Dossier 102 : Course réussie (1, 5, 20 courses) et Grimpeur de tours (tours 3, 6, 10), repris de `P.mechFin` au chargement.

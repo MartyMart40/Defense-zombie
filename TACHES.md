@@ -7,6 +7,7 @@ Les 10 dernières tâches faites sont ici ; les plus anciennes sont dans `docs/h
 
 | # | Tâche | Statut | Note |
 |---|-------|--------|------|
+| 132 | Toit : alléger le nouveau ciel (js/81-ciel.js). Mesuré par le chef de chantier : à la Centrale, l’image entière en rendu logiciel passe de 29 à 34 ms sans le ciel à 31 ou 57 ms avec, selon le lancement | En cours | Sous-agent, lancé le 2026-11-18 |
 
 ## À faire
 

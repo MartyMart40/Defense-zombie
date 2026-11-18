@@ -214,3 +214,37 @@ Pour tous : un contre-jour (lueur sans brouillard derrière le boss, que son cor
 
 - Les cris sont au niveau d'un tir de fusil d'assaut (court -22 à -25), la chute un peu au-dessus (-17,5, sous le fusil à pompe à -12,8), les pas du Titan 6 dB sous le fusil et presque rien au cell, la nappe 6 dB sous le fusil quand le boss est à la barricade et presque muette quand il arrive. Personne ne les a encore écoutés : à juger à l'oreille, réglages dans `BSS_REGL`.
 - En Haute définition, la poussière (matériau sans éclairage) ressort un peu plus claire et chaude, comme les autres lueurs de ce style.
+
+## Explosions et pouvoirs du toit (dossier 130, 2026-11-18)
+Seulement visuel et sonore : dégâts, rayons, durées, recharges, moments et argent ne changent pas. Fichiers `js/85-explosions.js` (réglages `EX_REGL`, interrupteur `on`) et `js/85-explosions-sons.js` (réglages `EXS_REGL`). Branchés seulement par `Jeu.on('image')` : aucune fonction du jeu n'est réaffectée et aucun autre fichier du jeu n'est touché. À chaque image, le fichier lit les réserves du jeu (`pwBooms`, `pwPuddles`, `pwStrikes`, `pwPlane` de `js/21` ; `ARM.booms` de `js/20` ; `RUE.fires` de `js/23` ; `bossCars` de `js/19` ; `arsBeams` de `js/34`) et reconnaît ce qui vient de naître. Sur le toit seulement (rien quand un mode `Jeu` est actif), figé en pause, rangé hors de la partie. Ce qui existait reste (éclair en sprite, lumière ponctuelle qui éclaire le décor, particules de `js/05`, secousse du jeu) ; seuls les cônes de flamme des nappes du Molotov sont cachés pendant que ce fichier dessine leur feu.
+
+- Grenade, bombes de la frappe, roquette et lance-grenades, baril, auto du boss abattue en l'air : éclair blanc, boule de feu qui gonfle vite, freine et monte, fumée qui prend le relais et monte 3 à 4 s en s'éclaircissant (noire pour le baril), étincelles en traits, débris qui retombent et restent un moment au sol (le couvercle jaune du baril monte haut), poussière soufflée au ras du sol, onde de choc et lueur au sol, trace brûlée qui s'efface en 16 s. Une explosion en l'air (auto, volant) n'a ni onde ni brûlure.
+- Cocktail Molotov : verre qui éclate, souffle de feu bas et large, puis des langues de feu (bouffées rondes et traits étirés vers le haut) qui vivent sur toute la nappe, fumée sombre, braises, lueur qui bat ; quand la nappe s'éteint d'elle-même, des volutes grises. Même feu, plus petit, sur ce que laisse un baril (4 s).
+- Frappe aérienne : pendant l'attente, anneau rouge qui bat sur la cible et gerbe d'étincelles rouges de la fusée (en plus de la fumée rouge d'avant) ; au passage, traînées blanches au bout des ailes et lueur des moteurs ; puis le chapelet d'explosions.
+- Canon électromagnétique : air ionisé qui scintille le long du rayon, éclair et gerbe bleue au point d'impact, anneau bleu et petite brûlure au sol. Le rayon part dans l'axe de la vue : on voit surtout l'impact.
+- Sons, par-dessus `Snd.boom` (gardé avec sa réverbération) : coup grave (55 à 26 Hz), queue qui roule dans la rue (3 à 4 s ; une seule pour tout le chapelet de la frappe), débris, couvercle du baril qui sonne, tôle de l'auto ; placés à gauche ou à droite, plus faibles, plus sourds et un peu en retard de loin. Molotov : verre et souffle, puis crépitement tant qu'une nappe brûle (bus ambiance, plus fort de près). Frappe : deux bips de radio à l'annonce, souffle de l'avion qui passe. Canon : grésillement à l'impact. Budget de voix à part (6), jamais dans `Snd.voix` : un son du jeu refusé ou coupé à cause d'eux changerait ses tirages de `Math.random` (vu en mesurant). Coupés net en pause.
+- Deux appels de dessin au plus : toutes les bouffées dans une géométrie par instances (fumée et débris d'abord, puis le feu, en un seul mélange prémultiplié qui fait l'alpha et l'additif), tout ce qui est au sol dans une deuxième. Réserves fixes : 260 bouffées et 40 marques à l'ordi, 150 et 24 au cell (et 60 % des bouffées) ; moins encore si les images par seconde tombent. Haute définition et Ultra : couleurs passées en linéaire dans le nuanceur, lueurs au sol baissées (l'exposition et l'éclat les blanchissaient).
+- Hasard : jamais `Math.random` (générateurs propres, objets créés dans `exCalme`).
+- Abandonné : les autos garées qui sautent (le jeu n'en fait pas sauter ; en ajouter changerait le jeu) ; une vraie lumière de plus (celles du jeu éclairent déjà le décor) ; un mouvement de caméra de plus (la secousse du jeu suffit, et « Secousses » n'a rien de neuf à couper).
+- Mesures (2026-11-18) : empreinte du duel `SIM_DUELS=1,3 node outils/simulateur.js duel` identique avant et après (993/30,45/22,4029/13 ; 40680/36,14950/25,15571/42,10278/16). Identité du jeu en pages neuves, sans puis avec les fichiers 85 (requêtes bloquées), 900 images avec grenades, Molotov, frappe, baril, roquette, canon et auto du boss abattue : mêmes tirages (1 407 590), même empreinte des positions, vies, barricade et argent (`node outils/mesure-explosions.js adresse identite`). Appels de dessin : rue calme inchangée (93 ordi, 89 cell) ; au plus fort (frappe, nappe et baril ensemble) +2 (159 à 161 ordi, 136 à 138 cell). Temps de l'écouteur au plus fort : 0,02 ms à l'ordi, 0,11 ms au cell (processeur ralenti ×4) ; le coût de remplissage des grandes bouffées sur une vraie carte de cell n'est pas mesuré.
+- Niveaux des sons (`node outils/mesure-explosions.js adresse sons`, même méthode que les sons de la Centrale, dBFS) :
+
+| Son | Crête | Court | Moyen | Cell |
+|---|---|---|---|---|
+| Grenade à 15 m, `Snd.boom` seul (avant) | -2,2 | -11,2 | -18,7 | -20,3 |
+| Grenade à 15 m, avec grave et queue | -1,7 | -10,6 | -18,3 | -21,5 |
+| Grenade à 60 m | -2,5 | -11,4 | -19,3 | -21,3 |
+| Baril à 25 m (avant) | -1,7 | -9,9 | -16,5 | -19,8 |
+| Baril à 25 m | -1,7 | -8,5 | -15,3 | -19,7 |
+| Roquette à 30 m | -1,6 | -9 | -16,1 | -20,6 |
+| Auto abattue à 25 m (couche ajoutée seule) | -12,6 | -17,6 | -26,5 | -42,8 |
+| Cocktail Molotov à 20 m | -17,3 | -24,1 | -31,1 | -42 |
+| Feu d'une nappe à 15 m | -21,9 | -40,3 | -49,5 | -40,5 |
+| Frappe : annonce | -26,6 | -38,9 | -42,9 | -39 |
+| Frappe : passage de l'avion | -19,1 | -28,9 | -35,5 | -29,2 |
+| Canon électromagnétique : impact à 30 m | -31 | -41,1 | -49,5 | -44,5 |
+| Toit : fusil d'assaut | -8,4 | -23,4 | -29,3 | -29,6 |
+| Pire cas avant : 7 bombes, baril, fusil d'assaut | -1,2 | -8,1 | -15,5 | -18 |
+| Pire cas après : + annonce, avion, nappe, graves et queues | -1,3 | -7,3 | -15,4 | -18,2 |
+
+- Le limiteur de `Snd` tient tout sous la saturation (crête du pire cas -1,3 comme avant -1,2). Le grave se sent plus qu'il ne s'entend (il ne passe presque pas au cell). Personne ne les a encore écoutés : à juger à l'oreille, réglages dans `EXS_REGL`.

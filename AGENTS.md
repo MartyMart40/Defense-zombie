@@ -78,6 +78,8 @@ Trois modes : le toit (campagne de 5 villes et mode infini), le robot de combat,
 | 66 visée | Visée du toit : zoom selon l'optique (mires, point rouge, lunette ×4, lunette du sniper), cadre de lunette pour toute lunette ; réglages dans `VISEE` (`docs/conception.md`) |
 | 67 style du robot | Style Amélioré dans le robot : bouton « Style » de la Pause du robot, ombres des jambes ; le gros du travail est dans `js/57-graphismes.js` (`styleIci`, `styleRobot`, `styleSoleilPlacer`) |
 | 68 décor du toit | Décor vivant du toit : fenêtres qui s'allument et s'éteignent (une seule géométrie), bord du toit (sacs, caisse, cheminée), état visible de la barricade ; réglages `TD_REGL` ; les fenêtres allumées ne sont plus peintes par `03-scene` (`LIT = 0`) |
+| 69 sons du RTS | Un son par famille d'arme du RTS, placé selon la distance, plafond de voix, moments (siège, Ruche, base attaquée), moteur en pilotant ; mesure : `node outils/mesure-sons-rts.js` |
+| 70 sons du robot | Pas calés sur les vrais pieds, fond de machine, armes vues de l'habitacle, alarmes de surchauffe et de blindage, Titan roi ; réglages `RSN_REGL` |
 | 90 branchements | Branche le registre `Jeu` sur le jeu commun ; toujours le dernier |
 
 Les const, let et function de haut niveau sont partagés entre tous les fichiers (portée globale). Un fichier peut appeler une fonction d'un fichier plus loin **seulement à l'intérieur d'une fonction**, jamais au chargement. Chaque fichier commence par `'use strict';`.

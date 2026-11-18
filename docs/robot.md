@@ -13,8 +13,9 @@ On pilote un mech à deux pattes, vue du cockpit : minigun au bras gauche, lance
 | `js/40-robot-fin.js` | Course de 9 rues : boss final, victoire, tours (force, ferraille, prime), choix du tour au garage, progression affichée (`MECH_FIN`, profil `P.mechFin`) |
 | `js/40-robot-habitacle.js` | Habitacle complet (vitre, tableau de bord, écrans, manettes et mains du pilote), jambes qui marchent, balancement des pas, réglage « Habitacle » de la Pause (dossier 105). Seulement visuel |
 | `js/67-robot-style.js` | Style graphique Amélioré dans le robot (dossier 114) : ombres des jambes, bouton « Style » dans la Pause du robot. Le reste est dans `js/57-graphismes.js`. Seulement visuel |
+| `js/70-robot-sons.js` | Sons de la machine (dossier 116) : pas sur le vrai pied, fond du moteur, armes vues de l'intérieur, tableau de bord, moments. Seulement sonore |
 | `js/50-robot-sauvegarde.js` | Course gardée au début de chaque rue ; « ▶ Continuer le robot » sur l'écran titre reprend au début de la rue |
-| `tests/t-robot.js`, `tests/t-robot2.js`, `tests/t-robot-sauvegarde.js`, `tests/t-robot-fin.js`, `tests/t-robot-habitacle.js`, `tests/t-robot-style.js` | Tests |
+| `tests/t-robot.js`, `tests/t-robot2.js`, `tests/t-robot-sauvegarde.js`, `tests/t-robot-fin.js`, `tests/t-robot-habitacle.js`, `tests/t-robot-style.js`, `tests/t-robot-sons.js` | Tests |
 
 ## Chiffres actuels
 - Rue de 140 m (`MECH_LEN`). Course de 9 rues. Boss aux rues 3 et 6, boss final à la rue 9.
@@ -100,6 +101,46 @@ Le réglage « Style » (`dt_style`) marche maintenant dans le robot : textures 
   | Robot, ordi 1280 x 720 | 209 → 412 | 617 → 1 150 ms (+533) |
   | Toit, ordi 1280 x 720 | 75 → 300 | 300 → 800 ms (+500) |
   Amélioré ajoute environ 200 appels (le dessin de la carte d'ombre) dans le robot comme sur le toit, et à peu près le même temps. Rien n'a été allégé de plus. Une zone d'ombre plus courte derrière le robot a été essayée : aucun appel de moins, donc pas gardée. À mesurer pour de vrai sur le cell de Martin.
+
+## Dossier 116 (2026-11-18) : les sons du robot
+But : qu'on se sente dans une machine lourde. Seulement sonore (aucun chiffre de jeu, aucun visuel ne change), musique inchangée. Tout est dans `js/70-robot-sons.js`, branché par `Jeu.on('image')` qui lit l'état du robot ; un seul appel direct : le pas, dans `mechStomp` (`js/39-robot.js`). `js/01-son.js` et `js/37-bruitages.js` ne sont pas modifiés : le fichier se sert de `Snd._voix` (budget de 10 voix et priorités), `Snd._nz`, `Snd._osc` et des bus (`robot` pour la machine, `arme`, `ui`), et enveloppe `Snd.shot`, `Snd.mgTick` et `Snd.thud` comme le fait déjà `js/34-arsenal.js` (hors du robot, ces enveloppes laissent passer le son du toit).
+- **Pas** : un coup sourd et lourd à chaque pied qui se pose (le vrai pied des jambes : `J.poses`, `js/40-robot-habitacle.js`), panoramique léger (pied gauche à gauche, droit à droite, ±0,28), plus fort en marchant vite ou en reculant vite (force 0,6 à 1,1). Grincement de vérin au milieu de chaque pas (7 fois sur 10). L'ancien bruit de pas de `mechStomp` ne joue plus quand ce fichier est là.
+- **Machine** : fond fait une seule fois en entrant (moteur grave à 38 Hz et son octave, turbine en bruit bouclé, servomoteur), dont on règle les gains : il monte un peu en marchant ; les servos sifflent quand le torse tourne vite. Arrêté net en pause, en quittant le robot et à la fin de la course (à la mort, le moteur descend en 2 s). Au carrefour, il tourne au ralenti.
+- **Armes** (à la place du son du toit, jamais par-dessus) : roquettes en salve (un départ par tube, 75 ms entre deux, la salve du garage compte), lance-grenades (« toump » et barillet), canon électromagnétique (claque métallique et décharge, puis sifflement de recharge pendant l'attente), lance-flammes lourd, laser lourd, arc électrique plus graves. Minigun : moteur plus grave et plus lent à lancer et à ralentir, rafale plus sourde (lecture du tampon à 0,84). Bras gauche à gauche, bras droit à droite.
+- **Tableau de bord** : surchauffe, alarme au passage de 75 % de chaleur (une fois, réarmée sous 50 %) puis bips qui accélèrent (0,42 s à 0,11 s) et montent jusqu'à la coupure ; coupure : relais et vapeur ; déclic quand le bras revient. Blindage sous 30 % : alerte (trois coups de sirène) une fois, puis bip lent « bip-bop » clair (1,7 s à 1,05 s), différent du cœur grave du toit ; réarmée au-dessus de 40 %. Coup reçu : la coque sonne (métal, plus grave et plus long pour un gros coup, boulons qui tremblent), au plus un toutes les 70 ms sauf plus gros. Crachat qui touche la vitre : éclaboussure, petit coup sur le verre, acide qui grésille. Bras droit de nouveau prêt après un chargeur vide, canon rechargé : déclic et deux notes.
+- **Moments** : démarrage (moteur qui s'allume) et début de rue (trois notes qui montent ; rue 9 : trois notes graves) ; carrefour (vérins qui soufflent, deux échos de radar) ; choix de rue ; « Renforts ! » (corne grave, deux coups) ; Titan roi : cor très grave en trois coups (55, 55, 41 Hz) qu'on reconnaît, frappe au sol qui fait trembler l'habitacle, hurlement à mi-vie ; course réussie (vapeur, moteur au ralenti, carillon doux, la fanfare de `js/40-robot-fin.js` joue aussi) ; robot détruit (extinction : moteur qui descend, relais qui lâchent, étincelles, dernier choc).
+- Réglages en haut du fichier : `RSN_REGL` (pas, grincement, fond, seuils et rythmes des alarmes, niveau de chaque famille dans `niv`).
+- Repères sans son : la surchauffe a déjà la bannière « Surchauffe ! », la barre rouge et l'écran SURCHAUFFE du tableau de bord ; le blindage bas, la barre rouge et les écrans rouges. Rien à ajouter.
+
+**Niveaux mesurés** (hors ligne, OfflineAudioContext, après 0,5 s de chauffe du limiteur, comme la table de `js/01-son.js`, en dBFS ; « Court » : RMS le plus fort sur 50 ms ; « Moyen » : RMS pendant le son ; « Cell » : le court après un passe-haut à 300 Hz). Le hasard fait bouger les chiffres de 1 à 2 dB.
+
+| Son | Crête | Court | Moyen | Cell |
+|-----|-------|-------|-------|------|
+| Pas, marche lente / course | -13 / -10 | -23 / -19 | -31 / -28 | -39 / -35 |
+| Grincement de vérin | -40 | -53 | -57 | -53 |
+| Fond à l'arrêt / en marche / torse qui tourne | -30 / -25 / -26 | -36 / -30 / -33 | -37 / -32 / -35 | -55 / -49 / -45 |
+| Minigun du robot (continu) | -9 | -16 | -18 | -25 |
+| Roquette / salve de 3 | -7 / -7 | -17 / -18 | -29 / -25 | -31 / -28 |
+| Lance-grenades | -10 | -21 | -28 | -34 |
+| Canon électromagnétique (coup et recharge) | -9 | -17 | -30 | -29 |
+| Lance-flammes lourd (15 par seconde), laser, arc | -26 / -24 / -28 | -36 / -35 / -36 | -38 / -41 / -43 | -44 / -42 / -46 |
+| Surchauffe : bip / coupure | -20 / -18 | -33 / -27 | -38 / -36 | -33 / -29 |
+| Blindage bas : alerte / bip | -18 / -20 | -28 / -32 | -35 / -37 | -29 / -32 |
+| Coque : petit coup (0,9) / gros coup (2,4) | -14 / -7 | -22 / -14 | -31 / -24 | -30 / -26 |
+| Crachat sur la vitre, bras droit prêt | -19 / -24 | -33 / -37 | -40 / -41 | -33 / -37 |
+| Début de rue, démarrage, choix, renforts | -19 / -19 / -20 / -16 | -29 / -29 / -32 / -27 | -35 / -37 / -39 / -34 | -29 / -29 / -33 / -31 |
+| Carrefour | -16 | -23 | -34 | -31 |
+| Titan roi : arrivée / appel | -8 / -14 | -17 / -26 | -21 / -28 | -28 / -27 |
+| Titan : frappe seule / avec le boom qui existait | -12 / -1 | -18 / -10 | -27 / -20 | -33 / -21 |
+| Course réussie / robot détruit | -19 / -13 | -28 / -19 | -37 / -34 | -29 / -34 |
+| Toit, pour comparer : pompe, coup sur la barricade (marcheur), alarme, cœur, minigun | -3 / -14 / -18 / -9 / -9 | -14 / -21 / -27 / -20 / -15 | -28 / -29 / -32 / -28 / -17 | -25 / -30 / -27 / -34 / -25 |
+| Pire cas : fond en marche, minigun, 4 pas, 3 alarmes, 6 gros coups, salve, canon, frappe, 2 explosions, Titan, renforts, 40 zombies | -0,7 (limiteur) | -9 | -15 | -21 |
+
+Pire cas sans budget de voix : crête -0,6 dB, jamais au-dessus de 0,95 (limiteur et écrêtage doux de `js/01-son.js`). Test : `tests/t-robot-sons.js`.
+
+**Coût** : 60 s simulées (marche, minigun qui surchauffe, blindage bas) : fond fait une fois, au plus 10 voix à la fois, environ 24 nœuds audio créés par seconde (pas, grincements, bips ; chacun s'arrête seul à la fin de son son). Son coupé : aucun nœud créé.
+
+**À écouter en jouant** : le volume des pas au casque (un peu forts en courant ?) et au cell (ils passent surtout par le médium) ; le bip du blindage bas sur la durée ; le cor du Titan roi.
 
 ## Succès
 Briseur de rues (5, 15, 30 rues en une course) et Broyeur (500, 5 000, 25 000 zombies), cachés tant que le robot est verrouillé (`js/51-succes-modes.js`). Dossier 102 : Course réussie (1, 5, 20 courses) et Grimpeur de tours (tours 3, 6, 10), repris de `P.mechFin` au chargement.

@@ -228,8 +228,9 @@ function brHorde(dt){
 }
 
 /* ---------- Barricade : craquements, alarme et battement de cœur ---------- */
+// Toit seulement : dans le robot, la coque est en métal et a ses propres sons (js/70-robot-sons.js)
 function brCreak(dt){
-  if ((state !== 'playing' && state !== 'mech') || !S || typeof Snd !== 'object' || !Snd.ctx || S.bar > S.barMax * .35) return;
+  if (state !== 'playing' || !S || typeof Snd !== 'object' || !Snd.ctx || S.bar > S.barMax * .35) return;
   BR.creakT -= dt; if (BR.creakT > 0) return;
   BR.creakT = rand(2.5, 6) * (.4 + S.bar / S.barMax); BR.creaks++;
   brAt(rand(-8, 8), 1, BAR_Z, () => Snd._voix('monde', 1, () => {

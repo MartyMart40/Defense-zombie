@@ -220,4 +220,25 @@
     ok(r.mort, 'Le Cœur meurt'); egal(r.succes, 1, 'Succès « Arrêt du cœur »');
     egal(r.rangeVivants, 3, 'clearZombies remet les transformateurs');
   });
+  test('Centrale : image en Haute définition (dossier 123) : flaque colorée, lumière HD seulement en HD', () => {
+    exiger(); reset();
+    const r = J(function(){
+      var o = {}, C = __centrale, im = C.ctrFlaqueIM, avant = __style.STY.pref;
+      o.couleurs = im.instanceColor ? im.instanceColor.array.length : 0;
+      startLocation(C.idx);
+      var fx = C.CT.fx; o.lum = !!(fx && fx.lumHD); o.groupe = !!(fx && fx.lumHD && fx.lumHD.parent && fx.lumHD.parent !== world);
+      __style.styleSet('actuel'); state = 'menu'; visuals(1 / 30); o.actuel = fx && fx.lumHD ? fx.lumHD.visible : null;
+      __style.styleSet('ameliore'); visuals(1 / 30); o.ameliore = fx && fx.lumHD ? fx.lumHD.visible : null;
+      // Flaque : la couleur de chaque instance est bien écrite (elle s'efface et bat)
+      startLocation(C.idx); startWave(); __t.geler(); clearZombies();
+      var z = __t.placer('irradie', 0, -30); damage(z, 1e9, false, z.g.position.clone()); visuals(1 / 30);
+      o.dessin = im.count; o.c0 = im.instanceColor ? im.instanceColor.array[0] : -1;
+      clearZombies(); state = 'test'; __style.styleSet(avant);
+      return o;
+    });
+    ok(r.couleurs >= 14 * 3, 'Couleurs des flaques faites pour toute la réserve : ' + r.couleurs);
+    egal(r.dessin, 1, 'Une flaque dessinée'); ok(r.c0 > 0 && r.c0 <= 1.01, 'Sa couleur est écrite : ' + r.c0);
+    ok(r.lum && r.groupe, 'Lumière HD posée avec la rue, dans un groupe (pas lue par ambCapture)');
+    egal(r.actuel, false, 'Lumière HD cachée en Actuel'); egal(r.ameliore, false, 'Lumière HD cachée en Amélioré');
+  });
 })();

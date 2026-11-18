@@ -24,7 +24,10 @@ const CTR = {
   // part des marcheurs de la vague remplacés : min(max, base + parVague × vague) du total, au moins 1
   irr: { base:.035, parVague:.0055, max:.1, flaque:{ duree:6, rayon:2.4, pres:3.2, dps:.8, tic:.5 } },
   coeur: { vague:12, bouclier:.3, regen:.006, transfoVie:.08 },
-  fx: { cendres:isTouch ? 140 : 320, vapeur:isTouch ? 18 : 30 }
+  fx: { cendres:isTouch ? 140 : 320, vapeur:isTouch ? 18 : 30 },
+  // Haute définition et Ultra (dossier 123) : lumière de lune et du réacteur (pas de lampadaires ici, la rue tombait à 40 %
+  // de la clarté de Banlieue Nord), halo du réacteur et vapeur ramenés à la force d'Actuel (sinon ils brûlaient l'image)
+  hd: { ciel:1, ultra:.5, halo:.45, vapeur:1 }
 };
 const CT = { C:null, t:0, flaques:[], coeur:null, transfos:[], arcT:0, sirT:14, chk:0, fx:null,
   stats:{ flaques:0, tics:0, regen:0, detruits:0, coeurs:0, bouclier:0, tempsCoeur:0, tempsBouclier:0 } }; // temps : secondes de combat (mesure)
@@ -102,7 +105,11 @@ const ctrFlaqueIM = (function(){
   const geo = new THREE.PlaneGeometry(2, 2); geo.rotateX(-Math.PI / 2);
   const mat = new THREE.MeshBasicMaterial({ map:CTR_FLAQUE_TEX, color:0x9cff6a, transparent:true, opacity:.8, blending:THREE.AdditiveBlending, depthWrite:false });
   mat.userData.keep = true;
-  const im = new THREE.InstancedMesh(geo, mat, CTR_FLAQUE_N); im.count = 0; im.frustumCulled = false; im.renderOrder = 2; im.userData.keep = true; scene.add(im);
+  const im = new THREE.InstancedMesh(geo, mat, CTR_FLAQUE_N);
+  // Couleur par instance faite tout de suite, à la taille de la réserve (dossier 123) : faite par setColorAt quand count
+  // valait 0, elle était vide ; la flaque ne s'effaçait pas, ne battait pas, et restait invisible en Amélioré et plus haut
+  im.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(CTR_FLAQUE_N * 3), 3);
+  im.count = 0; im.frustumCulled = false; im.renderOrder = 2; im.userData.keep = true; scene.add(im);
   for (let i = 0; i < CTR_FLAQUE_N; i++) CT.flaques.push({ on:false, t:0, x:0, z:0, dps:0, tic:0, ronge:false, fz:{ g:{ position:new THREE.Vector3() } } });
   return im;
 })();
@@ -221,7 +228,7 @@ function ctrTransfoDetruit(t){
   ctrTransfoEtat(t, false); CT.stats.detruits++;
   ctrV.set(t.x, 2, t.z); burst(ctrV, 'ember', 24, 6); burst(ctrV, 'dust', 14, 4); burst(ctrV, 'irr', 8, 3);
   shake = Math.max(shake, .45);
-  if (typeof Snd === 'object'){ Snd.burst(420, .7, .7); Snd.tone(110, .6, 'sawtooth', .18, 30); }
+  if (typeof Snd === 'object' && (typeof ctsEmprunt !== 'function' || ctsEmprunt())){ Snd.burst(420, .7, .7); Snd.tone(110, .6, 'sawtooth', .18, 30); } // son à soi : js/76-centrale-sons.js
   if (typeof floatText === 'function') floatText('Transformateur détruit !', ctrV, true);
   const n = ctrVivants();
   if (n > 0){ if (typeof ecrPush === 'function') ecrPush('Transformateur détruit : encore ' + n, 'weak'); }
@@ -354,6 +361,10 @@ function ctrMonde(L){
   for (let i = 0; i < CTR.fx.cendres; i++){ ca[i * 3] = rand(-24, 24); ca[i * 3 + 1] = rand(0, 22); ca[i * 3 + 2] = rand(-72, 2); }
   fx.vit = Array.from({ length:CTR.fx.cendres }, () => rand(.5, 1.2));
   // Lueur du réacteur
+  // Haute définition et Ultra seulement (cachée sinon) : lumière de lune et du réacteur, dans un groupe (ambCapture de
+  // js/22-ambiance.js ne lit que les enfants directs de la rue). Faite sans toucher au hasard du jeu (fusionCalme).
+  const mkLum = () => { const g = new THREE.Group(), h = new THREE.HemisphereLight(0x8aa8c0, 0x28302c, CTR.hd.ciel); h.visible = false; g.add(h); world.add(g); return h; };
+  fx.lumHD = typeof fusionCalme === 'function' ? fusionCalme(mkLum) : mkLum();
   if (C.reacteur){ fx.lueur = new THREE.Sprite(CTR_FX_M.lueur); fx.lueur.position.set(C.reacteur[0], C.reacteur[1], C.reacteur[2]); fx.lueur.scale.set(46, 46, 1); world.add(fx.lueur); }
   // Les 3 transformateurs de la rue : cible invisible (dans hitMeshes seulement pendant le combat du Cœur)
   (C.transfos || []).forEach(t => {
@@ -373,14 +384,20 @@ function ctrBrume(pulse){
   });
   CTR_LOIN.emissive.r += .012 * pulse; CTR_LOIN.emissive.g += .05 * pulse; CTR_LOIN.emissive.b += .035 * pulse; // la lueur du réacteur sur les murs
 }
+// Haute définition dessinée en ce moment à la Centrale : 'hd', 'ultra' ou false
+function ctrHD(){
+  if (typeof styleHD !== 'function' || !styleHD() || typeof HD !== 'object' || !HD.pret || HD.casse) return false;
+  return typeof ultraActif === 'function' && ultraActif() ? 'ultra' : 'hd';
+}
 function ctrImage(dt){
   ctrFlaquesImage();
   if (!ctrIci() || !CT.fx){ ctrArcs.visible = false; return; }
-  CT.t += dt || 0; const t = CT.t, C = CT.C, fx = CT.fx;
+  CT.t += dt || 0; const t = CT.t, C = CT.C, fx = CT.fx, hd = ctrHD();
+  if (fx.lumHD){ fx.lumHD.visible = !!hd; fx.lumHD.intensity = hd === 'ultra' ? CTR.hd.ultra : CTR.hd.ciel; }
   // Lueur qui pulse : fissures du réacteur, halo, murs du fond
   const pulse = .5 + .5 * Math.sin(t * 1.3) * Math.sin(t * .37 + 1);
   CTR_FISSURE.color.setRGB(.45 + .3 * pulse, .9 + .1 * pulse, .62 + .2 * pulse);
-  if (fx.lueur){ fx.lueur.material.opacity = .32 + .28 * pulse; const s = 40 + 10 * pulse; fx.lueur.scale.set(s, s, 1); }
+  if (fx.lueur){ fx.lueur.material.opacity = (.32 + .28 * pulse) * (hd ? CTR.hd.halo : 1); const s = 40 + 10 * pulse; fx.lueur.scale.set(s, s, 1); }
   ctrBrume(pulse);
   // Gyrophares : lent tour (environ 4 s), ampoules qui battent, halo vif quand le faisceau regarde vers nous
   const FP = fx.faisceaux.geometry.attributes.position.array, H = fx.halos.geometry.attributes.color.array;
@@ -408,7 +425,8 @@ function ctrImage(dt){
     u.age += dt || 0; if (u.age > u.vie){ u.age -= u.vie; u.dx = rand(-1, 1); u.dz = rand(-1, 1); }
     const T = C.tours[u.tour], k = u.age / u.vie, r = T[3] * (.5 + 1.4 * k);
     VP[i * 3] = T[0] + u.dx * r + k * 34; VP[i * 3 + 1] = T[1] + 2 + k * 46; VP[i * 3 + 2] = T[2] + u.dz * r;
-    const c = (k < .3 ? k / .3 : 1 - (k - .3) / .7) * .17; VC[i * 3] = c * .8; VC[i * 3 + 1] = c * .95; VC[i * 3 + 2] = c * .92;
+    let c = (k < .3 ? k / .3 : 1 - (k - .3) / .7) * .17; if (hd) c = Math.pow(c, 2.2) * CTR.hd.vapeur; // en HD, les couleurs par sommet sont lues en linéaire
+    VC[i * 3] = c * .8; VC[i * 3 + 1] = c * .95; VC[i * 3 + 2] = c * .92;
   });
   fx.vapeur.geometry.attributes.position.needsUpdate = true; fx.vapeur.geometry.attributes.color.needsUpdate = true;
   // Cendres
@@ -422,8 +440,9 @@ function ctrImage(dt){
   CT.transfos.forEach(tr => { if (tr.flash > 0) tr.flash -= dt || 0; tr.voyant.scale.setScalar(tr.flash > 0 ? .5 : .32 + .05 * Math.sin(t * 6 + tr.z)); });
   ctrArcsImage(dt);
   ctrCoeurImage(pulse);
-  // Sirène au loin, de temps en temps (sons existants)
-  if (state === 'playing' && typeof Snd === 'object' && Snd.tone){ CT.sirT -= dt || 0; if (CT.sirT <= 0){ CT.sirT = rand(22, 34); Snd.tone(430, 1.5, 'sine', .022, 610); Snd.tone(610, 1.5, 'sine', .022, 430, 1.5); } }
+  // Sirène au loin, de temps en temps (sons existants) ; muette avec js/76-centrale-sons.js, mais la minuterie tire toujours
+  // son nombre (le hasard du jeu et du simulateur ne bouge pas)
+  if (state === 'playing' && typeof Snd === 'object' && Snd.tone){ CT.sirT -= dt || 0; if (CT.sirT <= 0){ CT.sirT = rand(22, 34); if (typeof ctsEmprunt !== 'function' || ctsEmprunt()){ Snd.tone(430, 1.5, 'sine', .022, 610); Snd.tone(610, 1.5, 'sine', .022, 430, 1.5); } } }
   // Succès de la ville libérée (une fois par seconde au plus)
   CT.chk -= dt || 0; if (CT.chk <= 0){ CT.chk = 1; if (P.wins && P.wins.centrale > 0 && typeof msMax === 'function') msMax('centrale', 1); }
 }

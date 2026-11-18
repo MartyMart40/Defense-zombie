@@ -128,3 +128,39 @@ Martin : plus de contenu. Une 6e ville après le Port : la centrale électrique 
 - Simulateur (`node outils/simulateur.js centrale debutant,moyen,bon G`, graines 1 à 3, profil de sortie du Port) : bon libère la Centrale au 2e, 1er et 2e essai (35 à 67 % de barricade, souvent après une brèche) ; moyen au 2e, 3e et 2e ; débutant pas en 4 essais (graine 1, jusqu'à la vague 11), et ne libère pas le Port en 3 essais aux graines 2 et 3.
 - Ce qui ne change pas : le mode infini reste débloqué par les 5 premières villes (`INF_VILLES`, `js/28-infini.js`) ; la Centrale s'y ajoute comme décor (pas d'irradié ni de Cœur). Le robot garde ses 5 décors : rue `(rue - 1) % 5` (`js/39-robot.js`) et carrefours tirés sans la Centrale (`mbRoutes`, enveloppé dans `js/71-centrale.js`). Le défi du jour tire toujours sa ville parmi les 5 premières (`DEFI_VILLES`) : aucun défi ne change. Un joueur qui avait déjà libéré le Port voit la Centrale débloquée.
 - Succès : « Courant coupé » (libérer la Centrale, 1 500 ⚙) et « Arrêt du cœur » (abattre le Cœur, 800 ⚙).
+
+## Sons de la Centrale (dossier 123, 2026-11-18)
+Seulement sonore, rien ne change dans le jeu. Fichier `js/76-centrale-sons.js`, réglages `CTS_REGL` en haut. Tout par synthèse Web Audio, dans la chaîne de `Snd` (limiteur, son coupé, budget de voix) ; seulement à la Centrale (`ctrIci`), pas dans le robot ni le RTS. Hasard propre (`ctsHasard`) : aucun appel à `Math.random` (vérifié par `tests/t-centrale-sons.js`), l'empreinte du duel et la partie `centrale` du simulateur ne changent pas.
+- Fond du lieu (bus ambiance) : bourdonnement des transformateurs (50, 100 et 150 Hz, 100 Hz doublé à 100,8 Hz pour un léger battement, une pointe de grésillement vers 400 Hz pour les petits haut-parleurs), souffle des tours de refroidissement qui va et vient en 14 s, claquement d'arc à gauche ou à droite toutes les 7 à 18 s. Joue pendant la vague et à la boutique (comme la météo), s'arrête net en pause, à la fin de la partie et en quittant la ville. Pendant le Cœur, le bourdonnement monte (×1,3 avec 3 transformateurs) et baisse d'un cran à chaque transformateur détruit (×1, ×0,7, ×0,4), ×0,25 après sa mort.
+- Irradié : compteur Geiger de 1,5 à 26 coups par seconde selon la distance du plus proche à la barricade (55 m), un peu plus quand ils sont plusieurs, placé de son côté ; flaque qui se forme (éclaboussure, « bloup », chuintement, le compteur qui s'affole) ; grésillement acide qui bouillonne tant qu'une flaque ronge la barricade.
+- Le Cœur : arrivée (montée électrique, coup grave), pulsation double de 1,3 s à 0,45 s selon sa vie, « tic-zzt » quand un tir est absorbé par le bouclier (au plus un toutes les 0,11 s, plus rien quand il est à nu), transformateur détruit (arc, explosion, sifflement qui tombe), bouclier qui tombe (décharge, verre, deux notes claires), mort (grande extinction).
+- Gyrophares : alarme courte et lointaine au début des vagues de boss (5, 10 et 12) seulement. La sirène d'emprunt de `js/71` (toutes les 22 à 34 s) et son son de transformateur détruit se taisent quand ce fichier est là (`ctsEmprunt`) ; la minuterie de la sirène tire toujours son nombre, pour garder le hasard du jeu.
+- Niveaux mesurés hors ligne (`node outils/mesure-sons-centrale.js`, même chaîne et même méthode que la table de `js/01-son.js`, son au maximum, dBFS ; court : RMS le plus fort sur 50 ms ; moyen : RMS de la partie qui s'entend ; cell : court après un passe-haut à 300 Hz) :
+
+| Son | Groupe | Crête | Court | Moyen | Cell |
+|---|---|---|---|---|---|
+| Fond du lieu (bourdonnement et souffle) | Fond | -32,7 | -39,3 | -42,2 | -51,9 |
+| Fond pendant le Cœur, 3 transformateurs | Fond | -30,8 | -37,1 | -40,1 | -51,5 |
+| Arc électrique au loin | Fond | -32,2 | -42,5 | -48,4 | -47,8 |
+| Geiger, irradié loin (50 m) | Irradié | -16,1 | -39,9 | -41,7 | -39,9 |
+| Geiger, irradié à la barricade | Irradié | -10,7 | -32,1 | -35,9 | -32,1 |
+| Flaque qui se forme (loin) | Irradié | -18,9 | -28,5 | -35,5 | -31 |
+| Flaque qui se forme (contre la barricade) | Irradié | -17,7 | -27,9 | -34,6 | -30,5 |
+| Grésillement : une flaque ronge la barricade | Irradié | -10,5 | -27,7 | -29,4 | -27,7 |
+| Cœur : arrivée | Cœur | -6,8 | -12,5 | -23,1 | -27,7 |
+| Cœur : un battement (bouclier) | Cœur | -15,1 | -21,8 | -27,8 | -37,8 |
+| Cœur : tir absorbé | Cœur | -13,5 | -25,6 | -28,6 | -25,8 |
+| Cœur : transformateur détruit | Cœur | -8,8 | -14,3 | -22,7 | -26,2 |
+| Cœur : le bouclier tombe | Cœur | -6,5 | -14,1 | -22,5 | -20,6 |
+| Cœur : mort | Cœur | -5,8 | -11,1 | -18,7 | -27 |
+| Alarme des gyrophares (vague de boss) | Moment | -24 | -32,1 | -33,4 | -32,2 |
+| Toit : pistolet | Toit | -7,9 | -22,6 | -29,5 | -26,6 |
+| Toit : fusil d’assaut | Toit | -8,4 | -23,9 | -29,8 | -30,2 |
+| Toit : fusil à pompe | Toit | -3,4 | -14,2 | -22,8 | -24,5 |
+| Toit : grognement de marcheur | Toit | -17 | -30,2 | -37 | -31,5 |
+| Fusil d’assaut seul, 8 coups/s pendant 4 s | Mélange | -6 | -22,2 | -27,6 | -27,1 |
+| Pire cas de la Centrale, sans arme | Mélange | -9,1 | -20,4 | -25,3 | -23,5 |
+| Pire cas de la Centrale, avec le fusil d’assaut | Mélange | -3,9 | -18,3 | -23,4 | -21,9 |
+
+- Le fond reste 17 dB sous le fusil d'assaut (court) et 22 dB au cell ; le Geiger au plus fort, 8 dB sous le fusil (2 au cell) ; le grésillement de la flaque est à peu près au niveau d'un tir de fusil au cell : on l'entend. Pire cas réaliste (vague 12, Cœur et 3 transformateurs, fond, Geiger au plus fort, flaque qui ronge, battements rapides, tirs absorbés) mêlé au fusil d'assaut qui tire 8 coups par seconde : crête -3,9, court -18,3, cell -21,9 dBFS (fusil seul : -6, -22,2, -27,1), sans saturer (limiteur de `Snd`).
+- Personne n'a encore écouté ces sons : à juger à l'oreille (cell et ordi), réglages dans `CTS_REGL`.
